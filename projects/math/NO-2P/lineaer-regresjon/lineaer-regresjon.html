@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<!--
+  Lineær regresjon — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 2P (LK20): legg inn datapunkter, finn den
+  lineære regresjonslinja y = ax + b, og bruk modellen til å gjøre forutsigelser.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lineær regresjon – Matematikk 2P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; }
+    .svg-container { width: 100%; overflow-x: auto; }
+    svg text { font-family: 'Segoe UI', Arial, sans-serif; }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
+    .punkt-rad:hover { background: #f0f9ff; }
+    .dot-point { fill: #2563eb; stroke: #1d4ed8; stroke-width: 1.5; }
+    .dot-point:hover { fill: #1d4ed8; r: 6; }
+    .pred-point { fill: #dc2626; stroke: #b91c1c; stroke-width: 1.5; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<div class="max-w-4xl mx-auto px-4 py-8">
+
+  <!-- Topptekst -->
+  <header class="mb-8">
+    <div class="flex items-center gap-2 mb-1">
+      <span class="text-xs font-semibold uppercase tracking-widest text-blue-600 bg-blue-50 px-2 py-0.5 rounded">Matematikk 2P · LK20</span>
+      <span class="text-xs text-gray-400">Kapittel 4 – Lineære modeller</span>
+    </div>
+    <h1 class="text-3xl font-bold text-gray-900 mt-1">Lineær regresjon</h1>
+    <p class="text-gray-500 mt-1 text-sm">Legg inn datapunkter, beregn regresjonslinja <em>y = ax + b</em>, og bruk modellen til å gjøre forutsigelser.</p>
+  </header>
+
+  <!-- Forklaring -->
+  <section class="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-8 text-sm text-gray-700 leading-relaxed">
+    <h2 class="font-semibold text-blue-800 mb-2 text-base">Hva er en lineær modell?</h2>
+    <p class="mb-2">
+      En <strong>lineær modell</strong> beskriver sammenhengen mellom to størrelser med en rett linje: <em>y = ax + b</em>.
+      Her er <em>a</em> <strong>stigningstallet</strong> (hvor mye y endrer seg når x øker med 1) og <em>b</em> er
+      <strong>konstantleddet</strong> (verdien av y når x = 0).
+    </p>
+    <p class="mb-2">
+      <strong>Minste kvadraters metode</strong> finner den linja som minimerer summen av kvadrerte avvik mellom
+      de observerte y-verdiene og de modellpredikerte y-verdiene. Formelen er:
+    </p>
+    <div class="bg-white rounded-lg px-4 py-3 my-2 font-mono text-sm border border-blue-100 text-blue-900 inline-block">
+      a = Σ((xᵢ − x̄)(yᵢ − ȳ)) / Σ((xᵢ − x̄)²) &nbsp;&nbsp; b = ȳ − a·x̄
+    </div>
+    <p class="mt-2 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+      <strong>⚠ Merk:</strong> Vær forsiktig med å bruke modellen utenfor dataområdet
+      (<em>ekstrapolering</em>). Sammenhengen trenger ikke å være lineær utenfor de observerte verdiene.
+    </p>
+  </section>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+    <!-- Venstre: Datatabell -->
+    <div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold text-gray-800 text-base">Datapunkter</h2>
+          <div class="flex gap-2">
+            <button
+              onclick="leggTilRad()"
+              class="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+            >+ Legg til rad</button>
+            <button
+              onclick="tilbakestill()"
+              class="text-sm px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition font-medium"
+            >Tilbakestill</button>
+          </div>
+        </div>
+
+        <!-- Kolonnebeskrivelser -->
+        <div class="flex gap-2 mb-2 px-1">
+          <div class="w-8"></div>
+          <div class="flex-1">
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+              x-akse:
+            </label>
+            <input
+              id="xLabel"
+              type="text"
+              value="Temperatur (°C)"
+              oninput="oppdater()"
+              class="w-full text-sm border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              placeholder="x-akse navn"
+            />
+          </div>
+          <div class="flex-1">
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+              y-akse:
+            </label>
+            <input
+              id="yLabel"
+              type="text"
+              value="Iskrem solgt (antall)"
+              oninput="oppdater()"
+              class="w-full text-sm border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              placeholder="y-akse navn"
+            />
+          </div>
+        </div>
+
+        <!-- Tabelloverskrift -->
+        <div class="flex gap-2 mb-1 px-1">
+          <div class="w-8 text-center text-xs font-semibold text-gray-400 uppercase">#</div>
+          <div class="flex-1 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">x</div>
+          <div class="flex-1 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">y</div>
+          <div class="w-8"></div>
+        </div>
+
+        <div id="tabellKropp" class="space-y-1 max-h-80 overflow-y-auto pr-1">
+          <!-- rader legges inn av JS -->
+        </div>
+
+        <p id="feilMelding" class="text-red-500 text-xs mt-2 hidden">Trenger minst 2 datapunkter med ulik x-verdi.</p>
+      </div>
+
+      <!-- Resultater -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mt-5">
+        <h2 class="font-semibold text-gray-800 text-base mb-4">Regresjonsresultater</h2>
+        <div id="resultatBoks" class="space-y-3">
+          <div class="text-gray-400 text-sm italic">Legg inn minst 2 datapunkter for å beregne.</div>
+        </div>
+      </div>
+
+      <!-- Forutsigelse -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mt-5">
+        <h2 class="font-semibold text-gray-800 text-base mb-3">Forutsigelse</h2>
+        <p class="text-sm text-gray-500 mb-3">Skriv inn en x-verdi for å beregne modellens forutsagte y-verdi.</p>
+        <div class="flex gap-2 items-end">
+          <div class="flex-1">
+            <label class="block text-xs font-medium text-gray-600 mb-1">x-verdi:</label>
+            <input
+              id="predX"
+              type="number"
+              step="any"
+              placeholder="f.eks. 25"
+              oninput="oppdaterPredikasjon()"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            />
+          </div>
+          <div class="flex-1">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Forutsagt y:</label>
+            <div id="predY" class="w-full border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-700 min-h-[38px]">—</div>
+          </div>
+        </div>
+        <div id="predAdvarsel" class="mt-2 text-xs text-amber-600 hidden"></div>
+      </div>
+    </div>
+
+    <!-- Høyre: Graf -->
+    <div>
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <h2 class="font-semibold text-gray-800 text-base mb-4">Diagram</h2>
+        <div class="svg-container">
+          <svg id="diagram" width="400" height="360" viewBox="0 0 400 360"
+            class="w-full"
+            style="max-width:100%"
+            aria-label="Spredningsdiagram med regresjonslinje">
+          </svg>
+        </div>
+        <div class="flex flex-wrap gap-4 mt-3 text-xs text-gray-500">
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-blue-600"></span> Datapunkter</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-6 h-0.5 bg-green-600"></span> Regresjonslinje</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded-full bg-red-500"></span> Forutsigelse</span>
+        </div>
+      </div>
+
+      <!-- r-tolkning -->
+      <div id="rTolkningBoks" class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mt-5 hidden">
+        <h2 class="font-semibold text-gray-800 text-base mb-2">Korrelasjonskoeffisient <em>r</em></h2>
+        <div id="rTolkningTekst" class="text-sm text-gray-700"></div>
+        <div class="mt-3">
+          <!-- r-visualisering -->
+          <div class="relative h-5 rounded-full overflow-hidden bg-gradient-to-r from-red-400 via-yellow-200 to-green-400">
+            <div id="rPeker" class="absolute top-0 w-1 h-full bg-gray-900 transition-all" style="left:50%"></div>
+          </div>
+          <div class="flex justify-between text-xs text-gray-400 mt-0.5">
+            <span>−1</span><span>0</span><span>+1</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="mt-10 text-xs text-center text-gray-400">
+    Matematikk 2P · LK20 · Halison App Studio · Kun til ikke-kommersiell pedagogisk bruk
+  </footer>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Datamodell
+// ─────────────────────────────────────────────────────────────────────────────
+
+const startData = [
+  { x: 10, y: 42 },
+  { x: 14, y: 58 },
+  { x: 17, y: 74 },
+  { x: 20, y: 89 },
+  { x: 23, y: 102 },
+  { x: 26, y: 118 },
+  { x: 29, y: 130 },
+  { x: 32, y: 145 },
+];
+
+let punkter = startData.map(p => ({ ...p }));
+let regresjonsA = null;
+let regresjonsB = null;
+let rKoeff = null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tabell
+// ─────────────────────────────────────────────────────────────────────────────
+
+function byggTabell() {
+  const kropp = document.getElementById('tabellKropp');
+  kropp.innerHTML = '';
+  punkter.forEach((p, i) => {
+    const rad = document.createElement('div');
+    rad.className = 'punkt-rad flex gap-2 items-center rounded-lg px-1 py-0.5';
+    rad.innerHTML = `
+      <div class="w-8 text-center text-xs text-gray-400 font-mono select-none">${i + 1}</div>
+      <input
+        type="number" step="any" value="${p.x}"
+        oninput="oppdaterVerdi(${i},'x',this.value)"
+        class="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-300"
+        aria-label="x-verdi rad ${i+1}"
+      />
+      <input
+        type="number" step="any" value="${p.y}"
+        oninput="oppdaterVerdi(${i},'y',this.value)"
+        class="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-300"
+        aria-label="y-verdi rad ${i+1}"
+      />
+      <button
+        onclick="fjernRad(${i})"
+        class="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 rounded-lg hover:bg-red-50 transition text-lg font-bold"
+        aria-label="Fjern rad ${i+1}"
+        title="Fjern denne raden"
+      >×</button>
+    `;
+    kropp.appendChild(rad);
+  });
+}
+
+function oppdaterVerdi(i, felt, verdi) {
+  const tall = parseFloat(verdi);
+  if (!isNaN(tall)) {
+    punkter[i][felt] = tall;
+    oppdater();
+  }
+}
+
+function leggTilRad() {
+  const sisteX = punkter.length > 0 ? punkter[punkter.length - 1].x + 3 : 0;
+  punkter.push({ x: sisteX, y: 0 });
+  byggTabell();
+  oppdater();
+  const kropp = document.getElementById('tabellKropp');
+  kropp.scrollTop = kropp.scrollHeight;
+}
+
+function fjernRad(i) {
+  if (punkter.length <= 1) return;
+  punkter.splice(i, 1);
+  byggTabell();
+  oppdater();
+}
+
+function tilbakestill() {
+  punkter = startData.map(p => ({ ...p }));
+  document.getElementById('xLabel').value = 'Temperatur (°C)';
+  document.getElementById('yLabel').value = 'Iskrem solgt (antall)';
+  document.getElementById('predX').value = '';
+  document.getElementById('predY').textContent = '—';
+  document.getElementById('predAdvarsel').classList.add('hidden');
+  byggTabell();
+  oppdater();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Regresjonsberegning
+// ─────────────────────────────────────────────────────────────────────────────
+
+function beregnRegresjon(pts) {
+  const n = pts.length;
+  if (n < 2) return null;
+
+  const xMean = pts.reduce((s, p) => s + p.x, 0) / n;
+  const yMean = pts.reduce((s, p) => s + p.y, 0) / n;
+
+  let teller = 0, nevner = 0;
+  for (const p of pts) {
+    teller += (p.x - xMean) * (p.y - yMean);
+    nevner += (p.x - xMean) ** 2;
+  }
+
+  if (nevner === 0) return null; // alle x-verdier like
+
+  const a = teller / nevner;
+  const b = yMean - a * xMean;
+
+  // Korrelasjonskoeffisient r
+  let syTeller = 0, sxSq = 0, sySq = 0;
+  for (const p of pts) {
+    syTeller += (p.x - xMean) * (p.y - yMean);
+    sxSq += (p.x - xMean) ** 2;
+    sySq += (p.y - yMean) ** 2;
+  }
+  const r = sySq === 0 ? 0 : syTeller / Math.sqrt(sxSq * sySq);
+
+  return { a, b, r, xMean, yMean, n };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Resultater
+// ─────────────────────────────────────────────────────────────────────────────
+
+function fmt(tall, desimaler = 4) {
+  return Number(tall.toFixed(desimaler)).toString();
+}
+
+function visResultater(res) {
+  const boks = document.getElementById('resultatBoks');
+  const feil = document.getElementById('feilMelding');
+
+  if (!res) {
+    boks.innerHTML = '<div class="text-gray-400 text-sm italic">Trenger minst 2 datapunkter med ulik x-verdi.</div>';
+    feil.classList.remove('hidden');
+    document.getElementById('rTolkningBoks').classList.add('hidden');
+    return;
+  }
+  feil.classList.add('hidden');
+
+  const aTekst = fmt(res.a, 4);
+  const bTekst = fmt(res.b, 4);
+  const rTekst = fmt(res.r, 4);
+  const fortegnB = res.b >= 0 ? '+' : '−';
+  const bAbs = fmt(Math.abs(res.b), 4);
+
+  // Formel-streng
+  const ligning = `y = ${aTekst}x ${fortegnB} ${bAbs}`;
+
+  boks.innerHTML = `
+    <div class="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-center">
+      <p class="text-xs text-blue-600 font-semibold uppercase tracking-widest mb-1">Regresjonslinja</p>
+      <p class="text-xl font-bold text-blue-900 font-mono">${ligning}</p>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mt-1">
+      <div class="bg-gray-50 rounded-lg px-3 py-2 text-center border border-gray-100">
+        <p class="text-xs text-gray-500 mb-0.5">Stigningstall <em>a</em></p>
+        <p class="text-lg font-bold text-gray-800 font-mono">${aTekst}</p>
+        <p class="text-xs text-gray-400">Økning i y per 1 i x</p>
+      </div>
+      <div class="bg-gray-50 rounded-lg px-3 py-2 text-center border border-gray-100">
+        <p class="text-xs text-gray-500 mb-0.5">Konstantledd <em>b</em></p>
+        <p class="text-lg font-bold text-gray-800 font-mono">${fmt(res.b, 4)}</p>
+        <p class="text-xs text-gray-400">Verdi når x = 0</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mt-1">
+      <div class="bg-gray-50 rounded-lg px-3 py-2 text-center border border-gray-100">
+        <p class="text-xs text-gray-500 mb-0.5">Korrelasjon <em>r</em></p>
+        <p class="text-lg font-bold text-gray-800 font-mono">${rTekst}</p>
+      </div>
+      <div class="bg-gray-50 rounded-lg px-3 py-2 text-center border border-gray-100">
+        <p class="text-xs text-gray-500 mb-0.5">Ant. punkter</p>
+        <p class="text-lg font-bold text-gray-800 font-mono">${res.n}</p>
+      </div>
+    </div>
+  `;
+
+  // r-tolkning
+  visRTolkning(res.r);
+}
+
+function rTolkningTekst(r) {
+  const abs = Math.abs(r);
+  const retning = r > 0 ? 'positiv' : 'negativ';
+  let styrke;
+  if (abs >= 0.9) styrke = 'svært sterk';
+  else if (abs >= 0.7) styrke = 'sterk';
+  else if (abs >= 0.5) styrke = 'moderat';
+  else if (abs >= 0.3) styrke = 'svak';
+  else styrke = 'veldig svak eller ingen';
+
+  return `<p>Korrelasjonskoeffisienten <strong>r = ${fmt(r, 4)}</strong> indikerer en <strong>${styrke} ${retning} lineær sammenheng</strong> mellom x og y. `
+    + (abs >= 0.7
+      ? 'En lineær modell passer dataene godt.'
+      : abs >= 0.5
+        ? 'En lineær modell kan brukes, men passer ikke perfekt.'
+        : 'En lineær modell er trolig ikke den beste beskrivelsen av dataene.')
+    + '</p>';
+}
+
+function visRTolkning(r) {
+  const boks = document.getElementById('rTolkningBoks');
+  const tekst = document.getElementById('rTolkningTekst');
+  const peker = document.getElementById('rPeker');
+
+  boks.classList.remove('hidden');
+  tekst.innerHTML = rTolkningTekst(r);
+
+  // Plasser peker: r går fra -1 til 1, mappes til 0%-100%
+  const pct = ((r + 1) / 2) * 100;
+  peker.style.left = `${Math.max(0, Math.min(100, pct))}%`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Forutsigelse
+// ─────────────────────────────────────────────────────────────────────────────
+
+function oppdaterPredikasjon() {
+  const xInput = document.getElementById('predX').value;
+  const yDiv = document.getElementById('predY');
+  const advarsel = document.getElementById('predAdvarsel');
+
+  if (xInput === '' || regresjonsA === null) {
+    yDiv.textContent = '—';
+    advarsel.classList.add('hidden');
+    tegnDiagram();
+    return;
+  }
+
+  const xVal = parseFloat(xInput);
+  if (isNaN(xVal)) {
+    yDiv.textContent = '—';
+    advarsel.classList.add('hidden');
+    tegnDiagram();
+    return;
+  }
+
+  const yVal = regresjonsA * xVal + regresjonsB;
+  yDiv.textContent = fmt(yVal, 2);
+
+  // Sjekk ekstrapolering
+  const xs = punkter.map(p => p.x);
+  const xMin = Math.min(...xs);
+  const xMax = Math.max(...xs);
+  if (xVal < xMin || xVal > xMax) {
+    advarsel.textContent = `⚠ x = ${xVal} er utenfor dataområdet [${xMin}, ${xMax}]. Dette er ekstrapolering – resultatet kan være upålitelig.`;
+    advarsel.classList.remove('hidden');
+  } else {
+    advarsel.classList.add('hidden');
+  }
+
+  tegnDiagram();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SVG-diagram
+// ─────────────────────────────────────────────────────────────────────────────
+
+const PAD = { top: 24, right: 24, bottom: 56, left: 58 };
+const SVG_W = 400;
+const SVG_H = 360;
+const PLOT_W = SVG_W - PAD.left - PAD.right;
+const PLOT_H = SVG_H - PAD.top - PAD.bottom;
+
+function niceRange(min, max, ticks = 5) {
+  if (min === max) { min -= 1; max += 1; }
+  const range = max - min;
+  const rawStep = range / ticks;
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const niceStep = Math.ceil(rawStep / mag) * mag;
+  const niceMin = Math.floor(min / niceStep) * niceStep;
+  const niceMax = Math.ceil(max / niceStep) * niceStep;
+  return { min: niceMin, max: niceMax, step: niceStep };
+}
+
+function tegnDiagram() {
+  const svg = document.getElementById('diagram');
+  svg.innerHTML = '';
+
+  const xLabelTekst = document.getElementById('xLabel').value || 'x';
+  const yLabelTekst = document.getElementById('yLabel').value || 'y';
+
+  if (punkter.length === 0) return;
+
+  // Finn datagrenser (inkluder predikasjonspunkt)
+  const xs = punkter.map(p => p.x);
+  const ys = punkter.map(p => p.y);
+
+  const predXVal = parseFloat(document.getElementById('predX').value);
+  const visPred = !isNaN(predXVal) && regresjonsA !== null;
+  const predYVal = visPred ? regresjonsA * predXVal + regresjonsB : null;
+
+  if (visPred) { xs.push(predXVal); ys.push(predYVal); }
+
+  // Utvid grenser litt for å romme regresjonslinjen pent
+  const xRaw = niceRange(Math.min(...xs), Math.max(...xs), 5);
+  let yAllVals = [...ys];
+  if (regresjonsA !== null) {
+    yAllVals.push(regresjonsA * xRaw.min + regresjonsB);
+    yAllVals.push(regresjonsA * xRaw.max + regresjonsB);
+  }
+  const yRaw = niceRange(Math.min(...yAllVals), Math.max(...yAllVals), 5);
+
+  const xRange = xRaw;
+  const yRange = yRaw;
+
+  function toSVG(x, y) {
+    const sx = PAD.left + (x - xRange.min) / (xRange.max - xRange.min) * PLOT_W;
+    const sy = PAD.top + (1 - (y - yRange.min) / (yRange.max - yRange.min)) * PLOT_H;
+    return { sx, sy };
+  }
+
+  const ns = 'http://www.w3.org/2000/svg';
+
+  function el(tag, attrs, text) {
+    const e = document.createElementNS(ns, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+
+  // Bakgrunn
+  svg.appendChild(el('rect', { x: PAD.left, y: PAD.top, width: PLOT_W, height: PLOT_H, fill: '#f9fafb', rx: 4 }));
+
+  // Rutenett og akse-ticks (x)
+  for (let x = xRange.min; x <= xRange.max + 1e-9; x += xRange.step) {
+    const { sx } = toSVG(x, yRange.min);
+    svg.appendChild(el('line', { x1: sx, y1: PAD.top, x2: sx, y2: PAD.top + PLOT_H, stroke: '#e5e7eb', 'stroke-width': 1 }));
+    svg.appendChild(el('line', { x1: sx, y1: PAD.top + PLOT_H, x2: sx, y2: PAD.top + PLOT_H + 5, stroke: '#9ca3af', 'stroke-width': 1 }));
+    svg.appendChild(el('text', { x: sx, y: PAD.top + PLOT_H + 18, 'text-anchor': 'middle', 'font-size': 10, fill: '#6b7280' }, fmt(x, x % 1 === 0 ? 0 : 1)));
+  }
+
+  // Rutenett og akse-ticks (y)
+  for (let y = yRange.min; y <= yRange.max + 1e-9; y += yRange.step) {
+    const { sy } = toSVG(xRange.min, y);
+    svg.appendChild(el('line', { x1: PAD.left, y1: sy, x2: PAD.left + PLOT_W, y2: sy, stroke: '#e5e7eb', 'stroke-width': 1 }));
+    svg.appendChild(el('line', { x1: PAD.left - 5, y1: sy, x2: PAD.left, y2: sy, stroke: '#9ca3af', 'stroke-width': 1 }));
+    svg.appendChild(el('text', { x: PAD.left - 8, y: sy + 4, 'text-anchor': 'end', 'font-size': 10, fill: '#6b7280' }, fmt(y, y % 1 === 0 ? 0 : 1)));
+  }
+
+  // Akselinjer
+  svg.appendChild(el('line', { x1: PAD.left, y1: PAD.top, x2: PAD.left, y2: PAD.top + PLOT_H, stroke: '#6b7280', 'stroke-width': 1.5 }));
+  svg.appendChild(el('line', { x1: PAD.left, y1: PAD.top + PLOT_H, x2: PAD.left + PLOT_W, y2: PAD.top + PLOT_H, stroke: '#6b7280', 'stroke-width': 1.5 }));
+
+  // Akseetiketter
+  svg.appendChild(el('text', {
+    x: PAD.left + PLOT_W / 2,
+    y: SVG_H - 4,
+    'text-anchor': 'middle',
+    'font-size': 11,
+    fill: '#374151',
+    'font-weight': 'bold'
+  }, xLabelTekst));
+
+  const yLabelEl = el('text', {
+    x: 0,
+    y: 0,
+    'text-anchor': 'middle',
+    'font-size': 11,
+    fill: '#374151',
+    'font-weight': 'bold',
+    transform: `translate(13, ${PAD.top + PLOT_H / 2}) rotate(-90)`
+  }, yLabelTekst);
+  svg.appendChild(yLabelEl);
+
+  // Regresjonslinje
+  if (regresjonsA !== null) {
+    const p1 = toSVG(xRange.min, regresjonsA * xRange.min + regresjonsB);
+    const p2 = toSVG(xRange.max, regresjonsA * xRange.max + regresjonsB);
+    svg.appendChild(el('line', {
+      x1: p1.sx, y1: p1.sy, x2: p2.sx, y2: p2.sy,
+      stroke: '#16a34a', 'stroke-width': 2, 'stroke-dasharray': '0'
+    }));
+  }
+
+  // Datapunkter
+  for (const p of punkter) {
+    const { sx, sy } = toSVG(p.x, p.y);
+    const circle = el('circle', { cx: sx, cy: sy, r: 5, fill: '#2563eb', stroke: '#1d4ed8', 'stroke-width': 1.5 });
+    const title = el('title', {});
+    title.textContent = `(${p.x}, ${p.y})`;
+    circle.appendChild(title);
+    svg.appendChild(circle);
+  }
+
+  // Prediksjonspunkt
+  if (visPred) {
+    const { sx, sy } = toSVG(predXVal, predYVal);
+    // Stiplet vertikallinje fra x-akse til punkt
+    const { sy: bottomY } = toSVG(predXVal, yRange.min);
+    svg.appendChild(el('line', { x1: sx, y1: bottomY, x2: sx, y2: sy, stroke: '#dc2626', 'stroke-width': 1, 'stroke-dasharray': '4 3' }));
+    // Stiplet horisontallinje fra y-akse til punkt
+    const { sx: leftX } = toSVG(xRange.min, predYVal);
+    svg.appendChild(el('line', { x1: leftX, y1: sy, x2: sx, y2: sy, stroke: '#dc2626', 'stroke-width': 1, 'stroke-dasharray': '4 3' }));
+    const predCircle = el('circle', { cx: sx, cy: sy, r: 6, fill: '#dc2626', stroke: '#b91c1c', 'stroke-width': 1.5 });
+    const predTitle = el('title', {});
+    predTitle.textContent = `Forutsigelse: x=${fmt(predXVal,2)}, y≈${fmt(predYVal,2)}`;
+    predCircle.appendChild(predTitle);
+    svg.appendChild(predCircle);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hoved-oppdatering
+// ─────────────────────────────────────────────────────────────────────────────
+
+function oppdater() {
+  const res = beregnRegresjon(punkter);
+  if (res) {
+    regresjonsA = res.a;
+    regresjonsB = res.b;
+    rKoeff = res.r;
+  } else {
+    regresjonsA = null;
+    regresjonsB = null;
+    rKoeff = null;
+  }
+
+  visResultater(res);
+  oppdaterPredikasjon(); // kaller tegnDiagram internt
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────────────────────────────────────
+
+byggTabell();
+oppdater();
+</script>
+</body>
+</html>

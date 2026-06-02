@@ -68,7 +68,9 @@ Interactive maths learning tools in Norwegian, organized by level. See
 | | | |
 |---|---|---|
 | [![prosent](projects/math/NO-2P/prosent-og-prosentpoeng/screenshot.png)](projects/math/NO-2P/prosent-og-prosentpoeng/) **Prosent og prosentpoeng** | [![vekstfaktor](projects/math/NO-2P/vekstfaktor/screenshot.png)](projects/math/NO-2P/vekstfaktor/) **Vekstfaktor** | [![lineære](projects/math/NO-2P/lineaere-funksjoner/screenshot.png)](projects/math/NO-2P/lineaere-funksjoner/) **Lineære funksjoner** |
-| [![statistikk](projects/math/NO-2P/statistikk/screenshot.png)](projects/math/NO-2P/statistikk/) **Statistikk** | [![geometri2p](projects/math/NO-2P/geometri/screenshot.png)](projects/math/NO-2P/geometri/) **Geometri (2P)** | |
+| [![statistikk](projects/math/NO-2P/statistikk/screenshot.png)](projects/math/NO-2P/statistikk/) **Statistikk** | [![potenser](projects/math/NO-2P/potenser-og-standardform/screenshot.png)](projects/math/NO-2P/potenser-og-standardform/) **Potenser og standardform** | [![tabeller](projects/math/NO-2P/tabeller-og-diagrammer/screenshot.png)](projects/math/NO-2P/tabeller-og-diagrammer/) **Tabeller og diagrammer** |
+| [![kvartiler](projects/math/NO-2P/kvartiler-og-boksdiagram/screenshot.png)](projects/math/NO-2P/kvartiler-og-boksdiagram/) **Kvartiler og boksdiagram** | [![regresjon](projects/math/NO-2P/lineaer-regresjon/screenshot.png)](projects/math/NO-2P/lineaer-regresjon/) **Lineær regresjon** | [![funksjoner](projects/math/NO-2P/funksjoner-og-vekst/screenshot.png)](projects/math/NO-2P/funksjoner-og-vekst/) **Funksjoner og vekst** |
+| [![geometri2p](projects/math/NO-2P/geometri/screenshot.png)](projects/math/NO-2P/geometri/) **Geometri (2P)** | | |
 
 ### Matematikk 1P
 

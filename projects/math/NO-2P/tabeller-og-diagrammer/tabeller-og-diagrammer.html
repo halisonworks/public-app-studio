@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<!--
+  Tabeller og diagrammer — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 2P (LK20): frekvenstabell med relativ og
+  kumulativ frekvens, og søyle-, kurve- og sektordiagram av samme data.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tabeller og diagrammer – Matematikk 2P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .tab-btn.active { background-color: #2563eb; color: #fff; }
+    .tab-btn { transition: background 0.15s, color 0.15s; }
+    input[type="text"], input[type="number"] {
+      border: 1px solid #d1d5db;
+      border-radius: 0.375rem;
+      padding: 0.25rem 0.5rem;
+      width: 100%;
+      font-size: 0.95rem;
+    }
+    input[type="text"]:focus, input[type="number"]:focus {
+      outline: 2px solid #2563eb;
+      outline-offset: 1px;
+    }
+    svg text { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .diagram-hint { background: #eff6ff; border-left: 4px solid #2563eb; }
+    table thead tr { background: #1e40af; color: #fff; }
+    table tbody tr:nth-child(even) { background: #f0f4ff; }
+    table tfoot tr { background: #dbeafe; font-weight: 700; }
+    .remove-btn:hover { background: #fee2e2; }
+    @media (max-width: 640px) {
+      .svg-wrap svg { width: 100%; height: auto; }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- Header -->
+<header class="bg-blue-800 text-white py-4 px-4 shadow">
+  <div class="max-w-4xl mx-auto">
+    <div class="flex items-center gap-3">
+      <span class="text-3xl">📊</span>
+      <div>
+        <h1 class="text-xl font-bold leading-tight">Tabeller og diagrammer</h1>
+        <p class="text-blue-200 text-sm">Matematikk 2P · Kapittel 2 · LK20</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-4xl mx-auto px-3 py-6 space-y-6">
+
+  <!-- Datainntasting -->
+  <section class="bg-white rounded-xl shadow p-4 space-y-4">
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <h2 class="text-lg font-bold text-blue-900">Legg inn data</h2>
+      <div class="flex gap-2 flex-wrap">
+        <button id="btn-load-sample" class="text-sm bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1.5 rounded-lg font-medium">Last eksempeldata</button>
+        <button id="btn-clear-all" class="text-sm bg-red-100 hover:bg-red-200 text-red-800 px-3 py-1.5 rounded-lg font-medium">Tøm alle rader</button>
+      </div>
+    </div>
+
+    <p class="text-sm text-gray-600">Skriv inn kategorier/verdier og antall observasjoner (frekvens). Minst to rader kreves.</p>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm" id="input-table">
+        <thead>
+          <tr>
+            <th class="text-left py-2 px-3 rounded-tl-lg w-1/2">Verdi / Kategori</th>
+            <th class="text-left py-2 px-3 w-1/3">Frekvens (antall)</th>
+            <th class="py-2 px-3 rounded-tr-lg w-16"></th>
+          </tr>
+        </thead>
+        <tbody id="input-tbody">
+          <!-- rows injected by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <button id="btn-add-row" class="flex items-center gap-2 text-sm bg-green-100 hover:bg-green-200 text-green-800 px-3 py-1.5 rounded-lg font-medium">
+      <span class="text-lg leading-none">+</span> Legg til rad
+    </button>
+  </section>
+
+  <!-- Frekvenstabell -->
+  <section class="bg-white rounded-xl shadow p-4 space-y-3" id="freq-section">
+    <h2 class="text-lg font-bold text-blue-900">Frekvenstabell</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm border-collapse rounded-lg overflow-hidden" id="freq-table">
+        <thead>
+          <tr>
+            <th class="text-left py-2 px-3">Verdi / Kategori</th>
+            <th class="text-right py-2 px-3">Frekvens</th>
+            <th class="text-right py-2 px-3">Relativ frekvens (%)</th>
+            <th class="text-right py-2 px-3">Kumulativ frekvens</th>
+          </tr>
+        </thead>
+        <tbody id="freq-tbody">
+        </tbody>
+        <tfoot id="freq-tfoot">
+        </tfoot>
+      </table>
+    </div>
+    <div id="freq-error" class="text-red-600 text-sm hidden"></div>
+  </section>
+
+  <!-- Diagrammer -->
+  <section class="bg-white rounded-xl shadow p-4 space-y-4" id="diagram-section">
+    <h2 class="text-lg font-bold text-blue-900">Diagrammer</h2>
+
+    <!-- Diagram tabs -->
+    <div class="flex gap-2 flex-wrap">
+      <button class="tab-btn active px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700" data-tab="soyle">Søylediagram</button>
+      <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700" data-tab="kurve">Kurvediagram</button>
+      <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700" data-tab="sektor">Sektordiagram</button>
+    </div>
+
+    <!-- Hint boxes -->
+    <div id="hint-soyle" class="diagram-hint rounded-lg px-4 py-3 text-sm text-blue-900">
+      <strong>Søylediagram</strong> passer best når du vil sammenligne kategorier eller diskrete verdier. Hver søyle representerer én kategori, og høyden viser frekvensen. Brukes gjerne for data som ikke er kontinuerlige (f.eks. karakterer, favorittsport, bilmerker).
+    </div>
+    <div id="hint-kurve" class="diagram-hint rounded-lg px-4 py-3 text-sm text-blue-900 hidden">
+      <strong>Kurvediagram</strong> (linjediagram) er egnet når du vil vise utvikling over tid eller en sammenheng mellom verdier som henger naturlig sammen. Punktene kobles med linjer, noe som gir inntrykk av en kontinuerlig utvikling (f.eks. temperatur over dager, salg per måned).
+    </div>
+    <div id="hint-sektor" class="diagram-hint rounded-lg px-4 py-3 text-sm text-blue-900 hidden">
+      <strong>Sektordiagram</strong> (kakediagram) viser hvordan en helhet er fordelt på ulike deler. Hvert stykke av "kaken" svarer til den relative frekvensen til kategorien i prosent. Brukes når du har få kategorier og vil fremheve andeler av totalen (f.eks. fordeling av matpreferanser i en klasse).
+    </div>
+
+    <!-- SVG diagrams -->
+    <div class="svg-wrap" id="svg-container">
+      <!-- SVG injected by JS -->
+    </div>
+  </section>
+
+  <!-- Forklaring av begreper -->
+  <section class="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+    <h2 class="text-lg font-bold text-blue-900">Faglige begreper</h2>
+    <dl class="space-y-2 text-sm text-gray-800">
+      <div>
+        <dt class="font-semibold text-blue-800">Frekvens</dt>
+        <dd>Antall ganger en verdi eller kategori forekommer i datamaterialet.</dd>
+      </div>
+      <div>
+        <dt class="font-semibold text-blue-800">Relativ frekvens</dt>
+        <dd>Frekvensen delt på totalt antall observasjoner, uttrykt i prosent. Viser andelen av totalen. Formel: <em>f<sub>rel</sub> = (f / n) × 100 %</em></dd>
+      </div>
+      <div>
+        <dt class="font-semibold text-blue-800">Kumulativ frekvens</dt>
+        <dd>Den løpende summen av frekvenser. Forteller hvor mange observasjoner som er lik eller mindre enn en gitt verdi. Gir mening for ordnede data (f.eks. tallverdier).</dd>
+      </div>
+    </dl>
+  </section>
+
+</main>
+
+<footer class="text-center text-xs text-gray-400 py-4 mt-2">
+  Matematikk 2P · Tabeller og diagrammer · Halison App Studio
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── Palette for diagrams ───────────────────────────────────────────────────
+  const PALETTE = [
+    '#2563eb','#16a34a','#dc2626','#d97706','#7c3aed',
+    '#0891b2','#db2777','#65a30d','#ea580c','#4f46e5',
+    '#0d9488','#b45309','#9333ea','#0284c7','#15803d'
+  ];
+
+  // ── Sample data ────────────────────────────────────────────────────────────
+  const SAMPLE_DATA = [
+    { label: 'Fotball',      freq: 8  },
+    { label: 'Svømming',     freq: 5  },
+    { label: 'Håndball',     freq: 6  },
+    { label: 'Sykling',      freq: 4  },
+    { label: 'Løping',       freq: 7  },
+    { label: 'Ingen trening',freq: 3  }
+  ];
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  let rows = [];           // [{label, freq}]
+  let activeTab = 'soyle';
+
+  // ── LocalStorage ──────────────────────────────────────────────────────────
+  function saveState() {
+    try { localStorage.setItem('tabdiag_rows', JSON.stringify(rows)); } catch(e){}
+  }
+  function loadState() {
+    try {
+      const s = localStorage.getItem('tabdiag_rows');
+      if (s) { const p = JSON.parse(s); if (Array.isArray(p) && p.length >= 1) return p; }
+    } catch(e){}
+    return null;
+  }
+
+  // ── Row management ─────────────────────────────────────────────────────────
+  function addRow(label = '', freq = '') {
+    rows.push({ label: String(label), freq: freq === '' ? '' : Number(freq) });
+  }
+
+  function removeRow(i) {
+    rows.splice(i, 1);
+    renderInputTable();
+    renderFreqTable();
+    renderDiagram();
+    saveState();
+  }
+
+  // ── Read current input values ──────────────────────────────────────────────
+  function syncRowsFromInputs() {
+    const tbody = document.getElementById('input-tbody');
+    const trs = tbody.querySelectorAll('tr');
+    rows = Array.from(trs).map(tr => {
+      const inputs = tr.querySelectorAll('input');
+      return {
+        label: inputs[0].value.trim(),
+        freq:  inputs[1].value === '' ? '' : parseFloat(inputs[1].value)
+      };
+    });
+  }
+
+  // ── Render input table ─────────────────────────────────────────────────────
+  function renderInputTable() {
+    const tbody = document.getElementById('input-tbody');
+    tbody.innerHTML = '';
+    rows.forEach(function(row, i) {
+      const tr = document.createElement('tr');
+      tr.className = 'border-b border-gray-100';
+      tr.innerHTML = `
+        <td class="py-1.5 px-3">
+          <input type="text" value="${escHtml(row.label)}" placeholder="Kategori / verdi" data-i="${i}" data-field="label" />
+        </td>
+        <td class="py-1.5 px-3">
+          <input type="number" value="${row.freq === '' ? '' : row.freq}" min="0" step="1" placeholder="0" data-i="${i}" data-field="freq" />
+        </td>
+        <td class="py-1.5 px-3 text-center">
+          <button class="remove-btn text-red-400 hover:text-red-600 rounded px-2 py-1 text-lg leading-none transition" data-remove="${i}" title="Fjern rad">✕</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Bind input change
+    tbody.querySelectorAll('input').forEach(function(inp) {
+      inp.addEventListener('input', function() {
+        const idx  = parseInt(this.dataset.i);
+        const fld  = this.dataset.field;
+        if (fld === 'label') rows[idx].label = this.value.trim();
+        else rows[idx].freq = this.value === '' ? '' : parseFloat(this.value);
+        renderFreqTable();
+        renderDiagram();
+        saveState();
+      });
+    });
+
+    // Bind remove buttons
+    tbody.querySelectorAll('[data-remove]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        removeRow(parseInt(this.dataset.remove));
+      });
+    });
+  }
+
+  // ── Build valid dataset (label + non-negative integer freq) ───────────────
+  function getValidData() {
+    return rows
+      .filter(r => r.label !== '' && r.freq !== '' && !isNaN(r.freq) && r.freq >= 0)
+      .map(r => ({ label: r.label, freq: Math.round(r.freq) }));
+  }
+
+  // ── Render frequency table ─────────────────────────────────────────────────
+  function renderFreqTable() {
+    const data   = getValidData();
+    const tbody  = document.getElementById('freq-tbody');
+    const tfoot  = document.getElementById('freq-tfoot');
+    const errDiv = document.getElementById('freq-error');
+
+    tbody.innerHTML = '';
+    tfoot.innerHTML = '';
+    errDiv.classList.add('hidden');
+    errDiv.textContent = '';
+
+    if (data.length < 2) {
+      errDiv.textContent = 'Fyll inn minst to rader med gyldig kategori og frekvens for å se frekvenstabellen.';
+      errDiv.classList.remove('hidden');
+      return;
+    }
+
+    const total = data.reduce((s, r) => s + r.freq, 0);
+    if (total === 0) {
+      errDiv.textContent = 'Total frekvens er 0 – skriv inn minst ett positivt tall.';
+      errDiv.classList.remove('hidden');
+      return;
+    }
+
+    let cumul = 0;
+    data.forEach(function(row) {
+      cumul += row.freq;
+      const relFreq = total > 0 ? (row.freq / total * 100) : 0;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="py-2 px-3">${escHtml(row.label)}</td>
+        <td class="py-2 px-3 text-right">${row.freq}</td>
+        <td class="py-2 px-3 text-right">${relFreq.toFixed(1)} %</td>
+        <td class="py-2 px-3 text-right">${cumul}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Totals row
+    const tftr = document.createElement('tr');
+    tftr.innerHTML = `
+      <td class="py-2 px-3">Totalt</td>
+      <td class="py-2 px-3 text-right">${total}</td>
+      <td class="py-2 px-3 text-right">100,0 %</td>
+      <td class="py-2 px-3 text-right">—</td>
+    `;
+    tfoot.appendChild(tftr);
+  }
+
+  // ── Render diagrams ────────────────────────────────────────────────────────
+  function renderDiagram() {
+    const container = document.getElementById('svg-container');
+    const data = getValidData();
+    if (data.length < 2) {
+      container.innerHTML = '<p class="text-gray-400 text-sm italic py-4">Fyll inn minst to gyldige rader for å se diagrammet.</p>';
+      return;
+    }
+    if (activeTab === 'soyle')  container.innerHTML = buildBarSVG(data);
+    if (activeTab === 'kurve')  container.innerHTML = buildLineSVG(data);
+    if (activeTab === 'sektor') container.innerHTML = buildPieSVG(data);
+  }
+
+  // ── SVG helpers ────────────────────────────────────────────────────────────
+  const SVG_W = 700;
+  const SVG_H = 380;
+  const PAD_LEFT = 60;
+  const PAD_RIGHT = 20;
+  const PAD_TOP = 30;
+  const PAD_BOTTOM = 80;
+  const CHART_W = SVG_W - PAD_LEFT - PAD_RIGHT;
+  const CHART_H = SVG_H - PAD_TOP - PAD_BOTTOM;
+
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  }
+
+  function niceMax(val) {
+    if (val <= 0) return 10;
+    const mag = Math.pow(10, Math.floor(Math.log10(val)));
+    const norm = val / mag;
+    let nice;
+    if (norm <= 1) nice = 1;
+    else if (norm <= 2) nice = 2;
+    else if (norm <= 5) nice = 5;
+    else nice = 10;
+    return nice * mag;
+  }
+
+  function yTicks(maxVal) {
+    const nm = niceMax(maxVal);
+    const step = nm / 5;
+    const ticks = [];
+    for (let i = 0; i <= 5; i++) ticks.push(Math.round(step * i));
+    return ticks;
+  }
+
+  function buildBarSVG(data) {
+    const maxFreq = Math.max(...data.map(d => d.freq));
+    const ticks = yTicks(maxFreq);
+    const yMax  = ticks[ticks.length - 1];
+    const n = data.length;
+    const barW = Math.max(10, (CHART_W / n) * 0.6);
+    const gap  = CHART_W / n;
+
+    let svg = `<svg viewBox="0 0 ${SVG_W} ${SVG_H}" xmlns="http://www.w3.org/2000/svg" class="w-full max-h-96">`;
+
+    // Y grid + ticks
+    ticks.forEach(function(t) {
+      const y = PAD_TOP + CHART_H - (t / yMax) * CHART_H;
+      svg += `<line x1="${PAD_LEFT}" y1="${y}" x2="${PAD_LEFT + CHART_W}" y2="${y}" stroke="#e5e7eb" stroke-width="1"/>`;
+      svg += `<text x="${PAD_LEFT - 8}" y="${y + 4}" text-anchor="end" font-size="12" fill="#6b7280">${t}</text>`;
+    });
+
+    // Axes
+    svg += `<line x1="${PAD_LEFT}" y1="${PAD_TOP}" x2="${PAD_LEFT}" y2="${PAD_TOP + CHART_H}" stroke="#374151" stroke-width="1.5"/>`;
+    svg += `<line x1="${PAD_LEFT}" y1="${PAD_TOP + CHART_H}" x2="${PAD_LEFT + CHART_W}" y2="${PAD_TOP + CHART_H}" stroke="#374151" stroke-width="1.5"/>`;
+
+    // Y-axis label
+    svg += `<text transform="rotate(-90)" x="${-(PAD_TOP + CHART_H/2)}" y="15" text-anchor="middle" font-size="12" fill="#374151">Frekvens</text>`;
+
+    // Bars
+    data.forEach(function(d, i) {
+      const x    = PAD_LEFT + gap * i + gap / 2 - barW / 2;
+      const barH = (d.freq / yMax) * CHART_H;
+      const y    = PAD_TOP + CHART_H - barH;
+      const col  = PALETTE[i % PALETTE.length];
+
+      svg += `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" fill="${col}" rx="3"/>`;
+      // Value on top of bar
+      if (barH > 16) {
+        svg += `<text x="${x + barW/2}" y="${y - 4}" text-anchor="middle" font-size="12" font-weight="600" fill="${col}">${d.freq}</text>`;
+      }
+      // X label
+      const lbl = truncate(d.label, 12);
+      const cx  = PAD_LEFT + gap * i + gap / 2;
+      svg += `<text x="${cx}" y="${PAD_TOP + CHART_H + 16}" text-anchor="end" font-size="11" fill="#374151" transform="rotate(-35, ${cx}, ${PAD_TOP + CHART_H + 16})">${escHtml(lbl)}</text>`;
+    });
+
+    svg += '</svg>';
+    return svg;
+  }
+
+  function buildLineSVG(data) {
+    const maxFreq = Math.max(...data.map(d => d.freq));
+    const ticks = yTicks(maxFreq);
+    const yMax  = ticks[ticks.length - 1];
+    const n = data.length;
+    const gap = CHART_W / (n - 1 || 1);
+
+    let svg = `<svg viewBox="0 0 ${SVG_W} ${SVG_H}" xmlns="http://www.w3.org/2000/svg" class="w-full max-h-96">`;
+
+    // Y grid + ticks
+    ticks.forEach(function(t) {
+      const y = PAD_TOP + CHART_H - (t / yMax) * CHART_H;
+      svg += `<line x1="${PAD_LEFT}" y1="${y}" x2="${PAD_LEFT + CHART_W}" y2="${y}" stroke="#e5e7eb" stroke-width="1"/>`;
+      svg += `<text x="${PAD_LEFT - 8}" y="${y + 4}" text-anchor="end" font-size="12" fill="#6b7280">${t}</text>`;
+    });
+
+    // Axes
+    svg += `<line x1="${PAD_LEFT}" y1="${PAD_TOP}" x2="${PAD_LEFT}" y2="${PAD_TOP + CHART_H}" stroke="#374151" stroke-width="1.5"/>`;
+    svg += `<line x1="${PAD_LEFT}" y1="${PAD_TOP + CHART_H}" x2="${PAD_LEFT + CHART_W}" y2="${PAD_TOP + CHART_H}" stroke="#374151" stroke-width="1.5"/>`;
+    svg += `<text transform="rotate(-90)" x="${-(PAD_TOP + CHART_H/2)}" y="15" text-anchor="middle" font-size="12" fill="#374151">Frekvens</text>`;
+
+    // Points and polyline
+    const pts = data.map(function(d, i) {
+      const x = PAD_LEFT + (n > 1 ? gap * i : CHART_W / 2);
+      const y = PAD_TOP + CHART_H - (d.freq / yMax) * CHART_H;
+      return { x, y, d };
+    });
+
+    if (pts.length >= 2) {
+      // Area fill
+      const areaPath = ['M', pts[0].x, PAD_TOP + CHART_H,
+        ...pts.map(p => `L ${p.x} ${p.y}`),
+        'L', pts[pts.length-1].x, PAD_TOP + CHART_H, 'Z'].join(' ');
+      svg += `<path d="${areaPath}" fill="#2563eb" fill-opacity="0.08"/>`;
+
+      const linePath = pts.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(' ');
+      svg += `<path d="${linePath}" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>`;
+    }
+
+    pts.forEach(function(p, i) {
+      svg += `<circle cx="${p.x}" cy="${p.y}" r="5" fill="#2563eb" stroke="#fff" stroke-width="2"/>`;
+      svg += `<text x="${p.x}" y="${p.y - 10}" text-anchor="middle" font-size="12" font-weight="600" fill="#2563eb">${p.d.freq}</text>`;
+      const lbl = truncate(p.d.label, 12);
+      svg += `<text x="${p.x}" y="${PAD_TOP + CHART_H + 16}" text-anchor="end" font-size="11" fill="#374151" transform="rotate(-35, ${p.x}, ${PAD_TOP + CHART_H + 16})">${escHtml(lbl)}</text>`;
+    });
+
+    svg += '</svg>';
+    return svg;
+  }
+
+  function buildPieSVG(data) {
+    const total = data.reduce((s, d) => s + d.freq, 0);
+    if (total === 0) return '<p class="text-gray-400 text-sm italic py-4">Ingen data.</p>';
+
+    const CX = 200, CY = 190, R = 155;
+    const svgW = 700, svgH = 380;
+
+    let svg = `<svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" class="w-full max-h-96">`;
+
+    let startAngle = -Math.PI / 2;
+    data.forEach(function(d, i) {
+      const pct   = d.freq / total;
+      const sweep = pct * 2 * Math.PI;
+      const endAngle = startAngle + sweep;
+      const col  = PALETTE[i % PALETTE.length];
+
+      const x1 = CX + R * Math.cos(startAngle);
+      const y1 = CY + R * Math.sin(startAngle);
+      const x2 = CX + R * Math.cos(endAngle);
+      const y2 = CY + R * Math.sin(endAngle);
+      const largeArc = sweep > Math.PI ? 1 : 0;
+
+      svg += `<path d="M ${CX} ${CY} L ${x1} ${y1} A ${R} ${R} 0 ${largeArc} 1 ${x2} ${y2} Z" fill="${col}" stroke="#fff" stroke-width="2"/>`;
+
+      // Label inside slice if big enough
+      if (pct > 0.06) {
+        const midAngle = startAngle + sweep / 2;
+        const lr = R * 0.65;
+        const lx = CX + lr * Math.cos(midAngle);
+        const ly = CY + lr * Math.sin(midAngle);
+        svg += `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" font-size="12" font-weight="700" fill="#fff">${(pct*100).toFixed(1)}%</text>`;
+      }
+
+      startAngle = endAngle;
+    });
+
+    // Legend — right side
+    const legendX = CX + R + 30;
+    data.forEach(function(d, i) {
+      const pct = d.freq / total;
+      const ly  = 40 + i * 26;
+      const col = PALETTE[i % PALETTE.length];
+      svg += `<rect x="${legendX}" y="${ly - 8}" width="14" height="14" rx="2" fill="${col}"/>`;
+      const lbl = truncate(d.label, 18);
+      svg += `<text x="${legendX + 18}" y="${ly + 3}" font-size="12" fill="#374151">${escHtml(lbl)} — ${(pct*100).toFixed(1)} %</text>`;
+    });
+
+    svg += '</svg>';
+    return svg;
+  }
+
+  function truncate(s, maxLen) {
+    return s.length > maxLen ? s.slice(0, maxLen - 1) + '…' : s;
+  }
+
+  // ── Tab switching ─────────────────────────────────────────────────────────
+  document.querySelectorAll('.tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      activeTab = this.dataset.tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+
+      ['soyle','kurve','sektor'].forEach(function(t) {
+        const hint = document.getElementById('hint-' + t);
+        if (hint) hint.classList.toggle('hidden', t !== activeTab);
+      });
+
+      renderDiagram();
+    });
+  });
+
+  // ── Add row button ─────────────────────────────────────────────────────────
+  document.getElementById('btn-add-row').addEventListener('click', function() {
+    syncRowsFromInputs();
+    addRow('', '');
+    renderInputTable();
+    saveState();
+  });
+
+  // ── Load sample ───────────────────────────────────────────────────────────
+  document.getElementById('btn-load-sample').addEventListener('click', function() {
+    rows = SAMPLE_DATA.map(r => ({ label: r.label, freq: r.freq }));
+    renderInputTable();
+    renderFreqTable();
+    renderDiagram();
+    saveState();
+  });
+
+  // ── Clear all ─────────────────────────────────────────────────────────────
+  document.getElementById('btn-clear-all').addEventListener('click', function() {
+    rows = [{ label: '', freq: '' }, { label: '', freq: '' }];
+    renderInputTable();
+    renderFreqTable();
+    renderDiagram();
+    saveState();
+  });
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  const saved = loadState();
+  if (saved) {
+    rows = saved;
+  } else {
+    rows = SAMPLE_DATA.map(r => ({ label: r.label, freq: r.freq }));
+  }
+
+  renderInputTable();
+  renderFreqTable();
+  renderDiagram();
+
+})();
+</script>
+</body>
+</html>

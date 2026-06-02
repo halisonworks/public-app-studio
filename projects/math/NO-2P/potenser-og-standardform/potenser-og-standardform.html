@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<!--
+  Potenser og standardform — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 2P (LK20): potensreglene, a⁰ og a⁻ⁿ, og
+  tall på standardform — med steg-for-steg utregning.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Potenser og standardform – Matematikk 2P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .tab-active { @apply bg-blue-600 text-white; }
+    .step-box {
+      background: #f0f7ff;
+      border-left: 4px solid #3b82f6;
+      border-radius: 0.375rem;
+      padding: 0.75rem 1rem;
+      margin-top: 0.5rem;
+      font-size: 1rem;
+    }
+    .result-box {
+      background: #ecfdf5;
+      border-left: 4px solid #10b981;
+      border-radius: 0.375rem;
+      padding: 0.75rem 1rem;
+      margin-top: 0.5rem;
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+    .error-box {
+      background: #fff1f2;
+      border-left: 4px solid #ef4444;
+      border-radius: 0.375rem;
+      padding: 0.75rem 1rem;
+      margin-top: 0.5rem;
+      color: #b91c1c;
+    }
+    .rule-card {
+      transition: box-shadow 0.15s, border-color 0.15s;
+      cursor: pointer;
+    }
+    .rule-card:hover { box-shadow: 0 4px 16px rgba(59,130,246,0.15); }
+    .rule-card.selected { border-color: #2563eb; background: #eff6ff; }
+    sup { font-size: 0.72em; vertical-align: super; line-height: 0; }
+    .math { font-style: italic; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+    .nav-btn {
+      padding: 0.5rem 1.2rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.97rem;
+      transition: background 0.15s, color 0.15s;
+      border: 2px solid transparent;
+    }
+    .nav-btn.active {
+      background: #2563eb;
+      color: white;
+    }
+    .nav-btn:not(.active) {
+      background: white;
+      color: #374151;
+      border-color: #d1d5db;
+    }
+    .nav-btn:not(.active):hover {
+      background: #f3f4f6;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-blue-700 text-white shadow-md">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight">Potenser og standardform</h1>
+        <p class="text-blue-200 text-sm mt-0.5">Matematikk 2P &middot; Sinus 2P kap. 1 &middot; LK20</p>
+      </div>
+      <span class="text-xs bg-blue-800 rounded-full px-3 py-1 self-start sm:self-auto">Interaktivt læremiddel</span>
+    </div>
+  </header>
+
+  <!-- Navigation tabs -->
+  <nav class="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 py-2 flex flex-wrap gap-2">
+      <button class="nav-btn active" onclick="showSection('regler')">Potensregler</button>
+      <button class="nav-btn" onclick="showSection('kalkulator')">Potenskalkulator</button>
+      <button class="nav-btn" onclick="showSection('standardform')">Standardform</button>
+    </div>
+  </nav>
+
+  <main class="max-w-4xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- ==================== SECTION: POTENSREGLER ==================== -->
+    <section id="sec-regler">
+
+      <div class="bg-white rounded-xl shadow p-5 mb-4">
+        <h2 class="text-xl font-bold text-gray-800 mb-1">Potensreglene</h2>
+        <p class="text-gray-600 text-sm mb-4">Velg en regel, fyll inn tall og se utregningen steg for steg.</p>
+
+        <!-- Rule cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-5" id="rule-cards">
+
+          <div class="rule-card border-2 border-gray-200 rounded-xl p-4 selected" data-rule="mult" onclick="selectRule('mult')">
+            <div class="text-blue-700 font-bold text-lg mb-1">Regel 1</div>
+            <div class="text-gray-700 font-mono text-base">a<sup>m</sup> · a<sup>n</sup> = a<sup>m+n</sup></div>
+            <div class="text-gray-500 text-xs mt-1">Produkt med samme grunntall</div>
+          </div>
+
+          <div class="rule-card border-2 border-gray-200 rounded-xl p-4" data-rule="div" onclick="selectRule('div')">
+            <div class="text-blue-700 font-bold text-lg mb-1">Regel 2</div>
+            <div class="text-gray-700 font-mono text-base">a<sup>m</sup> / a<sup>n</sup> = a<sup>m−n</sup></div>
+            <div class="text-gray-500 text-xs mt-1">Kvotient med samme grunntall</div>
+          </div>
+
+          <div class="rule-card border-2 border-gray-200 rounded-xl p-4" data-rule="pow" onclick="selectRule('pow')">
+            <div class="text-blue-700 font-bold text-lg mb-1">Regel 3</div>
+            <div class="text-gray-700 font-mono text-base">(a<sup>m</sup>)<sup>n</sup> = a<sup>m·n</sup></div>
+            <div class="text-gray-500 text-xs mt-1">Potens av en potens</div>
+          </div>
+
+          <div class="rule-card border-2 border-gray-200 rounded-xl p-4" data-rule="zero" onclick="selectRule('zero')">
+            <div class="text-blue-700 font-bold text-lg mb-1">Regel 4</div>
+            <div class="text-gray-700 font-mono text-base">a<sup>0</sup> = 1</div>
+            <div class="text-gray-500 text-xs mt-1">Nulleksponent (a ≠ 0)</div>
+          </div>
+
+          <div class="rule-card border-2 border-gray-200 rounded-xl p-4" data-rule="neg" onclick="selectRule('neg')">
+            <div class="text-blue-700 font-bold text-lg mb-1">Regel 5</div>
+            <div class="text-gray-700 font-mono text-base">a<sup>−n</sup> = 1/a<sup>n</sup></div>
+            <div class="text-gray-500 text-xs mt-1">Negativ eksponent</div>
+          </div>
+
+        </div>
+
+        <!-- Dynamic input area -->
+        <div id="rule-input-area" class="bg-gray-50 rounded-xl p-4 border border-gray-200"></div>
+
+        <!-- Output area -->
+        <div id="rule-output" class="mt-3"></div>
+      </div>
+
+      <!-- Teori-boks -->
+      <div class="bg-white rounded-xl shadow p-5">
+        <h3 class="text-lg font-bold text-gray-800 mb-3">Hva er en potens?</h3>
+        <p class="text-gray-700 mb-3">
+          En <strong>potens</strong> er en kortform for gjentatt multiplikasjon. Vi skriver
+          <span class="font-mono bg-gray-100 px-1 rounded">a<sup>n</sup></span>,
+          der <em>a</em> kalles <strong>grunntallet</strong> og <em>n</em> kalles <strong>eksponenten</strong>.
+        </p>
+        <div class="bg-blue-50 rounded-lg p-3 font-mono text-blue-900 text-sm mb-3">
+          2<sup>5</sup> = 2 · 2 · 2 · 2 · 2 = 32
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-700">
+          <div class="bg-gray-50 rounded-lg p-3">
+            <strong>Produkt-regelen</strong><br>
+            3<sup>2</sup> · 3<sup>4</sup> = 3<sup>2+4</sup> = 3<sup>6</sup> = 729<br>
+            <span class="text-gray-400 text-xs">Legg sammen eksponentene</span>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-3">
+            <strong>Kvotient-regelen</strong><br>
+            5<sup>6</sup> / 5<sup>2</sup> = 5<sup>6−2</sup> = 5<sup>4</sup> = 625<br>
+            <span class="text-gray-400 text-xs">Trekk fra eksponentene</span>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-3">
+            <strong>Potens-av-potens</strong><br>
+            (2<sup>3</sup>)<sup>4</sup> = 2<sup>3·4</sup> = 2<sup>12</sup> = 4096<br>
+            <span class="text-gray-400 text-xs">Multipliser eksponentene</span>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-3">
+            <strong>Negativ eksponent</strong><br>
+            4<sup>−2</sup> = 1/4<sup>2</sup> = 1/16 = 0,0625<br>
+            <span class="text-gray-400 text-xs">Flytt til nevneren</span>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================== SECTION: KALKULATOR ==================== -->
+    <section id="sec-kalkulator" class="hidden">
+
+      <div class="bg-white rounded-xl shadow p-5">
+        <h2 class="text-xl font-bold text-gray-800 mb-1">Potenskalkulator</h2>
+        <p class="text-gray-600 text-sm mb-4">Beregn a<sup>n</sup> for alle tall — også negative eksponenter og null.</p>
+
+        <div class="grid grid-cols-2 gap-4 max-w-sm mb-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Grunntall <em>a</em></label>
+            <input id="calc-base" type="number" value="3"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-center text-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Eksponent <em>n</em></label>
+            <input id="calc-exp" type="number" value="4"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-center text-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+          </div>
+        </div>
+
+        <button onclick="calcPower()"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition mb-3">
+          Beregn
+        </button>
+
+        <div id="calc-output"></div>
+
+        <!-- Quick examples -->
+        <div class="mt-5">
+          <h3 class="text-sm font-semibold text-gray-600 mb-2">Prøv disse eksemplene:</h3>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="setCalcExample(2,10)" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-3 py-1">2¹⁰</button>
+            <button onclick="setCalcExample(10,-3)" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-3 py-1">10⁻³</button>
+            <button onclick="setCalcExample(5,0)" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-3 py-1">5⁰</button>
+            <button onclick="setCalcExample(-3,3)" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-3 py-1">(−3)³</button>
+            <button onclick="setCalcExample(4,-2)" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-3 py-1">4⁻²</button>
+            <button onclick="setCalcExample(7,2)" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-3 py-1">7²</button>
+            <button onclick="setCalcExample(10,6)" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-3 py-1">10⁶</button>
+            <button onclick="setCalcExample(2,-8)" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-3 py-1">2⁻⁸</button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==================== SECTION: STANDARDFORM ==================== -->
+    <section id="sec-standardform" class="hidden">
+
+      <div class="bg-white rounded-xl shadow p-5 mb-4">
+        <h2 class="text-xl font-bold text-gray-800 mb-1">Standardform (vitenskapelig notasjon)</h2>
+        <p class="text-gray-600 text-sm mb-4">
+          Et tall på standardform skrives som <strong>a · 10<sup>n</sup></strong>,
+          der <strong>1 ≤ a &lt; 10</strong> og n er et heltall.
+        </p>
+
+        <!-- Direction toggle -->
+        <div class="flex gap-3 mb-5">
+          <button id="btn-to-std" onclick="setStdDir('to')"
+            class="nav-btn active">
+            Tall → Standardform
+          </button>
+          <button id="btn-from-std" onclick="setStdDir('from')"
+            class="nav-btn">
+            Standardform → Tall
+          </button>
+        </div>
+
+        <!-- To standardform -->
+        <div id="std-to-area">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Skriv inn et tall</label>
+          <div class="flex gap-2 max-w-sm mb-3">
+            <input id="std-input" type="text" placeholder="f.eks. 0,000045 eller 6700000"
+              class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            <button onclick="toStandardForm()"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition">
+              Konverter
+            </button>
+          </div>
+          <div class="flex flex-wrap gap-2 mb-2">
+            <span class="text-xs text-gray-500">Eksempler:</span>
+            <button onclick="setStdInput('6700000')" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-2 py-0.5">6 700 000</button>
+            <button onclick="setStdInput('0.000045')" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-2 py-0.5">0,000045</button>
+            <button onclick="setStdInput('300000000')" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-2 py-0.5">300 000 000</button>
+            <button onclick="setStdInput('0.00000000167')" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-2 py-0.5">0,00000000167</button>
+            <button onclick="setStdInput('42500')" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-2 py-0.5">42 500</button>
+            <button onclick="setStdInput('0.0073')" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-2 py-0.5">0,0073</button>
+          </div>
+          <div id="std-to-output"></div>
+        </div>
+
+        <!-- From standardform -->
+        <div id="std-from-area" class="hidden">
+          <p class="text-sm text-gray-600 mb-3">Skriv inn et tall på standardform: <strong>a · 10<sup>n</sup></strong></p>
+          <div class="flex flex-wrap items-center gap-2 max-w-md mb-3">
+            <input id="from-a" type="text" placeholder="a (1 ≤ a < 10)"
+              class="w-32 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            <span class="text-gray-700 font-semibold">· 10</span>
+            <input id="from-n" type="number" placeholder="n"
+              class="w-20 border border-gray-300 rounded-lg px-3 py-2 text-center focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+            <button onclick="fromStandardForm()"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition">
+              Konverter
+            </button>
+          </div>
+          <div class="flex flex-wrap gap-2 mb-2">
+            <span class="text-xs text-gray-500">Eksempler:</span>
+            <button onclick="setFromStd('3.84', 8)" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-2 py-0.5">3,84 · 10⁸</button>
+            <button onclick="setFromStd('1.6', -19)" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-2 py-0.5">1,6 · 10⁻¹⁹</button>
+            <button onclick="setFromStd('9.109', -31)" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-2 py-0.5">9,109 · 10⁻³¹</button>
+            <button onclick="setFromStd('6.674', -11)" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-2 py-0.5">6,674 · 10⁻¹¹</button>
+            <button onclick="setFromStd('5.972', 24)" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-full px-2 py-0.5">5,972 · 10²⁴</button>
+          </div>
+          <div id="std-from-output"></div>
+        </div>
+      </div>
+
+      <!-- Teori-boks standardform -->
+      <div class="bg-white rounded-xl shadow p-5">
+        <h3 class="text-lg font-bold text-gray-800 mb-3">Hva er standardform?</h3>
+        <p class="text-gray-700 text-sm mb-3">
+          Standardform (også kalt <em>vitenskapelig notasjon</em>) er en praktisk måte å skrive
+          svært store eller svært små tall på. Alle tall skrives som
+          <strong>a · 10<sup>n</sup></strong>, der a er et desimaltall med én siffer foran kommaet
+          (1 ≤ a &lt; 10), og n er et heltall (positivt, negativt eller null).
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div class="bg-blue-50 rounded-lg p-3">
+            <div class="font-semibold text-blue-800 mb-1">Store tall</div>
+            <div class="font-mono text-blue-900">
+              93 000 000 = 9,3 · 10<sup>7</sup><br>
+              <span class="text-xs text-gray-500">Komma flyttes 7 plasser til venstre</span>
+            </div>
+          </div>
+          <div class="bg-green-50 rounded-lg p-3">
+            <div class="font-semibold text-green-800 mb-1">Små tall</div>
+            <div class="font-mono text-green-900">
+              0,000027 = 2,7 · 10<sup>−5</sup><br>
+              <span class="text-xs text-gray-500">Komma flyttes 5 plasser til høyre</span>
+            </div>
+          </div>
+          <div class="bg-yellow-50 rounded-lg p-3 sm:col-span-2">
+            <div class="font-semibold text-yellow-800 mb-1">Huskeregel</div>
+            <div class="text-yellow-900">
+              Antall plasser du flytter kommaet = eksponenten.
+              Hvis kommaet flyttes <em>til venstre</em>, blir eksponenten <strong>positiv</strong>.
+              Hvis kommaet flyttes <em>til høyre</em>, blir eksponenten <strong>negativ</strong>.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer class="text-center text-xs text-gray-400 py-6 mt-4">
+    Matematikk 2P &middot; Halison App Studio &middot; Personlig og pedagogisk bruk
+  </footer>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+var currentRule = 'mult';
+var stdDir = 'to';
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showSection(name) {
+  var sections = ['regler', 'kalkulator', 'standardform'];
+  sections.forEach(function(s) {
+    var el = document.getElementById('sec-' + s);
+    if (el) el.classList.toggle('hidden', s !== name);
+  });
+  var btns = document.querySelectorAll('.nav-btn');
+  btns.forEach(function(btn) {
+    btn.classList.remove('active');
+    var txt = btn.textContent.trim().toLowerCase();
+    if (
+      (name === 'regler' && txt.includes('potensregel')) ||
+      (name === 'kalkulator' && txt.includes('kalkulator')) ||
+      (name === 'standardform' && txt.includes('standardform'))
+    ) {
+      btn.classList.add('active');
+    }
+  });
+}
+
+// ============================================================
+// RULE SELECTION
+// ============================================================
+function selectRule(rule) {
+  currentRule = rule;
+  document.querySelectorAll('.rule-card').forEach(function(card) {
+    card.classList.toggle('selected', card.dataset.rule === rule);
+  });
+  renderRuleInput(rule);
+  document.getElementById('rule-output').innerHTML = '';
+}
+
+function renderRuleInput(rule) {
+  var area = document.getElementById('rule-input-area');
+  var html = '';
+
+  if (rule === 'mult') {
+    html = '<p class="text-sm text-gray-600 mb-3">Beregn <strong>a<sup>m</sup> · a<sup>n</sup></strong></p>' +
+      '<div class="flex flex-wrap items-center gap-3">' +
+      numField('rm-a', 'Grunntall a', 3) +
+      numField('rm-m', 'Eksponent m', 2) +
+      numField('rm-n', 'Eksponent n', 4) +
+      calcBtn('calcRule()') + '</div>';
+  } else if (rule === 'div') {
+    html = '<p class="text-sm text-gray-600 mb-3">Beregn <strong>a<sup>m</sup> / a<sup>n</sup></strong></p>' +
+      '<div class="flex flex-wrap items-center gap-3">' +
+      numField('rd-a', 'Grunntall a', 5) +
+      numField('rd-m', 'Eksponent m', 6) +
+      numField('rd-n', 'Eksponent n', 2) +
+      calcBtn('calcRule()') + '</div>';
+  } else if (rule === 'pow') {
+    html = '<p class="text-sm text-gray-600 mb-3">Beregn <strong>(a<sup>m</sup>)<sup>n</sup></strong></p>' +
+      '<div class="flex flex-wrap items-center gap-3">' +
+      numField('rp-a', 'Grunntall a', 2) +
+      numField('rp-m', 'Eksponent m', 3) +
+      numField('rp-n', 'Eksponent n', 4) +
+      calcBtn('calcRule()') + '</div>';
+  } else if (rule === 'zero') {
+    html = '<p class="text-sm text-gray-600 mb-3">Beregn <strong>a<sup>0</sup></strong> (a ≠ 0)</p>' +
+      '<div class="flex flex-wrap items-center gap-3">' +
+      numField('rz-a', 'Grunntall a', 7) +
+      calcBtn('calcRule()') + '</div>';
+  } else if (rule === 'neg') {
+    html = '<p class="text-sm text-gray-600 mb-3">Beregn <strong>a<sup>−n</sup></strong></p>' +
+      '<div class="flex flex-wrap items-center gap-3">' +
+      numField('rn-a', 'Grunntall a', 4) +
+      numField('rn-n', 'Eksponent n (positivt tall)', 3) +
+      calcBtn('calcRule()') + '</div>';
+  }
+
+  area.innerHTML = html;
+}
+
+function numField(id, label, def) {
+  return '<div><label class="block text-xs font-medium text-gray-600 mb-1">' + label + '</label>' +
+    '<input id="' + id + '" type="number" value="' + def + '" ' +
+    'class="w-24 border border-gray-300 rounded-lg px-2 py-2 text-center focus:ring-2 focus:ring-blue-500 focus:outline-none" /></div>';
+}
+
+function calcBtn(onclick) {
+  return '<div class="self-end"><button onclick="' + onclick + '" ' +
+    'class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg transition">Beregn</button></div>';
+}
+
+function getVal(id) {
+  var el = document.getElementById(id);
+  return el ? parseFloat(el.value) : NaN;
+}
+
+// ============================================================
+// RULE CALCULATIONS
+// ============================================================
+function calcRule() {
+  var out = document.getElementById('rule-output');
+  var rule = currentRule;
+  var html = '';
+
+  if (rule === 'mult') {
+    var a = getVal('rm-a'), m = getVal('rm-m'), n = getVal('rm-n');
+    if (isNaN(a) || isNaN(m) || isNaN(n)) { out.innerHTML = errBox('Fyll inn gyldige tall.'); return; }
+    if (!Number.isInteger(m) || !Number.isInteger(n)) { out.innerHTML = errBox('Eksponentene m og n må være heltall.'); return; }
+    var exp = m + n;
+    var result = Math.pow(a, exp);
+    html = '<div class="step-box"><strong>Regel 1:</strong> a<sup>m</sup> · a<sup>n</sup> = a<sup>m+n</sup></div>' +
+      '<div class="step-box">Vi setter inn: <strong>a = ' + fmtNum(a) + ', m = ' + m + ', n = ' + n + '</strong></div>' +
+      '<div class="step-box">' + fmtNum(a) + '<sup>' + m + '</sup> · ' + fmtNum(a) + '<sup>' + n + '</sup> = ' + fmtNum(a) + '<sup>' + m + '+' + n + '</sup> = ' + fmtNum(a) + '<sup>' + exp + '</sup></div>' +
+      verifyStep(a, m, n, 'mult', exp, result);
+  } else if (rule === 'div') {
+    var a = getVal('rd-a'), m = getVal('rd-m'), n = getVal('rd-n');
+    if (isNaN(a) || isNaN(m) || isNaN(n)) { out.innerHTML = errBox('Fyll inn gyldige tall.'); return; }
+    if (!Number.isInteger(m) || !Number.isInteger(n)) { out.innerHTML = errBox('Eksponentene m og n må være heltall.'); return; }
+    if (a === 0) { out.innerHTML = errBox('Grunntallet kan ikke være 0 (deling med null).'); return; }
+    var exp = m - n;
+    var result = Math.pow(a, exp);
+    html = '<div class="step-box"><strong>Regel 2:</strong> a<sup>m</sup> / a<sup>n</sup> = a<sup>m−n</sup></div>' +
+      '<div class="step-box">Vi setter inn: <strong>a = ' + fmtNum(a) + ', m = ' + m + ', n = ' + n + '</strong></div>' +
+      '<div class="step-box">' + fmtNum(a) + '<sup>' + m + '</sup> / ' + fmtNum(a) + '<sup>' + n + '</sup> = ' + fmtNum(a) + '<sup>' + m + '−' + n + '</sup> = ' + fmtNum(a) + '<sup>' + exp + '</sup></div>' +
+      verifyStep(a, m, n, 'div', exp, result);
+  } else if (rule === 'pow') {
+    var a = getVal('rp-a'), m = getVal('rp-m'), n = getVal('rp-n');
+    if (isNaN(a) || isNaN(m) || isNaN(n)) { out.innerHTML = errBox('Fyll inn gyldige tall.'); return; }
+    if (!Number.isInteger(m) || !Number.isInteger(n)) { out.innerHTML = errBox('Eksponentene m og n må være heltall.'); return; }
+    var exp = m * n;
+    var result = Math.pow(a, exp);
+    html = '<div class="step-box"><strong>Regel 3:</strong> (a<sup>m</sup>)<sup>n</sup> = a<sup>m·n</sup></div>' +
+      '<div class="step-box">Vi setter inn: <strong>a = ' + fmtNum(a) + ', m = ' + m + ', n = ' + n + '</strong></div>' +
+      '<div class="step-box">(' + fmtNum(a) + '<sup>' + m + '</sup>)<sup>' + n + '</sup> = ' + fmtNum(a) + '<sup>' + m + '·' + n + '</sup> = ' + fmtNum(a) + '<sup>' + exp + '</sup></div>' +
+      verifyStep(a, m, n, 'pow', exp, result);
+  } else if (rule === 'zero') {
+    var a = getVal('rz-a');
+    if (isNaN(a)) { out.innerHTML = errBox('Fyll inn et gyldig grunntall.'); return; }
+    if (a === 0) { out.innerHTML = errBox('0⁰ er udefinert — velg et annet grunntall.'); return; }
+    html = '<div class="step-box"><strong>Regel 4:</strong> a<sup>0</sup> = 1, for alle a ≠ 0</div>' +
+      '<div class="step-box">Vi setter inn: <strong>a = ' + fmtNum(a) + '</strong></div>' +
+      '<div class="step-box">' + fmtNum(a) + '<sup>0</sup> = 1</div>' +
+      '<div class="step-box" style="background:#f0fdf4;border-color:#22c55e">Forklaring: a<sup>0</sup> = a<sup>n−n</sup> = a<sup>n</sup>/a<sup>n</sup> = 1 (for a ≠ 0)</div>' +
+      '<div class="result-box">Svar: <strong>' + fmtNum(a) + '<sup>0</sup> = 1</strong></div>';
+  } else if (rule === 'neg') {
+    var a = getVal('rn-a'), n = getVal('rn-n');
+    if (isNaN(a) || isNaN(n)) { out.innerHTML = errBox('Fyll inn gyldige tall.'); return; }
+    if (!Number.isInteger(n) || n < 1) { out.innerHTML = errBox('Eksponenten n må være et positivt heltall.'); return; }
+    if (a === 0) { out.innerHTML = errBox('Grunntallet kan ikke være 0.'); return; }
+    var denom = Math.pow(a, n);
+    var result = 1 / denom;
+    var fracStr = fmtFrac(1, denom);
+    html = '<div class="step-box"><strong>Regel 5:</strong> a<sup>−n</sup> = 1/a<sup>n</sup></div>' +
+      '<div class="step-box">Vi setter inn: <strong>a = ' + fmtNum(a) + ', n = ' + n + '</strong></div>' +
+      '<div class="step-box">' + fmtNum(a) + '<sup>−' + n + '</sup> = 1/' + fmtNum(a) + '<sup>' + n + '</sup> = 1/' + fmtNum(denom) + '</div>' +
+      '<div class="result-box">Svar: <strong>' + fracStr + ' = ' + fmtDec(result) + '</strong></div>';
+  }
+
+  out.innerHTML = html;
+}
+
+function verifyStep(a, m, n, op, exp, result) {
+  var fracStr = '';
+  if (exp < 0 && a !== 0) {
+    var denom = Math.pow(a, -exp);
+    fracStr = ' = ' + fmtFrac(1, denom);
+  }
+  var decStr = fmtDec(result);
+  return '<div class="result-box">Svar: <strong>' + fmtNum(a) + '<sup>' + exp + '</sup>' + fracStr + ' = ' + decStr + '</strong></div>';
+}
+
+// ============================================================
+// CALCULATOR
+// ============================================================
+function setCalcExample(base, exp) {
+  document.getElementById('calc-base').value = base;
+  document.getElementById('calc-exp').value = exp;
+  calcPower();
+}
+
+function calcPower() {
+  var a = parseFloat(document.getElementById('calc-base').value);
+  var n = parseFloat(document.getElementById('calc-exp').value);
+  var out = document.getElementById('calc-output');
+
+  if (isNaN(a) || isNaN(n)) { out.innerHTML = errBox('Fyll inn gyldige tall for grunntall og eksponent.'); return; }
+  if (!Number.isInteger(n)) { out.innerHTML = errBox('Eksponenten må være et heltall.'); return; }
+  if (a === 0 && n < 0) { out.innerHTML = errBox('0 med negativ eksponent er udefinert (deling med null).'); return; }
+  if (a === 0 && n === 0) { out.innerHTML = errBox('0⁰ er matematisk udefinert.'); return; }
+
+  var html = '';
+  var result = Math.pow(a, n);
+
+  if (n === 0) {
+    html = '<div class="step-box">Regel 4: a<sup>0</sup> = 1 for alle a ≠ 0</div>' +
+      '<div class="result-box"><strong>' + fmtNum(a) + '<sup>0</sup> = 1</strong></div>';
+  } else if (n > 0) {
+    var expansion = '';
+    if (n <= 8) {
+      var parts = [];
+      for (var i = 0; i < n; i++) parts.push(fmtNum(a));
+      expansion = '<div class="step-box">Utvidet form: ' + parts.join(' · ') + '</div>';
+    }
+    html = '<div class="step-box">Positiv eksponent: ' + fmtNum(a) + '<sup>' + n + '</sup></div>' +
+      expansion +
+      '<div class="result-box"><strong>' + fmtNum(a) + '<sup>' + n + '</sup> = ' + fmtDec(result) + '</strong></div>';
+  } else {
+    // negative exponent
+    var posN = -n;
+    var denom = Math.pow(a, posN);
+    var fracStr = fmtFrac(1, denom);
+    html = '<div class="step-box">Regel 5: a<sup>−n</sup> = 1/a<sup>n</sup></div>' +
+      '<div class="step-box">' + fmtNum(a) + '<sup>' + n + '</sup> = 1/' + fmtNum(a) + '<sup>' + posN + '</sup> = 1/' + fmtNum(denom) + '</div>' +
+      '<div class="result-box"><strong>' + fracStr + ' = ' + fmtDec(result) + '</strong></div>';
+  }
+
+  out.innerHTML = html;
+}
+
+// ============================================================
+// STANDARDFORM
+// ============================================================
+function setStdDir(dir) {
+  stdDir = dir;
+  document.getElementById('std-to-area').classList.toggle('hidden', dir !== 'to');
+  document.getElementById('std-from-area').classList.toggle('hidden', dir !== 'from');
+  document.getElementById('btn-to-std').classList.toggle('active', dir === 'to');
+  document.getElementById('btn-from-std').classList.toggle('active', dir === 'from');
+  document.getElementById('std-to-output').innerHTML = '';
+  document.getElementById('std-from-output').innerHTML = '';
+}
+
+function setStdInput(val) {
+  document.getElementById('std-input').value = val.replace('.', ',');
+  toStandardForm();
+}
+
+function setFromStd(a, n) {
+  document.getElementById('from-a').value = a.replace('.', ',');
+  document.getElementById('from-n').value = n;
+  fromStandardForm();
+}
+
+function toStandardForm() {
+  var raw = document.getElementById('std-input').value.trim().replace(',', '.');
+  var out = document.getElementById('std-to-output');
+
+  var num = parseFloat(raw);
+  if (isNaN(num) || raw === '') { out.innerHTML = errBox('Skriv inn et gyldig tall (bruk komma eller punktum som desimaltegn).'); return; }
+  if (num === 0) { out.innerHTML = errBox('Null kan ikke skrives på standardform.'); return; }
+
+  var sign = num < 0 ? -1 : 1;
+  var abs = Math.abs(num);
+
+  // Find exponent: floor(log10(abs))
+  var exp = Math.floor(Math.log10(abs));
+  var a = abs / Math.pow(10, exp);
+
+  // Fix floating point drift
+  a = Math.round(a * 1e10) / 1e10;
+
+  // If a rounds to 10, adjust
+  if (a >= 10) { a = a / 10; exp += 1; }
+  if (a < 1 && a > 0) { a = a * 10; exp -= 1; }
+
+  var signedA = sign * a;
+  var aStr = fmtDec(signedA);
+
+  var direction = exp > 0 ? 'til venstre' : (exp < 0 ? 'til høyre' : 'ingen forflytning');
+  var movePlaces = Math.abs(exp);
+
+  var html = '<div class="step-box"><strong>Steg 1:</strong> Finn riktig posisjon for desimaltegnet slik at 1 ≤ |a| &lt; 10</div>' +
+    '<div class="step-box"><strong>Steg 2:</strong> Tell antall plasser kommaet flyttes = ' + movePlaces + ' plass' + (movePlaces === 1 ? '' : 'er') + ' ' + direction + '</div>' +
+    '<div class="step-box"><strong>Steg 3:</strong> ' +
+      (exp === 0
+        ? 'Kommaet flyttes ikke. Eksponenten er 0.'
+        : (exp > 0
+            ? 'Kommaet flyttes til venstre → eksponent er positiv: n = ' + exp
+            : 'Kommaet flyttes til høyre → eksponent er negativ: n = ' + exp)) +
+    '</div>' +
+    '<div class="result-box">Svar: <strong>' + fmtDec(num) + ' = ' + aStr + ' · 10<sup>' + exp + '</sup></strong></div>';
+
+  out.innerHTML = html;
+}
+
+function fromStandardForm() {
+  var aRaw = document.getElementById('from-a').value.trim().replace(',', '.');
+  var nRaw = document.getElementById('from-n').value.trim();
+  var out = document.getElementById('std-from-output');
+
+  var a = parseFloat(aRaw);
+  var n = parseInt(nRaw, 10);
+
+  if (isNaN(a) || aRaw === '') { out.innerHTML = errBox('Skriv inn en gyldig verdi for a.'); return; }
+  if (isNaN(n) || nRaw === '') { out.innerHTML = errBox('Skriv inn en gyldig heltallsverdi for n.'); return; }
+  if (Math.abs(a) < 1 || Math.abs(a) >= 10) {
+    out.innerHTML = errBox('Verdien a må oppfylle 1 ≤ |a| &lt; 10. Verdien du skrev er utenfor dette området.');
+    return;
+  }
+
+  var result = a * Math.pow(10, n);
+
+  var moveTxt = '';
+  if (n > 0) {
+    moveTxt = 'Flytt kommaet ' + n + ' plass' + (n === 1 ? '' : 'er') + ' til høyre (eksponenten er positiv).';
+  } else if (n < 0) {
+    moveTxt = 'Flytt kommaet ' + Math.abs(n) + ' plass' + (Math.abs(n) === 1 ? '' : 'er') + ' til venstre (eksponenten er negativ).';
+  } else {
+    moveTxt = 'Eksponenten er 0 — kommaet flyttes ikke.';
+  }
+
+  var html = '<div class="step-box"><strong>Steg 1:</strong> Start med a = ' + fmtDec(a) + '</div>' +
+    '<div class="step-box"><strong>Steg 2:</strong> ' + moveTxt + '</div>' +
+    '<div class="step-box">' + fmtDec(a) + ' · 10<sup>' + n + '</sup> = ' + fmtDec(a) + ' · ' + fmtDec(Math.pow(10, n)) + '</div>' +
+    '<div class="result-box">Svar: <strong>' + fmtDec(a) + ' · 10<sup>' + n + '</sup> = ' + fmtDec(result) + '</strong></div>';
+
+  out.innerHTML = html;
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function fmtNum(x) {
+  if (Number.isInteger(x)) return String(x);
+  return String(x).replace('.', ',');
+}
+
+function fmtDec(x) {
+  if (!isFinite(x)) return String(x);
+  // Use Norwegian decimal comma
+  // For very small or very large, show full decimal representation
+  if (Math.abs(x) !== 0 && (Math.abs(x) < 1e-7 || Math.abs(x) > 1e15)) {
+    return x.toExponential().replace('.', ',').replace('e', ' · 10^');
+  }
+  // Remove unnecessary trailing zeros
+  var s = parseFloat(x.toPrecision(12)).toString();
+  return s.replace('.', ',');
+}
+
+function fmtFrac(num, denom) {
+  // Simplify fraction
+  var g = gcd(Math.abs(num), Math.abs(denom));
+  var n = num / g;
+  var d = denom / g;
+  if (d === 1) return String(n);
+  if (d < 0) { n = -n; d = -d; }
+  // Check if fraction is a "nice" integer denom
+  if (Number.isInteger(n) && Number.isInteger(d)) {
+    return n + '/' + d;
+  }
+  return fmtDec(num / denom);
+}
+
+function gcd(a, b) {
+  a = Math.abs(Math.round(a));
+  b = Math.abs(Math.round(b));
+  while (b) { var t = b; b = a % b; a = t; }
+  return a || 1;
+}
+
+function errBox(msg) {
+  return '<div class="error-box">' + msg + '</div>';
+}
+
+// ============================================================
+// INIT
+// ============================================================
+renderRuleInput('mult');
+calcPower();
+</script>
+
+</body>
+</html>

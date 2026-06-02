@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<!--
+  Funksjoner og vekst — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 2P (LK20): tegn lineære, andregrads-,
+  potens- og eksponentialfunksjoner, og utforsk gjennomsnittlig og momentan
+  vekstfart med sekant og tangent.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Funksjoner og vekst — Matematikk 2P</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  /* Custom styles supplementing Tailwind */
+  body { font-family: 'Segoe UI', system-ui, sans-serif; }
+  input[type=range] { accent-color: #3b82f6; }
+  input[type=number] { -moz-appearance: textfield; }
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .param-label { min-width: 2.5rem; display: inline-block; }
+  svg text { user-select: none; }
+  .tab-btn { transition: all 0.15s ease; }
+  .tab-btn.active { background-color: #3b82f6; color: white; }
+  .tab-btn:not(.active):hover { background-color: #dbeafe; }
+  .info-box { border-left: 4px solid #3b82f6; }
+  .secant-line { stroke: #f59e0b; stroke-width: 2; stroke-dasharray: 6 3; }
+  .tangent-line { stroke: #ef4444; stroke-width: 2; stroke-dasharray: 4 2; }
+  .point-dot { fill: white; stroke-width: 2; }
+  .grid-line { stroke: #e5e7eb; stroke-width: 0.5; }
+  .axis-line { stroke: #374151; stroke-width: 1.5; }
+  .tick-line { stroke: #374151; stroke-width: 1; }
+  .function-curve { fill: none; stroke: #3b82f6; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- Header -->
+<header class="bg-blue-700 text-white shadow-md">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
+    <div class="text-2xl font-bold tracking-tight">f(x)</div>
+    <div>
+      <h1 class="text-lg font-semibold leading-tight">Funksjoner og vekst</h1>
+      <p class="text-blue-200 text-xs">Matematikk 2P · Kapittel 5 · LK20</p>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-5 space-y-5">
+
+  <!-- Function type selector -->
+  <section class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Velg funksjonstype</h2>
+    <div class="flex flex-wrap gap-2" id="typeBtns">
+      <button class="tab-btn active px-4 py-2 rounded-lg border border-blue-300 text-sm font-medium" data-type="linear">Lineær</button>
+      <button class="tab-btn px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium" data-type="quadratic">Andregrad</button>
+      <button class="tab-btn px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium" data-type="power">Potensfunksjon</button>
+      <button class="tab-btn px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium" data-type="exponential">Eksponential</button>
+    </div>
+  </section>
+
+  <!-- Main layout: graph + controls -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+    <!-- Graph area (hero) -->
+    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-base font-semibold text-gray-800">Graf</h2>
+        <div id="funcExpr" class="font-mono text-blue-700 text-sm bg-blue-50 px-3 py-1 rounded-full border border-blue-200"></div>
+      </div>
+      <!-- SVG Graph -->
+      <div class="w-full" style="aspect-ratio: 4/3;">
+        <svg id="graph" width="100%" height="100%" viewBox="0 0 600 450" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <clipPath id="plotArea">
+              <rect x="55" y="15" width="530" height="400"/>
+            </clipPath>
+            <marker id="arrowX" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#374151"/>
+            </marker>
+            <marker id="arrowY" markerWidth="8" markerHeight="8" refX="3" refY="6" orient="auto">
+              <path d="M0,0 L6,0 L3,8 z" fill="#374151"/>
+            </marker>
+          </defs>
+          <!-- Grid -->
+          <g id="gridLines"></g>
+          <!-- Function curve (clipped) -->
+          <g clip-path="url(#plotArea)">
+            <path id="funcPath" class="function-curve"/>
+            <path id="secantPath" class="secant-line" style="display:none"/>
+            <path id="tangentPath" class="tangent-line" style="display:none"/>
+            <g id="secantPoints" style="display:none">
+              <circle id="secPt1" r="5" class="point-dot" stroke="#f59e0b"/>
+              <circle id="secPt2" r="5" class="point-dot" stroke="#f59e0b"/>
+            </g>
+            <g id="tangentPoint" style="display:none">
+              <circle id="tanPt" r="5" class="point-dot" stroke="#ef4444"/>
+            </g>
+          </g>
+          <!-- Axes (on top of clip) -->
+          <g id="axisLines"></g>
+          <!-- Tick labels -->
+          <g id="tickLabels" font-size="10" fill="#4b5563" font-family="monospace"></g>
+          <!-- Axis labels -->
+          <text x="590" y="228" font-size="12" fill="#374151" font-family="serif" font-style="italic">x</text>
+          <text x="65" y="10" font-size="12" fill="#374151" font-family="serif" font-style="italic">y</text>
+        </svg>
+      </div>
+      <!-- Legend -->
+      <div class="mt-2 flex flex-wrap gap-4 text-xs text-gray-600">
+        <span class="flex items-center gap-1"><span class="inline-block w-6 h-0.5 bg-blue-500 rounded"></span> f(x)</span>
+        <span class="flex items-center gap-1" id="legendSecant" style="display:none"><span class="inline-block w-6 border-t-2 border-dashed border-yellow-500"></span> Sekant (gj.snittlig vekstfart)</span>
+        <span class="flex items-center gap-1" id="legendTangent" style="display:none"><span class="inline-block w-6 border-t-2 border-dashed border-red-500"></span> Tangent (momentan vekstfart)</span>
+      </div>
+    </div>
+
+    <!-- Right panel: parameters + info -->
+    <div class="space-y-4">
+
+      <!-- Parameters -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Parametere</h2>
+        <div id="paramControls" class="space-y-3"></div>
+        <!-- View range -->
+        <div class="mt-4 pt-3 border-t border-gray-100">
+          <p class="text-xs font-medium text-gray-500 mb-2">Visningsvindu</p>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <label class="flex flex-col gap-1">
+              <span class="text-gray-500">x min</span>
+              <input type="number" id="xMin" value="-10" class="border border-gray-300 rounded px-2 py-1 w-full text-sm focus:outline-none focus:ring-1 focus:ring-blue-400">
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="text-gray-500">x maks</span>
+              <input type="number" id="xMax" value="10" class="border border-gray-300 rounded px-2 py-1 w-full text-sm focus:outline-none focus:ring-1 focus:ring-blue-400">
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="text-gray-500">y min</span>
+              <input type="number" id="yMin" value="-10" class="border border-gray-300 rounded px-2 py-1 w-full text-sm focus:outline-none focus:ring-1 focus:ring-blue-400">
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="text-gray-500">y maks</span>
+              <input type="number" id="yMax" value="10" class="border border-gray-300 rounded px-2 py-1 w-full text-sm focus:outline-none focus:ring-1 focus:ring-blue-400">
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kjennetegn -->
+      <div class="bg-blue-50 rounded-xl border border-blue-200 p-4 info-box">
+        <h2 class="text-sm font-semibold text-blue-800 mb-2">Kjennetegn</h2>
+        <div id="kjennetegn" class="text-sm text-blue-900 space-y-1"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Growth rate section -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+    <!-- Gjennomsnittlig vekstfart -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="w-6 h-1 bg-yellow-400 rounded" style="border-top: 3px dashed #f59e0b; height:0"></div>
+        <h2 class="text-base font-semibold text-gray-800">Gjennomsnittlig vekstfart</h2>
+      </div>
+      <p class="text-xs text-gray-500 mb-3">
+        Den gjennomsnittlige vekstfarten mellom to punkter <span class="font-mono">x₁</span> og <span class="font-mono">x₂</span>
+        er helningen til sekanten (den rette linjen gjennom de to punktene):
+      </p>
+      <div class="bg-gray-50 rounded-lg p-2 text-center font-mono text-sm text-gray-700 mb-3">
+        Δy/Δx = (f(x₂) − f(x₁)) / (x₂ − x₁)
+      </div>
+      <div class="flex gap-3 mb-3">
+        <label class="flex flex-col gap-1 flex-1">
+          <span class="text-xs text-gray-500">x₁</span>
+          <input type="number" id="secX1" value="-3" step="0.5" class="border border-gray-300 rounded px-2 py-1.5 w-full text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
+        </label>
+        <label class="flex flex-col gap-1 flex-1">
+          <span class="text-xs text-gray-500">x₂</span>
+          <input type="number" id="secX2" value="3" step="0.5" class="border border-gray-300 rounded px-2 py-1.5 w-full text-sm focus:outline-none focus:ring-1 focus:ring-yellow-400">
+        </label>
+        <div class="flex items-end">
+          <button id="btnSecant" class="bg-yellow-400 hover:bg-yellow-500 text-white font-semibold text-sm px-4 py-1.5 rounded-lg transition-colors">Tegn</button>
+        </div>
+      </div>
+      <div id="secantResult" class="hidden bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm space-y-1"></div>
+    </div>
+
+    <!-- Momentan vekstfart -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <div style="width:24px; border-top: 3px dashed #ef4444; height:0"></div>
+        <h2 class="text-base font-semibold text-gray-800">Momentan vekstfart</h2>
+      </div>
+      <p class="text-xs text-gray-500 mb-3">
+        Den momentane vekstfarten i ett punkt er grenseverdien til den gjennomsnittlige vekstfarten
+        når <span class="font-mono">Δx → 0</span>. Her estimeres den numerisk med en liten <span class="font-mono">Δx = 0,0001</span>:
+      </p>
+      <div class="bg-gray-50 rounded-lg p-2 text-center font-mono text-sm text-gray-700 mb-3">
+        f′(x) ≈ (f(x + Δx) − f(x)) / Δx
+      </div>
+      <div class="flex gap-3 mb-3">
+        <label class="flex flex-col gap-1 flex-1">
+          <span class="text-xs text-gray-500">x</span>
+          <input type="number" id="tanX" value="1" step="0.5" class="border border-gray-300 rounded px-2 py-1.5 w-full text-sm focus:outline-none focus:ring-1 focus:ring-red-400">
+        </label>
+        <div class="flex items-end">
+          <button id="btnTangent" class="bg-red-400 hover:bg-red-500 text-white font-semibold text-sm px-4 py-1.5 rounded-lg transition-colors">Tegn</button>
+        </div>
+      </div>
+      <div id="tangentResult" class="hidden bg-red-50 border border-red-200 rounded-lg p-3 text-sm space-y-1"></div>
+    </div>
+  </div>
+
+  <!-- Comparison explanation -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+    <h2 class="text-base font-semibold text-gray-800 mb-2">Forskjellen mellom gjennomsnittlig og momentan vekstfart</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+        <p class="font-semibold text-yellow-800 mb-1">Gjennomsnittlig vekstfart</p>
+        <p>Beskriver hvor mye funksjonen endrer seg <em>i gjennomsnitt</em> per enhet over et intervall [x₁, x₂].
+           Dette tilsvarer helningen til sekantlinjen — den rette linjen som går gjennom to punkter på grafen.
+           Brukes f.eks. til å finne gjennomsnittlig fart over en strekning.</p>
+      </div>
+      <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+        <p class="font-semibold text-red-800 mb-1">Momentan vekstfart</p>
+        <p>Beskriver den <em>øyeblikkelige</em> endringsraten i ett bestemt punkt. Det er helningen til
+           tangentlinjen i punktet — den rette linjen som berører grafen i akkurat det punktet.
+           Dette er det deriverte, f′(x), og brukes f.eks. til å finne fart i ett bestemt øyeblikk.</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="mt-8 border-t border-gray-200 bg-white py-3 text-center text-xs text-gray-400">
+  Matematikk 2P · LK20 · Halison App Studio · Kun til personlig og pedagogisk bruk
+</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  // ─── State ───────────────────────────────────────────────────────────────
+  let currentType = 'linear';
+  let params = { a: 1, b: 0, c: 0 };
+  let showSecant = false;
+  let showTangent = false;
+  let secantData = null;
+  let tangentData = null;
+
+  // ─── SVG dimensions ──────────────────────────────────────────────────────
+  const SVG_W = 600;
+  const SVG_H = 450;
+  const PLOT_LEFT = 55;
+  const PLOT_TOP = 15;
+  const PLOT_W = 530;
+  const PLOT_H = 400;
+
+  // ─── Function definitions ─────────────────────────────────────────────────
+  const funcDefs = {
+    linear: {
+      params: [
+        { key: 'a', label: 'a', min: -5, max: 5, step: 0.1, default: 1 },
+        { key: 'b', label: 'b', min: -10, max: 10, step: 0.5, default: 0 }
+      ],
+      f: (x, p) => p.a * x + p.b,
+      expr: (p) => {
+        const aStr = fmt(p.a);
+        const bAbs = Math.abs(p.b);
+        const bSign = p.b >= 0 ? '+' : '−';
+        if (p.a === 0) return `f(x) = ${fmt(p.b)}`;
+        if (p.b === 0) return `f(x) = ${aStr}x`;
+        return `f(x) = ${aStr}x ${bSign} ${fmt(bAbs)}`;
+      },
+      kjennetegn: (p) => {
+        const lines = [];
+        lines.push(`Type: Lineær funksjon — rett linje`);
+        lines.push(`Stigningstall: a = ${fmt(p.a)}`);
+        if (p.a > 0) lines.push('Stigende (a > 0): jo større x, jo større f(x)');
+        else if (p.a < 0) lines.push('Synkende (a < 0): jo større x, jo mindre f(x)');
+        else lines.push('Konstant funksjon (a = 0): horisontal linje');
+        lines.push(`Konstantledd / skjæring med y-aksen: b = ${fmt(p.b)}`);
+        if (p.a !== 0) {
+          const xInt = -p.b / p.a;
+          lines.push(`Nullpunkt (skjæring med x-aksen): x = ${fmt(xInt)}`);
+        }
+        lines.push('Konstant vekstfart: Δy/Δx = a for alle intervaller');
+        return lines;
+      }
+    },
+    quadratic: {
+      params: [
+        { key: 'a', label: 'a', min: -3, max: 3, step: 0.1, default: 1 },
+        { key: 'b', label: 'b', min: -6, max: 6, step: 0.5, default: 0 },
+        { key: 'c', label: 'c', min: -10, max: 10, step: 0.5, default: 0 }
+      ],
+      f: (x, p) => p.a * x * x + p.b * x + p.c,
+      expr: (p) => {
+        let s = 'f(x) = ';
+        if (p.a !== 0) s += `${fmt(p.a)}x²`;
+        if (p.b !== 0) s += ` ${p.b >= 0 ? '+' : '−'} ${fmt(Math.abs(p.b))}x`;
+        if (p.c !== 0) s += ` ${p.c >= 0 ? '+' : '−'} ${fmt(Math.abs(p.c))}`;
+        if (p.a === 0 && p.b === 0) s = `f(x) = ${fmt(p.c)}`;
+        return s.replace('= +', '= ').replace('= −', '= −');
+      },
+      kjennetegn: (p) => {
+        const lines = [];
+        lines.push('Type: Andregradsfunksjon — parabel');
+        if (p.a > 0) lines.push('Åpner oppover (a > 0): har et bunnpunkt (minimum)');
+        else if (p.a < 0) lines.push('Åpner nedover (a < 0): har et toppunkt (maksimum)');
+        else lines.push('a = 0: lineær funksjon');
+        if (p.a !== 0) {
+          const xV = -p.b / (2 * p.a);
+          const yV = p.a * xV * xV + p.b * xV + p.c;
+          lines.push(`${p.a > 0 ? 'Bunnpunkt' : 'Toppunkt'}: (${fmt(xV)}, ${fmt(yV)})`);
+          lines.push(`Symmetriakse: x = ${fmt(xV)}`);
+          const disc = p.b * p.b - 4 * p.a * p.c;
+          if (disc > 0) {
+            const x1 = (-p.b + Math.sqrt(disc)) / (2 * p.a);
+            const x2 = (-p.b - Math.sqrt(disc)) / (2 * p.a);
+            lines.push(`Nullpunkter: x = ${fmt(Math.min(x1,x2))} og x = ${fmt(Math.max(x1,x2))}`);
+          } else if (disc === 0) {
+            lines.push(`Nullpunkt: x = ${fmt(-p.b / (2 * p.a))} (dobbelt)`)
+          } else {
+            lines.push('Ingen reelle nullpunkter (diskriminant < 0)');
+          }
+        }
+        lines.push('Vekstfarten er ikke konstant — endres jevnt');
+        return lines;
+      }
+    },
+    power: {
+      params: [
+        { key: 'a', label: 'a', min: -3, max: 3, step: 0.1, default: 1 },
+        { key: 'b', label: 'b (eksponent)', min: -3, max: 4, step: 0.25, default: 2 }
+      ],
+      f: (x, p) => {
+        if (x === 0 && p.b < 0) return NaN;
+        if (x < 0 && !Number.isInteger(p.b)) return NaN;
+        return p.a * Math.pow(x, p.b);
+      },
+      expr: (p) => `f(x) = ${fmt(p.a)} · x^${fmt(p.b)}`,
+      kjennetegn: (p) => {
+        const lines = [];
+        lines.push('Type: Potensfunksjon — f(x) = a · xᵇ');
+        lines.push(`Koeffisient: a = ${fmt(p.a)}`);
+        lines.push(`Eksponent: b = ${fmt(p.b)}`);
+        if (p.b > 0) lines.push('b > 0: grafen går gjennom origo (0,0)');
+        if (p.b < 0) lines.push('b < 0: asympote ved x = 0 (ikke definert i 0)');
+        if (Number.isInteger(p.b) && p.b > 0 && p.b % 2 === 0) lines.push('Jevn eksponent: symmetrisk om y-aksen');
+        if (Number.isInteger(p.b) && p.b > 0 && p.b % 2 !== 0) lines.push('Odde eksponent: punktsymmetrisk om origo');
+        if (p.b === 1) lines.push('b = 1: lineær funksjon (rett linje)');
+        if (p.b === 2) lines.push('b = 2: parabel (andregradsfunksjon)');
+        return lines;
+      }
+    },
+    exponential: {
+      params: [
+        { key: 'b', label: 'b (startverdi)', min: 0.1, max: 10, step: 0.1, default: 1 },
+        { key: 'a', label: 'a (vekstfaktor)', min: 0.1, max: 3, step: 0.05, default: 2 }
+      ],
+      f: (x, p) => {
+        if (p.a <= 0) return NaN;
+        return p.b * Math.pow(p.a, x);
+      },
+      expr: (p) => `f(x) = ${fmt(p.b)} · ${fmt(p.a)}ˣ`,
+      kjennetegn: (p) => {
+        const lines = [];
+        lines.push('Type: Eksponentialfunksjon — f(x) = b · aˣ');
+        lines.push(`Startverdi (x=0): f(0) = ${fmt(p.b)}`);
+        lines.push(`Vekstfaktor: a = ${fmt(p.a)}`);
+        if (p.a > 1) {
+          const pct = fmt((p.a - 1) * 100);
+          lines.push(`a > 1: eksponentiell vekst (+${pct} % per enhet x)`);
+        } else if (p.a > 0 && p.a < 1) {
+          const pct = fmt((1 - p.a) * 100);
+          lines.push(`0 < a < 1: eksponentiell nedgang (−${pct} % per enhet x)`);
+        }
+        lines.push('Konstant vekstfaktor a for hvert steg Δx = 1');
+        lines.push('Aldri negativ for b > 0: grafen er alltid over x-aksen');
+        lines.push('Asympote: y = 0 (x → −∞ når a > 1)');
+        return lines;
+      }
+    }
+  };
+
+  // ─── Helpers ─────────────────────────────────────────────────────────────
+  function fmt(n) {
+    if (!isFinite(n)) return '∞';
+    const s = parseFloat(n.toFixed(4)).toString();
+    return s;
+  }
+
+  function getViewport() {
+    const xMin = parseFloat(document.getElementById('xMin').value) || -10;
+    const xMax = parseFloat(document.getElementById('xMax').value) || 10;
+    const yMin = parseFloat(document.getElementById('yMin').value) || -10;
+    const yMax = parseFloat(document.getElementById('yMax').value) || 10;
+    return { xMin, xMax, yMin, yMax };
+  }
+
+  function toSVG(x, y, vp) {
+    const sx = PLOT_LEFT + (x - vp.xMin) / (vp.xMax - vp.xMin) * PLOT_W;
+    const sy = PLOT_TOP + (vp.yMax - y) / (vp.yMax - vp.yMin) * PLOT_H;
+    return { sx, sy };
+  }
+
+  function fromSVG(sx, sy, vp) {
+    const x = vp.xMin + (sx - PLOT_LEFT) / PLOT_W * (vp.xMax - vp.xMin);
+    const y = vp.yMax - (sy - PLOT_TOP) / PLOT_H * (vp.yMax - vp.yMin);
+    return { x, y };
+  }
+
+  function evalF(x) {
+    const def = funcDefs[currentType];
+    return def.f(x, params);
+  }
+
+  // ─── Render grid + axes ──────────────────────────────────────────────────
+  function renderGrid() {
+    const vp = getViewport();
+    const gridEl = document.getElementById('gridLines');
+    const axisEl = document.getElementById('axisLines');
+    const tickEl = document.getElementById('tickLabels');
+    gridEl.innerHTML = '';
+    axisEl.innerHTML = '';
+    tickEl.innerHTML = '';
+
+    // Decide nice tick spacing
+    const xRange = vp.xMax - vp.xMin;
+    const yRange = vp.yMax - vp.yMin;
+    const xTick = niceStep(xRange / 8);
+    const yTick = niceStep(yRange / 8);
+
+    // Vertical grid lines + x ticks
+    let xi = Math.ceil(vp.xMin / xTick) * xTick;
+    while (xi <= vp.xMax + 1e-9) {
+      const { sx } = toSVG(xi, 0, vp);
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', sx); line.setAttribute('y1', PLOT_TOP);
+      line.setAttribute('x2', sx); line.setAttribute('y2', PLOT_TOP + PLOT_H);
+      line.setAttribute('class', 'grid-line');
+      gridEl.appendChild(line);
+      // Tick label
+      if (Math.abs(xi) > 1e-10) {
+        const { sy: axisY } = toSVG(0, 0, vp);
+        const labelY = Math.min(Math.max(axisY + 14, PLOT_TOP + 12), PLOT_TOP + PLOT_H - 3);
+        const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        t.setAttribute('x', sx); t.setAttribute('y', labelY);
+        t.setAttribute('text-anchor', 'middle');
+        t.textContent = fmt(xi);
+        tickEl.appendChild(t);
+        // tick mark
+        const tk = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        tk.setAttribute('x1', sx); tk.setAttribute('y1', axisY - 3);
+        tk.setAttribute('x2', sx); tk.setAttribute('y2', axisY + 3);
+        tk.setAttribute('class', 'tick-line');
+        axisEl.appendChild(tk);
+      }
+      xi = parseFloat((xi + xTick).toFixed(10));
+    }
+
+    // Horizontal grid lines + y ticks
+    let yi = Math.ceil(vp.yMin / yTick) * yTick;
+    while (yi <= vp.yMax + 1e-9) {
+      const { sy } = toSVG(0, yi, vp);
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', PLOT_LEFT); line.setAttribute('y1', sy);
+      line.setAttribute('x2', PLOT_LEFT + PLOT_W); line.setAttribute('y2', sy);
+      line.setAttribute('class', 'grid-line');
+      gridEl.appendChild(line);
+      if (Math.abs(yi) > 1e-10) {
+        const { sx: axisX } = toSVG(0, 0, vp);
+        const labelX = Math.min(Math.max(axisX - 6, PLOT_LEFT + 2), PLOT_LEFT + PLOT_W - 20);
+        const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        t.setAttribute('x', labelX); t.setAttribute('y', sy + 4);
+        t.setAttribute('text-anchor', 'end');
+        t.textContent = fmt(yi);
+        tickEl.appendChild(t);
+        const { sx: aX } = toSVG(0, 0, vp);
+        const tk = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        tk.setAttribute('x1', aX - 3); tk.setAttribute('y1', sy);
+        tk.setAttribute('x2', aX + 3); tk.setAttribute('y2', sy);
+        tk.setAttribute('class', 'tick-line');
+        axisEl.appendChild(tk);
+      }
+      yi = parseFloat((yi + yTick).toFixed(10));
+    }
+
+    // X axis
+    const { sy: axY } = toSVG(0, 0, vp);
+    const clampedAxY = Math.min(Math.max(axY, PLOT_TOP), PLOT_TOP + PLOT_H);
+    const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    xAxis.setAttribute('x1', PLOT_LEFT); xAxis.setAttribute('y1', clampedAxY);
+    xAxis.setAttribute('x2', PLOT_LEFT + PLOT_W - 5); xAxis.setAttribute('y2', clampedAxY);
+    xAxis.setAttribute('class', 'axis-line');
+    xAxis.setAttribute('marker-end', 'url(#arrowX)');
+    axisEl.appendChild(xAxis);
+
+    // Y axis
+    const { sx: axX } = toSVG(0, 0, vp);
+    const clampedAxX = Math.min(Math.max(axX, PLOT_LEFT), PLOT_LEFT + PLOT_W);
+    const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    yAxis.setAttribute('x1', clampedAxX); yAxis.setAttribute('y1', PLOT_TOP + PLOT_H);
+    yAxis.setAttribute('x2', clampedAxX); yAxis.setAttribute('y2', PLOT_TOP + 5);
+    yAxis.setAttribute('class', 'axis-line');
+    yAxis.setAttribute('marker-end', 'url(#arrowY)');
+    axisEl.appendChild(yAxis);
+
+    // Origin label "0"
+    if (vp.xMin < 0 && vp.xMax > 0 && vp.yMin < 0 && vp.yMax > 0) {
+      const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      t.setAttribute('x', clampedAxX - 6); t.setAttribute('y', clampedAxY + 14);
+      t.setAttribute('text-anchor', 'middle');
+      t.setAttribute('font-size', '10');
+      t.setAttribute('fill', '#4b5563');
+      t.setAttribute('font-family', 'monospace');
+      t.textContent = '0';
+      tickEl.appendChild(t);
+    }
+  }
+
+  function niceStep(roughStep) {
+    const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+    const normalized = roughStep / magnitude;
+    let nice;
+    if (normalized < 1.5) nice = 1;
+    else if (normalized < 3) nice = 2;
+    else if (normalized < 7) nice = 5;
+    else nice = 10;
+    return nice * magnitude;
+  }
+
+  // ─── Render function curve ────────────────────────────────────────────────
+  function renderCurve() {
+    const vp = getViewport();
+    const path = document.getElementById('funcPath');
+    const N = 800;
+    const step = (vp.xMax - vp.xMin) / N;
+    let d = '';
+    let prevValid = false;
+    for (let i = 0; i <= N; i++) {
+      const x = vp.xMin + i * step;
+      const y = evalF(x);
+      if (!isFinite(y)) { prevValid = false; continue; }
+      const { sx, sy } = toSVG(x, y, vp);
+      if (!prevValid) {
+        d += `M ${sx.toFixed(2)} ${sy.toFixed(2)} `;
+      } else {
+        d += `L ${sx.toFixed(2)} ${sy.toFixed(2)} `;
+      }
+      prevValid = true;
+    }
+    path.setAttribute('d', d);
+  }
+
+  // ─── Render secant ────────────────────────────────────────────────────────
+  function renderSecant() {
+    const secantPath = document.getElementById('secantPath');
+    const secantPts = document.getElementById('secantPoints');
+    const pt1 = document.getElementById('secPt1');
+    const pt2 = document.getElementById('secPt2');
+    const legendSec = document.getElementById('legendSecant');
+
+    if (!showSecant || !secantData) {
+      secantPath.style.display = 'none';
+      secantPts.style.display = 'none';
+      legendSec.style.display = 'none';
+      return;
+    }
+    const vp = getViewport();
+    const { x1, y1, x2, y2 } = secantData;
+
+    // Extend secant line across the full viewport
+    const slope = (y2 - y1) / (x2 - x1);
+    const lineY1 = y1 + slope * (vp.xMin - x1);
+    const lineY2 = y1 + slope * (vp.xMax - x1);
+    const p1 = toSVG(vp.xMin, lineY1, vp);
+    const p2 = toSVG(vp.xMax, lineY2, vp);
+    secantPath.setAttribute('d', `M ${p1.sx} ${p1.sy} L ${p2.sx} ${p2.sy}`);
+    secantPath.style.display = '';
+
+    const sp1 = toSVG(x1, y1, vp);
+    const sp2 = toSVG(x2, y2, vp);
+    pt1.setAttribute('cx', sp1.sx); pt1.setAttribute('cy', sp1.sy);
+    pt2.setAttribute('cx', sp2.sx); pt2.setAttribute('cy', sp2.sy);
+    secantPts.style.display = '';
+    legendSec.style.display = '';
+  }
+
+  // ─── Render tangent ───────────────────────────────────────────────────────
+  function renderTangent() {
+    const tangentPath = document.getElementById('tangentPath');
+    const tangentPt = document.getElementById('tangentPoint');
+    const pt = document.getElementById('tanPt');
+    const legendTan = document.getElementById('legendTangent');
+
+    if (!showTangent || !tangentData) {
+      tangentPath.style.display = 'none';
+      tangentPt.style.display = 'none';
+      legendTan.style.display = 'none';
+      return;
+    }
+    const vp = getViewport();
+    const { x0, y0, slope } = tangentData;
+
+    const lineY1 = y0 + slope * (vp.xMin - x0);
+    const lineY2 = y0 + slope * (vp.xMax - x0);
+    const p1 = toSVG(vp.xMin, lineY1, vp);
+    const p2 = toSVG(vp.xMax, lineY2, vp);
+    tangentPath.setAttribute('d', `M ${p1.sx} ${p1.sy} L ${p2.sx} ${p2.sy}`);
+    tangentPath.style.display = '';
+
+    const sp = toSVG(x0, y0, vp);
+    pt.setAttribute('cx', sp.sx); pt.setAttribute('cy', sp.sy);
+    tangentPt.style.display = '';
+    legendTan.style.display = '';
+  }
+
+  // ─── Full render ──────────────────────────────────────────────────────────
+  function render() {
+    renderGrid();
+    renderCurve();
+    renderSecant();
+    renderTangent();
+    updateExpr();
+    updateKjennetegn();
+  }
+
+  function updateExpr() {
+    const def = funcDefs[currentType];
+    document.getElementById('funcExpr').textContent = def.expr(params);
+  }
+
+  function updateKjennetegn() {
+    const def = funcDefs[currentType];
+    const lines = def.kjennetegn(params);
+    const el = document.getElementById('kjennetegn');
+    el.innerHTML = lines.map(l => `<p class="flex items-start gap-1"><span class="text-blue-400 mt-0.5">▸</span><span>${l}</span></p>`).join('');
+  }
+
+  // ─── Build parameter controls ─────────────────────────────────────────────
+  function buildParamControls() {
+    const def = funcDefs[currentType];
+    const container = document.getElementById('paramControls');
+    container.innerHTML = '';
+    // Reset params to defaults
+    params = {};
+    def.params.forEach(p => { params[p.key] = p.default; });
+
+    def.params.forEach(pd => {
+      const div = document.createElement('div');
+      div.className = 'space-y-1';
+      div.innerHTML = `
+        <div class="flex items-center justify-between">
+          <label class="text-sm font-medium text-gray-700">${pd.label}</label>
+          <span id="val_${pd.key}" class="font-mono text-sm text-blue-700 bg-blue-50 px-2 py-0.5 rounded">${fmt(pd.default)}</span>
+        </div>
+        <input type="range"
+          id="slider_${pd.key}"
+          min="${pd.min}" max="${pd.max}" step="${pd.step}" value="${pd.default}"
+          class="w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200">
+        <div class="flex justify-between text-xs text-gray-400">
+          <span>${pd.min}</span><span>${pd.max}</span>
+        </div>`;
+      container.appendChild(div);
+
+      const slider = div.querySelector(`#slider_${pd.key}`);
+      slider.addEventListener('input', () => {
+        params[pd.key] = parseFloat(slider.value);
+        document.getElementById(`val_${pd.key}`).textContent = fmt(params[pd.key]);
+        // Recompute secant/tangent if shown
+        if (showSecant) computeSecant();
+        if (showTangent) computeTangent();
+        render();
+      });
+    });
+  }
+
+  // ─── Type selector ────────────────────────────────────────────────────────
+  document.getElementById('typeBtns').addEventListener('click', e => {
+    const btn = e.target.closest('[data-type]');
+    if (!btn) return;
+    currentType = btn.dataset.type;
+    document.querySelectorAll('#typeBtns .tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    // Reset secant/tangent displays
+    showSecant = false;
+    showTangent = false;
+    secantData = null;
+    tangentData = null;
+    document.getElementById('secantResult').classList.add('hidden');
+    document.getElementById('tangentResult').classList.add('hidden');
+    buildParamControls();
+    render();
+  });
+
+  // ─── Viewport inputs ──────────────────────────────────────────────────────
+  ['xMin','xMax','yMin','yMax'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => render());
+  });
+
+  // ─── Compute secant ───────────────────────────────────────────────────────
+  function computeSecant() {
+    const x1 = parseFloat(document.getElementById('secX1').value);
+    const x2 = parseFloat(document.getElementById('secX2').value);
+    if (!isFinite(x1) || !isFinite(x2) || Math.abs(x2 - x1) < 1e-10) return false;
+    const y1 = evalF(x1);
+    const y2 = evalF(x2);
+    if (!isFinite(y1) || !isFinite(y2)) return false;
+    const slope = (y2 - y1) / (x2 - x1);
+    secantData = { x1, y1, x2, y2, slope };
+
+    const resultEl = document.getElementById('secantResult');
+    resultEl.classList.remove('hidden');
+    resultEl.innerHTML = `
+      <p><strong>x₁ = ${fmt(x1)}</strong>, f(x₁) = ${fmt(y1)}</p>
+      <p><strong>x₂ = ${fmt(x2)}</strong>, f(x₂) = ${fmt(y2)}</p>
+      <p class="pt-1 border-t border-yellow-200 mt-1">
+        <strong>Gjennomsnittlig vekstfart:</strong>
+        Δy/Δx = (${fmt(y2)} − ${fmt(y1)}) / (${fmt(x2)} − ${fmt(x1)}) = <span class="text-yellow-700 font-bold">${fmt(slope)}</span>
+      </p>
+      <p class="text-xs text-gray-500 mt-1">Sekanten har stigningstall ${fmt(slope)}. ${slope > 0 ? 'Funksjonen stiger i gjennomsnitt.' : slope < 0 ? 'Funksjonen synker i gjennomsnitt.' : 'Ingen gjennomsnittlig endring.'}</p>`;
+    return true;
+  }
+
+  // ─── Compute tangent ──────────────────────────────────────────────────────
+  function computeTangent() {
+    const x0 = parseFloat(document.getElementById('tanX').value);
+    if (!isFinite(x0)) return false;
+    const y0 = evalF(x0);
+    if (!isFinite(y0)) return false;
+    const dx = 0.0001;
+    const slope = (evalF(x0 + dx) - evalF(x0)) / dx;
+    if (!isFinite(slope)) return false;
+    tangentData = { x0, y0, slope };
+
+    const resultEl = document.getElementById('tangentResult');
+    resultEl.classList.remove('hidden');
+    resultEl.innerHTML = `
+      <p><strong>Punkt:</strong> (${fmt(x0)}, ${fmt(y0)})</p>
+      <p class="pt-1 border-t border-red-200 mt-1">
+        <strong>Momentan vekstfart:</strong>
+        f′(${fmt(x0)}) ≈ <span class="text-red-700 font-bold">${fmt(slope)}</span>
+      </p>
+      <p class="text-xs text-gray-500 mt-1">Tangentlinjen berører grafen i punktet (${fmt(x0)}, ${fmt(y0)}) med stigningstall ${fmt(slope)}.</p>`;
+    return true;
+  }
+
+  // ─── Buttons ──────────────────────────────────────────────────────────────
+  document.getElementById('btnSecant').addEventListener('click', () => {
+    if (computeSecant()) {
+      showSecant = true;
+      renderSecant();
+    } else {
+      document.getElementById('secantResult').classList.remove('hidden');
+      document.getElementById('secantResult').innerHTML = '<p class="text-red-600">Ugyldig x-verdi eller x₁ = x₂. Prøv igjen.</p>';
+      showSecant = false;
+      renderSecant();
+    }
+  });
+
+  document.getElementById('btnTangent').addEventListener('click', () => {
+    if (computeTangent()) {
+      showTangent = true;
+      renderTangent();
+    } else {
+      document.getElementById('tangentResult').classList.remove('hidden');
+      document.getElementById('tangentResult').innerHTML = '<p class="text-red-600">Ugyldig x-verdi (f(x) ikke definert her).</p>';
+      showTangent = false;
+      renderTangent();
+    }
+  });
+
+  // ─── Init ─────────────────────────────────────────────────────────────────
+  buildParamControls();
+  render();
+
+})();
+</script>
+</body>
+</html>

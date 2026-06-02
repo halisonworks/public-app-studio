@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<!--
+  Kvartiler og boksdiagram — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 2P (LK20): kvartiler, kvartilbredde og
+  variasjonsbredde, framstilt som et boksdiagram.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kvartiler og boksdiagram – Matematikk 2P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; }
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      font-size: 0.8rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .result-row td { padding: 0.3rem 0.75rem; }
+    .highlight-q { background-color: #fef9c3; font-weight: 600; }
+    textarea:focus { outline: 2px solid #6366f1; }
+    .whisker-label { font-size: 11px; font-family: 'Segoe UI', Arial, sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-indigo-700 text-white py-5 px-4 shadow-md">
+    <div class="max-w-3xl mx-auto">
+      <p class="text-indigo-200 text-sm font-medium mb-1">Matematikk 2P · LK20 · Kapittel 3 – Spredningsmål</p>
+      <h1 class="text-2xl sm:text-3xl font-bold leading-tight">Kvartiler og boksdiagram</h1>
+      <p class="text-indigo-200 text-sm mt-1">Beregn kvartiler, kvartilbredde og variasjonsbredde – og se resultatet som et boksdiagram.</p>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-8 space-y-8">
+
+    <!-- Forklaring -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-lg font-bold text-slate-800 mb-3">Hva er kvartiler?</h2>
+      <p class="text-slate-700 text-sm leading-relaxed mb-3">
+        Kvartiler deler et datasett i fire like store deler etter at tallene er sortert i stigende rekkefølge.
+        <strong>Nedre kvartil (Q1)</strong> er medianen til den nedre halvdelen,
+        <strong>medianen (Q2)</strong> er midtverdien i hele datasettet, og
+        <strong>øvre kvartil (Q3)</strong> er medianen til den øvre halvdelen.
+      </p>
+      <p class="text-slate-700 text-sm leading-relaxed mb-3">
+        <strong>Kvartilbredden</strong> (IQR = Q3 − Q1) forteller hvor spredt de midtre 50 % av dataene er.
+        Den er <em>robust overfor uteliggere</em> – ekstreme verdier påvirker den ikke, i motsetning til variasjonsbredden (max − min).
+      </p>
+      <p class="text-slate-700 text-sm leading-relaxed">
+        <strong>Boksdiagrammet</strong> (engelsk: box-and-whisker plot) viser boks fra Q1 til Q3 med en strek ved medianen,
+        og «værhår» (whiskers) ut til minste og største verdi.
+      </p>
+    </section>
+
+    <!-- Metodeforklaring -->
+    <section class="bg-indigo-50 border border-indigo-200 rounded-2xl p-5 text-sm text-indigo-900">
+      <p class="font-semibold mb-2">Metode som brukes her (Sinus 2P, kap. 3):</p>
+      <ol class="list-decimal list-inside space-y-1 leading-relaxed">
+        <li>Sorter alle verdiene i stigende rekkefølge.</li>
+        <li>Finn medianen (Q2): midtverdien (odde antall) eller gjennomsnittet av de to midterste (partall antall).</li>
+        <li>Del datasettet i en nedre og øvre halvdel. Ved odde antall <strong>ekskluderes</strong> medianen fra begge halvdeler.</li>
+        <li>Q1 = median av nedre halvdel, Q3 = median av øvre halvdel.</li>
+        <li>Kvartilbredde = Q3 − Q1, variasjonsbredde = max − min.</li>
+      </ol>
+    </section>
+
+    <!-- Input -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-lg font-bold text-slate-800 mb-1">Skriv inn datasett</h2>
+      <p class="text-slate-500 text-sm mb-4">Skriv inn tallene atskilt med komma, mellomrom eller linjeskift. Minst 4 tall kreves.</p>
+
+      <label for="dataInput" class="block text-sm font-medium text-slate-700 mb-1">Tallene dine:</label>
+      <textarea
+        id="dataInput"
+        rows="4"
+        class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-800 resize-y"
+        placeholder="F.eks.: 12, 15, 18, 21, 24, 27, 30"
+      >4, 7, 9, 11, 14, 17, 21, 25, 28, 32</textarea>
+
+      <div class="mt-4 flex flex-wrap gap-3 items-center">
+        <button
+          id="calcBtn"
+          class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition-colors shadow"
+          onclick="beregn()"
+        >Beregn</button>
+        <button
+          id="resetBtn"
+          class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-5 py-2.5 rounded-xl text-sm transition-colors"
+          onclick="tilbakestill()"
+        >Tilbakestill eksempel</button>
+        <span id="errorMsg" class="text-red-600 text-sm font-medium hidden"></span>
+      </div>
+    </section>
+
+    <!-- Resultater -->
+    <section id="resultatSeksjon" class="hidden">
+
+      <!-- Sortert datasett -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="step-badge bg-indigo-100 text-indigo-700">1</span>
+          <h3 class="font-bold text-slate-800">Sortert datasett</h3>
+        </div>
+        <p id="sortertData" class="text-slate-700 text-sm font-mono bg-slate-50 rounded-lg px-4 py-3 leading-loose tracking-wide"></p>
+        <p id="antalltall" class="text-slate-500 text-xs mt-2"></p>
+      </div>
+
+      <!-- Fem-tallsoversikt -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="step-badge bg-indigo-100 text-indigo-700">2</span>
+          <h3 class="font-bold text-slate-800">Fem-tallsoversikt og spredningsmål</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-slate-50 text-slate-600 text-left">
+                <th class="result-row py-2 px-3 font-semibold rounded-tl-lg">Størrelse</th>
+                <th class="result-row py-2 px-3 font-semibold">Symbol</th>
+                <th class="result-row py-2 px-3 font-semibold rounded-tr-lg">Verdi</th>
+              </tr>
+            </thead>
+            <tbody id="femTallTabell">
+            </tbody>
+          </table>
+        </div>
+        <div id="utregningVis" class="mt-4 space-y-1 text-sm text-slate-600 bg-slate-50 rounded-xl p-4"></div>
+      </div>
+
+      <!-- Boksdiagram -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="step-badge bg-indigo-100 text-indigo-700">3</span>
+          <h3 class="font-bold text-slate-800">Boksdiagram</h3>
+        </div>
+        <div id="boksdiagramContainer" class="w-full overflow-x-auto"></div>
+        <p class="text-slate-500 text-xs mt-3">
+          Boksen viser kvartilbredden (Q1–Q3). Streken inne i boksen er medianen (Q2). Værhårene strekker seg til minste og største verdi.
+        </p>
+      </div>
+
+      <!-- Tolkning -->
+      <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-sm text-emerald-900">
+        <h3 class="font-bold mb-2">Tolkning av resultatene</h3>
+        <p id="tolkningTekst" class="leading-relaxed"></p>
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer class="text-center text-slate-400 text-xs py-8">
+    Halison App Studio · Matematikk 2P (LK20) · Kvartiler og boksdiagram
+  </footer>
+
+  <script>
+    // -----------------------------------------------------------------------
+    // Hjelpefunksjoner
+    // -----------------------------------------------------------------------
+
+    function parseData(tekst) {
+      // Splitter på komma, semikolon, mellomrom og linjeskift
+      return tekst
+        .split(/[\s,;]+/)
+        .map(s => s.trim())
+        .filter(s => s.length > 0)
+        .map(s => {
+          // Tillat norsk desimaltegn (komma allerede håndtert som separator,
+          // men punktum skal fungere som desimaltegn)
+          const n = parseFloat(s.replace(',', '.'));
+          if (isNaN(n)) throw new Error('«' + s + '» er ikke et gyldig tall.');
+          return n;
+        });
+    }
+
+    function sorter(arr) {
+      return [...arr].sort((a, b) => a - b);
+    }
+
+    function median(arr) {
+      // arr skal allerede være sortert
+      const n = arr.length;
+      if (n === 0) return null;
+      if (n % 2 === 1) {
+        return arr[Math.floor(n / 2)];
+      } else {
+        return (arr[n / 2 - 1] + arr[n / 2]) / 2;
+      }
+    }
+
+    function formaterTall(n) {
+      // Viser maks 4 desimaler, men fjerner etterfølgende nuller
+      if (Number.isInteger(n)) return String(n);
+      return parseFloat(n.toFixed(4)).toString().replace('.', ',');
+    }
+
+    function beregneKvartiler(sortert) {
+      const n = sortert.length;
+      const q2 = median(sortert);
+
+      let nedreHalvdel, oevreHalvdel;
+      if (n % 2 === 1) {
+        // Odde antall: ekskluder medianen
+        const mIdx = Math.floor(n / 2);
+        nedreHalvdel = sortert.slice(0, mIdx);
+        oevreHalvdel = sortert.slice(mIdx + 1);
+      } else {
+        // Partall: del nøyaktig i midten
+        nedreHalvdel = sortert.slice(0, n / 2);
+        oevreHalvdel = sortert.slice(n / 2);
+      }
+
+      const q1 = median(nedreHalvdel);
+      const q3 = median(oevreHalvdel);
+
+      return { q1, q2, q3, nedreHalvdel, oevreHalvdel };
+    }
+
+    // -----------------------------------------------------------------------
+    // Tegn boksdiagram (SVG)
+    // -----------------------------------------------------------------------
+
+    function tegnBoksdiagram(min, q1, q2, q3, max) {
+      const svgW = 600;
+      const svgH = 130;
+      const leftPad = 50;
+      const rightPad = 50;
+      const axisY = 80;
+      const boxTop = 50;
+      const boxBot = 100;
+      const tickH = 10;
+      const drawW = svgW - leftPad - rightPad;
+
+      // Litt ekstra rom rundt min/max for at labels ikke kuttes
+      const dataRange = max - min;
+      const padding = dataRange === 0 ? 1 : dataRange * 0.08;
+      const scaleMin = min - padding;
+      const scaleMax = max + padding;
+      const scaleRange = scaleMax - scaleMin;
+
+      function toX(v) {
+        return leftPad + ((v - scaleMin) / scaleRange) * drawW;
+      }
+
+      const minX  = toX(min);
+      const q1X   = toX(q1);
+      const q2X   = toX(q2);
+      const q3X   = toX(q3);
+      const maxX  = toX(max);
+
+      // Generer tallinje-ticks
+      let ticks = [];
+      const allPoints = [min, q1, q2, q3, max];
+      // Rund til pene tall for tallinje
+      const step = bestemSteg(dataRange, drawW);
+      if (step > 0) {
+        let start = Math.ceil(scaleMin / step) * step;
+        for (let v = start; v <= scaleMax + 1e-9; v = Math.round((v + step) * 1e10) / 1e10) {
+          // Ikke legg til hvis veldig nærme en allerede planlagt label
+          const tooClose = allPoints.some(p => Math.abs(p - v) < step * 0.4);
+          if (!tooClose) ticks.push(v);
+        }
+      }
+      // Legg alltid til de fem sentrale verdiene
+      allPoints.forEach(p => {
+        if (!ticks.includes(p)) ticks.push(p);
+      });
+
+      // Bygg SVG
+      let svg = `<svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg"
+        style="width:100%;max-width:${svgW}px;display:block;margin:0 auto;" aria-label="Boksdiagram">`;
+
+      // Tallinje
+      svg += `<line x1="${leftPad - 10}" y1="${axisY}" x2="${svgW - rightPad + 10}" y2="${axisY}"
+        stroke="#64748b" stroke-width="1.5"/>`;
+
+      // Bakgrunnsticks (pene tall)
+      ticks.filter(v => !allPoints.includes(v)).forEach(v => {
+        const x = toX(v);
+        svg += `<line x1="${x}" y1="${axisY - tickH/2}" x2="${x}" y2="${axisY + tickH/2}"
+          stroke="#cbd5e1" stroke-width="1"/>`;
+        svg += `<text x="${x}" y="${axisY + tickH + 12}" text-anchor="middle"
+          fill="#94a3b8" font-size="10" font-family="'Segoe UI',Arial,sans-serif">${formaterTall(v)}</text>`;
+      });
+
+      // Whiskers
+      svg += `<line x1="${minX}" y1="${(boxTop+boxBot)/2}" x2="${q1X}" y2="${(boxTop+boxBot)/2}"
+        stroke="#6366f1" stroke-width="2"/>`;
+      svg += `<line x1="${q3X}" y1="${(boxTop+boxBot)/2}" x2="${maxX}" y2="${(boxTop+boxBot)/2}"
+        stroke="#6366f1" stroke-width="2"/>`;
+      // Whisker-endepunkter (vertikale streker)
+      svg += `<line x1="${minX}" y1="${boxTop + 8}" x2="${minX}" y2="${boxBot - 8}"
+        stroke="#6366f1" stroke-width="2"/>`;
+      svg += `<line x1="${maxX}" y1="${boxTop + 8}" x2="${maxX}" y2="${boxBot - 8}"
+        stroke="#6366f1" stroke-width="2"/>`;
+
+      // Boks Q1–Q3
+      svg += `<rect x="${q1X}" y="${boxTop}" width="${q3X - q1X}" height="${boxBot - boxTop}"
+        fill="#e0e7ff" stroke="#6366f1" stroke-width="2" rx="2"/>`;
+
+      // Median-strek
+      svg += `<line x1="${q2X}" y1="${boxTop}" x2="${q2X}" y2="${boxBot}"
+        stroke="#dc2626" stroke-width="2.5"/>`;
+
+      // Labels for de fem verdiene
+      function labelColor(isQ2) { return isQ2 ? '#dc2626' : '#4338ca'; }
+
+      const labelData = [
+        { x: minX,  v: min,  label: 'min',  above: true,  color: '#4338ca' },
+        { x: q1X,   v: q1,   label: 'Q1',   above: false, color: '#4338ca' },
+        { x: q2X,   v: q2,   label: 'Q2',   above: true,  color: '#dc2626' },
+        { x: q3X,   v: q3,   label: 'Q3',   above: false, color: '#4338ca' },
+        { x: maxX,  v: max,  label: 'maks', above: true,  color: '#4338ca' },
+      ];
+
+      // Unngå overlappende labels horisontalt ved å veksle over/under
+      labelData.forEach(d => {
+        const yLabel = d.above ? boxTop - 18 : boxBot + 16;
+        const yVal   = d.above ? boxTop - 6  : boxBot + 28;
+        svg += `<text x="${d.x}" y="${yLabel}" text-anchor="middle" font-size="10"
+          font-weight="700" fill="${d.color}" font-family="'Segoe UI',Arial,sans-serif">${d.label}</text>`;
+        svg += `<text x="${d.x}" y="${yVal}" text-anchor="middle" font-size="11"
+          fill="${d.color}" font-family="'Segoe UI',Arial,sans-serif">${formaterTall(d.v)}</text>`;
+      });
+
+      // Tick for de fem verdiene på aksen
+      allPoints.forEach(v => {
+        const x = toX(v);
+        svg += `<line x1="${x}" y1="${axisY - tickH}" x2="${x}" y2="${axisY + tickH}"
+          stroke="#6366f1" stroke-width="1.5"/>`;
+      });
+
+      svg += `</svg>`;
+      return svg;
+    }
+
+    function bestemSteg(dataRange, drawWidth) {
+      if (dataRange <= 0) return 0;
+      // Ønsket ca. 5–10 ticks
+      const rawStep = dataRange / 7;
+      const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+      const normalized = rawStep / magnitude;
+      let niceStep;
+      if (normalized < 1.5) niceStep = 1;
+      else if (normalized < 3.5) niceStep = 2;
+      else if (normalized < 7.5) niceStep = 5;
+      else niceStep = 10;
+      return niceStep * magnitude;
+    }
+
+    // -----------------------------------------------------------------------
+    // Hoved-beregningsfunksjon
+    // -----------------------------------------------------------------------
+
+    function beregn() {
+      const input = document.getElementById('dataInput').value;
+      const errEl = document.getElementById('errorMsg');
+      errEl.classList.add('hidden');
+      errEl.textContent = '';
+
+      let tall;
+      try {
+        tall = parseData(input);
+      } catch (e) {
+        visFeil(e.message);
+        return;
+      }
+
+      if (tall.length < 4) {
+        visFeil('Du trenger minst 4 tall for å beregne kvartiler.');
+        return;
+      }
+
+      const s = sorter(tall);
+      const n = s.length;
+      const minV = s[0];
+      const maxV = s[n - 1];
+
+      const { q1, q2, q3, nedreHalvdel, oevreHalvdel } = beregneKvartiler(s);
+
+      const iqr = q3 - q1;
+      const variasjonsbredde = maxV - minV;
+
+      // --- Sortert datasett ---
+      // Marker hvilke posisjoner som er Q1, Q2, Q3
+      let sortertHtml = '';
+      const mIdx = Math.floor(n / 2); // medianindeks (for odde: faktisk midtverdi)
+
+      s.forEach((v, i) => {
+        let klasse = '';
+        let tag = '';
+        // Fargelegg Q2-posisjon
+        if (n % 2 === 1 && i === mIdx) {
+          klasse = 'bg-red-100 text-red-700 font-bold rounded px-1';
+          tag = '<sup class="text-xs">Q2</sup>';
+        } else if (n % 2 === 0 && (i === n/2 - 1 || i === n/2)) {
+          klasse = 'bg-red-100 text-red-700 font-bold rounded px-1';
+          tag = '';
+        }
+        sortertHtml += `<span class="${klasse}">${formaterTall(v)}${tag}</span>`;
+        if (i < n - 1) sortertHtml += '<span class="text-slate-400">, </span>';
+      });
+      document.getElementById('sortertData').innerHTML = sortertHtml;
+      document.getElementById('antalltall').textContent = `Antall verdier (n): ${n}`;
+
+      // --- Fem-tallstabell ---
+      const rader = [
+        { navn: 'Minste verdi', symbol: 'min', verdi: minV, hl: false },
+        { navn: 'Nedre kvartil', symbol: 'Q1', verdi: q1, hl: true },
+        { navn: 'Median', symbol: 'Q2', verdi: q2, hl: true },
+        { navn: 'Øvre kvartil', symbol: 'Q3', verdi: q3, hl: true },
+        { navn: 'Største verdi', symbol: 'maks', verdi: maxV, hl: false },
+        { navn: '—', symbol: '—', verdi: null, hl: false }, // skillelinje
+        { navn: 'Variasjonsbredde', symbol: 'maks − min', verdi: variasjonsbredde, hl: false },
+        { navn: 'Kvartilbredde (IQR)', symbol: 'Q3 − Q1', verdi: iqr, hl: true },
+      ];
+
+      let tabelHtml = '';
+      rader.forEach(r => {
+        if (r.verdi === null && r.navn === '—') {
+          tabelHtml += `<tr><td colspan="3" class="py-1 px-3"><hr class="border-slate-200"/></td></tr>`;
+          return;
+        }
+        const hlKlasse = r.hl ? 'bg-yellow-50' : '';
+        tabelHtml += `<tr class="${hlKlasse} border-b border-slate-100 last:border-0">
+          <td class="result-row text-slate-700">${r.navn}</td>
+          <td class="result-row font-mono text-slate-500">${r.symbol}</td>
+          <td class="result-row font-bold text-indigo-700">${formaterTall(r.verdi)}</td>
+        </tr>`;
+      });
+      document.getElementById('femTallTabell').innerHTML = tabelHtml;
+
+      // --- Utregningsvis ---
+      let utregn = '';
+      const nedreStr = '[' + nedreHalvdel.map(formaterTall).join(', ') + ']';
+      const oevreStr = '[' + oevreHalvdel.map(formaterTall).join(', ') + ']';
+
+      utregn += `<p><strong>Sortert datasett:</strong> [${s.map(formaterTall).join(', ')}] (n = ${n})</p>`;
+      if (n % 2 === 1) {
+        utregn += `<p><strong>Q2 (median):</strong> midtverdi = <strong>${formaterTall(q2)}</strong> (posisjon ${mIdx + 1})</p>`;
+      } else {
+        utregn += `<p><strong>Q2 (median):</strong> (${formaterTall(s[n/2-1])} + ${formaterTall(s[n/2])}) / 2 = <strong>${formaterTall(q2)}</strong></p>`;
+      }
+      utregn += `<p><strong>Nedre halvdel:</strong> ${nedreStr}</p>`;
+      utregn += `<p><strong>Q1</strong> = median av nedre halvdel = <strong>${formaterTall(q1)}</strong></p>`;
+      utregn += `<p><strong>Øvre halvdel:</strong> ${oevreStr}</p>`;
+      utregn += `<p><strong>Q3</strong> = median av øvre halvdel = <strong>${formaterTall(q3)}</strong></p>`;
+      utregn += `<p class="mt-2"><strong>Kvartilbredde (IQR):</strong> Q3 − Q1 = ${formaterTall(q3)} − ${formaterTall(q1)} = <strong>${formaterTall(iqr)}</strong></p>`;
+      utregn += `<p><strong>Variasjonsbredde:</strong> maks − min = ${formaterTall(maxV)} − ${formaterTall(minV)} = <strong>${formaterTall(variasjonsbredde)}</strong></p>`;
+      document.getElementById('utregningVis').innerHTML = utregn;
+
+      // --- Boksdiagram ---
+      const boks = tegnBoksdiagram(minV, q1, q2, q3, maxV);
+      document.getElementById('boksdiagramContainer').innerHTML = boks;
+
+      // --- Tolkning ---
+      const tolkn = `Datasettet har <strong>${n} verdier</strong> som spenner fra <strong>${formaterTall(minV)}</strong> til ` +
+        `<strong>${formaterTall(maxV)}</strong> (variasjonsbredde = ${formaterTall(variasjonsbredde)}). ` +
+        `Medianen er <strong>${formaterTall(q2)}</strong>, som betyr at halvparten av verdiene er under dette tallet og halvparten over. ` +
+        `De midtre 50 % av dataene ligger mellom Q1 = ${formaterTall(q1)} og Q3 = ${formaterTall(q3)}, ` +
+        `altså er kvartilbredden <strong>${formaterTall(iqr)}</strong>. ` +
+        (iqr < variasjonsbredde * 0.5
+          ? `Siden kvartilbredden (${formaterTall(iqr)}) er betydelig mindre enn variasjonsbredden (${formaterTall(variasjonsbredde)}), ` +
+            `kan det tyde på at datasettet har verdier som trekker ekstremt i én retning (mulige uteliggere).`
+          : `Kvartilbredden (${formaterTall(iqr)}) utgjør en stor andel av variasjonsbredden (${formaterTall(variasjonsbredde)}), ` +
+            `noe som tyder på at dataene er relativt jevnt spredt uten sterke uteliggere.`);
+      document.getElementById('tolkningTekst').innerHTML = tolkn;
+
+      // Vis resultatseksjonen
+      document.getElementById('resultatSeksjon').classList.remove('hidden');
+      document.getElementById('resultatSeksjon').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function visFeil(melding) {
+      const errEl = document.getElementById('errorMsg');
+      errEl.textContent = melding;
+      errEl.classList.remove('hidden');
+      document.getElementById('resultatSeksjon').classList.add('hidden');
+    }
+
+    function tilbakestill() {
+      document.getElementById('dataInput').value = '4, 7, 9, 11, 14, 17, 21, 25, 28, 32';
+      document.getElementById('errorMsg').classList.add('hidden');
+      document.getElementById('resultatSeksjon').classList.add('hidden');
+    }
+
+    // Kjør beregning automatisk på eksempeldataene ved sideinnlasting
+    window.addEventListener('DOMContentLoaded', function() {
+      beregn();
+    });
+  </script>
+</body>
+</html>
