@@ -12,8 +12,17 @@ Founders, investors, managers, sales people, marketers, teachers, presenters,
 finance people, spreadsheet / Miro / graph / infographic makers, influencers,
 and anyone who wants to make a quick prototype of an app idea — no coding needed.
 
+## Build with an AI in one link
+
+The simplest path: give your AI assistant **[`llms.txt`](llms.txt)** (paste the
+link or the file). It's a single, self-contained briefing — the assistant learns
+what App Studio runs, asks you a couple of questions, hands you the code, and
+tells you how to load it. Works with Claude, ChatGPT, Gemini, and Grok.
+
 ## What's inside
 
+- [`llms.txt`](llms.txt) one file to hand an AI assistant — it learns App Studio
+  and helps you build
 - `projects/` ready-made App Studio projects you can download and load
 - `prompts/` prompts for building your own — an upload-first guide, category
   add-ons, templates, and worked examples

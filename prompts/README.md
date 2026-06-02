@@ -6,6 +6,10 @@ AI assistant (Claude, ChatGPT, Gemini, Grok, …).
 The point is to get the AI to return something App Studio can run directly: a
 single default-exported React component, or a self-contained HTML page.
 
+> **One-link shortcut:** hand your AI [`../llms.txt`](../llms.txt) — a single
+> self-contained briefing that makes it ask you a few questions and walk you
+> through loading the result. The steps below are the manual version.
+
 ## The best, simplest workflow
 
 1. **Give your AI the rules.** Either **upload [`authoring-guide.md`](./authoring-guide.md)**

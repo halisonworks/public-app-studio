@@ -3,6 +3,11 @@
 This document sets the stage for any AI assistant (Claude, ChatGPT, Google
 Gemini, Grok): what App Studio can run, and the rules and constraints to follow.
 
+> **Want the simplest single-link option?** Hand your assistant
+> [`llms.txt`](../llms.txt) at the repo root — it's a self-contained briefing
+> that also tells the AI to ask you a few questions and walk you through loading
+> the result. This guide is the deeper reference behind it.
+
 ## The best, simplest way to use it
 
 1. **Give your AI the rules — two easy ways:**

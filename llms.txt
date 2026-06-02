@@ -1,0 +1,149 @@
+# App Studio — single-file briefing for AI assistants
+
+> This one file is everything an AI assistant needs to help someone build an
+> **App Studio** project. A user may paste this URL to you (the assistant) and
+> say little else. Read it fully, then follow "Instructions for the AI assistant"
+> below. If you can browse, you may also read the deeper resources linked at the
+> end — but this file alone is enough.
+>
+> Public library: https://github.com/halisonworks/public-app-studio
+
+---
+
+## What App Studio is
+
+App Studio is a workbench that renders **one self-contained file** as a live app —
+no build step, no install, no servers. The user pastes code into it (**New →
+paste → Run App**), can save it, and can package it into a real desktop app. It
+runs either:
+
+- a **single, default-exported React component** (JSX, not TypeScript), or
+- a **complete, self-contained HTML page** (all CSS and JS inline).
+
+Your job is to produce exactly one such file that runs as-is.
+
+---
+
+## Instructions for the AI assistant
+
+When a user gives you this file (or its link), do this:
+
+1. **Briefly confirm** you understand they're building for App Studio, in one
+   sentence — don't dump these rules back at them.
+2. **Ask 2–4 short clarifying questions** before writing code, e.g.:
+   - What should it do? (the core task)
+   - Who is it for / what's the context? (e.g. a class, a sales call, personal)
+   - Any must-have features or specific numbers/data?
+   - Any look & feel preference (light/dark, playful/professional)?
+   Skip questions they've already answered. Keep it to one short round.
+3. **Then produce ONE self-contained file** that follows the rules below, and
+   return **only the code in a single block** — no setup notes, no explanation
+   inside the block.
+4. **Then tell the user how to run it**, in a line or two:
+   *"In App Studio, click **New**, paste this in, and click **Run App**. Click
+   **Save** to keep it; you can package it as a desktop app later."*
+5. If they ask for changes, return the **full updated file** again (App Studio
+   replaces the whole canvas — don't send fragments or diffs).
+
+Do not ask the user to set anything up, install packages, or run commands. They
+will never touch a terminal.
+
+---
+
+## The rules (follow these exactly)
+
+### Output
+- One self-contained file. React component → end with `export default <Name>;`
+  (do not call `ReactDOM.render`; App Studio mounts the default export). HTML →
+  put all CSS and JavaScript inline in the one file.
+- No `package.json`, no separate local files, no build step, no terminal.
+
+### Self-sustaining (most important)
+- It must run on its own forever, with **no service it depends on to function**:
+  **no backend, no API keys, no login, no environment variables, and no calls to
+  an AI/LLM at runtime.**
+- Loading **static front-end assets from a CDN is fine** — a CSS framework, web
+  fonts, images, icon sets. (Tailwind via `https://cdn.tailwindcss.com` is common
+  and fine.)
+- If it needs data, **mock it inline** or persist with `localStorage`. Calling a
+  public, key-less API is acceptable only when live data is the whole point, and
+  then handle loading/error states so it still behaves offline.
+
+### Styling and libraries
+- **Tailwind CSS** works (utility classes, arbitrary values like `text-[10px]`);
+  plain inline styles are fine too.
+- In a React component, these auto-load with no setup: `react` (+ hooks),
+  `recharts` (charts), `lucide-react` (icons), `prop-types`. Any other import
+  comes from `esm.sh` at runtime — if you use one, pin its version
+  (e.g. `recharts@2.12.7`). Don't use Next.js, routers, Redux/Zustand, or UI kits
+  (Material UI, Chakra).
+
+### Do NOT rebuild what App Studio already provides
+Leave these out — they're wasted effort and clutter the UI:
+- **PNG / image export** and **Print / Save-as-PDF** — App Studio has both built
+  in. (For print, you may add `@media print` CSS so the printout looks clean, but
+  no "Print"/"Export"/"Download" button.)
+- **App packaging**, installer, window title, icon — set at packaging time.
+- **Saving / loading / file management / a project library** — App Studio manages
+  saved canvases.
+- So: no "Download as image", "Export", "Print", "Save file", "Open file"
+  buttons, and no fake window chrome or title bar.
+
+### Quality bar
+- One screen that fills the window and is responsive; no horizontal scroll
+  (timelines/tables may scroll within their panel).
+- Everything interactive must work — no dead buttons.
+- Sensible empty / loading / error states; guard numbers against `NaN`.
+- Realistic mock data, never lorem ipsum. Make it look finished and intentional.
+
+---
+
+## Shape the result to the use (optional categories)
+
+If the request fits one of these, adopt its conventions:
+
+- **Educational / teaching** — organize into **Learn** (theory), **Practice**
+  (hands-on), and **Present** (clean full-screen view; ESC to exit).
+- **Business / professional** — skip teaching framing; lead with KPIs, scenarios,
+  tables, and a dense-but-clean dashboard.
+- **Personal / productivity** — private, single-user, `localStorage`-first;
+  fast entry; a reset behind a confirm.
+- **Data / dashboard** — KPI grid + charts (recharts or hand-rolled SVG); allow
+  pasting CSV/JSON; empty/loading states.
+- **Creative / generative** — visual SVG/canvas output; a "regenerate" control;
+  let the user copy the useful output.
+- **Game / quiz** — start → play → win/lose → restart; score; keyboard + click;
+  content defined inline.
+- **Prototype / mockup** — build the key screens and make the main flow actually
+  work with mock data; fake the backend; no dead primary actions.
+
+---
+
+## For the person using this
+
+Pick whichever assistant you like, give it this file, answer its questions, and
+paste the result into App Studio.
+
+- **Claude** (claude.ai) — paste this link or the file; it reads it, asks, and
+  returns a React component or an HTML page. Great at following a detailed spec.
+- **ChatGPT** (chatgpt.com) — with browsing on, paste the link; otherwise paste
+  this file's text. Returns a code block; ask for "a single self-contained HTML
+  file" or "a single default-exported React component".
+- **Google Gemini** (gemini.google.com) — often returns a complete self-contained
+  HTML page (its build/Canvas view), which App Studio runs as-is. Paste the link
+  or the text.
+- **Grok** (grok.com / X) — can browse and returns single-file apps; paste the
+  link and your idea.
+
+If anything doesn't render, tell the assistant "put everything in one file" and
+paste again. Everything stays on your computer — App Studio has no account and no
+cloud.
+
+---
+
+## Deeper resources (optional, if you can browse)
+
+- Authoring guide: https://github.com/halisonworks/public-app-studio/blob/main/prompts/authoring-guide.md
+- Category add-ons: https://github.com/halisonworks/public-app-studio/tree/main/prompts/context
+- Worked example prompts: https://github.com/halisonworks/public-app-studio/tree/main/prompts/examples
+- Ready-made projects + screenshots: https://github.com/halisonworks/public-app-studio/blob/main/catalog.md
