@@ -28,6 +28,15 @@ app. Upload one alongside `authoring-guide.md`, then write your short prompt:
   tools (Learn, Practice, and Present modes)
 - [`context/business.md`](./context/business.md) — professional / operator tools
   (no teaching framing; KPIs, scenarios, dashboards)
+- [`context/personal.md`](./context/personal.md) — private, localStorage-first
+  productivity tools
+- [`context/data-dashboard.md`](./context/data-dashboard.md) — KPI grids and
+  charts from mocked or pasted data
+- [`context/creative.md`](./context/creative.md) — SVG/canvas makers and
+  generators
+- [`context/game-quiz.md`](./context/game-quiz.md) — small games and quizzes
+- [`context/prototype.md`](./context/prototype.md) — interactive product/feature
+  mockups
 
 ## The two shapes App Studio runs
 

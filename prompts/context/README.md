@@ -18,9 +18,24 @@ need.
 ## Categories
 
 - [`educational.md`](./educational.md) — teaching / learning tools, organized
-  into **Learn**, **Practice**, and **Present** modes
-- [`business.md`](./business.md) — professional / operator tools; no teaching
-  framing, focused on KPIs, scenarios, and dashboards
+  into **Learn**, **Practice**, and **Present** modes *(teachers, presenters)*
+- [`business.md`](./business.md) — professional / operator tools; KPIs,
+  scenarios, dashboards *(founders, investors, managers, sales, finance)*
+- [`personal.md`](./personal.md) — private, single-user, localStorage-first tools
+  *(trackers, planners, budgets)*
+- [`data-dashboard.md`](./data-dashboard.md) — KPI grids and charts from mocked
+  or pasted data *(finance, analysts, spreadsheet/graph makers)*
+- [`creative.md`](./creative.md) — SVG/canvas makers and generators *(marketers,
+  designers, influencers, infographic makers)*
+- [`game-quiz.md`](./game-quiz.md) — small games and quizzes with score and
+  restart *(teachers, marketers, presenters)*
+- [`prototype.md`](./prototype.md) — interactive product/feature mockups
+  *(founders, PMs, designers prototyping app ideas)*
+
+These map to who App Studio is for: founders, investors, managers, sales people,
+marketers, teachers, presenters, finance people, spreadsheet / Miro / graph /
+infographic makers, influencers, and anyone making a quick app prototype. Pick
+the add-on closest to your use; combine two if a tool genuinely spans both.
 
 ## Applies to every category
 
