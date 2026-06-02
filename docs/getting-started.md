@@ -12,13 +12,17 @@ currently ships as a Windows app (macOS / Linux planned).
 
 ## 2. Load a project from this library
 
-1. Open the [`projects/`](../projects/) folder and pick one.
-2. Open its main file and copy the contents.
-3. In App Studio: **New → paste → Run App**.
+Open the [`projects/`](../projects/) folder, pick one, and load it one of two ways:
 
-That's it — the component renders live, no setup or build step.
+- **`.appstudio` file** (recommended) — App Studio's own share format. Import it
+  into your library; it loads with its name and packaging ready to go.
+  (Double-click / "Open with" support ships with the next desktop release.)
+- **`.html` or `.jsx` file** — open the file, copy its contents, and in App Studio
+  choose **New → paste → Run App**. The canvas renders live, no setup or build step.
 
-You can also load the file from disk instead of pasting.
+Note: opening a file from disk accepts component source — `.jsx`, `.tsx`, `.js`,
+`.ts`, `.txt`. A full **HTML page can't be opened from disk** — paste it instead,
+or use the project's `.appstudio` file.
 
 ## 3. Save and reuse
 
