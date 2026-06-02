@@ -1,5 +1,7 @@
 # Color Palette Generator
 
+![Color Palette Generator screenshot](./screenshot.png)
+
 Generate harmonious 5-color palettes. **Lock** the colors you like, reroll the
 rest with **Generate**, and **click a swatch to copy** its hex.
 

@@ -1,5 +1,7 @@
 # Quiz Game
 
+![Quiz Game screenshot](./screenshot.png)
+
 An 8-question multiple-choice quiz: one question at a time, **instant feedback**,
 **score tracking**, a **best score** saved to your browser, keyboard answers
 (1–4), and a results screen with **Play again**.

@@ -1,5 +1,7 @@
 # Interactive Price Calculator
 
+![Interactive Price Calculator screenshot](./screenshot.png)
+
 An interactive calculator for **markup**, **contribution margin**, and **VAT** —
 built as a teaching aid for an upper-secondary *Sales, Service and Tourism*
 course and as a quick tool for small businesses.

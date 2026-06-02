@@ -1,5 +1,7 @@
 # UX Retention Simulator
 
+![UX Retention Simulator screenshot](./screenshot.png)
+
 An interactive sandbox that models a **90-day user cohort** — its retention and
 cumulative revenue — under different UX / gamification strategies. Compare an
 **extractive** design against an **empowering** one and watch the curves react

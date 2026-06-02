@@ -1,5 +1,7 @@
 # Habit Tracker
 
+![Habit Tracker screenshot](./screenshot.png)
+
 A weekly habit tracker. Add habits, tick each day on a 7-day grid, and watch
 your **streaks** and **weekly completion %**. Everything saves to your browser,
 so it's there next time.

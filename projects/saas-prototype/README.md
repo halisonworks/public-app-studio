@@ -1,5 +1,7 @@
 # SaaS Prototype
 
+![SaaS Prototype screenshot](./screenshot.png)
+
 An interactive **prototype** of a project-management app: a sidebar that switches
 between **Dashboard**, **Tasks**, and **Settings**; a **task board** with movable
 cards across To do / Doing / Done; and a working settings view. Mock data, no

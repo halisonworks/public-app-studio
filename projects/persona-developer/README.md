@@ -1,5 +1,7 @@
 # Persona Developer
 
+![Persona Developer screenshot](./screenshot.png)
+
 A method tool for building customer **personas** — for students, entrepreneurs,
 and marketers. Capture demographics, geography, psychographics, and behavior,
 then present the result as a clean persona card.

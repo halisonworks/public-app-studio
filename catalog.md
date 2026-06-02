@@ -10,6 +10,16 @@ Founders, investors, managers, sales people, marketers, teachers, presenters,
 finance people, spreadsheet / Miro / graph / infographic makers, influencers,
 and anyone who wants to make a quick prototype of an app idea.
 
+## Gallery
+
+| | | |
+|---|---|---|
+| [![price-calculator](projects/price-calculator/screenshot.png)](projects/price-calculator/) **Price calculator** | [![ux-retention-simulator](projects/ux-retention-simulator/screenshot.png)](projects/ux-retention-simulator/) **UX retention simulator** | [![persona-developer](projects/persona-developer/screenshot.png)](projects/persona-developer/) **Persona developer** |
+| [![habit-tracker](projects/habit-tracker/screenshot.png)](projects/habit-tracker/) **Habit tracker** | [![color-palette](projects/color-palette/screenshot.png)](projects/color-palette/) **Color palette** | [![quiz-game](projects/quiz-game/screenshot.png)](projects/quiz-game/) **Quiz game** |
+| [![saas-prototype](projects/saas-prototype/screenshot.png)](projects/saas-prototype/) **SaaS prototype** | | |
+
+*(`tip-calculator` and `sales-dashboard` are React components — they render inside App Studio.)*
+
 ## Projects
 
 | Project | Category | Shape | Languages | Prompt |
