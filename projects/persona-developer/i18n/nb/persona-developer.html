@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<!--
+  Persona-utvikler — Halison App Studio-eksempel
+
+  Et metodeverktøy for å bygge kundepersonas: demografi, geografi, psykografi og
+  atferd. Tre moduser — Læremodus, Praksismodus og Presentasjon — med maler, en
+  inspirasjons-generator og et rent persona-kort for projektor/utskrift.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Du kan
+  endre den, men behold denne headeren og kildelenken, og du må ikke selge,
+  kommersialisere eller republisere den. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Persona-utvikler for Canvas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Print-optimalisering for å fjerne støy og isolere kun selve kortet */
+        @media print {
+            body {
+                background: #ffffff !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-container {
+                display: block !important;
+                width: 100% !important;
+            }
+            .print-bg-primary {
+                background-color: #1e293b !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .print-bg-card {
+                background-color: #ffffff !important;
+                border: 1px solid #e2e8f0 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .print-text-white {
+                color: #ffffff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+        .template-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .template-btn:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 antialiased flex flex-col justify-between pb-12">
+
+    <div class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 mt-6 flex-grow">
+
+        <!-- GLOBAL HEADER (Skjules i presentasjonsmodus) -->
+        <header id="global-header" class="mb-8 no-print flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-200 pb-6">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="p-1.5 bg-slate-900 text-white rounded-lg inline-flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </span>
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500">LK20 Fagverktøy</span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Persona-utvikler</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="openResetModal()" class="px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg transition-all flex items-center gap-1.5 shadow-sm bg-white">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    Nullstill felt
+                </button>
+            </div>
+        </header>
+
+        <!-- GLOBAL TO-LEVEL NAV (Skjules i presentasjon og utskrift) -->
+        <nav id="global-nav" class="no-print bg-slate-100 p-1.5 rounded-xl mb-8 flex flex-wrap gap-1 border border-slate-200/60 shadow-inner">
+            <button id="btn-learn" onclick="switchTab('learn')" class="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-200 bg-white text-slate-900 shadow-sm border border-slate-200/50">
+                1. Læremodus
+            </button>
+            <button id="btn-practice" onclick="switchTab('practice')" class="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-slate-900">
+                2. Praksismodus
+            </button>
+            <button id="btn-present" onclick="switchTab('present')" class="flex-1 min-w-[120px] flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-slate-900 bg-indigo-50/50 text-indigo-700 hover:bg-indigo-50">
+                3. Presentasjon
+            </button>
+        </nav>
+
+        <!-- HURTIGSTART OG MALER (Skjules i presentasjonsmodus) -->
+        <div id="template-section" class="no-print mb-8 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    Hurtigstart: Velg en målgruppe-mal eller la deg inspirere
+                </h3>
+                <button onclick="generateRandomPersona()" class="text-xs font-bold text-indigo-700 hover:text-indigo-800 flex items-center justify-center gap-1.5 bg-indigo-100 hover:bg-indigo-200 px-3.5 py-2 rounded-lg transition-all shadow-sm">
+                    <span>🎲</span> Inspirasjons-generator
+                </button>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <button onclick="loadTemplate('student')" class="template-btn p-3 bg-white border border-slate-200 rounded-xl text-left hover:border-indigo-400 hover:shadow-md group transition-all">
+                    <div class="text-xl mb-1">🧑‍🎓</div>
+                    <div class="text-[11px] font-bold text-slate-900 uppercase">UB / Skoleelev</div>
+                    <div class="text-[10px] text-slate-500 line-clamp-1">Ungdomsbedrift / Digitale trender</div>
+                </button>
+                <button onclick="loadTemplate('parent')" class="template-btn p-3 bg-white border border-slate-200 rounded-xl text-left hover:border-emerald-400 hover:shadow-md group transition-all">
+                    <div class="text-xl mb-1">🌱</div>
+                    <div class="text-[11px] font-bold text-slate-900 uppercase">Miljø-forelder</div>
+                    <div class="text-[10px] text-slate-500 line-clamp-1">Bærekraft og praktisk hverdag</div>
+                </button>
+                <button onclick="loadTemplate('senior')" class="template-btn p-3 bg-white border border-slate-200 rounded-xl text-left hover:border-amber-400 hover:shadow-md group transition-all">
+                    <div class="text-xl mb-1">👴</div>
+                    <div class="text-[11px] font-bold text-slate-900 uppercase">Digital Senior</div>
+                    <div class="text-[10px] text-slate-500 line-clamp-1">Forenkling og personlig service</div>
+                </button>
+                <button onclick="loadTemplate('b2b')" class="template-btn p-3 bg-white border border-slate-200 rounded-xl text-left hover:border-slate-400 hover:shadow-md group transition-all">
+                    <div class="text-xl mb-1">💼</div>
+                    <div class="text-[11px] font-bold text-slate-900 uppercase">Bedriftsleder</div>
+                    <div class="text-[10px] text-slate-500 line-clamp-1">Målrettet B2B-salg og ROI</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- DEL 1: LÆREMODUS -->
+        <div id="panel-learn" class="tab-panel space-y-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                <!-- Demografi, Geografi & Urbanitet -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
+                    <div class="border-b border-slate-100 pb-4">
+                        <span class="text-xs font-bold text-indigo-600 uppercase tracking-widest">Del A</span>
+                        <h2 class="text-lg font-bold text-slate-950 mt-1">Demografi & Geografi</h2>
+                    </div>
+                    <div class="bg-indigo-50/50 border-l-4 border-indigo-500 p-4 rounded-r-xl">
+                        <p class="text-xs text-indigo-800 leading-relaxed"><strong>Hva er dette?</strong> Demografi og geografi kartlegger de ytre, målbare faktaene rundt kunden din. Det gjør markedsstørrelsen enklere å beregne.</p>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-700 uppercase">Fullt Navn</label>
+                            <input type="text" data-bind="name" placeholder="F.eks. Camilla Karrière" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 focus:border-indigo-500 text-sm outline-none transition-all">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-700 uppercase">Alder</label>
+                                <input type="number" data-bind="age" placeholder="F.eks. 34" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 focus:border-indigo-500 text-sm outline-none transition-all">
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-700 uppercase">Sivilstatus</label>
+                                <input type="text" data-bind="civil" placeholder="F.eks. Samboer, 1 barn" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 focus:border-indigo-500 text-sm outline-none transition-all">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-700 uppercase">Yrke / Tittel</label>
+                                <input type="text" data-bind="occupation" placeholder="F.eks. Prosjektleder" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 focus:border-indigo-500 text-sm outline-none transition-all">
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-700 uppercase">Inntekt / Ressurser</label>
+                                <input type="text" data-bind="income" placeholder="F.eks. 650 000 kr" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 focus:border-indigo-500 text-sm outline-none transition-all">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-700 uppercase">Bosted</label>
+                                <input type="text" data-bind="location" placeholder="F.eks. Oslo" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 focus:border-indigo-500 text-sm outline-none transition-all">
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-bold text-slate-700 uppercase">Urbanitet / Miljø</label>
+                                <input type="text" data-bind="urbanity" placeholder="F.eks. Storby / Forstad / Bygd" class="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 focus:border-indigo-500 text-sm outline-none transition-all">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Psykografi & Atferd -->
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
+                    <div class="border-b border-slate-100 pb-4">
+                        <span class="text-xs font-bold text-emerald-600 uppercase tracking-widest">Del B</span>
+                        <h2 class="text-lg font-bold text-slate-950 mt-1">Psykografi & Atferd</h2>
+                    </div>
+                    <div class="bg-emerald-50/50 border-l-4 border-emerald-500 p-4 rounded-r-xl">
+                        <p class="text-xs text-emerald-800 leading-relaxed"><strong>Hva er dette?</strong> Går dypere inn på *hvorfor* kunden kjøper. Kartlegg verdier, holdninger, interesser og de faktiske utfordringene de møter på i hverdagen.</p>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-700 uppercase">Verdier, Livsstil & Bærekraft</label>
+                            <textarea data-bind="values" placeholder="F.eks. Opptatt av økologiske råvarer, kvalitet fremfor kvantitet, og en aktiv fritid..." class="w-full h-24 px-3.5 py-2 rounded-lg border border-slate-200 focus:border-emerald-500 text-sm outline-none resize-none transition-all"></textarea>
+                            <span class="text-[11px] text-slate-400 block italic">Hva slags syn har personaen på miljøvennlige produkter eller etisk handel?</span>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-700 uppercase">Kjøpsmål & Motivasjon</label>
+                            <textarea data-bind="motivation" placeholder="F.eks. Vil ha en raskere, sunnere og mer stressfri middagsløsning for hele familien..." class="w-full h-24 px-3.5 py-2 rounded-lg border border-slate-200 focus:border-emerald-500 text-sm outline-none resize-none transition-all"></textarea>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-700 uppercase">Utfordringer (Pain Points)</label>
+                            <textarea data-bind="painpoints" placeholder="F.eks. Føler på konstant dårlig samvittighet overfor tidsklemma og høye matvarepriser..." class="w-full h-24 px-3.5 py-2 rounded-lg border border-slate-200 focus:border-emerald-500 text-sm outline-none resize-none transition-all"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- DEL 2: PRAKSISMODUS (Effektivt, uten unødig tekst) -->
+        <div id="panel-practice" class="tab-panel hidden space-y-6">
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-widest border-b pb-2">Kompakt Bakgrunnsdata</h3>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600">Navn</label>
+                        <input type="text" data-bind="name" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-indigo-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-600">Alder</label>
+                            <input type="number" data-bind="age" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-indigo-500">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-600">Sivilstatus</label>
+                            <input type="text" data-bind="civil" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-600">Yrke</label>
+                            <input type="text" data-bind="occupation" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-indigo-500">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-600">Inntekt</label>
+                            <input type="text" data-bind="income" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-600">Bosted</label>
+                            <input type="text" data-bind="location" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-indigo-500">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-bold text-slate-600">Urbanitet</label>
+                            <input type="text" data-bind="urbanity" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-widest border-b pb-2">Kundetankegang & Atferd</h3>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600">Verdier & Livsstil</label>
+                        <textarea data-bind="values" rows="3" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-indigo-500 resize-none"></textarea>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600">Kjøpsmål & Motivasjon</label>
+                        <textarea data-bind="motivation" rows="3" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-indigo-500 resize-none"></textarea>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-600">Utfordringer (Pain Points)</label>
+                        <textarea data-bind="painpoints" rows="3" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-indigo-500 resize-none"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEL 3: PRESENTASJONSMODUS (Helt rent og frittstående grafisk kort) -->
+        <div id="panel-present" class="tab-panel hidden">
+            <div class="print-container flex justify-center py-6">
+                <div class="print-bg-card bg-white w-full max-w-4xl rounded-2xl border border-slate-200 shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-12">
+
+                    <!-- Venstre del (Farget bakgrunn, personopplysninger) -->
+                    <div class="print-bg-primary md:col-span-4 bg-slate-900 text-white p-8 flex flex-col items-center text-center justify-between gap-6 relative">
+                        <div class="w-full space-y-4 z-10">
+                            <!-- Profilbilde/Symbol basert på forbokstav -->
+                            <div class="w-24 h-24 print-bg-card bg-slate-800 rounded-2xl mx-auto flex items-center justify-center text-4xl border border-slate-700 shadow-inner select-none font-bold" id="card-avatar">👤</div>
+                            <div>
+                                <h2 class="text-2xl font-extrabold text-white tracking-tight" id="card-name">Camilla Karrière</h2>
+                                <p class="text-indigo-400 text-[10px] font-bold uppercase tracking-widest mt-1.5" id="card-occupation">Prosjektleder</p>
+                            </div>
+                        </div>
+
+                        <!-- Demografiske data -->
+                        <div class="w-full bg-slate-800/40 rounded-xl p-4 border border-slate-800/60 text-left text-[11px] space-y-2">
+                            <div class="flex justify-between border-b border-slate-700/50 pb-1.5">
+                                <span class="text-slate-400">Alder</span>
+                                <span class="font-bold text-white" id="card-age">34 år</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-700/50 pb-1.5">
+                                <span class="text-slate-400">Sivilstatus</span>
+                                <span class="font-bold text-white" id="card-civil">Samboer</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-700/50 pb-1.5">
+                                <span class="text-slate-400">Inntekt</span>
+                                <span class="font-bold text-white" id="card-income">650k</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-700/50 pb-1.5">
+                                <span class="text-slate-400">Bosted</span>
+                                <span class="font-bold text-white" id="card-location">Oslo</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Urbanitet</span>
+                                <span class="font-bold text-white" id="card-urbanity">Storby</span>
+                            </div>
+                        </div>
+
+                        <span class="text-[9px] text-slate-500 uppercase tracking-widest block">Metodeverktøy • Canvas</span>
+                    </div>
+
+                    <!-- Høyre del (Innholdsklasser, hvit bakgrunn) -->
+                    <div class="md:col-span-8 p-8 space-y-6 bg-white text-slate-800 flex flex-col justify-between">
+                        <div class="space-y-6">
+                            <div class="space-y-1.5">
+                                <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-1">Verdier & Livsstil</h3>
+                                <p class="text-sm leading-relaxed text-slate-600 whitespace-pre-line" id="card-values"></p>
+                            </div>
+                            <div class="space-y-1.5">
+                                <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-1">Motivasjon & Kjøpsmål</h3>
+                                <p class="text-sm leading-relaxed text-slate-600 whitespace-pre-line" id="card-motivation"></p>
+                            </div>
+                            <div class="space-y-1.5">
+                                <h3 class="text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-1">Utfordringer (Pain Points)</h3>
+                                <p class="text-sm leading-relaxed text-slate-600 whitespace-pre-line" id="card-painpoints"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- RESET-MODAL (Sikkerhet i stedet for alert) -->
+    <div id="reset-modal" class="no-print fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 border shadow-2xl space-y-4">
+            <div class="w-12 h-12 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-center text-xl text-rose-600">⚠️</div>
+            <div>
+                <h3 class="font-bold text-slate-900 text-base">Nullstill alle data?</h3>
+                <p class="text-xs text-slate-500 mt-1">Dette vil tømme all tekst, lagret progresjon og fjerne eventuelle valgte maler. Handlingen kan ikke angres.</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="closeResetModal()" class="flex-1 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 transition-all">Avbryt</button>
+                <button onclick="confirmReset()" class="flex-1 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-all">Slett alt</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const personaFields = {
+            name: "",
+            age: "",
+            civil: "",
+            occupation: "",
+            income: "",
+            location: "",
+            urbanity: "",
+            values: "",
+            motivation: "",
+            painpoints: "",
+            avatar: "👤"
+        };
+
+        const templates = {
+            student: {
+                name: "Markus Master",
+                age: "22",
+                civil: "Singel",
+                occupation: "Student / Butikkmedarbeider",
+                income: "11 000 / mnd (Lån/Stipend)",
+                location: "Trondheim",
+                urbanity: "Studentby / Storby",
+                values: "Opptatt av de nyeste trendene på TikTok, sosiale sammenkomster og billige kaffeløsninger. Handler primært brukt eller på lavprisutsalg.",
+                motivation: "Søker løsninger som sparer tid og penger i en travel studiehverdag. Liker lett tilgjengelig og digital kommunikasjon.",
+                painpoints: "Stramt budsjett, stress rundt innleveringer og en konstant følelse av tidsnød (FOMO)."
+            },
+            parent: {
+                name: "Bærekraftige Berit",
+                age: "38",
+                civil: "Gift, 3 barn",
+                occupation: "Lærer",
+                income: "580 000 kr / år",
+                location: "Lillehammer",
+                urbanity: "Tettsted / Forstad",
+                values: "Vektlegger økologiske alternativer, kildesortering og gjenbruk. Bruker mye tid på lokalidretten og utendørsaktiviteter med barna.",
+                motivation: "Vil gi familien en trygg og bærekraftig fremtid. Ser etter holdbare kvalitetsprodukter som tåler røff bruk.",
+                painpoints: "Den beryktede 'tidsklemma', høye matvarepriser og utfordringer med å finne raske, sunne middagsalternativer."
+            },
+            senior: {
+                name: "Gunnar Gnist",
+                age: "72",
+                civil: "Enkemann",
+                occupation: "Pensjonert ingeniør",
+                income: "Pensjon (God råd)",
+                location: "Stavanger",
+                urbanity: "Sentrum / By",
+                values: "Setter stor pris på pålitelighet, punktlighet og lokal service. Leser nyheter på nettbrett, men foretrekker helgeavis på papir.",
+                motivation: "Ønsker å holde tett kontakt med barnebarn og ønsker smarte hjelpemidler som forenkler hverdagen uten å bli for kompliserte.",
+                painpoints: "Mangel på fysisk service, altfor små skriftstørrelser på skjermer, og frykt for svindel/feilklikk i nye apper."
+            },
+            b2b: {
+                name: "Erik Effektiv",
+                age: "45",
+                civil: "Samboer",
+                occupation: "Daglig Leder",
+                income: "1.2 mill / år",
+                location: "Bærum / Oslo",
+                urbanity: "Urban",
+                values: "Verdsetter rask og direkte kommunikasjon, tidsbesparelse, ROI (avkastning) og nettverksbygging. Er opptatt av kontinuerlig vekst.",
+                motivation: "Søker verktøy og programvare som kan automatisere rutiner, fjerne unødvendig administrasjon og skape resultater.",
+                painpoints: "Ineffektive, lange møter, mangel på kvalifisert arbeidskraft og tungvinte, uoversiktlige rapporteringssystemer."
+            }
+        };
+
+        const randomPool = {
+            names: ["Lise Lønn", "Per Post", "Sara Smart", "Tom Tidig", "Emma Energi", "Daniel Driftig", "Nora Nysgjerrig"],
+            occupations: ["Frilans designer", "Sykepleier", "Frontend-utvikler", "Snekker", "Markedsføringskonsulent", "Rørlegger"],
+            locations: ["Bergen", "Tromsø", "Kristiansand", "Hamar", "Molde", "Bodø", "Tønsberg"],
+            urbanities: ["Urban / Sentrum", "Landlig / Bygd", "Forstad / Boligfelt", "Småby", "Regionalt knutepunkt"],
+            values: [
+                "Vektlegger kortreiste produkter og etisk produksjon. Sparer til bolig.",
+                "Opptatt av personlig utvikling, mental helse, og kvalitetstid med venner.",
+                "Brenner for teknologi, gaming og smarthus-løsninger. Alltid på utkikk etter dingser.",
+                "Glad i naturen, fjellturer, og prøver å kutte ned på kjøttforbruket sitt.",
+                "Fokusert på karriere, status og luksusopplevelser. Glad i god mat og vin."
+            ],
+            motivations: [
+                "Søker inspirasjon og enkle, sømløse digitale løsninger i hverdagen.",
+                "Vil minimere hverdagsstresset og maksimere fritiden sin.",
+                "Er opptatt av å spare penger og finne de aller beste tilbudene på markedet.",
+                "Ønsker å lære nye ferdigheter og styrke egen kompetanse.",
+                "Trenger et produkt som bare fungerer med én gang, uten opplæring."
+            ],
+            painpoints: [
+                "Sliter med uoversiktlige og dårlig designede nettsider.",
+                "Synes det er vanskelig å sammenligne priser og produkter på en rettferdig måte.",
+                "Opplever tidsklemme og føler seg overveldet av for mange valgmuligheter.",
+                "Dårlig samvittighet for å ikke leve sunt eller miljøvennlig nok.",
+                "Irriterer seg over skjulte gebyrer og lang leveringstid."
+            ]
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadFromLocalStorage();
+            applyStateToUI();
+            setupInteractivity();
+        });
+
+        function switchTab(tabId) {
+            // Skjul alle fanepaneler
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+
+            // Vis det valgte panelet
+            document.getElementById(`panel-${tabId}`).classList.remove('hidden');
+
+            // Oppdater aktive navigasjonsknapper
+            const navButtons = document.querySelectorAll('#global-nav button');
+            navButtons.forEach(btn => {
+                btn.classList.remove('bg-white', 'text-slate-900', 'shadow-sm', 'border', 'border-slate-200/50');
+                btn.classList.add('text-slate-600', 'hover:text-slate-900');
+            });
+
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-white', 'text-slate-900', 'shadow-sm', 'border', 'border-slate-200/50');
+                activeBtn.classList.remove('text-slate-600', 'hover:text-slate-900');
+            }
+
+            const header = document.getElementById('global-header');
+            const nav = document.getElementById('global-nav');
+            const templatesSec = document.getElementById('template-section');
+
+            // Spesialbehandling av Presentasjonsmodus (100% ren visning)
+            if (tabId === 'present') {
+                if (header) header.classList.add('hidden');
+                if (nav) nav.classList.add('hidden');
+                if (templatesSec) templatesSec.classList.add('hidden');
+                showEscToast();
+            } else {
+                if (header) header.classList.remove('hidden');
+                if (nav) nav.classList.remove('hidden');
+                if (templatesSec) templatesSec.classList.remove('hidden');
+            }
+            updatePresentationCard();
+        }
+
+        function setupInteractivity() {
+            // Lytt til endringer på alle felt som har data-bind attributt
+            document.querySelectorAll('[data-bind]').forEach(input => {
+                input.addEventListener('input', e => {
+                    const key = e.target.getAttribute('data-bind');
+                    const val = e.target.value;
+
+                    // Oppdater lokal variabel
+                    personaFields[key] = val;
+
+                    // Lagre til localStorage
+                    localStorage.setItem(`persona_dev_${key}`, val);
+
+                    // Synkroniser verdiene på tvers av moduser (Læremodus <=> Praksismodus)
+                    document.querySelectorAll(`[data-bind="${key}"]`).forEach(el => {
+                        if (el !== e.target) {
+                            el.value = val;
+                        }
+                    });
+
+                    updatePresentationCard();
+                });
+            });
+        }
+
+        function loadTemplate(key) {
+            const data = templates[key];
+            if (!data) return;
+
+            Object.keys(data).forEach(k => {
+                personaFields[k] = data[k];
+                localStorage.setItem(`persona_dev_${k}`, data[k]);
+            });
+
+            // Sett emoji avatar basert på malen
+            let avatarEmoji = "👤";
+            if (key === 'student') avatarEmoji = "🧑‍🎓";
+            if (key === 'parent') avatarEmoji = "🌱";
+            if (key === 'senior') avatarEmoji = "👴";
+            if (key === 'b2b') avatarEmoji = "💼";
+
+            personaFields.avatar = avatarEmoji;
+            localStorage.setItem(`persona_dev_avatar`, avatarEmoji);
+
+            applyStateToUI();
+        }
+
+        function generateRandomPersona() {
+            // Plukk ut tilfeldige verdier fra bassenget
+            const rName = randomPool.names[Math.floor(Math.random() * randomPool.names.length)];
+            const rAge = Math.floor(Math.random() * 60) + 18; // 18 - 78
+            const rOccupation = randomPool.occupations[Math.floor(Math.random() * randomPool.occupations.length)];
+            const rLocation = randomPool.locations[Math.floor(Math.random() * randomPool.locations.length)];
+            const rUrbanity = randomPool.urbanities[Math.floor(Math.random() * randomPool.urbanities.length)];
+            const rValues = randomPool.values[Math.floor(Math.random() * randomPool.values.length)];
+            const rMotivation = randomPool.motivations[Math.floor(Math.random() * randomPool.motivations.length)];
+            const rPainpoints = randomPool.painpoints[Math.floor(Math.random() * randomPool.painpoints.length)];
+
+            personaFields.name = rName;
+            personaFields.age = rAge.toString();
+            personaFields.civil = Math.random() > 0.5 ? "Samboer" : "Singel";
+            personaFields.occupation = rOccupation;
+            personaFields.income = (Math.floor(Math.random() * 400) + 350) + " 000 kr / år";
+            personaFields.location = rLocation;
+            personaFields.urbanity = rUrbanity;
+            personaFields.values = rValues;
+            personaFields.motivation = rMotivation;
+            personaFields.painpoints = rPainpoints;
+            personaFields.avatar = "🎲";
+
+            // Lagre alt til LocalStorage
+            Object.keys(personaFields).forEach(k => {
+                localStorage.setItem(`persona_dev_${k}`, personaFields[k]);
+            });
+
+            applyStateToUI();
+        }
+
+        function applyStateToUI() {
+            Object.keys(personaFields).forEach(key => {
+                document.querySelectorAll(`[data-bind="${key}"]`).forEach(el => {
+                    el.value = personaFields[key];
+                });
+            });
+            updatePresentationCard();
+        }
+
+        function updatePresentationCard() {
+            Object.keys(personaFields).forEach(key => {
+                const el = document.getElementById(`card-${key}`);
+                if (el) {
+                    if (personaFields[key] && personaFields[key].trim() !== "") {
+                        el.textContent = personaFields[key];
+                        el.classList.remove('text-slate-400', 'italic');
+                    } else {
+                        // Default fallbacks dersom feltet er tomt
+                        if (key === 'name') el.textContent = "Camilla Karrière";
+                        else if (key === 'occupation') el.textContent = "Prosjektleder";
+                        else if (key === 'age') el.textContent = "34 år";
+                        else if (key === 'civil') el.textContent = "Samboer";
+                        else if (key === 'income') el.textContent = "650 000 kr";
+                        else if (key === 'location') el.textContent = "Oslo";
+                        else if (key === 'urbanity') el.textContent = "Storby";
+                        else {
+                            el.textContent = "Ikke definert ennå. Gå til Lære- eller Praksismodus for å fylle ut.";
+                            el.classList.add('text-slate-400', 'italic');
+                        }
+                    }
+                }
+            });
+
+            // Oppdater avatar
+            const avatarEl = document.getElementById('card-avatar');
+            if (avatarEl) {
+                avatarEl.textContent = personaFields.avatar || "👤";
+            }
+        }
+
+        function loadFromLocalStorage() {
+            Object.keys(personaFields).forEach(key => {
+                const val = localStorage.getItem(`persona_dev_${key}`);
+                if (val !== null) {
+                    personaFields[key] = val;
+                }
+            });
+        }
+
+        function showEscToast() {
+            // Fjern eventuelle eksisterende toasts
+            const oldToast = document.getElementById('esc-toast');
+            if (oldToast) oldToast.remove();
+
+            const toast = document.createElement('div');
+            toast.id = 'esc-toast';
+            toast.className = 'no-print fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 text-slate-200 px-5 py-3 rounded-xl text-xs font-semibold z-50 shadow-xl border border-slate-700/50 flex items-center gap-2 transition-all duration-300';
+            toast.innerHTML = '<span>⌨️</span> Trykk <kbd class="bg-slate-800 text-white px-1.5 py-0.5 rounded border border-slate-700 font-mono text-[10px]">ESC</kbd> på tastaturet for å gå ut av presentasjon';
+            document.body.appendChild(toast);
+
+            // Fade ut etter 3.5 sekunder
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, 20px)';
+                setTimeout(() => {
+                    if (toast.parentNode) toast.remove();
+                }, 300);
+            }, 3500);
+        }
+
+        // Lytt etter ESC for å returnere til Læremodus
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                switchTab('learn');
+                const toast = document.getElementById('esc-toast');
+                if (toast) toast.remove();
+            }
+        });
+
+        // Håndtering av modal-basert nullstilling
+        function openResetModal() {
+            document.getElementById('reset-modal').classList.remove('hidden');
+        }
+
+        function closeResetModal() {
+            document.getElementById('reset-modal').classList.add('hidden');
+        }
+
+        function confirmReset() {
+            localStorage.clear();
+            Object.keys(personaFields).forEach(k => {
+                personaFields[k] = "";
+            });
+            personaFields.avatar = "👤";
+            applyStateToUI();
+            closeResetModal();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<!--
+  Interaktiv Priskalkulator — Halison App Studio-eksempel
+
+  Interaktiv priskalkulator for avanse, dekningsbidrag og MVA. Skole- og
+  bedriftsmodus, rabattsimulator, nullpunktsanalyse og presentasjonsmodus.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Du kan
+  endre den, men behold denne headeren og kildelenken, og du må ikke selge,
+  kommersialisere eller republisere den. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interaktiv Priskalkulator: Avanse, Bidrag og MVA</title>
+    <!-- Tailwind CSS for et moderne og minimalistisk uttrykk -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Tilpasning av skyveknapper for merkevarens farger */
+        input[type="range"]::-webkit-slider-thumb {
+            background: #4f46e5;
+            cursor: pointer;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            appearance: none;
+            margin-top: -5px;
+        }
+        input[type="range"]::-moz-range-thumb {
+            background: #4f46e5;
+            cursor: pointer;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            border: none;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: #e2e8f0;
+            height: 8px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans antialiased">
+
+    <!-- ========================================== -->
+    <!-- HOVEDVISNING FOR PRISKALKULATOREN          -->
+    <!-- ========================================== -->
+    <div id="main-calculator-view" class="block">
+
+        <!-- Header / Navigasjon -->
+        <header class="bg-white border-b border-slate-200 py-6 px-4 sm:px-8">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                        <span class="text-xs font-bold tracking-wider text-indigo-600 uppercase">Salg, service og reiseliv | Gand VGS</span>
+                    </div>
+                    <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight mt-1">Interaktiv Priskalkulator</h1>
+                    <p class="text-sm text-slate-500 mt-1">Simuler prissetting, marginer, merverdiavgift og lønnsomhet i sanntid.</p>
+                </div>
+
+                <!-- Kontrollknapper for Modus og Presentasjon -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <button onclick="startPresentationMode()" class="px-5 py-2.5 text-sm font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all focus:ring-2 focus:ring-indigo-500">
+                        Start presentasjonsmodus
+                    </button>
+                    <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                        <button id="btnModeStudent" onclick="setMode('student')" class="px-4 py-2 text-sm font-medium rounded-lg bg-white text-indigo-600 shadow-sm transition-all">
+                            Skolemodus
+                        </button>
+                        <button id="btnModeBedrift" onclick="setMode('bedrift')" class="px-4 py-2 text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+                            Bedriftsmodus
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Hovedinnhold -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-8 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+                <!-- VENSTRE: Kontrollere og innstillinger (5 kolonner) -->
+                <div class="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                    <div class="border-b border-slate-100 pb-4">
+                        <h2 class="text-xl font-bold text-slate-900">Kalkulatorinnstillinger</h2>
+                        <p class="text-xs text-slate-400 mt-1">Juster parametrene under for å se umiddelbare endringer.</p>
+                    </div>
+
+                    <!-- 1. Innkjøpspris -->
+                    <div>
+                        <label for="inputCost" class="block text-sm font-semibold text-slate-700 mb-1">Innkjøpspris / Selvkost (kr)</label>
+                        <div class="relative rounded-xl shadow-sm">
+                            <input type="number" id="inputCost" value="100" min="1" step="any" oninput="updateCalculations('cost')" class="w-full pl-4 pr-12 py-3 border border-slate-300 rounded-xl text-lg font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                <span class="text-slate-500 font-semibold text-sm">kr</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">Produktets opprinnelige innkjøpskostnad fra leverandør.</p>
+                    </div>
+
+                    <!-- 2. Merverdiavgift (MVA) -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Merverdiavgift (MVA)</label>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button onclick="setMva(25)" id="btnMva25" class="py-3 px-1 text-sm font-bold rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 transition-all">
+                                25% <span class="block text-[10px] font-normal text-indigo-500">Varer</span>
+                            </button>
+                            <button onclick="setMva(15)" id="btnMva15" class="py-3 px-1 text-sm font-bold rounded-xl border border-slate-200 hover:border-slate-300 text-slate-700 bg-white transition-all">
+                                15% <span class="block text-[10px] font-normal text-slate-400">Mat</span>
+                            </button>
+                            <button onclick="setMva(12)" id="btnMva12" class="py-3 px-1 text-sm font-bold rounded-xl border border-slate-200 hover:border-slate-300 text-slate-700 bg-white transition-all">
+                                12% <span class="block text-[10px] font-normal text-slate-400">Reiseliv</span>
+                            </button>
+                            <button onclick="setMva(0)" id="btnMva0" class="py-3 px-1 text-sm font-bold rounded-xl border border-slate-200 hover:border-slate-300 text-slate-700 bg-white transition-all">
+                                0% <span class="block text-[10px] font-normal text-slate-400">Fritatt</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 3. Avanse (Regnes av Innkjøpspris) -->
+                    <div class="bg-indigo-50/40 p-5 rounded-2xl border border-indigo-100">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-sm font-bold text-indigo-900">Avanse %</label>
+                            <div class="relative w-28">
+                                <input type="number" id="inputAvanseNum" value="100" min="0" max="1000" oninput="syncFromAvanseInput()" class="w-full pl-3 pr-7 py-1 text-right text-sm font-bold text-indigo-900 bg-white border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <span class="absolute right-2.5 top-1 text-sm font-bold text-indigo-400 pointer-events-none">%</span>
+                            </div>
+                        </div>
+                        <input type="range" id="sliderAvanse" min="0" max="300" value="100" oninput="updateCalculations('avanse')" class="w-full h-2 rounded-lg appearance-none cursor-pointer accent-indigo-600 my-4">
+                        <div class="flex justify-between text-[11px] text-indigo-500 font-bold uppercase tracking-wider">
+                            <span>0%</span>
+                            <span>100% (Dobling)</span>
+                            <span>200%</span>
+                            <span>300%</span>
+                        </div>
+                        <p class="text-xs text-indigo-700 mt-3 leading-relaxed">Pålslag lagt til på innkjøpsprisen for å dekke øvrige utgifter og fortjeneste.</p>
+                    </div>
+
+                    <!-- 4. Dekningsgrad (Regnes av Salgspris) -->
+                    <div class="bg-emerald-50/40 p-5 rounded-2xl border border-emerald-100">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-sm font-bold text-emerald-900">Dekningsgrad %</label>
+                            <div class="relative w-28">
+                                <input type="number" id="inputDGNum" value="50" min="0" max="99" oninput="syncFromDGInput()" class="w-full pl-3 pr-7 py-1 text-right text-sm font-bold text-emerald-900 bg-white border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                                <span class="absolute right-2.5 top-1 text-sm font-bold text-emerald-400 pointer-events-none">%</span>
+                            </div>
+                        </div>
+                        <input type="range" id="sliderDG" min="0" max="95" value="50" oninput="updateCalculations('dg')" class="w-full h-2 rounded-lg appearance-none cursor-pointer accent-emerald-600 my-4">
+                        <div class="flex justify-between text-[11px] text-emerald-500 font-bold uppercase tracking-wider">
+                            <span>0%</span>
+                            <span>50% (Halvparten)</span>
+                            <span>75%</span>
+                            <span>95% (Maks)</span>
+                        </div>
+                        <p class="text-xs text-emerald-700 mt-3 leading-relaxed">Hvor stor andel av den endelige salgsprisen som blir værende igjen i bedriften.</p>
+                    </div>
+                </div>
+
+                <!-- HØYRE: Store resultater og Visuell Stack (7 kolonner) -->
+                <div class="lg:col-span-7 space-y-6">
+
+                    <!-- Resultat-grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                        <!-- Utsalgspris eks. MVA -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block">Pris uten MVA (eks.)</span>
+                            <div class="flex items-baseline gap-1 mt-2">
+                                <span class="text-3xl font-black text-slate-900" id="resPriceEx">200,00</span>
+                                <span class="text-base font-bold text-slate-500">kr</span>
+                            </div>
+                            <div class="text-xs text-slate-400 mt-2">Grunnlaget for bedriftens regnskap</div>
+                        </div>
+
+                        <!-- Dekningsbidrag i kroner -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-emerald-500 flex flex-col justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                <span class="text-xs font-bold text-emerald-600 uppercase tracking-widest block">Dekningsbidrag (Fortjeneste)</span>
+                            </div>
+                            <div class="flex items-baseline gap-1 mt-2">
+                                <span class="text-3xl font-black text-emerald-700" id="resDB">100,00</span>
+                                <span class="text-base font-bold text-emerald-600">kr</span>
+                            </div>
+                            <div class="text-xs text-emerald-500 mt-2">Beløpet som dekker faste kostnader</div>
+                        </div>
+
+                        <!-- MVA Beløp -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block">MVA-kroner (<span id="resMvaPercent">25</span>%)</span>
+                            <div class="flex items-baseline gap-1 mt-2">
+                                <span class="text-3xl font-black text-slate-900" id="resMvaValue">50,00</span>
+                                <span class="text-base font-bold text-slate-500">kr</span>
+                            </div>
+                            <div class="text-xs text-slate-400 mt-2">Skatt som overføres direkte til staten</div>
+                        </div>
+
+                        <!-- Utsalgspris INKL. MVA -->
+                        <div class="bg-indigo-950 p-6 rounded-2xl text-white shadow-md flex flex-col justify-between">
+                            <span class="text-xs font-bold text-indigo-300 uppercase tracking-widest block">Utsalgspris til kunde (ink.)</span>
+                            <div class="flex items-baseline gap-1 mt-2">
+                                <span class="text-3xl font-black text-white" id="resPriceInc">250,00</span>
+                                <span class="text-base font-bold text-indigo-200">kr</span>
+                            </div>
+                            <div class="text-xs text-indigo-300 mt-2">Prislappen kunden betaler i kassen</div>
+                        </div>
+                    </div>
+
+                    <!-- Visuell prisoppbygning (Søylediagram) -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <h3 class="text-lg font-bold text-slate-900 mb-4">Visuell prisoppbygning</h3>
+
+                        <!-- Stolpe -->
+                        <div class="relative w-full h-14 rounded-xl overflow-hidden flex shadow-inner border border-slate-100">
+                            <!-- Innkjøp -->
+                            <div id="barCost" class="bg-slate-300 h-full flex items-center justify-center transition-all duration-300" style="width: 40%">
+                                <span class="text-xs font-bold text-slate-700 truncate px-1">Innkjøp</span>
+                            </div>
+                            <!-- Margin/DB -->
+                            <div id="barDB" class="bg-emerald-500 h-full flex items-center justify-center transition-all duration-300" style="width: 40%">
+                                <span class="text-xs font-bold text-white truncate px-1">Dekningsbidrag</span>
+                            </div>
+                            <!-- MVA -->
+                            <div id="barMva" class="bg-indigo-500 h-full flex items-center justify-center transition-all duration-300" style="width: 20%">
+                                <span class="text-xs font-bold text-white truncate px-1">MVA</span>
+                            </div>
+                        </div>
+
+                        <!-- Legende -->
+                        <div class="grid grid-cols-3 gap-3 mt-4 text-center text-xs font-bold text-slate-600">
+                            <div class="p-3 bg-slate-100 rounded-xl">
+                                <span class="block text-[10px] text-slate-400 uppercase tracking-wide">Innkjøpsandel</span>
+                                <span class="text-base font-extrabold text-slate-700" id="pctCost">40.0%</span>
+                            </div>
+                            <div class="p-3 bg-emerald-50 rounded-xl text-emerald-700">
+                                <span class="block text-[10px] text-emerald-400 uppercase tracking-wide">Marginandel (DB)</span>
+                                <span class="text-base font-extrabold text-emerald-700" id="pctDB">40.0%</span>
+                            </div>
+                            <div class="p-3 bg-indigo-50 rounded-xl text-indigo-700">
+                                <span class="block text-[10px] text-indigo-400 uppercase tracking-wide">MVA-andel</span>
+                                <span class="text-base font-extrabold text-indigo-700" id="pctMva">20.0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEKSJON: Rabattsimulator -->
+            <section class="mt-8 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="border-b border-slate-100 pb-4 mb-4">
+                    <h3 class="text-xl font-bold text-slate-900">Rabattsimulator</h3>
+                    <p class="text-sm text-slate-500 mt-1">Se den dramatiske effekten av priskutt på dekningsbidraget ditt.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- 10% rabatt -->
+                    <div class="p-4 rounded-xl border border-slate-150 bg-slate-50/50">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-bold text-amber-800 text-sm">10% Rabatt</span>
+                            <span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">Mindre kampanje</span>
+                        </div>
+                        <div class="space-y-1 text-sm text-slate-600">
+                            <div class="flex justify-between">Ny salgspris: <span class="font-bold text-slate-950" id="r10Price">0,00 kr</span></div>
+                            <div class="flex justify-between">Nytt dekningsbidrag: <span class="font-bold text-slate-950" id="r10Db">0,00 kr</span></div>
+                            <div class="flex justify-between pt-2 border-t border-slate-200 mt-2 font-bold text-red-600">Reduksjon i DB: <span id="r10Drop" class="font-black">0%</span></div>
+                        </div>
+                    </div>
+
+                    <!-- 20% rabatt -->
+                    <div class="p-4 rounded-xl border border-slate-150 bg-slate-50/50">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-bold text-orange-800 text-sm">20% Rabatt</span>
+                            <span class="text-[10px] bg-orange-100 text-orange-800 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">Standard tilbud</span>
+                        </div>
+                        <div class="space-y-1 text-sm text-slate-600">
+                            <div class="flex justify-between">Ny salgspris: <span class="font-bold text-slate-950" id="r20Price">0,00 kr</span></div>
+                            <div class="flex justify-between">Nytt dekningsbidrag: <span class="font-bold text-slate-950" id="r20Db">0,00 kr</span></div>
+                            <div class="flex justify-between pt-2 border-t border-slate-200 mt-2 font-bold text-red-600">Reduksjon i DB: <span id="r20Drop" class="font-black">0%</span></div>
+                        </div>
+                    </div>
+
+                    <!-- 30% rabatt -->
+                    <div class="p-4 rounded-xl border border-slate-150 bg-slate-50/50">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-bold text-red-800 text-sm">30% Rabatt</span>
+                            <span class="text-[10px] bg-red-100 text-red-800 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">Aggressivt salg</span>
+                        </div>
+                        <div class="space-y-1 text-sm text-slate-600">
+                            <div class="flex justify-between">Ny salgspris: <span class="font-bold text-slate-950" id="r30Price">0,00 kr</span></div>
+                            <div class="flex justify-between">Nytt dekningsbidrag: <span class="font-bold text-slate-950" id="r30Db">0,00 kr</span></div>
+                            <div class="flex justify-between pt-2 border-t border-slate-200 mt-2 font-bold text-red-600">Reduksjon i DB: <span id="r30Drop" class="font-black">0%</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-4 bg-red-50 text-red-800 text-xs sm:text-sm rounded-xl border border-red-100 leading-relaxed">
+                    <strong>Viktig økonomisk poeng:</strong> Rabatter reduserer utelukkende overskuddet (dekningsbidraget). Siden innkjøpsprisen forblir uendret, vil en rabatt på f.eks. 20% ofte slette ut hele eller store deler av fortjenestemarginen din.
+                </div>
+            </section>
+
+            <!-- SKOLE- OG BEDRIFTSSEKSJONER (Styres av modusknappene) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+
+                <!-- SKOLEMODUS: Teori og Oppgaver -->
+                <div id="section-student-theory" class="block space-y-6">
+                    <section class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-full">
+                        <h3 class="text-lg font-bold text-slate-900 mb-4 border-b border-slate-100 pb-2">Teorihjørnet</h3>
+                        <div class="space-y-4 text-sm leading-relaxed text-slate-600">
+                            <div>
+                                <h4 class="font-bold text-slate-800">Avanse:</h4>
+                                <p>Avanse regnes i prosent av <strong>innkjøpsprisen</strong>, og viser påslaget bedriften legger til varen før moms.</p>
+                                <p class="font-mono bg-slate-100 p-2 rounded-lg text-xs mt-1 text-indigo-700 font-bold">Formel: Avanse % = (Dekningsbidrag / Innkjøpspris) * 100</p>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800">Dekningsgrad (DG):</h4>
+                                <p>Dekningsgraden viser hvor stor andel av <strong>salgsprisen uten MVA</strong> som blir igjen til faste kostnader og fortjeneste.</p>
+                                <p class="font-mono bg-slate-100 p-2 rounded-lg text-xs mt-1 text-emerald-700 font-bold">Formel: Dekningsgrad % = (Dekningsbidrag / Salgspris eks. MVA) * 100</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <div id="section-student-tasks" class="block">
+                    <section class="bg-indigo-950 text-indigo-100 p-6 rounded-2xl shadow-sm flex flex-col justify-between h-full">
+                        <div>
+                            <h3 class="text-lg font-bold text-white mb-4 border-b border-indigo-900 pb-2">Praktiske Elevutfordringer</h3>
+                            <div class="space-y-4 text-xs sm:text-sm">
+                                <div class="border-l-2 border-indigo-400 pl-3">
+                                    <span class="font-bold text-white text-xs uppercase tracking-wider">Oppgave 1: Klesbutikk</span>
+                                    <p class="text-indigo-200 mt-1">En jakke kjøpes inn for 300 kr. Dere ønsker 120% avanse. Hva blir utsalgsprisen inkl. 25% MVA? Hva blir dekningsgraden?</p>
+                                </div>
+                                <div class="border-l-2 border-indigo-400 pl-3">
+                                    <span class="font-bold text-white text-xs uppercase tracking-wider">Oppgave 2: Hotell</span>
+                                    <p class="text-indigo-200 mt-1">Et hotellrom har rengjørings- og driftsutgifter på 200 kr. Hotellet krever en dekningsgrad på 80%. Hva blir prisen til gjesten (inkl. 12% MVA)?</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 pt-3 border-t border-indigo-900 text-[11px] text-indigo-300">
+                            Tips: Bruk kalkulatoren over for å teste ut verdiene!
+                        </div>
+                    </section>
+                </div>
+
+                <!-- BEDRIFTSMODUS: Nullpunktsanalyse (Skjult som standard) -->
+                <div id="section-company" class="md:col-span-2 hidden">
+                    <section class="bg-emerald-950 text-emerald-100 p-6 rounded-2xl shadow-sm border border-emerald-900">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-emerald-900 pb-4 mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-white">Nullpunktsanalyse (Break-even kalkulator)</h3>
+                                <p class="text-xs text-emerald-300">Regn ut nøyaktig hvor mange enheter du må selge for å dekke dine faste månedlige kostnader.</p>
+                            </div>
+                            <div class="w-full md:w-72">
+                                <label for="inputFixedCosts" class="block text-xs font-bold text-emerald-400 uppercase mb-1">Månedlige Faste utgifter (kr)</label>
+                                <div class="relative rounded-lg shadow-sm">
+                                    <input type="number" id="inputFixedCosts" value="50000" min="0" oninput="calculateBreakEven()" class="w-full pl-3 pr-10 py-2.5 bg-emerald-900 border border-emerald-700 rounded-lg text-sm font-bold text-white outline-none focus:ring-2 focus:ring-emerald-500">
+                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                        <span class="text-emerald-400 text-xs font-bold">kr</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-4">
+                                <div class="p-4 bg-emerald-900/40 rounded-xl border border-emerald-800">
+                                    <span class="text-xs uppercase text-emerald-400 block tracking-wider font-bold">Påkrevd salgsvolum</span>
+                                    <div class="flex items-baseline gap-2 mt-1">
+                                        <span class="text-4xl font-black text-white" id="beVolume">500</span>
+                                        <span class="text-sm font-bold text-emerald-300">stk pr. måned</span>
+                                    </div>
+                                    <p class="text-xs text-emerald-300 mt-2">Salgsvolumet du må oppnå for å dekke de faste driftskostnadene.</p>
+                                </div>
+                                <div class="p-4 bg-emerald-900/40 rounded-xl border border-emerald-800">
+                                    <span class="text-xs uppercase text-emerald-400 block tracking-wider font-bold">Nødvendig omsetning eks. MVA</span>
+                                    <div class="flex items-baseline gap-2 mt-1">
+                                        <span class="text-3xl font-black text-white" id="beRevenue">100 000,00</span>
+                                        <span class="text-sm font-bold text-emerald-300">kr pr. måned</span>
+                                    </div>
+                                    <p class="text-xs text-emerald-300 mt-2">Den totale kontantstrømmen (netto) du må generere for å gå i null.</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-emerald-900/20 p-5 rounded-xl border border-emerald-800/40 text-xs sm:text-sm space-y-3 leading-relaxed">
+                                <h4 class="font-bold text-white">Hvordan justeringer påvirker risikonivået:</h4>
+                                <p>Salgsvolumet bestemmes direkte av ditt dekningsbidrag i kroner:</p>
+                                <ul class="list-disc pl-5 space-y-2 text-emerald-300">
+                                    <li>Hvis du <strong>øker marginen</strong>, trenger du å selge <strong>færre varer</strong> for å dekke de faste utgiftene dine.</li>
+                                    <li>Hvis du <strong>kutter prisene</strong> eller gir rabatter, skyter nødvendig salgsvolum i været for å kompensere for tapt fortjeneste.</li>
+                                </ul>
+                                <p class="text-xs font-mono text-emerald-400 mt-3 border-t border-emerald-900/50 pt-3">Formel: Faste kostnader / Dekningsbidrag pr. enhet = Nullpunktsvolum</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+
+        <footer class="bg-white border-t border-slate-200 py-6 mt-12 text-center text-xs text-slate-400">
+            <p>© 2026 Gand VGS — Programfag for Salg, service og reiseliv. Utviklet som interaktivt læremiddel.</p>
+        </footer>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- HELDEKKENDE PRESENTASJONSMODUS OVERLAY     -->
+    <!-- ========================================== -->
+    <div id="presentation-overlay" class="hidden fixed inset-0 bg-slate-950 z-50 overflow-hidden flex flex-col justify-between p-8 sm:p-12 text-slate-100">
+
+        <!-- Flytende Info-toast som fader ut etter 5 sekunder -->
+        <div id="pres-esc-toast" class="absolute top-6 left-1/2 -translate-x-1/2 bg-indigo-600/95 text-white font-bold text-sm px-6 py-3.5 rounded-full shadow-2xl tracking-wide z-50 transition-opacity duration-1000 flex items-center gap-2 border border-indigo-500">
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+            <span>Presentasjonsmodus aktiv | Trykk på ESC-tasten for å gå tilbake</span>
+        </div>
+
+        <!-- Topplinje -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-800 pb-6">
+            <div>
+                <span class="text-xs font-bold uppercase tracking-widest text-indigo-400">Resultatvisning og sammensetning</span>
+                <h2 class="text-3xl md:text-4xl font-black tracking-tight text-white mt-1">Pris og Marginfordeling</h2>
+            </div>
+            <div class="mt-4 md:mt-0 flex items-center gap-3">
+                <span class="px-4 py-1.5 bg-indigo-950 border border-indigo-800 text-indigo-300 text-xs font-bold rounded-lg uppercase tracking-wide">
+                    MVA-Sats: <span id="presMvaRateBadge">25</span>%
+                </span>
+                <span class="px-4 py-1.5 bg-emerald-950 border border-emerald-850 text-emerald-300 text-xs font-bold rounded-lg uppercase tracking-wide">
+                    Dekningsgrad: <span id="presDGBadge">50</span>%
+                </span>
+            </div>
+        </div>
+
+        <!-- Gigantisk tall-grid tilpasset projektor-visning -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 my-auto">
+
+            <!-- Kundeplakat (Inkl. MVA) -->
+            <div class="bg-indigo-950/40 border border-indigo-800/80 p-8 rounded-3xl shadow-2xl flex flex-col justify-between h-48 lg:h-56">
+                <span class="text-xs font-bold text-indigo-400 uppercase tracking-widest block">Utsalgspris til kunde (Ink. MVA)</span>
+                <div class="my-auto">
+                    <span class="text-5xl lg:text-6xl font-black text-white block tracking-tight" id="presPriceInc">250,00</span>
+                    <span class="text-sm font-bold text-indigo-300 uppercase tracking-wider block mt-1">kr totalt i kassen</span>
+                </div>
+            </div>
+
+            <!-- Salgspris Eks. MVA -->
+            <div class="bg-slate-900/60 border border-slate-800/80 p-8 rounded-3xl shadow-2xl flex flex-col justify-between h-48 lg:h-56">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block">Pris uten MVA (Eks.)</span>
+                <div class="my-auto">
+                    <span class="text-4xl lg:text-5xl font-black text-white block tracking-tight" id="presPriceEx">200,00</span>
+                    <span class="text-sm font-bold text-slate-400 uppercase tracking-wider block mt-1">kr netto omsetning</span>
+                </div>
+            </div>
+
+            <!-- Dekningsbidrag -->
+            <div class="bg-emerald-950/40 border border-emerald-800/80 p-8 rounded-3xl shadow-2xl flex flex-col justify-between h-48 lg:h-56">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span class="text-xs font-bold text-emerald-400 uppercase tracking-widest block">Dekningsbidrag</span>
+                </div>
+                <div class="my-auto">
+                    <span class="text-4xl lg:text-5xl font-black text-emerald-400 block tracking-tight" id="presDB">100,00</span>
+                    <span class="text-sm font-bold text-emerald-300 uppercase tracking-wider block mt-1">kr igjen i bedriften</span>
+                </div>
+            </div>
+
+            <!-- Merverdiavgift i kroner -->
+            <div class="bg-slate-900/60 border border-slate-800/80 p-8 rounded-3xl shadow-2xl flex flex-col justify-between h-48 lg:h-56">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest block">Merverdiavgift</span>
+                <div class="my-auto">
+                    <span class="text-4xl lg:text-5xl font-black text-slate-200 block tracking-tight" id="presMvaValue">50,00</span>
+                    <span class="text-sm font-bold text-slate-400 uppercase tracking-wider block mt-1">kr statens andel</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forsterket fargekodet stolpestediagram for presentasjon -->
+        <div class="bg-slate-900/40 border border-slate-850 p-8 rounded-3xl">
+            <h3 class="text-xs font-bold tracking-widest text-slate-400 uppercase mb-4">Sammensetning av den totale prisen</h3>
+
+            <div class="relative w-full h-20 rounded-2xl overflow-hidden flex shadow-2xl border border-slate-800">
+                <!-- Innkjøp -->
+                <div id="presBarCost" class="bg-slate-600 h-full flex flex-col items-center justify-center transition-all duration-300" style="width: 40%">
+                    <span class="text-[10px] font-black uppercase text-slate-300 tracking-wider">Innkjøp</span>
+                    <span class="text-lg font-black text-white" id="presPctCost">40.0%</span>
+                </div>
+                <!-- Margin -->
+                <div id="presBarDB" class="bg-emerald-600 h-full flex flex-col items-center justify-center transition-all duration-300" style="width: 40%">
+                    <span class="text-[10px] font-black uppercase text-emerald-100 tracking-wider">Margin (DB)</span>
+                    <span class="text-lg font-black text-white" id="presPctDB">40.0%</span>
+                </div>
+                <!-- MVA -->
+                <div id="presBarMva" class="bg-indigo-600 h-full flex flex-col items-center justify-center transition-all duration-300" style="width: 20%">
+                    <span class="text-[10px] font-black uppercase text-indigo-100 tracking-wider">MVA</span>
+                    <span class="text-lg font-black text-white" id="presPctMva">20.0%</span>
+                </div>
+            </div>
+
+            <!-- Forklaring for diagrammet -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 text-xs text-center font-bold text-slate-400">
+                <div class="flex items-center justify-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-slate-600"></span>
+                    <span>Innkjøpsselvkost (varens kostpris)</span>
+                </div>
+                <div class="flex items-center justify-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-emerald-600"></span>
+                    <span>Dekningsbidrag (bedriftens overskudd)</span>
+                </div>
+                <div class="flex items-center justify-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-indigo-600"></span>
+                    <span>Merverdiavgift (statens avgift)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- JAVASCRIPT-LOGIKK FOR KALKULATOREN         -->
+    <!-- ========================================== -->
+    <script>
+        // Tilstandsbehandling
+        let mvaRate = 25;
+        let currentMode = 'student';
+
+        // Kjøres ved oppstart
+        window.onload = function() {
+            updateCalculations('avanse');
+        };
+
+        // Bytter mellom Student- og Bedriftsmodus
+        function setMode(mode) {
+            currentMode = mode;
+            const btnStudent = document.getElementById('btnModeStudent');
+            const btnBedrift = document.getElementById('btnModeBedrift');
+
+            const sectionTheory = document.getElementById('section-student-theory');
+            const sectionTasks = document.getElementById('section-student-tasks');
+            const sectionCompany = document.getElementById('section-company');
+
+            if (mode === 'student') {
+                btnStudent.className = "px-4 py-2 text-sm font-medium rounded-lg bg-white text-indigo-600 shadow-sm transition-all";
+                btnBedrift.className = "px-4 py-2 text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900 transition-all";
+
+                sectionTheory.classList.remove('hidden');
+                sectionTasks.classList.remove('hidden');
+                sectionCompany.classList.add('hidden');
+            } else {
+                btnBedrift.className = "px-4 py-2 text-sm font-medium rounded-lg bg-white text-indigo-600 shadow-sm transition-all";
+                btnStudent.className = "px-4 py-2 text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900 transition-all";
+
+                sectionTheory.classList.add('hidden');
+                sectionTasks.classList.add('hidden');
+                sectionCompany.classList.remove('hidden');
+                calculateBreakEven();
+            }
+        }
+
+        // Setter ny MVA-sats
+        function setMva(rate) {
+            mvaRate = rate;
+
+            const mvaRates = [25, 15, 12, 0];
+            mvaRates.forEach(r => {
+                const btn = document.getElementById(`btnMva${r}`);
+                if (r === rate) {
+                    btn.className = "py-3 px-1 text-sm font-bold rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 transition-all";
+                } else {
+                    btn.className = "py-3 px-1 text-sm font-bold rounded-xl border border-slate-200 hover:border-slate-300 text-slate-700 bg-white transition-all";
+                }
+            });
+
+            updateCalculations('none');
+        }
+
+        // Håndterer manuell inntasting av Avanse %
+        function syncFromAvanseInput() {
+            const numVal = parseFloat(document.getElementById('inputAvanseNum').value) || 0;
+            document.getElementById('sliderAvanse').value = Math.min(numVal, 300);
+            updateCalculations('avanse');
+        }
+
+        // Håndterer manuell inntasting av Dekningsgrad %
+        function syncFromDGInput() {
+            let numVal = parseFloat(document.getElementById('inputDGNum').value) || 0;
+            if (numVal >= 100) numVal = 99.9;
+            document.getElementById('sliderDG').value = Math.min(numVal, 95);
+            updateCalculations('dg');
+        }
+
+        // Hovedmotoren bak beregningene og toveis-koblingen
+        function updateCalculations(source) {
+            let cost = parseFloat(document.getElementById('inputCost').value);
+            if (isNaN(cost) || cost <= 0) {
+                cost = 0;
+            }
+
+            let avansePercent = parseFloat(document.getElementById('sliderAvanse').value);
+            let dgPercent = parseFloat(document.getElementById('sliderDG').value);
+
+            let priceEx = 0;
+            let dbValue = 0;
+
+            if (source === 'avanse') {
+                // Beregn ut fra Avanse %
+                priceEx = cost * (1 + (avansePercent / 100));
+                dbValue = priceEx - cost;
+
+                if (priceEx > 0) {
+                    dgPercent = (dbValue / priceEx) * 100;
+                } else {
+                    dgPercent = 0;
+                }
+
+                document.getElementById('sliderDG').value = dgPercent;
+                document.getElementById('inputDGNum').value = dgPercent.toFixed(1);
+                document.getElementById('inputAvanseNum').value = avansePercent;
+
+            } else if (source === 'dg') {
+                // Beregn ut fra Dekningsgrad %
+                if (dgPercent >= 100) dgPercent = 99.9;
+
+                priceEx = cost / (1 - (dgPercent / 100));
+                dbValue = priceEx - cost;
+
+                if (cost > 0) {
+                    avansePercent = (dbValue / cost) * 100;
+                } else {
+                    avansePercent = 0;
+                }
+
+                document.getElementById('sliderAvanse').value = Math.min(avansePercent, 300);
+                document.getElementById('inputAvanseNum').value = avansePercent.toFixed(1);
+                document.getElementById('inputDGNum').value = dgPercent;
+
+            } else {
+                // Ved oppstart eller kun MVA/Innkjøpsendring
+                avansePercent = parseFloat(document.getElementById('inputAvanseNum').value) || 0;
+                priceEx = cost * (1 + (avansePercent / 100));
+                dbValue = priceEx - cost;
+
+                if (priceEx > 0) {
+                    dgPercent = (dbValue / priceEx) * 100;
+                } else {
+                    dgPercent = 0;
+                }
+
+                document.getElementById('sliderDG').value = Math.min(dgPercent, 95);
+                document.getElementById('inputDGNum').value = dgPercent.toFixed(1);
+            }
+
+            // Beregn MVA og total utsalgspris
+            let mvaValue = priceEx * (mvaRate / 100);
+            let priceInc = priceEx + mvaValue;
+
+            // Oppdater tallene i grensesnittet
+            document.getElementById('resPriceEx').innerText = formatCurrency(priceEx);
+            document.getElementById('resDB').innerText = formatCurrency(dbValue);
+            document.getElementById('resMvaPercent').innerText = mvaRate;
+            document.getElementById('resMvaValue').innerText = formatCurrency(mvaValue);
+            document.getElementById('resPriceInc').innerText = formatCurrency(priceInc);
+
+            // Oppdater visualisering (Søylediagrammet)
+            updateVisualization(cost, dbValue, mvaValue, priceInc);
+
+            // Oppdater Rabattsimulator
+            updateDiscountSimulator(priceInc, cost);
+
+            // Oppdater Break-even hvis bedriftsmodus er aktiv
+            if (currentMode === 'bedrift') {
+                calculateBreakEven();
+            }
+        }
+
+        // Formatering til norsk valuta
+        function formatCurrency(val) {
+            return val.toLocaleString('no-NO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // Oppdaterer fargefordelingen i søylen
+        function updateVisualization(cost, db, mva, total) {
+            const barCost = document.getElementById('barCost');
+            const barDB = document.getElementById('barDB');
+            const barMva = document.getElementById('barMva');
+
+            const pctCostEl = document.getElementById('pctCost');
+            const pctDBEl = document.getElementById('pctDB');
+            const pctMvaEl = document.getElementById('pctMva');
+
+            if (total <= 0) {
+                barCost.style.width = '0%';
+                barDB.style.width = '0%';
+                barMva.style.width = '0%';
+
+                pctCostEl.innerText = "0%";
+                pctDBEl.innerText = "0%";
+                pctMvaEl.innerText = "0%";
+                return;
+            }
+
+            const costPct = (cost / total) * 100;
+            const dbPct = (db / total) * 100;
+            const mvaPct = (mva / total) * 100;
+
+            barCost.style.width = costPct + '%';
+            barDB.style.width = dbPct + '%';
+            barMva.style.width = mvaPct + '%';
+
+            pctCostEl.innerText = costPct.toFixed(1) + '%';
+            pctDBEl.innerText = dbPct.toFixed(1) + '%';
+            pctMvaEl.innerText = mvaPct.toFixed(1) + '%';
+        }
+
+        // Beregner rabatt-scenariene
+        function updateDiscountSimulator(originalPriceInc, costPrice) {
+            const discountRates = [10, 20, 30];
+
+            discountRates.forEach(discount => {
+                let newPriceInc = originalPriceInc * (1 - (discount / 100));
+                let newPriceEx = newPriceInc / (1 + (mvaRate / 100));
+                let newDB = newPriceEx - costPrice;
+
+                let originalPriceEx = originalPriceInc / (1 + (mvaRate / 100));
+                let originalDB = originalPriceEx - costPrice;
+
+                let dbDropPercent = 0;
+                if (originalDB > 0) {
+                    dbDropPercent = ((originalDB - newDB) / originalDB) * 100;
+                } else if (originalDB <= 0 && newDB < originalDB) {
+                    dbDropPercent = 100;
+                }
+
+                document.getElementById(`r${discount}Price`).innerText = formatCurrency(newPriceInc) + " kr";
+
+                // Håndtering av negativt dekningsbidrag (under selvkost)
+                const dbElement = document.getElementById(`r${discount}Db`);
+                if (newDB < 0) {
+                    dbElement.innerText = formatCurrency(newDB) + " kr (UNDER SELVKOST)";
+                    dbElement.className = "font-bold text-red-600";
+                } else {
+                    dbElement.innerText = formatCurrency(newDB) + " kr";
+                    dbElement.className = "font-bold text-slate-950";
+                }
+
+                const dropEl = document.getElementById(`r${discount}Drop`);
+                dropEl.innerText = "-" + dbDropPercent.toFixed(0) + "%";
+            });
+        }
+
+        // Beregner break-even analyse i sanntid
+        function calculateBreakEven() {
+            const fixedCosts = parseFloat(document.getElementById('inputFixedCosts').value) || 0;
+            const cost = parseFloat(document.getElementById('inputCost').value) || 0;
+
+            const priceExText = document.getElementById('resPriceEx').innerText;
+            const priceEx = parseFloat(priceExText.replace(/\./g, '').replace(',', '.')) || 0;
+
+            const dbPerUnit = priceEx - cost;
+
+            const beVolumeEl = document.getElementById('beVolume');
+            const beRevenueEl = document.getElementById('beRevenue');
+
+            if (dbPerUnit <= 0) {
+                beVolumeEl.innerText = "Uendelig";
+                beRevenueEl.innerText = "Ugyldig (null eller negativ margin)";
+                return;
+            }
+
+            const reqVolume = Math.ceil(fixedCosts / dbPerUnit);
+            const reqRevenue = reqVolume * priceEx;
+
+            beVolumeEl.innerText = reqVolume.toLocaleString('no-NO');
+            beRevenueEl.innerText = formatCurrency(reqRevenue);
+        }
+
+
+        // ==========================================
+        // PRESENTASJONSMETODER & OVERLAY STYRING    //
+        // ==========================================
+
+        function startPresentationMode() {
+            // Hent verdier og synkroniser dem med presentasjonsplakatene
+            const cost = parseFloat(document.getElementById('inputCost').value) || 0;
+            const dgPercent = parseFloat(document.getElementById('inputDGNum').value) || 0;
+
+            const priceExText = document.getElementById('resPriceEx').innerText;
+            const dbText = document.getElementById('resDB').innerText;
+            const mvaText = document.getElementById('resMvaValue').innerText;
+            const priceIncText = document.getElementById('resPriceInc').innerText;
+
+            const total = parseFloat(priceIncText.replace(/\./g, '').replace(',', '.')) || 0;
+            const db = parseFloat(dbText.replace(/\./g, '').replace(',', '.')) || 0;
+            const mva = parseFloat(mvaText.replace(/\./g, '').replace(',', '.')) || 0;
+
+            // Fyll ut de gigantiske plakatene
+            document.getElementById('presPriceInc').innerText = priceIncText;
+            document.getElementById('presPriceEx').innerText = priceExText;
+            document.getElementById('presDB').innerText = dbText;
+            document.getElementById('presMvaValue').innerText = mvaText;
+
+            // Badges
+            document.getElementById('presMvaRateBadge').innerText = mvaRate;
+            document.getElementById('presDGBadge').innerText = dgPercent.toFixed(1);
+
+            // Oppdater den store, liggende søylen
+            const presBarCost = document.getElementById('presBarCost');
+            const presBarDB = document.getElementById('presBarDB');
+            const presBarMva = document.getElementById('presBarMva');
+
+            const presPctCost = document.getElementById('presPctCost');
+            const presPctDB = document.getElementById('presPctDB');
+            const presPctMva = document.getElementById('presPctMva');
+
+            if (total > 0) {
+                const costPct = (cost / total) * 100;
+                const dbPct = (db / total) * 100;
+                const mvaPct = (mva / total) * 100;
+
+                presBarCost.style.width = costPct + '%';
+                presBarDB.style.width = dbPct + '%';
+                presBarMva.style.width = mvaPct + '%';
+
+                presPctCost.innerText = costPct.toFixed(1) + '%';
+                presPctDB.innerText = dbPct.toFixed(1) + '%';
+                presPctMva.innerText = mvaPct.toFixed(1) + '%';
+            } else {
+                presBarCost.style.width = '0%';
+                presBarDB.style.width = '0%';
+                presBarMva.style.width = '0%';
+
+                presPctCost.innerText = '0%';
+                presPctDB.innerText = '0%';
+                presPctMva.innerText = '0%';
+            }
+
+            // Vis overlayet
+            document.getElementById('presentation-overlay').classList.remove('hidden');
+
+            // Håndter info-toast som fader ut automatisk etter 5 sekunder
+            const toast = document.getElementById('pres-esc-toast');
+            toast.style.opacity = '1';
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                // Hindrer at brukeren klikker på usynlig element
+                setTimeout(() => {
+                    if (toast.style.opacity === '0') {
+                        toast.classList.add('pointer-events-none');
+                    }
+                }, 1000);
+            }, 4000);
+        }
+
+        // Lytte globalt etter ESC-tast
+        window.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const overlay = document.getElementById('presentation-overlay');
+                if (!overlay.classList.contains('hidden')) {
+                    overlay.classList.add('hidden');
+                    // Gjenopprett toast-klasser ved neste start
+                    const toast = document.getElementById('pres-esc-toast');
+                    toast.classList.remove('pointer-events-none');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
