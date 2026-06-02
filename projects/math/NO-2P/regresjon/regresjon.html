@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<!--
+  Regresjon — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 2P (LK20): tilpass lineær-, andregrads-,
+  potens- og eksponentialmodeller til data, med R² og forutsigelser.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Regresjon – Matematikk 2P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; }
+    .model-btn.active { @apply ring-2 ring-offset-1; }
+    table input[type="number"] {
+      width: 100%;
+      border: none;
+      background: transparent;
+      text-align: center;
+      outline: none;
+      font-size: 0.95rem;
+      padding: 2px 4px;
+    }
+    table input[type="number"]:focus {
+      background: #eff6ff;
+      border-radius: 4px;
+    }
+    /* Remove spinner arrows */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+    .tooltip { position: relative; cursor: help; }
+    .tooltip .tip {
+      visibility: hidden; opacity: 0;
+      background: #1e293b; color: #f1f5f9;
+      font-size: 0.75rem; padding: 6px 10px;
+      border-radius: 6px; position: absolute;
+      bottom: 130%; left: 50%; transform: translateX(-50%);
+      white-space: nowrap; z-index: 10;
+      transition: opacity 0.15s;
+      pointer-events: none;
+    }
+    .tooltip:hover .tip { visibility: visible; opacity: 1; }
+    svg text { user-select: none; }
+    .equation-box {
+      font-family: 'Cambria Math', 'Times New Roman', serif;
+      font-size: 1.05rem;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+<!-- ===== HEADER ===== -->
+<header class="bg-indigo-700 text-white shadow-md">
+  <div class="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
+    <div class="bg-white/20 rounded-lg p-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    </div>
+    <div>
+      <h1 class="text-xl font-bold leading-tight">Regresjon</h1>
+      <p class="text-indigo-200 text-sm">Matematikk 2P · LK20 · Kap. 5.2 / 5.4 / 5.6</p>
+    </div>
+  </div>
+</header>
+
+<!-- ===== MAIN ===== -->
+<main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+
+  <!-- ── Kort intro ── -->
+  <section class="bg-white rounded-xl shadow-sm p-4 text-sm text-slate-600 border-l-4 border-indigo-400">
+    <strong class="text-slate-800">Hva er regresjon?</strong>
+    Regresjon handler om å finne den matematiske modellen som passer best til et datasett.
+    Vi beregner <em>forklaringsgraden R²</em> (0–1) for hver modell — jo nærmere 1, desto bedre tilpasning.
+    Skriv inn dine egne datapunkter i tabellen nedenfor.
+  </section>
+
+  <!-- ══════ DATASETT ══════ -->
+  <section class="bg-white rounded-xl shadow-sm p-5">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-base font-semibold text-slate-800">Datasett</h2>
+      <div class="flex gap-2">
+        <button id="btnAddRow"
+          class="text-sm bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg transition">
+          + Legg til rad
+        </button>
+        <button id="btnReset"
+          class="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg transition">
+          Tilbakestill
+        </button>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse text-sm" id="dataTable">
+        <thead>
+          <tr class="bg-slate-100 text-slate-600">
+            <th class="px-3 py-2 text-center w-10">#</th>
+            <th class="px-3 py-2 text-center w-32">x</th>
+            <th class="px-3 py-2 text-center w-32">y</th>
+            <th class="px-3 py-2 w-10"></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody" class="divide-y divide-slate-100">
+        </tbody>
+      </table>
+    </div>
+    <p class="text-xs text-slate-400 mt-2">Tips: klikk en celle for å redigere. Minimalt 3 datapunkter kreves.</p>
+  </section>
+
+  <!-- ══════ MODELLKORT ══════ -->
+  <section>
+    <h2 class="text-base font-semibold text-slate-800 mb-3">Tilpassede modeller</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="modelCards">
+      <!-- Filled by JS -->
+    </div>
+  </section>
+
+  <!-- ══════ ANBEFALING ══════ -->
+  <section id="bestModelSection" class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-sm hidden">
+    <span class="font-semibold text-indigo-800" id="bestModelText"></span>
+  </section>
+
+  <!-- ══════ GRAF ══════ -->
+  <section class="bg-white rounded-xl shadow-sm p-5">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <h2 class="text-base font-semibold text-slate-800">Graf</h2>
+      <div class="flex flex-wrap gap-2" id="modelToggle">
+        <!-- Buttons injected by JS -->
+      </div>
+    </div>
+    <div id="svgContainer" class="w-full overflow-x-auto">
+      <!-- SVG injected by JS -->
+    </div>
+    <p class="text-xs text-slate-400 mt-2">
+      Blå punkter = observerte datapunkter · Farget kurve = valgt modell
+    </p>
+  </section>
+
+  <!-- ══════ FORUTSIGELSE ══════ -->
+  <section class="bg-white rounded-xl shadow-sm p-5">
+    <h2 class="text-base font-semibold text-slate-800 mb-3">Forutsigelse</h2>
+    <div class="flex flex-wrap gap-3 items-end">
+      <div>
+        <label class="block text-xs text-slate-500 mb-1" for="predX">Oppgi x-verdi</label>
+        <input type="number" id="predX" step="any"
+          class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          placeholder="f.eks. 7" />
+      </div>
+      <button id="btnPredict"
+        class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-2 rounded-lg transition">
+        Beregn y
+      </button>
+      <div id="predResult" class="text-sm text-slate-700 font-medium mt-1 hidden">
+        <span id="predText"></span>
+      </div>
+    </div>
+    <p class="text-xs text-slate-400 mt-3" id="predNote"></p>
+    <div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+      <strong>OBS – ekstrapolering:</strong> Forutsigelser utenfor dataområdet er usikre.
+      Modellen er kun pålitelig nær der du har observert data.
+    </div>
+  </section>
+
+</main>
+
+<footer class="text-center text-xs text-slate-400 py-6">
+  Matematikk 2P · Regresjon · Halison App Studio ·
+  <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-slate-600" target="_blank">GitHub</a>
+</footer>
+
+<!-- ══════════ JAVASCRIPT ══════════ -->
+<script>
+"use strict";
+
+// ─────────────────────────────────────
+//  Default dataset (realistisk: antall solgte is-krem pr dag vs temperatur)
+// ─────────────────────────────────────
+const DEFAULT_DATA = [
+  [10, 22], [13, 35], [16, 54], [19, 80], [22, 118],
+  [25, 172], [28, 245], [31, 342], [34, 470], [37, 640]
+];
+
+let tableData = DEFAULT_DATA.map(r => [...r]);
+
+// Model colors
+const MODEL_META = {
+  linear:  { label: 'Lineær',      color: '#6366f1', textColor: 'text-indigo-600'  },
+  poly:    { label: 'Andregrads',  color: '#10b981', textColor: 'text-emerald-600' },
+  power:   { label: 'Potens',      color: '#f59e0b', textColor: 'text-amber-500'   },
+  exp:     { label: 'Eksponential',color: '#ef4444', textColor: 'text-red-500'     }
+};
+
+let activeModel = 'linear';
+let fitResults = {};
+
+// ─────────────────────────────────────
+//  Helpers
+// ─────────────────────────────────────
+function sum(arr) { return arr.reduce((a, b) => a + b, 0); }
+
+function mean(arr) { return sum(arr) / arr.length; }
+
+function rSquared(ys, yHats) {
+  const yBar = mean(ys);
+  const ssTot = sum(ys.map(y => (y - yBar) ** 2));
+  const ssRes = sum(ys.map((y, i) => (y - yHats[i]) ** 2));
+  if (ssTot === 0) return 1;
+  return 1 - ssRes / ssTot;
+}
+
+function fmtNum(n, dec = 4) {
+  if (!isFinite(n)) return '–';
+  return parseFloat(n.toFixed(dec)).toString();
+}
+
+function fmtEq(n, dec = 3) {
+  if (!isFinite(n)) return '?';
+  const v = parseFloat(n.toFixed(dec));
+  return v < 0 ? String(v) : String(v);
+}
+
+// ─────────────────────────────────────
+//  Regression algorithms
+// ─────────────────────────────────────
+
+// Linear: y = ax + b  (OLS)
+function fitLinear(pts) {
+  const n = pts.length;
+  const xs = pts.map(p => p[0]);
+  const ys = pts.map(p => p[1]);
+  const sx = sum(xs), sy = sum(ys);
+  const sxx = sum(xs.map(x => x * x));
+  const sxy = sum(pts.map(p => p[0] * p[1]));
+  const denom = n * sxx - sx * sx;
+  if (denom === 0) return null;
+  const a = (n * sxy - sx * sy) / denom;
+  const b = (sy - a * sx) / n;
+  const yHats = xs.map(x => a * x + b);
+  const r2 = rSquared(ys, yHats);
+  return { a, b, r2, fn: x => a * x + b,
+    eq: `y = ${fmtEq(a)}x ${b >= 0 ? '+' : '−'} ${fmtEq(Math.abs(b))}` };
+}
+
+// Quadratic: y = ax² + bx + c  (normal equations via 3×3 system)
+function fitPoly(pts) {
+  const n = pts.length;
+  if (n < 3) return null;
+  const xs = pts.map(p => p[0]);
+  const ys = pts.map(p => p[1]);
+  // sums
+  const s0 = n;
+  const s1 = sum(xs);
+  const s2 = sum(xs.map(x => x ** 2));
+  const s3 = sum(xs.map(x => x ** 3));
+  const s4 = sum(xs.map(x => x ** 4));
+  const t0 = sum(ys);
+  const t1 = sum(pts.map(p => p[0] * p[1]));
+  const t2 = sum(pts.map(p => p[0] ** 2 * p[1]));
+  // Solve 3x3 via Cramer / Gaussian elim
+  // [ s0 s1 s2 ] [c]   [t0]
+  // [ s1 s2 s3 ] [b] = [t1]
+  // [ s2 s3 s4 ] [a]   [t2]
+  const M = [[s0, s1, s2, t0], [s1, s2, s3, t1], [s2, s3, s4, t2]];
+  const sol = gauss3(M);
+  if (!sol) return null;
+  const [c, b, a] = sol;
+  const yHats = xs.map(x => a * x * x + b * x + c);
+  const r2 = rSquared(ys, yHats);
+  return { a, b, c, r2, fn: x => a * x * x + b * x + c,
+    eq: `y = ${fmtEq(a)}x² ${b >= 0 ? '+' : '−'} ${fmtEq(Math.abs(b))}x ${c >= 0 ? '+' : '−'} ${fmtEq(Math.abs(c))}` };
+}
+
+// Gaussian elimination for 3×3 augmented matrix [M|rhs]
+function gauss3(M) {
+  const m = M.map(r => [...r]); // deep copy
+  for (let col = 0; col < 3; col++) {
+    // Partial pivot
+    let maxRow = col;
+    for (let row = col + 1; row < 3; row++) {
+      if (Math.abs(m[row][col]) > Math.abs(m[maxRow][col])) maxRow = row;
+    }
+    [m[col], m[maxRow]] = [m[maxRow], m[col]];
+    if (Math.abs(m[col][col]) < 1e-12) return null;
+    for (let row = col + 1; row < 3; row++) {
+      const f = m[row][col] / m[col][col];
+      for (let k = col; k <= 3; k++) m[row][k] -= f * m[col][k];
+    }
+  }
+  // Back-substitution
+  const x = [0, 0, 0];
+  for (let i = 2; i >= 0; i--) {
+    x[i] = m[i][3];
+    for (let j = i + 1; j < 3; j++) x[i] -= m[i][j] * x[j];
+    x[i] /= m[i][i];
+  }
+  return x;
+}
+
+// Power: y = a·x^b  → ln y = ln a + b·ln x  (requires x,y > 0)
+function fitPower(pts) {
+  const valid = pts.filter(p => p[0] > 0 && p[1] > 0);
+  if (valid.length < 2) return { error: 'Krever x > 0 og y > 0 for alle punkter', r2: NaN };
+  const n = valid.length;
+  const lx = valid.map(p => Math.log(p[0]));
+  const ly = valid.map(p => Math.log(p[1]));
+  const slx = sum(lx), sly = sum(ly);
+  const slxlx = sum(lx.map(v => v * v));
+  const slxly = sum(lx.map((v, i) => v * ly[i]));
+  const denom = n * slxlx - slx * slx;
+  if (denom === 0) return null;
+  const b = (n * slxly - slx * sly) / denom;
+  const a = Math.exp((sly - b * slx) / n);
+  const xs = valid.map(p => p[0]);
+  const ys = valid.map(p => p[1]);
+  const yHats = xs.map(x => a * Math.pow(x, b));
+  const r2 = rSquared(ys, yHats);
+  return { a, b, r2, fn: x => a * Math.pow(x, b),
+    eq: `y = ${fmtEq(a)}·x^${fmtEq(b)}`,
+    note: 'Krever x > 0 og y > 0' };
+}
+
+// Exponential: y = b·a^x  → ln y = ln b + x·ln a  (requires y > 0)
+function fitExp(pts) {
+  const valid = pts.filter(p => p[1] > 0);
+  if (valid.length < 2) return { error: 'Krever y > 0 for alle punkter', r2: NaN };
+  const n = valid.length;
+  const xs = valid.map(p => p[0]);
+  const ly = valid.map(p => Math.log(p[1]));
+  const sx = sum(xs), sly = sum(ly);
+  const sxx = sum(xs.map(v => v * v));
+  const sxly = sum(xs.map((v, i) => v * ly[i]));
+  const denom = n * sxx - sx * sx;
+  if (denom === 0) return null;
+  const lnA = (n * sxly - sx * sly) / denom;  // ln a
+  const lnB = (sly - lnA * sx) / n;             // ln b
+  const a = Math.exp(lnA);
+  const b = Math.exp(lnB);
+  const ys = valid.map(p => p[1]);
+  const yHats = xs.map(x => b * Math.pow(a, x));
+  const r2 = rSquared(ys, yHats);
+  return { a, b, r2, fn: x => b * Math.pow(a, x),
+    eq: `y = ${fmtEq(b)}·${fmtEq(a)}^x`,
+    note: 'Krever y > 0' };
+}
+
+// ─────────────────────────────────────
+//  Table rendering
+// ─────────────────────────────────────
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  tableData.forEach((row, i) => {
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-slate-50';
+    tr.innerHTML = `
+      <td class="px-3 py-1.5 text-center text-slate-400 text-xs">${i + 1}</td>
+      <td class="px-3 py-1.5 text-center">
+        <input type="number" step="any" value="${row[0]}" data-row="${i}" data-col="0" />
+      </td>
+      <td class="px-3 py-1.5 text-center">
+        <input type="number" step="any" value="${row[1]}" data-row="${i}" data-col="1" />
+      </td>
+      <td class="px-3 py-1.5 text-center">
+        ${tableData.length > 3 ? `<button data-del="${i}" class="text-slate-300 hover:text-red-400 transition text-lg leading-none" title="Slett rad">×</button>` : ''}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Events
+  tbody.querySelectorAll('input[type="number"]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const r = parseInt(inp.dataset.row);
+      const c = parseInt(inp.dataset.col);
+      const v = parseFloat(inp.value);
+      if (!isNaN(v)) {
+        tableData[r][c] = v;
+        update();
+      }
+    });
+  });
+  tbody.querySelectorAll('button[data-del]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      tableData.splice(parseInt(btn.dataset.del), 1);
+      renderTable();
+      update();
+    });
+  });
+}
+
+// ─────────────────────────────────────
+//  Model cards
+// ─────────────────────────────────────
+function renderModelCards() {
+  const container = document.getElementById('modelCards');
+  container.innerHTML = '';
+  const models = ['linear', 'poly', 'power', 'exp'];
+  models.forEach(key => {
+    const res = fitResults[key];
+    const meta = MODEL_META[key];
+    const card = document.createElement('div');
+    card.className = 'bg-white border rounded-xl p-4 shadow-sm flex flex-col gap-2';
+    const r2str = (res && isFinite(res.r2)) ? (res.r2 * 100).toFixed(1) + '%' : '–';
+    const r2color = (!res || !isFinite(res.r2)) ? 'text-slate-400' :
+                    res.r2 >= 0.95 ? 'text-emerald-600 font-bold' :
+                    res.r2 >= 0.80 ? 'text-amber-500 font-semibold' : 'text-red-500';
+    const eqHtml = res && res.eq ? `<span class="equation-box text-slate-700">${res.eq}</span>` : '<span class="text-slate-400 text-xs">Kan ikke beregnes</span>';
+    const errHtml = res && res.error ? `<span class="text-xs text-red-400">${res.error}</span>` : '';
+    const noteHtml = res && res.note ? `<span class="text-xs text-slate-400">${res.note}</span>` : '';
+    card.innerHTML = `
+      <div class="flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:${meta.color}"></span>
+        <span class="font-semibold text-slate-700 text-sm">${meta.label}</span>
+      </div>
+      <div class="min-h-[1.6rem]">${eqHtml}</div>
+      ${errHtml}
+      ${noteHtml}
+      <div class="flex items-center justify-between mt-auto pt-2 border-t border-slate-100">
+        <span class="text-xs text-slate-500">R²</span>
+        <span class="text-sm ${r2color}">${r2str}</span>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+// ─────────────────────────────────────
+//  Model toggle buttons
+// ─────────────────────────────────────
+function renderToggleButtons() {
+  const container = document.getElementById('modelToggle');
+  container.innerHTML = '';
+  Object.entries(MODEL_META).forEach(([key, meta]) => {
+    const btn = document.createElement('button');
+    btn.id = `toggle-${key}`;
+    btn.textContent = meta.label;
+    btn.className = 'text-xs px-3 py-1.5 rounded-full border transition font-medium';
+    btn.style.borderColor = meta.color;
+    btn.style.color = activeModel === key ? '#fff' : meta.color;
+    btn.style.background = activeModel === key ? meta.color : 'transparent';
+    btn.addEventListener('click', () => {
+      activeModel = key;
+      renderToggleButtons();
+      drawSVG();
+    });
+    container.appendChild(btn);
+  });
+}
+
+// ─────────────────────────────────────
+//  Best model suggestion
+// ─────────────────────────────────────
+function renderBestModel() {
+  const sec = document.getElementById('bestModelSection');
+  const txt = document.getElementById('bestModelText');
+  let best = null, bestR2 = -Infinity;
+  Object.entries(fitResults).forEach(([k, r]) => {
+    if (r && isFinite(r.r2) && r.r2 > bestR2) { bestR2 = r.r2; best = k; }
+  });
+  if (best) {
+    const pct = (bestR2 * 100).toFixed(1);
+    txt.textContent = `Anbefalt modell: ${MODEL_META[best].label} (R² = ${pct}%) — dette gir best tilpasning til dataene.`;
+    sec.classList.remove('hidden');
+  } else {
+    sec.classList.add('hidden');
+  }
+}
+
+// ─────────────────────────────────────
+//  SVG chart
+// ─────────────────────────────────────
+function drawSVG() {
+  const container = document.getElementById('svgContainer');
+  const pts = tableData.filter(p => isFinite(p[0]) && isFinite(p[1]));
+  if (pts.length < 2) {
+    container.innerHTML = '<p class="text-sm text-slate-400 py-8 text-center">Ikke nok gyldige datapunkter.</p>';
+    return;
+  }
+
+  const res = fitResults[activeModel];
+  const meta = MODEL_META[activeModel];
+
+  // Chart dimensions
+  const W = 560, H = 360;
+  const pad = { top: 20, right: 20, bottom: 50, left: 60 };
+  const cW = W - pad.left - pad.right;
+  const cH = H - pad.top - pad.bottom;
+
+  // Data range
+  const xVals = pts.map(p => p[0]);
+  const yVals = pts.map(p => p[1]);
+  let xMin = Math.min(...xVals), xMax = Math.max(...xVals);
+  let yMin = Math.min(...yVals), yMax = Math.max(...yVals);
+
+  // Extend x-range for curve
+  const xPad = (xMax - xMin) * 0.08 || 1;
+  const xStart = xMin - xPad;
+  const xEnd = xMax + xPad;
+
+  // Compute curve points to get y-range too
+  let curvePoints = [];
+  if (res && res.fn && isFinite(res.r2)) {
+    const steps = 200;
+    for (let i = 0; i <= steps; i++) {
+      const x = xStart + (i / steps) * (xEnd - xStart);
+      const y = res.fn(x);
+      if (isFinite(y)) curvePoints.push([x, y]);
+    }
+    if (curvePoints.length > 0) {
+      yMin = Math.min(yMin, ...curvePoints.map(p => p[1]));
+      yMax = Math.max(yMax, ...curvePoints.map(p => p[1]));
+    }
+  }
+
+  // Expand y-range a bit
+  const yRange = yMax - yMin || 1;
+  yMin -= yRange * 0.08;
+  yMax += yRange * 0.12;
+
+  const sx = x => pad.left + ((x - xStart) / (xEnd - xStart)) * cW;
+  const sy = y => pad.top + cH - ((y - yMin) / (yMax - yMin)) * cH;
+
+  // Nice tick generation
+  function niceTicks(lo, hi, count = 6) {
+    const range = hi - lo;
+    const raw = range / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const nice = [1, 2, 2.5, 5, 10].map(f => f * mag).find(f => f >= raw) || raw;
+    const ticks = [];
+    const start = Math.ceil(lo / nice) * nice;
+    for (let t = start; t <= hi + nice * 0.01; t += nice) {
+      if (t >= lo - nice * 0.01) ticks.push(parseFloat(t.toFixed(10)));
+    }
+    return ticks;
+  }
+
+  const xTicks = niceTicks(xStart, xEnd, 7);
+  const yTicks = niceTicks(yMin, yMax, 6);
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="max-width:100%;display:block;margin:auto;" xmlns="http://www.w3.org/2000/svg">`;
+
+  // Background
+  svg += `<rect x="${pad.left}" y="${pad.top}" width="${cW}" height="${cH}" fill="#f8fafc" rx="4"/>`;
+
+  // Grid lines
+  yTicks.forEach(t => {
+    const y = sy(t);
+    if (y >= pad.top && y <= pad.top + cH) {
+      svg += `<line x1="${pad.left}" y1="${y}" x2="${pad.left + cW}" y2="${y}" stroke="#e2e8f0" stroke-width="1"/>`;
+    }
+  });
+  xTicks.forEach(t => {
+    const x = sx(t);
+    if (x >= pad.left && x <= pad.left + cW) {
+      svg += `<line x1="${x}" y1="${pad.top}" x2="${x}" y2="${pad.top + cH}" stroke="#e2e8f0" stroke-width="1"/>`;
+    }
+  });
+
+  // Zero lines (if in range)
+  if (yMin < 0 && yMax > 0) {
+    const y0 = sy(0);
+    svg += `<line x1="${pad.left}" y1="${y0}" x2="${pad.left + cW}" y2="${y0}" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>`;
+  }
+  if (xStart < 0 && xEnd > 0) {
+    const x0 = sx(0);
+    svg += `<line x1="${x0}" y1="${pad.top}" x2="${x0}" y2="${pad.top + cH}" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>`;
+  }
+
+  // Axes
+  svg += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${pad.top + cH}" stroke="#475569" stroke-width="1.5"/>`;
+  svg += `<line x1="${pad.left}" y1="${pad.top + cH}" x2="${pad.left + cW}" y2="${pad.top + cH}" stroke="#475569" stroke-width="1.5"/>`;
+
+  // X tick labels
+  xTicks.forEach(t => {
+    const x = sx(t);
+    if (x >= pad.left - 2 && x <= pad.left + cW + 2) {
+      svg += `<line x1="${x}" y1="${pad.top + cH}" x2="${x}" y2="${pad.top + cH + 5}" stroke="#475569" stroke-width="1"/>`;
+      svg += `<text x="${x}" y="${pad.top + cH + 18}" text-anchor="middle" font-size="11" fill="#475569">${fmtNum(t, 2)}</text>`;
+    }
+  });
+
+  // Y tick labels
+  yTicks.forEach(t => {
+    const y = sy(t);
+    if (y >= pad.top && y <= pad.top + cH) {
+      svg += `<line x1="${pad.left - 5}" y1="${y}" x2="${pad.left}" y2="${y}" stroke="#475569" stroke-width="1"/>`;
+      svg += `<text x="${pad.left - 8}" y="${y + 4}" text-anchor="end" font-size="11" fill="#475569">${fmtNum(t, 1)}</text>`;
+    }
+  });
+
+  // Axis labels
+  svg += `<text x="${pad.left + cW / 2}" y="${H - 6}" text-anchor="middle" font-size="12" fill="#64748b">x</text>`;
+  svg += `<text x="13" y="${pad.top + cH / 2}" text-anchor="middle" font-size="12" fill="#64748b" transform="rotate(-90,13,${pad.top + cH / 2})">y</text>`;
+
+  // Curve
+  if (curvePoints.length > 1) {
+    const pathParts = [];
+    let penDown = false;
+    curvePoints.forEach(([cx, cy]) => {
+      const px = sx(cx), py = sy(cy);
+      if (py < pad.top - 5 || py > pad.top + cH + 5) { penDown = false; return; }
+      if (!penDown) { pathParts.push(`M ${px.toFixed(1)} ${py.toFixed(1)}`); penDown = true; }
+      else { pathParts.push(`L ${px.toFixed(1)} ${py.toFixed(1)}`); }
+    });
+    if (pathParts.length > 1) {
+      svg += `<path d="${pathParts.join(' ')}" fill="none" stroke="${meta.color}" stroke-width="2.5" stroke-linejoin="round"/>`;
+    }
+  }
+
+  // Data points
+  pts.forEach(([px, py]) => {
+    const cx = sx(px), cy = sy(py);
+    if (cx >= pad.left - 8 && cx <= pad.left + cW + 8 && cy >= pad.top - 8 && cy <= pad.top + cH + 8) {
+      svg += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="#3b82f6" stroke="#fff" stroke-width="1.5"/>`;
+    }
+  });
+
+  // Legend
+  const legendX = pad.left + cW - 10;
+  const legendY = pad.top + 10;
+  svg += `<rect x="${legendX - 100}" y="${legendY}" width="110" height="30" rx="4" fill="white" opacity="0.85"/>`;
+  svg += `<line x1="${legendX - 92}" y1="${legendY + 10}" x2="${legendX - 72}" y2="${legendY + 10}" stroke="${meta.color}" stroke-width="2.5"/>`;
+  svg += `<text x="${legendX - 68}" y="${legendY + 14}" font-size="11" fill="#475569">${meta.label}</text>`;
+  svg += `<circle cx="${legendX - 82}" cy="${legendY + 24}" r="4" fill="#3b82f6" stroke="#fff" stroke-width="1"/>`;
+  svg += `<text x="${legendX - 68}" y="${legendY + 28}" font-size="11" fill="#475569">Datapunkter</text>`;
+
+  svg += '</svg>';
+  container.innerHTML = svg;
+}
+
+// ─────────────────────────────────────
+//  Prediction
+// ─────────────────────────────────────
+function updatePredNote() {
+  const note = document.getElementById('predNote');
+  const res = fitResults[activeModel];
+  if (res && res.note) {
+    note.textContent = `Merk: ${res.note}`;
+  } else {
+    note.textContent = '';
+  }
+}
+
+document.getElementById('btnPredict').addEventListener('click', () => {
+  const xInput = parseFloat(document.getElementById('predX').value);
+  const predResult = document.getElementById('predResult');
+  const predText = document.getElementById('predText');
+  if (isNaN(xInput)) {
+    predText.textContent = 'Ugyldig x-verdi.';
+    predResult.classList.remove('hidden');
+    return;
+  }
+  const res = fitResults[activeModel];
+  if (!res || !res.fn || !isFinite(res.r2)) {
+    predText.textContent = 'Modellen kan ikke beregnes for dette datasettet.';
+    predResult.classList.remove('hidden');
+    return;
+  }
+  const y = res.fn(xInput);
+  if (!isFinite(y)) {
+    predText.textContent = `Kan ikke beregne y for x = ${xInput} med denne modellen.`;
+  } else {
+    const model = MODEL_META[activeModel].label.toLowerCase();
+    predText.textContent = `Med ${model}modellen: x = ${xInput} → y ≈ ${fmtNum(y, 3)}`;
+  }
+  predResult.classList.remove('hidden');
+});
+
+// ─────────────────────────────────────
+//  Add row / reset
+// ─────────────────────────────────────
+document.getElementById('btnAddRow').addEventListener('click', () => {
+  const last = tableData[tableData.length - 1] || [0, 0];
+  tableData.push([last[0] + 1, '']);
+  renderTable();
+  // focus last x input
+  const inputs = document.querySelectorAll('#tableBody input');
+  if (inputs.length) inputs[inputs.length - 2].focus();
+  update();
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  tableData = DEFAULT_DATA.map(r => [...r]);
+  renderTable();
+  update();
+});
+
+// ─────────────────────────────────────
+//  Main update
+// ─────────────────────────────────────
+function update() {
+  const pts = tableData.filter(p => isFinite(p[0]) && isFinite(p[1]));
+  fitResults = {
+    linear: pts.length >= 2 ? fitLinear(pts) : null,
+    poly:   pts.length >= 3 ? fitPoly(pts) : null,
+    power:  pts.length >= 2 ? fitPower(pts) : null,
+    exp:    pts.length >= 2 ? fitExp(pts) : null
+  };
+  renderModelCards();
+  renderToggleButtons();
+  renderBestModel();
+  drawSVG();
+  updatePredNote();
+}
+
+// ─────────────────────────────────────
+//  Init
+// ─────────────────────────────────────
+renderTable();
+update();
+</script>
+</body>
+</html>

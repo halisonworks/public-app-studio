@@ -11,6 +11,7 @@ kapitlene i Sinus 2P.
 - [Potenser og standardform](./potenser-og-standardform/) — potensregler, a⁰ og a⁻ⁿ, standardform
 - [Vekstfaktor](./vekstfaktor/) — prosentfaktor og gjentatt prosentvis endring
 - [Prosent og prosentpoeng](./prosent-og-prosentpoeng/) — prosentpoeng vs. prosentvis endring
+- [Regning med tid](./regning-med-tid/) — klokkeslett, tidsdifferanser og fart = strekning/tid
 
 **Kap. 2 — Tabeller og diagrammer**
 - [Tabeller og diagrammer](./tabeller-og-diagrammer/) — frekvenstabell, søyle-, kurve- og sektordiagram
@@ -18,6 +19,7 @@ kapitlene i Sinus 2P.
 **Kap. 3 — Sentralmål og spredningsmål**
 - [Statistikk](./statistikk/) — gjennomsnitt, median, typetall, standardavvik, histogram
 - [Kvartiler og boksdiagram](./kvartiler-og-boksdiagram/) — kvartiler, kvartilbredde, boksdiagram
+- [Gruppert materiale](./gruppert-materiale/) — sentralmål og standardavvik for grupperte data
 
 **Kap. 4 — Lineære funksjoner og modeller**
 - [Lineære funksjoner](./lineaere-funksjoner/) — y = ax + b interaktivt
@@ -25,6 +27,8 @@ kapitlene i Sinus 2P.
 
 **Kap. 5 — Funksjoner og vekst**
 - [Funksjoner og vekst](./funksjoner-og-vekst/) — polynom-, potens- og eksponentialfunksjoner, vekstfart
+- [Funksjonsdrøfting](./funksjonsdrofting/) — nullpunkt, topp-/bunnpunkt, y-skjæring og vekst
+- [Regresjon](./regresjon/) — tilpass ulike modeller til data, med R²
 
 **Geometri** (tillegg)
 - [Geometri (2P)](./geometri/) — areal, Pytagoras, volum/overflate, målestokk

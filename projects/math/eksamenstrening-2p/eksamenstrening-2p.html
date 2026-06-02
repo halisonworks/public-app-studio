@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<!--
+  Eksamenstrening 2P — Halison App Studio-eksempel
+
+  Interaktivt øvings- og eksamensverktøy for matematikk 2P (LK20): tilfeldige
+  oppgaver med hint og fasit, i Del 1- (uten hjelpemidler) og Del 2-format.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Eksamenstrening 2P</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; }
+  .fade-in { animation: fadeIn 0.3s ease-in; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .topic-btn.active { background-color: #1d4ed8; color: white; }
+  .topic-btn { transition: all 0.15s; }
+  input[type=number]::-webkit-inner-spin-button { opacity: 1; }
+  .correct-flash { animation: correctPulse 0.4s ease; }
+  @keyframes correctPulse { 0%,100% { background-color: inherit; } 50% { background-color: #d1fae5; } }
+  .wrong-flash { animation: wrongPulse 0.4s ease; }
+  @keyframes wrongPulse { 0%,100% { background-color: inherit; } 50% { background-color: #fee2e2; } }
+  .math-display { font-family: 'Courier New', monospace; background: #f8fafc; border-left: 3px solid #3b82f6; padding: 0.5rem 0.75rem; border-radius: 0 6px 6px 0; margin: 0.25rem 0; }
+  .fasit-step { counter-increment: step; }
+  .fasit-step::before { content: counter(step) ". "; font-weight: bold; color: #1d4ed8; }
+  .steps-list { counter-reset: step; }
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- Header -->
+<header class="bg-blue-700 text-white shadow-lg">
+  <div class="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-bold tracking-tight">Eksamenstrening 2P</h1>
+      <p class="text-blue-200 text-sm">Matematikk · LK20</p>
+    </div>
+    <div class="text-right">
+      <div id="score-display" class="text-lg font-semibold">0 / 0</div>
+      <div class="text-blue-200 text-xs">riktige svar</div>
+    </div>
+  </div>
+</header>
+
+<!-- Del-toggle + topic filter -->
+<div class="max-w-3xl mx-auto px-4 pt-4">
+  <div class="flex gap-2 mb-4 flex-wrap items-center">
+    <span class="text-sm font-semibold text-gray-600 mr-1">Del:</span>
+    <button id="btn-del1" onclick="setDel(1)"
+      class="px-4 py-1.5 rounded-full text-sm font-medium border-2 border-blue-600 text-blue-700 hover:bg-blue-600 hover:text-white transition-all">
+      Del 1 – uten hjelpemidler
+    </button>
+    <button id="btn-del2" onclick="setDel(2)"
+      class="px-4 py-1.5 rounded-full text-sm font-medium border-2 border-gray-300 text-gray-600 hover:bg-gray-200 transition-all">
+      Del 2 – med hjelpemidler
+    </button>
+  </div>
+
+  <div class="flex gap-2 flex-wrap mb-4">
+    <span class="text-sm font-semibold text-gray-600 self-center mr-1">Emne:</span>
+    <button class="topic-btn active px-3 py-1 rounded-full text-sm border border-blue-300 bg-blue-100 text-blue-800" data-topic="alle" onclick="setTopic('alle', this)">Alle emner</button>
+    <button class="topic-btn px-3 py-1 rounded-full text-sm border border-gray-200 bg-white text-gray-700" data-topic="prosent" onclick="setTopic('prosent', this)">Prosent</button>
+    <button class="topic-btn px-3 py-1 rounded-full text-sm border border-gray-200 bg-white text-gray-700" data-topic="vekst" onclick="setTopic('vekst', this)">Vekstfaktor</button>
+    <button class="topic-btn px-3 py-1 rounded-full text-sm border border-gray-200 bg-white text-gray-700" data-topic="potenser" onclick="setTopic('potenser', this)">Potenser</button>
+    <button class="topic-btn px-3 py-1 rounded-full text-sm border border-gray-200 bg-white text-gray-700" data-topic="statistikk" onclick="setTopic('statistikk', this)">Statistikk</button>
+    <button class="topic-btn px-3 py-1 rounded-full text-sm border border-gray-200 bg-white text-gray-700" data-topic="funksjoner" onclick="setTopic('funksjoner', this)">Funksjoner</button>
+    <button class="topic-btn px-3 py-1 rounded-full text-sm border border-gray-200 bg-white text-gray-700" data-topic="tid" onclick="setTopic('tid', this)">Tid</button>
+  </div>
+</div>
+
+<!-- Task card -->
+<main class="max-w-3xl mx-auto px-4 pb-16">
+  <div id="task-card" class="bg-white rounded-xl shadow-md p-6 fade-in">
+
+    <!-- Topic badge + del badge -->
+    <div class="flex items-center gap-2 mb-3 flex-wrap">
+      <span id="badge-topic" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800"></span>
+      <span id="badge-del" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600"></span>
+      <span id="badge-num" class="ml-auto text-xs text-gray-400">Oppgave <span id="task-counter">1</span></span>
+    </div>
+
+    <!-- Task text -->
+    <div id="task-text" class="text-gray-800 text-base leading-relaxed mb-4"></div>
+
+    <!-- Answer input -->
+    <div id="answer-area" class="mb-4">
+      <label class="block text-sm font-medium text-gray-700 mb-1">Ditt svar:</label>
+      <div class="flex gap-2">
+        <input id="answer-input" type="text" inputmode="decimal"
+          class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
+          placeholder="Skriv svaret her..." onkeydown="if(event.key==='Enter')checkAnswer()" />
+        <button onclick="checkAnswer()"
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 active:scale-95 transition-all text-sm">
+          Sjekk
+        </button>
+      </div>
+      <div id="answer-unit" class="text-xs text-gray-500 mt-1"></div>
+    </div>
+
+    <!-- Feedback -->
+    <div id="feedback" class="hidden mb-4 rounded-lg px-4 py-3 text-sm font-medium"></div>
+
+    <!-- Action buttons -->
+    <div class="flex gap-2 flex-wrap">
+      <button id="btn-hint" onclick="showHint()"
+        class="px-4 py-2 rounded-lg border border-yellow-400 text-yellow-700 bg-yellow-50 hover:bg-yellow-100 text-sm font-medium transition-all">
+        💡 Hint
+      </button>
+      <button id="btn-fasit" onclick="showFasit()"
+        class="px-4 py-2 rounded-lg border border-green-400 text-green-700 bg-green-50 hover:bg-green-100 text-sm font-medium transition-all">
+        Vis fasit
+      </button>
+      <button onclick="newTask()"
+        class="ml-auto px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium transition-all active:scale-95">
+        Ny oppgave →
+      </button>
+    </div>
+
+    <!-- Hint box -->
+    <div id="hint-box" class="hidden mt-4 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 text-sm text-gray-700"></div>
+
+    <!-- Fasit box -->
+    <div id="fasit-box" class="hidden mt-4 bg-green-50 border border-green-300 rounded-lg px-4 py-3">
+      <div class="font-semibold text-green-800 mb-2 text-sm">Fasit – fullstendig løsning</div>
+      <div id="fasit-content" class="text-sm text-gray-700 steps-list space-y-1"></div>
+    </div>
+
+  </div>
+
+  <!-- Stats bar -->
+  <div class="mt-4 bg-white rounded-xl shadow-sm px-6 py-4 flex gap-6 text-center flex-wrap justify-center">
+    <div>
+      <div id="stat-done" class="text-2xl font-bold text-blue-700">0</div>
+      <div class="text-xs text-gray-500">Oppgaver gjort</div>
+    </div>
+    <div>
+      <div id="stat-correct" class="text-2xl font-bold text-green-600">0</div>
+      <div class="text-xs text-gray-500">Riktige</div>
+    </div>
+    <div>
+      <div id="stat-pct" class="text-2xl font-bold text-gray-700">–</div>
+      <div class="text-xs text-gray-500">Prosent riktig</div>
+    </div>
+    <div class="ml-auto flex items-center">
+      <button onclick="resetStats()" class="text-xs text-red-400 hover:text-red-600 underline">Nullstill statistikk</button>
+    </div>
+  </div>
+</main>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+var state = {
+  del: 1,
+  topic: 'alle',
+  tasksDone: 0,
+  correct: 0,
+  currentTask: null,
+  hintShown: false,
+  fasitShown: false,
+  answeredCorrectly: false
+};
+
+// ─── localStorage ─────────────────────────────────────────────────────────────
+function loadStats() {
+  try {
+    var s = JSON.parse(localStorage.getItem('2p-stats') || '{}');
+    state.tasksDone = s.tasksDone || 0;
+    state.correct = s.correct || 0;
+  } catch(e) {}
+}
+function saveStats() {
+  try {
+    localStorage.setItem('2p-stats', JSON.stringify({tasksDone: state.tasksDone, correct: state.correct}));
+  } catch(e) {}
+}
+function resetStats() {
+  state.tasksDone = 0;
+  state.correct = 0;
+  saveStats();
+  updateStatsUI();
+}
+
+// ─── Random helpers ───────────────────────────────────────────────────────────
+function rInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function rChoice(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function round2(x) { return Math.round(x * 100) / 100; }
+function round1(x) { return Math.round(x * 10) / 10; }
+function fmtNum(x) {
+  if (Math.abs(x - Math.round(x)) < 0.001) return Math.round(x).toString();
+  return round2(x).toString().replace('.', ',');
+}
+function fmtMoney(x) {
+  var rounded = Math.round(x);
+  return rounded.toLocaleString('nb-NO') + ' kr';
+}
+
+// ─── Numeric comparison (tolerant) ────────────────────────────────────────────
+function parseAnswer(s) {
+  if (s === null || s === undefined) return NaN;
+  return parseFloat(s.toString().trim().replace(',', '.').replace(/\s/g, '').replace(/[^\d.\-]/g, ''));
+}
+function numClose(userStr, correct, tol) {
+  tol = tol || 0.011;
+  var user = parseAnswer(userStr);
+  if (isNaN(user)) return false;
+  if (Math.abs(correct) < 0.001) return Math.abs(user) < tol;
+  return Math.abs(user - correct) / (Math.abs(correct) + 0.001) < tol || Math.abs(user - correct) < tol;
+}
+
+// ─── Task generators ──────────────────────────────────────────────────────────
+// Each generator returns: { topic, text, hint, answer, answerDisplay, unit, fasit }
+
+var generators = {
+
+  // ── PROSENT ──────────────────────────────────────────────────────────────────
+  prosent_grunnverdi: function(del) {
+    var pct = del===1 ? rChoice([10,20,25,50]) : rChoice([15,18,22,35,45]);
+    var result = del===1 ? rInt(2,20)*10 : rInt(10,200)*5;
+    var base = round2(result / (pct/100));
+    var text = 'En vare koster ' + fmtMoney(result) + ' etter at prisen ble satt ned med ' + pct + ' %. Hva var den opprinnelige prisen?';
+    var fasit = [
+      'La opprinnelig pris = x.',
+      'Etter ' + pct + ' % rabatt: x · (1 − ' + pct + '/100) = x · ' + fmtNum(1 - pct/100),
+      'x · ' + fmtNum(1 - pct/100) + ' = ' + fmtMoney(result),
+      'x = ' + fmtMoney(result) + ' ÷ ' + fmtNum(1 - pct/100) + ' = ' + fmtMoney(base)
+    ];
+    return { topic:'Prosent', text:text, hint:'Sett opp: x · (1 − p/100) = kjent verdi', answer:base, answerDisplay:fmtMoney(base), unit:'kr', fasit:fasit };
+  },
+
+  prosent_prosentdel: function(del) {
+    var base = del===1 ? rInt(2,20)*50 : rInt(10,400)*25;
+    var del_val = rInt(1,9)*10 + rInt(0,4)*5;
+    while(del_val >= base) del_val = rInt(5, Math.floor(base*0.8));
+    var pct = round2(del_val / base * 100);
+    var text = 'I en klasse er det ' + base + ' elever. ' + del_val + ' av dem er jenter. Hvor mange prosent av elevene er jenter?';
+    var fasit = [
+      'Prosentdel = (del / helhet) · 100',
+      'Prosentdel = (' + del_val + ' / ' + base + ') · 100',
+      '= ' + fmtNum(del_val/base) + ' · 100 = ' + fmtNum(pct) + ' %'
+    ];
+    return { topic:'Prosent', text:text, hint:'Bruk formelen: prosentdel = (del/helhet) · 100', answer:pct, answerDisplay:fmtNum(pct) + ' %', unit:'%', fasit:fasit };
+  },
+
+  prosent_poeng: function(del) {
+    var oldPct = rInt(20,55);
+    var change = rInt(3,15);
+    var newPct = oldPct + change;
+    var text = 'Velgeroppslutningen til et parti økte fra ' + oldPct + ' % til ' + newPct + ' %. ' +
+      'Hvor mange prosentpoeng økte oppslutningen? Hvor mange prosent økte den (prosentvis endring)?';
+    var poeng = newPct - oldPct;
+    var prosentvis = round2((newPct - oldPct) / oldPct * 100);
+    var hint = 'Prosentpoeng = differansen mellom to prosenttall. Prosentvis endring = (endring/gammel verdi)·100.';
+    var fasit = [
+      'Prosentpoeng: ' + newPct + ' − ' + oldPct + ' = ' + poeng + ' prosentpoeng',
+      'Prosentvis endring: (' + poeng + ' / ' + oldPct + ') · 100 = ' + fmtNum(prosentvis) + ' %',
+      'Svar: ' + poeng + ' prosentpoeng; ' + fmtNum(prosentvis) + ' % prosentvis økning'
+    ];
+    // Two-part answer — check prosentpoeng
+    var ansText = 'Prosentpoeng: ' + poeng + ', prosentvis endring: ' + fmtNum(prosentvis) + ' %';
+    return { topic:'Prosent', text:text, hint:hint, answer:poeng, answerDisplay:ansText, unit:'prosentpoeng (skriv bare prosentpoeng-tallet)', fasit:fasit };
+  },
+
+  prosent_mva: function(del) {
+    var pris_eks = del===1 ? rInt(5,30)*100 : rInt(20,500)*50;
+    var mva_sats = rChoice([15, 25]);
+    var mva_bel = round2(pris_eks * mva_sats / 100);
+    var pris_ink = round2(pris_eks + mva_bel);
+    var text = 'En vare koster ' + fmtMoney(pris_eks) + ' ekskl. mva. MVA-satsen er ' + mva_sats + ' %. ' +
+      'Hva er prisen inkl. mva?';
+    var fasit = [
+      'MVA-beløp = ' + fmtMoney(pris_eks) + ' · ' + mva_sats + '/100 = ' + fmtMoney(mva_bel),
+      'Pris inkl. mva = ' + fmtMoney(pris_eks) + ' + ' + fmtMoney(mva_bel) + ' = ' + fmtMoney(pris_ink),
+      'Alternativt: ' + fmtMoney(pris_eks) + ' · ' + fmtNum(1 + mva_sats/100) + ' = ' + fmtMoney(pris_ink)
+    ];
+    return { topic:'Prosent', text:text, hint:'Pris inkl. mva = pris ekskl. · (1 + mva-sats/100)', answer:pris_ink, answerDisplay:fmtMoney(pris_ink), unit:'kr', fasit:fasit };
+  },
+
+  // ── VEKSTFAKTOR ──────────────────────────────────────────────────────────────
+  vekst_beregn: function(del) {
+    var startVal = del===1 ? rInt(5,30)*1000 : rInt(20,500)*1000;
+    var pctChange = del===1 ? rChoice([5,10,20,25,50]) : rChoice([3,7,12,18,24,35]);
+    var years = del===1 ? rInt(1,3) : rInt(2,6);
+    var increase = rChoice([true, true, false]);
+    var vekst = round2(1 + (increase ? pctChange : -pctChange)/100);
+    var endVal = round2(startVal * Math.pow(vekst, years));
+    var changeWord = increase ? 'økt' : 'sunket';
+    var text = 'En bolig er verdt ' + fmtMoney(startVal) + ' i dag. Boligprisene har ' + changeWord + ' med ' + pctChange +
+      ' % per år de siste ' + years + ' år' + (years===1?'':'ene') + '. Hva var boligen verdt for ' + years + ' år siden?';
+    var startReal = round2(startVal / Math.pow(vekst, years));
+    var fasit = [
+      'Vekstfaktor per år: v = 1 ' + (increase ? '+ ' : '− ') + pctChange + '/100 = ' + fmtNum(vekst),
+      'La startverdi = x.',
+      'x · v^' + years + ' = ' + fmtMoney(startVal),
+      'x = ' + fmtMoney(startVal) + ' / ' + fmtNum(vekst) + '^' + years + ' = ' + fmtMoney(startReal)
+    ];
+    return { topic:'Vekstfaktor', text:text, hint:'Bruk: startverdi · vekstfaktor^n = sluttverdi. Løs for startverdi.', answer:startReal, answerDisplay:fmtMoney(startReal), unit:'kr', fasit:fasit };
+  },
+
+  vekst_framover: function(del) {
+    var startVal = del===1 ? rInt(10,40)*1000 : rInt(50,500)*1000;
+    var pct = del===1 ? rChoice([5,10,15,20]) : rChoice([3,6,8,12,15,22]);
+    var years = del===1 ? rInt(1,4) : rInt(3,8);
+    var vekst = round2(1 + pct/100);
+    var endVal = Math.round(startVal * Math.pow(vekst, years));
+    var text = 'Et firma hadde ' + fmtMoney(startVal) + ' i omsetning. Omsetningen øker med ' + pct +
+      ' % per år. Hva er omsetningen etter ' + years + ' år?';
+    var fasit = [
+      'Vekstfaktor: v = 1 + ' + pct + '/100 = ' + fmtNum(vekst),
+      'Sluttverdi = startverdi · v^n',
+      '= ' + fmtMoney(startVal) + ' · ' + fmtNum(vekst) + '^' + years,
+      '= ' + fmtMoney(startVal) + ' · ' + fmtNum(round2(Math.pow(vekst, years))),
+      '≈ ' + fmtMoney(endVal)
+    ];
+    return { topic:'Vekstfaktor', text:text, hint:'Sluttverdi = startverdi · vekstfaktor^antall år', answer:endVal, answerDisplay:fmtMoney(endVal), unit:'kr', fasit:fasit };
+  },
+
+  vekst_finn_pct: function(del) {
+    var start = del===1 ? rInt(10,40)*100 : rInt(50,500)*100;
+    var pct = del===1 ? rChoice([10,20,25,50]) : rChoice([5,8,15,30,40]);
+    var end_val = Math.round(start * (1 + pct/100));
+    var text = 'Prisen på en mobiltelefon steg fra ' + fmtMoney(start) + ' til ' + fmtMoney(end_val) +
+      '. Hvor mange prosent steg prisen?';
+    var fasit = [
+      'Prosentvis endring = (ny − gammel) / gammel · 100',
+      '= (' + fmtMoney(end_val) + ' − ' + fmtMoney(start) + ') / ' + fmtMoney(start) + ' · 100',
+      '= ' + fmtMoney(end_val - start) + ' / ' + fmtMoney(start) + ' · 100',
+      '= ' + fmtNum(round2((end_val - start)/start*100)) + ' %'
+    ];
+    return { topic:'Vekstfaktor', text:text, hint:'Prosentvis endring = (ny − gammel) / gammel · 100', answer:pct, answerDisplay:fmtNum(pct) + ' %', unit:'%', fasit:fasit };
+  },
+
+  // ── POTENSER & STANDARDFORM ───────────────────────────────────────────────────
+  potenser_regler: function(del) {
+    var base = rInt(2,5);
+    var e1 = rInt(2,5), e2 = rInt(2,4);
+    var type = rChoice(['mul','div','pow']);
+    var text, ans, fasit;
+    if(type==='mul') {
+      ans = e1+e2;
+      text = 'Forenkle: ' + base + '^' + e1 + ' · ' + base + '^' + e2;
+      fasit = ['Potensregel: a^m · a^n = a^(m+n)', base + '^' + e1 + ' · ' + base + '^' + e2 + ' = ' + base + '^(' + e1 + '+' + e2 + ') = ' + base + '^' + ans];
+      return { topic:'Potenser', text:text, hint:'Potensregel: a^m · a^n = a^(m+n)', answer:ans, answerDisplay:base+'^'+ans+' = '+Math.pow(base,ans), unit:'Skriv eksponenten (f.eks. ' + ans + ')', fasit:fasit };
+    } else if(type==='div') {
+      var big = Math.max(e1,e2), small = Math.min(e1,e2);
+      ans = big - small;
+      text = 'Forenkle: ' + base + '^' + big + ' / ' + base + '^' + small;
+      fasit = ['Potensregel: a^m / a^n = a^(m−n)', base + '^' + big + ' / ' + base + '^' + small + ' = ' + base + '^(' + big + '−' + small + ') = ' + base + '^' + ans];
+      return { topic:'Potenser', text:text, hint:'Potensregel: a^m / a^n = a^(m−n)', answer:ans, answerDisplay:base+'^'+ans+' = '+Math.pow(base,ans), unit:'Skriv eksponenten', fasit:fasit };
+    } else {
+      ans = e1*e2;
+      text = 'Forenkle: (' + base + '^' + e1 + ')^' + e2;
+      fasit = ['Potensregel: (a^m)^n = a^(m·n)', '(' + base + '^' + e1 + ')^' + e2 + ' = ' + base + '^(' + e1 + '·' + e2 + ') = ' + base + '^' + ans];
+      return { topic:'Potenser', text:text, hint:'Potensregel: (a^m)^n = a^(m·n)', answer:ans, answerDisplay:base+'^'+ans+' = '+Math.pow(base,ans), unit:'Skriv eksponenten', fasit:fasit };
+    }
+  },
+
+  potenser_standardform: function(del) {
+    var mantissa = round2(rInt(10,99)/10);
+    var exp = del===1 ? rInt(3,6) : rInt(-3,9);
+    var realVal = mantissa * Math.pow(10, exp);
+    // ask to write in standardform
+    var text = 'Skriv tallet ' + realVal.toExponential().replace('e+','·10^').replace('e-','·10^−').replace('e','·10^') + ' i standardform (a · 10^n, der 1 ≤ a < 10). Hva er eksponenten n?';
+    // Compute real mantissa and exp
+    var expReal = Math.floor(Math.log10(Math.abs(realVal)));
+    var mReal = round2(realVal / Math.pow(10, expReal));
+    var fasit = [
+      'Standardform: a · 10^n der 1 ≤ a < 10',
+      'Flytt komma slik at a = ' + fmtNum(mReal),
+      'Vi måtte flytte komma ' + Math.abs(expReal) + ' plasser ' + (expReal>=0?'til venstre':'til høyre'),
+      'Svar: ' + fmtNum(mReal) + ' · 10^' + expReal
+    ];
+    return { topic:'Potenser', text:'Skriv tallet ' + realVal.toLocaleString('nb-NO') + ' på standardform (a · 10ⁿ, 1 ≤ a < 10). Hva er eksponenten n?', hint:'Flytt komma til det er ett siffer foran. Tell antall plasser.', answer:expReal, answerDisplay:fmtNum(mReal) + ' · 10^' + expReal, unit:'Skriv eksponenten n', fasit:fasit };
+  },
+
+  potenser_negativ: function(del) {
+    var base = rInt(2,5);
+    var neg = rInt(1,4);
+    var ans = round2(1/Math.pow(base,neg));
+    var text = 'Beregn: ' + base + '^(−' + neg + ')';
+    var fasit = [
+      'Regel: a^(−n) = 1 / a^n',
+      base + '^(−' + neg + ') = 1 / ' + base + '^' + neg,
+      '= 1 / ' + Math.pow(base,neg),
+      '= ' + ans
+    ];
+    return { topic:'Potenser', text:text, hint:'a^(−n) = 1 / a^n', answer:ans, answerDisplay:fmtNum(ans), unit:'', fasit:fasit };
+  },
+
+  // ── STATISTIKK ────────────────────────────────────────────────────────────────
+  stat_gjennomsnitt: function(del) {
+    var n = del===1 ? rInt(4,7) : rInt(5,10);
+    var data = [];
+    for(var i=0;i<n;i++) data.push(del===1 ? rInt(1,20)*5 : rInt(10,200));
+    var sum = data.reduce(function(a,b){return a+b;},0);
+    var mean = round2(sum/n);
+    var text = 'Her er karakterer fra en prøve: ' + data.join(', ') + '. Beregn gjennomsnittet.';
+    var fasit = [
+      'Gjennomsnitt = sum / antall',
+      'Sum = ' + data.join(' + ') + ' = ' + sum,
+      'Antall = ' + n,
+      'Gjennomsnitt = ' + sum + ' / ' + n + ' = ' + fmtNum(mean)
+    ];
+    return { topic:'Statistikk', text:text, hint:'Legg sammen alle verdiene og del på antallet.', answer:mean, answerDisplay:fmtNum(mean), unit:'', fasit:fasit };
+  },
+
+  stat_median: function(del) {
+    var n = del===1 ? rChoice([5,7]) : rChoice([6,8,10]);
+    var data = [];
+    for(var i=0;i<n;i++) data.push(rInt(10,100));
+    var sorted = data.slice().sort(function(a,b){return a-b;});
+    var med;
+    if(n%2===1) med = sorted[Math.floor(n/2)];
+    else med = (sorted[n/2-1]+sorted[n/2])/2;
+    var text = 'Tallrekken er: ' + data.join(', ') + '. Finn medianen.';
+    var fasit = [
+      'Sorter tallrekken: ' + sorted.join(', '),
+      n%2===1
+        ? 'n = ' + n + ' (odde). Midterste element (plass ' + (Math.floor(n/2)+1) + '): ' + med
+        : 'n = ' + n + ' (like). Medianen = gjennomsnittet av de to midterste: (' + sorted[n/2-1] + ' + ' + sorted[n/2] + ') / 2 = ' + med
+    ];
+    return { topic:'Statistikk', text:text, hint:'Sorter tallene. Ved odde antall: midterste. Ved like: gjennomsnitt av de to midterste.', answer:med, answerDisplay:fmtNum(med), unit:'', fasit:fasit };
+  },
+
+  stat_standardavvik: function(del) {
+    // Kept small for del1 manual-ish calc
+    var n = del===1 ? 4 : rInt(5,7);
+    var data = [];
+    for(var i=0;i<n;i++) data.push(del===1 ? rInt(2,8)*5 : rInt(10,100));
+    var mean = data.reduce(function(a,b){return a+b;})/n;
+    var variance = data.reduce(function(acc,x){return acc+Math.pow(x-mean,2);},0)/n;
+    var sd = round2(Math.sqrt(variance));
+    var text = 'Datasett: ' + data.join(', ') + '. Beregn standardavviket (populasjonsformelen, σ).';
+    var diffs = data.map(function(x){return round2(x-mean);});
+    var sq = diffs.map(function(d){return round2(d*d);});
+    var fasit = [
+      'Gjennomsnitt μ = (' + data.join('+') + ') / ' + n + ' = ' + fmtNum(mean),
+      'Avvik fra gjennomsnitt: ' + diffs.join(', '),
+      'Avvik²: ' + sq.join(', '),
+      'Varians σ² = (' + sq.join('+') + ') / ' + n + ' = ' + fmtNum(round2(variance)),
+      'Standardavvik σ = √' + fmtNum(round2(variance)) + ' ≈ ' + fmtNum(sd)
+    ];
+    return { topic:'Statistikk', text:text, hint:'σ = √(Σ(xᵢ−μ)² / n). Start med gjennomsnittet.', answer:sd, answerDisplay:fmtNum(sd), unit:'', fasit:fasit };
+  },
+
+  stat_boks: function(del) {
+    var n = rChoice([7,9,11]);
+    var data = [];
+    for(var i=0;i<n;i++) data.push(rInt(5,30)*2);
+    var sorted = data.slice().sort(function(a,b){return a-b;});
+    var min = sorted[0], max = sorted[n-1];
+    var med = sorted[Math.floor(n/2)];
+    // Q1 = median of lower half, Q3 = median of upper half
+    var lower = sorted.slice(0, Math.floor(n/2));
+    var upper = sorted.slice(Math.ceil(n/2));
+    var q1 = lower[Math.floor(lower.length/2)];
+    var q3 = upper[Math.floor(upper.length/2)];
+    var iqr = q3 - q1;
+    var text = 'Datasett: ' + data.join(', ') + '. Finn kvartil 1 (Q1) og kvartil 3 (Q3), og beregn den interkvartile bredden (IQB = Q3 − Q1).';
+    var fasit = [
+      'Sorter: ' + sorted.join(', '),
+      'Median (Q2) = ' + med,
+      'Nedre halvdel: ' + lower.join(', ') + ' → Q1 = ' + q1,
+      'Øvre halvdel: ' + upper.join(', ') + ' → Q3 = ' + q3,
+      'IQB = Q3 − Q1 = ' + q3 + ' − ' + q1 + ' = ' + iqr
+    ];
+    return { topic:'Statistikk', text:text, hint:'Del sortert datasett i to halvdeler. Q1 er medianen av den nedre halvdelen.', answer:iqr, answerDisplay:'Q1='+q1+', Q3='+q3+', IQB='+iqr, unit:'Skriv IQB-verdien', fasit:fasit };
+  },
+
+  // ── LINEÆRE FUNKSJONER ────────────────────────────────────────────────────────
+  funk_verdi: function(del) {
+    var a = del===1 ? rInt(1,5) : rInt(-8,8)||1;
+    var b = del===1 ? rInt(-10,20) : rInt(-50,50);
+    var x = del===1 ? rInt(1,10) : rInt(-10,20);
+    var y = a*x + b;
+    var text = 'Gitt funksjonen f(x) = ' + a + 'x ' + (b>=0?'+ ':'') + b + '. Beregn f(' + x + ').';
+    var fasit = [
+      'Sett inn x = ' + x + ' i funksjonsuttrykket:',
+      'f(' + x + ') = ' + a + ' · ' + x + ' ' + (b>=0?'+ ':'') + b,
+      '= ' + a*x + ' ' + (b>=0?'+ ':'') + b,
+      '= ' + y
+    ];
+    return { topic:'Funksjoner', text:text, hint:'Sett inn x-verdien i f(x) = ax + b og regn ut.', answer:y, answerDisplay:fmtNum(y), unit:'', fasit:fasit };
+  },
+
+  funk_stigning: function(del) {
+    var x1 = rInt(-5,5), y1 = rInt(-10,10);
+    var x2 = x1 + rInt(1,6), y2 = rInt(-10,20);
+    while(x2===x1) x2 = x1 + rInt(1,5);
+    var a = round2((y2-y1)/(x2-x1));
+    var text = 'To punkter på en rett linje er A(' + x1 + ', ' + y1 + ') og B(' + x2 + ', ' + y2 + '). Finn stigningstallet a.';
+    var fasit = [
+      'Stigningstall a = (y₂ − y₁) / (x₂ − x₁)',
+      'a = (' + y2 + ' − ' + y1 + ') / (' + x2 + ' − ' + x1 + ')',
+      '= ' + (y2-y1) + ' / ' + (x2-x1),
+      '= ' + fmtNum(a)
+    ];
+    return { topic:'Funksjoner', text:text, hint:'Stigningstall a = (y₂ − y₁) / (x₂ − x₁)', answer:a, answerDisplay:fmtNum(a), unit:'', fasit:fasit };
+  },
+
+  funk_likning: function(del) {
+    var a = del===1 ? rInt(1,4) : rInt(-5,6)||1;
+    var b = del===1 ? rInt(-10,10) : rInt(-30,30);
+    var y = del===1 ? rInt(-20,30) : rInt(-100,100);
+    var x = round2((y-b)/a);
+    var text = 'Løs likningen: ' + a + 'x ' + (b>=0?'+ ':'') + b + ' = ' + y;
+    var fasit = [
+      a + 'x ' + (b>=0?'+ ':'') + b + ' = ' + y,
+      a + 'x = ' + y + ' − (' + b + ') = ' + (y-b),
+      'x = ' + (y-b) + ' / ' + a + ' = ' + fmtNum(x)
+    ];
+    return { topic:'Funksjoner', text:text, hint:'Flytt konstanten til høyre side og del på koeffisienten til x.', answer:x, answerDisplay:fmtNum(x), unit:'x =', fasit:fasit };
+  },
+
+  funk_finnuttrykk: function(del) {
+    var a = del===1 ? rInt(1,4) : rInt(-4,5)||1;
+    var b = del===1 ? rInt(-10,10) : rInt(-30,30);
+    var x1=rInt(0,5), y1=a*x1+b;
+    var x2=x1+rInt(2,5), y2=a*x2+b;
+    var text = 'En lineær funksjon går gjennom punktene (' + x1 + ', ' + y1 + ') og (' + x2 + ', ' + y2 + '). Finn funksjonsuttrykket f(x) = ax + b. Hva er b (konstantleddet)?';
+    var aCalc = round2((y2-y1)/(x2-x1));
+    var bCalc = round2(y1 - aCalc*x1);
+    var fasit = [
+      'a = (y₂ − y₁)/(x₂ − x₁) = (' + y2 + '−' + y1 + ')/(' + x2 + '−' + x1 + ') = ' + fmtNum(aCalc),
+      'Sett inn punkt (' + x1 + ', ' + y1 + '): ' + y1 + ' = ' + fmtNum(aCalc) + ' · ' + x1 + ' + b',
+      'b = ' + y1 + ' − ' + fmtNum(aCalc*x1) + ' = ' + fmtNum(bCalc),
+      'f(x) = ' + fmtNum(aCalc) + 'x ' + (bCalc>=0?'+ ':'') + fmtNum(bCalc)
+    ];
+    return { topic:'Funksjoner', text:text, hint:'Finn a først med stigningstallsformelen, deretter b ved å sette inn et punkt.', answer:bCalc, answerDisplay:'f(x) = ' + fmtNum(aCalc) + 'x ' + (bCalc>=0?'+ ':'') + fmtNum(bCalc), unit:'Skriv b-verdien', fasit:fasit };
+  },
+
+  // ── TID ───────────────────────────────────────────────────────────────────────
+  tid_omregning: function(del) {
+    var type = rChoice(['hm2min','min2hm','hms','speed']);
+    if(type==='hm2min') {
+      var h = rInt(1,5), m = rInt(5,55);
+      var tot = h*60+m;
+      var text = 'Gjør om ' + h + ' timer og ' + m + ' minutter til minutter.';
+      var fasit = [h + ' timer = ' + h + ' · 60 = ' + h*60 + ' min', h*60 + ' + ' + m + ' = ' + tot + ' min'];
+      return { topic:'Tid', text:text, hint:'1 time = 60 min', answer:tot, answerDisplay:tot + ' min', unit:'minutter', fasit:fasit };
+    } else if(type==='min2hm') {
+      var tot = rInt(70,300);
+      var h = Math.floor(tot/60), m = tot%60;
+      var text = 'Gjør om ' + tot + ' minutter til timer og minutter.';
+      var fasit = [tot + ' ÷ 60 = ' + h + ' rest ' + m, 'Svar: ' + h + ' t ' + m + ' min'];
+      return { topic:'Tid', text:text, hint:'Del på 60. Resten er minuttene.', answer:h + (m/100), answerDisplay:h + ' timer og ' + m + ' min', unit:'Skriv antall timer (heltall)', fasit:fasit, checkFn: function(u) { return parseAnswer(u)===h; } };
+    } else if(type==='hms') {
+      var h = rInt(1,4), m = rInt(10,55), s = rInt(10,55);
+      var tot = h*3600+m*60+s;
+      var text = 'Gjør om ' + h + ' t ' + m + ' min ' + s + ' sek til sekunder.';
+      var fasit = [h + ' t = ' + h*3600 + ' s', m + ' min = ' + m*60 + ' s', h*3600 + ' + ' + m*60 + ' + ' + s + ' = ' + tot + ' s'];
+      return { topic:'Tid', text:text, hint:'1 t = 3600 s, 1 min = 60 s', answer:tot, answerDisplay:tot + ' s', unit:'sekunder', fasit:fasit };
+    } else {
+      var dist = del===1 ? rInt(2,20)*5 : rInt(50,500);
+      var h = del===1 ? rInt(1,3) : rInt(1,5);
+      var m = del===1 ? rChoice([0,15,30,45]) : rInt(0,59);
+      var timeH = round2(h + m/60);
+      var speed = round2(dist/timeH);
+      var text = 'En bil kjører ' + dist + ' km på ' + h + ' time' + (h>1?'r':'') + (m>0?' og '+m+' min':'') + '. Hva er gjennomsnittsfarten i km/t?';
+      var fasit = [
+        'Tid = ' + h + (m>0?' + '+m+'/60 = '+fmtNum(timeH):'') + ' t',
+        'Fart = distanse / tid',
+        '= ' + dist + ' / ' + fmtNum(timeH),
+        '≈ ' + fmtNum(speed) + ' km/t'
+      ];
+      return { topic:'Tid', text:text, hint:'Fart = distanse / tid. Husk å gjøre om min til desimaltimer.', answer:speed, answerDisplay:fmtNum(speed) + ' km/t', unit:'km/t', fasit:fasit };
+    }
+  },
+
+  tid_arbeid: function(del) {
+    var lonnPerH = del===1 ? rInt(5,15)*20 : rInt(150,600);
+    var h = del===1 ? rInt(2,8) : rInt(10,40);
+    var m = del===1 ? rChoice([0,30]) : rChoice([0,15,30,45]);
+    var timeH = h + m/60;
+    var lon = Math.round(lonnPerH * timeH);
+    var text = 'Timeslønnen er ' + fmtMoney(lonnPerH) + '. Du jobber ' + h + ' timer' + (m>0?' og '+m+' min':'') + '. Hva er lønnen?';
+    var fasit = [
+      'Tid = ' + h + (m>0?' + '+m+'/60 = '+fmtNum(timeH)+' t':'') + ' t',
+      'Lønn = ' + fmtMoney(lonnPerH) + ' · ' + fmtNum(timeH) + ' t',
+      '= ' + fmtMoney(lon)
+    ];
+    return { topic:'Tid', text:text, hint:'Gjør om til desimaltimer. Lønn = timeslønn · timer.', answer:lon, answerDisplay:fmtMoney(lon), unit:'kr', fasit:fasit };
+  }
+
+};
+
+// ─── Topic → generator mapping ────────────────────────────────────────────────
+var topicGenerators = {
+  alle: null, // special
+  prosent: ['prosent_grunnverdi','prosent_prosentdel','prosent_poeng','prosent_mva'],
+  vekst: ['vekst_beregn','vekst_framover','vekst_finn_pct'],
+  potenser: ['potenser_regler','potenser_standardform','potenser_negativ'],
+  statistikk: ['stat_gjennomsnitt','stat_median','stat_standardavvik','stat_boks'],
+  funksjoner: ['funk_verdi','funk_stigning','funk_likning','funk_finnuttrykk'],
+  tid: ['tid_omregning','tid_arbeid']
+};
+var alleGenerators = Object.keys(generators);
+
+function pickGenerator() {
+  if(state.topic === 'alle') return rChoice(alleGenerators);
+  var pool = topicGenerators[state.topic];
+  return rChoice(pool);
+}
+
+// ─── UI helpers ───────────────────────────────────────────────────────────────
+function setDel(d) {
+  state.del = d;
+  document.getElementById('btn-del1').className = d===1
+    ? 'px-4 py-1.5 rounded-full text-sm font-medium border-2 border-blue-600 bg-blue-600 text-white transition-all'
+    : 'px-4 py-1.5 rounded-full text-sm font-medium border-2 border-blue-600 text-blue-700 hover:bg-blue-600 hover:text-white transition-all';
+  document.getElementById('btn-del2').className = d===2
+    ? 'px-4 py-1.5 rounded-full text-sm font-medium border-2 border-indigo-600 bg-indigo-600 text-white transition-all'
+    : 'px-4 py-1.5 rounded-full text-sm font-medium border-2 border-gray-300 text-gray-600 hover:bg-gray-200 transition-all';
+  newTask();
+}
+
+function setTopic(t, btn) {
+  state.topic = t;
+  document.querySelectorAll('.topic-btn').forEach(function(b) {
+    b.classList.remove('active','bg-blue-100','text-blue-800','border-blue-300');
+    b.classList.add('bg-white','text-gray-700','border-gray-200');
+  });
+  btn.classList.add('active','bg-blue-100','text-blue-800','border-blue-300');
+  btn.classList.remove('bg-white','text-gray-700','border-gray-200');
+  newTask();
+}
+
+function updateStatsUI() {
+  var done = state.tasksDone, cor = state.correct;
+  document.getElementById('score-display').textContent = cor + ' / ' + done;
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-correct').textContent = cor;
+  document.getElementById('stat-pct').textContent = done>0 ? Math.round(cor/done*100) + ' %' : '–';
+}
+
+// ─── New task ─────────────────────────────────────────────────────────────────
+var taskCount = 0;
+function newTask() {
+  var genKey = pickGenerator();
+  var task;
+  try {
+    task = generators[genKey](state.del);
+  } catch(e) {
+    // fallback
+    task = generators['prosent_prosentdel'](state.del);
+  }
+  task.genKey = genKey;
+  state.currentTask = task;
+  state.hintShown = false;
+  state.fasitShown = false;
+  state.answeredCorrectly = false;
+  taskCount++;
+
+  document.getElementById('badge-topic').textContent = task.topic;
+  document.getElementById('badge-del').textContent = state.del===1 ? 'Del 1 – uten hjelpemidler' : 'Del 2 – med hjelpemidler';
+  document.getElementById('task-counter').textContent = taskCount;
+  document.getElementById('task-text').textContent = task.text;
+  document.getElementById('answer-unit').textContent = task.unit ? '(' + task.unit + ')' : '';
+  document.getElementById('answer-input').value = '';
+  document.getElementById('answer-input').disabled = false;
+  document.getElementById('feedback').className = 'hidden mb-4 rounded-lg px-4 py-3 text-sm font-medium';
+  document.getElementById('hint-box').className = 'hidden mt-4 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 text-sm text-gray-700';
+  document.getElementById('fasit-box').className = 'hidden mt-4 bg-green-50 border border-green-300 rounded-lg px-4 py-3';
+  document.getElementById('btn-hint').disabled = false;
+  document.getElementById('btn-fasit').disabled = false;
+
+  // Animate card
+  var card = document.getElementById('task-card');
+  card.classList.remove('fade-in');
+  void card.offsetWidth;
+  card.classList.add('fade-in');
+
+  document.getElementById('answer-input').focus();
+  updateStatsUI();
+}
+
+// ─── Hint ─────────────────────────────────────────────────────────────────────
+function showHint() {
+  if(!state.currentTask) return;
+  state.hintShown = true;
+  var box = document.getElementById('hint-box');
+  box.textContent = state.currentTask.hint;
+  box.className = 'mt-4 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 text-sm text-gray-700 fade-in';
+}
+
+// ─── Fasit ────────────────────────────────────────────────────────────────────
+function showFasit() {
+  if(!state.currentTask) return;
+  state.fasitShown = true;
+  var box = document.getElementById('fasit-box');
+  var content = document.getElementById('fasit-content');
+  content.innerHTML = '';
+  state.currentTask.fasit.forEach(function(line) {
+    var div = document.createElement('div');
+    div.className = 'fasit-step py-0.5';
+    div.textContent = line;
+    content.appendChild(div);
+  });
+  // Show correct answer prominently
+  var ans = document.createElement('div');
+  ans.className = 'mt-2 font-semibold text-green-800 text-sm border-t border-green-200 pt-2';
+  ans.textContent = '✓ Svar: ' + state.currentTask.answerDisplay;
+  content.appendChild(ans);
+  box.className = 'mt-4 bg-green-50 border border-green-300 rounded-lg px-4 py-3 fade-in';
+  document.getElementById('answer-input').disabled = true;
+}
+
+// ─── Check answer ─────────────────────────────────────────────────────────────
+function checkAnswer() {
+  if(!state.currentTask || state.answeredCorrectly) return;
+  var task = state.currentTask;
+  var userVal = document.getElementById('answer-input').value.trim();
+  if(!userVal) return;
+
+  var correct;
+  if(task.checkFn) {
+    correct = task.checkFn(userVal);
+  } else {
+    correct = numClose(userVal, task.answer);
+  }
+
+  var fb = document.getElementById('feedback');
+  var input = document.getElementById('answer-input');
+
+  state.tasksDone++;
+  if(correct) {
+    state.correct++;
+    fb.textContent = '✓ Riktig! ' + (state.hintShown ? '(med hint)' : '');
+    fb.className = 'mb-4 rounded-lg px-4 py-3 text-sm font-medium bg-green-100 text-green-800 fade-in';
+    input.classList.add('correct-flash');
+    setTimeout(function(){ input.classList.remove('correct-flash'); }, 500);
+    state.answeredCorrectly = true;
+    input.disabled = true;
+  } else {
+    fb.textContent = '✗ Ikke riktig. Prøv igjen, eller se hint/fasit.';
+    fb.className = 'mb-4 rounded-lg px-4 py-3 text-sm font-medium bg-red-100 text-red-800 fade-in';
+    input.classList.add('wrong-flash');
+    setTimeout(function(){ input.classList.remove('wrong-flash'); }, 500);
+    input.select();
+  }
+  saveStats();
+  updateStatsUI();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+loadStats();
+updateStatsUI();
+newTask();
+</script>
+</body>
+</html>
