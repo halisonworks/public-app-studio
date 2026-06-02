@@ -1,0 +1,10 @@
+{
+  "name": "public-app-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Public library of example projects and prompts for Halison App Studio.",
+  "scripts": {
+    "validate": "node scripts/validate.mjs"
+  },
+  "license": "SEE LICENSE IN LICENSE"
+}

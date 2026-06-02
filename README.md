@@ -6,13 +6,24 @@ This is the public library for App Studio. Here you can download completed
 projects to load straight into App Studio, and browse prompt examples to help
 you build your own.
 
+## Who it's for
+
+Founders, investors, managers, sales people, marketers, teachers, presenters,
+finance people, spreadsheet / Miro / graph / infographic makers, influencers,
+and anyone who wants to make a quick prototype of an app idea — no coding needed.
+
 ## What's inside
 
 - `projects/` ready-made App Studio projects you can download and load
-- `prompts/` example prompts for creating your own projects from scratch
+- `prompts/` prompts for building your own — an upload-first guide, category
+  add-ons, templates, and worked examples
+- `docs/` how to get started and create your own
+- [`catalog.md`](catalog.md) browse every project by category
 
 Each project includes a short header at the top of its main file with an
 introduction, attribution, and a link back to this repository.
+
+Want to contribute a project, prompt, or category? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## How to use a project
 
