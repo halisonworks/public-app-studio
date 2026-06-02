@@ -27,7 +27,9 @@ This project is a data / dashboard tool. Shape it accordingly:
 
 The [UX retention simulator](../examples/ux-retention-simulator.md) follows this
 pattern: KPI cards, a custom SVG chart, a milestone table, and a single state
-object that redraws everything on change.
+object that redraws everything on change. The
+[sales dashboard](../../projects/sales-dashboard/) is the React + `recharts`
+version built from this add-on.
 
 ## Try it (starter prompt)
 

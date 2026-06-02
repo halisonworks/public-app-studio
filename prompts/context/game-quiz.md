@@ -38,3 +38,7 @@ feedback, track the score, and end on a results screen with a "Play again"
 button. Let me answer with keys 1–4 or by clicking.
 ```
 
+## Built example
+
+[`projects/quiz-game/`](../../projects/quiz-game/) — built with this add-on.
+

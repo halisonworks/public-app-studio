@@ -18,6 +18,11 @@ and anyone who wants to make a quick prototype of an app idea.
 | [price-calculator](projects/price-calculator/) | Educational · Business | HTML | EN, NB | [prompt](prompts/examples/price-calculator.md) |
 | [ux-retention-simulator](projects/ux-retention-simulator/) | Business · Data | HTML | EN | [prompt](prompts/examples/ux-retention-simulator.md) |
 | [persona-developer](projects/persona-developer/) | Educational | HTML | EN, NB | [prompt](prompts/examples/persona-developer.md) |
+| [habit-tracker](projects/habit-tracker/) | Personal | HTML | EN | [starter](prompts/context/personal.md) |
+| [sales-dashboard](projects/sales-dashboard/) | Data / dashboard | React | EN | [starter](prompts/context/data-dashboard.md) |
+| [color-palette](projects/color-palette/) | Creative | HTML | EN | [starter](prompts/context/creative.md) |
+| [quiz-game](projects/quiz-game/) | Game / quiz | HTML | EN | [starter](prompts/context/game-quiz.md) |
+| [saas-prototype](projects/saas-prototype/) | Prototype | HTML | EN | [starter](prompts/context/prototype.md) |
 
 ## Categories (prompt add-ons)
 

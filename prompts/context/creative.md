@@ -39,3 +39,7 @@ like. Show each color's hex, and let me click a swatch to copy its hex. Big,
 clean swatches.
 ```
 
+## Built example
+
+[`projects/color-palette/`](../../projects/color-palette/) — built with this add-on.
+

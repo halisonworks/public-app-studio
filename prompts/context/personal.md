@@ -38,3 +38,7 @@ where I tick each day, and display a current streak and a weekly completion %
 per habit. Remember everything across reloads.
 ```
 
+## Built example
+
+[`projects/habit-tracker/`](../../projects/habit-tracker/) — built with this add-on.
+

@@ -8,6 +8,13 @@ Ready-made App Studio projects you can download and load.
 - [`price-calculator/`](./price-calculator/) — markup / margin / VAT calculator with school & business modes (HTML · also [Norsk](./price-calculator/i18n/nb/))
 - [`ux-retention-simulator/`](./ux-retention-simulator/) — extractive vs empowering UX cohort-retention dashboard (HTML)
 - [`persona-developer/`](./persona-developer/) — build customer personas with Learn / Practice / Present modes (HTML · also [Norsk](./persona-developer/i18n/nb/))
+- [`habit-tracker/`](./habit-tracker/) — weekly habit tracker with streaks, saved locally (HTML)
+- [`sales-dashboard/`](./sales-dashboard/) — SaaS KPI dashboard, React + recharts (JSX)
+- [`color-palette/`](./color-palette/) — harmonious palette generator with lock & copy (HTML)
+- [`quiz-game/`](./quiz-game/) — 8-question multiple-choice quiz with score (HTML)
+- [`saas-prototype/`](./saas-prototype/) — clickable project-management app mockup (HTML)
+
+See [`catalog.md`](../catalog.md) for the full table by category.
 
 ## What a project looks like
 
