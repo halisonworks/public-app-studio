@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<!--
+  Commission Calculator — Halison App Studio example
+
+  Model tiered sales commissions with quotas and accelerators: total payout,
+  effective rate, a per-tier breakdown, and a what-if slider. Saves locally.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Commission Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:  '#f0f9ff',
+              100: '#e0f2fe',
+              200: '#bae6fd',
+              300: '#7dd3fc',
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom range input styling */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 9999px;
+      background: #e2e8f0;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #0284c7;
+      cursor: pointer;
+      border: 2px solid white;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+      transition: background 0.15s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      background: #0369a1;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #0284c7;
+      cursor: pointer;
+      border: 2px solid white;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    }
+    .tier-row { transition: background 0.15s; }
+    .tier-row:hover { background: #f8fafc; }
+    .number-input::-webkit-inner-spin-button,
+    .number-input::-webkit-outer-spin-button { opacity: 1; }
+    .fade-in { animation: fadeIn 0.2s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .svg-line { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .tooltip-box {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(15,23,42,0.92);
+      color: #f1f5f9;
+      font-size: 12px;
+      border-radius: 6px;
+      padding: 6px 10px;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      z-index: 10;
+      transition: opacity 0.1s;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 font-sans">
+
+<!-- ═══════════════════════════════════════════ HEADER ═══════════════════════════════════════════ -->
+<header class="bg-brand-700 text-white shadow-md">
+  <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-2">
+    <div>
+      <h1 class="text-xl font-bold tracking-tight">Commission Calculator</h1>
+      <p class="text-brand-200 text-sm mt-0.5">Tiered quotas, accelerators &amp; live what-if analysis</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button id="btnMode" class="text-sm bg-brand-600 hover:bg-brand-500 px-3 py-1.5 rounded-lg border border-brand-400 transition font-medium"></button>
+      <button id="btnReset" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg border border-white/20 transition">Reset Defaults</button>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════ MAIN ════════════════════════════════════════════ -->
+<main class="max-w-5xl mx-auto px-4 py-8 space-y-6">
+
+  <!-- ── Row 1: Config panels ── -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <!-- Sales Input & Quota -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-4">
+      <h2 class="font-semibold text-slate-700 text-base flex items-center gap-2">
+        <span class="inline-block w-2 h-2 rounded-full bg-brand-500"></span>
+        Sales &amp; Quota
+      </h2>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1">Annual Quota ($)</label>
+          <input id="inputQuota" type="number" min="0" step="1000"
+            class="number-input w-full border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1">Base Salary ($) <span class="text-slate-400 font-normal">(optional, for context)</span></label>
+          <input id="inputSalary" type="number" min="0" step="1000"
+            class="number-input w-full border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1" id="labelSales">Sales / Attainment ($)</label>
+          <input id="inputSales" type="number" min="0" step="1000"
+            class="number-input w-full border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm" />
+        </div>
+
+        <!-- What-if slider -->
+        <div class="pt-1">
+          <div class="flex justify-between text-xs text-slate-500 mb-1">
+            <span>What-if slider</span>
+            <span id="sliderPct" class="font-semibold text-brand-600"></span>
+          </div>
+          <input id="sliderSales" type="range" min="0" step="1000"
+            class="w-full" />
+          <div class="flex justify-between text-xs text-slate-400 mt-1">
+            <span>$0</span>
+            <span id="sliderMax" class="text-right"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Commission Mode -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-4">
+      <h2 class="font-semibold text-slate-700 text-base flex items-center gap-2">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+        Commission Structure
+      </h2>
+
+      <!-- Flat mode -->
+      <div id="panelFlat" class="space-y-3">
+        <p class="text-sm text-slate-500">A single percentage applied to all sales regardless of quota.</p>
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-1">Flat Commission Rate (%)</label>
+          <input id="inputFlatRate" type="number" min="0" max="100" step="0.1"
+            class="number-input w-full border border-slate-200 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm" />
+        </div>
+      </div>
+
+      <!-- Tiered mode -->
+      <div id="panelTiered" class="space-y-3 hidden">
+        <p class="text-sm text-slate-500">Each tier is defined as a % of quota. Commission rate applies only to sales within that band.</p>
+
+        <div id="tiersContainer" class="space-y-2"></div>
+
+        <button id="btnAddTier"
+          class="w-full text-sm border border-dashed border-brand-300 text-brand-600 hover:bg-brand-50 rounded-lg py-2 transition font-medium">
+          + Add Tier
+        </button>
+
+        <p class="text-xs text-slate-400">Drag-to-reorder not required — tiers are sorted by threshold automatically.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- ── Row 2: Results ── -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 fade-in" id="resultsRow">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 text-center">
+      <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Total Commission</p>
+      <p id="resTotal" class="text-3xl font-bold text-brand-700">$0</p>
+      <p id="resTotalSub" class="text-xs text-slate-400 mt-1"></p>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 text-center">
+      <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Effective Rate</p>
+      <p id="resRate" class="text-3xl font-bold text-emerald-600">0.00%</p>
+      <p class="text-xs text-slate-400 mt-1">Commission / Sales</p>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 text-center">
+      <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Attainment</p>
+      <p id="resAttainment" class="text-3xl font-bold text-violet-600">0%</p>
+      <p id="resAttainmentSub" class="text-xs text-slate-400 mt-1">of quota</p>
+    </div>
+  </div>
+
+  <!-- ── Row 3: Breakdown + Chart ── -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <!-- Tier breakdown table -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+      <h2 class="font-semibold text-slate-700 text-base mb-4 flex items-center gap-2">
+        <span class="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
+        Per-Tier Breakdown
+      </h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-100 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              <th class="pb-2 pr-3">Tier</th>
+              <th class="pb-2 pr-3">Range</th>
+              <th class="pb-2 pr-3">Rate</th>
+              <th class="pb-2 pr-3">Sales in Tier</th>
+              <th class="pb-2">Commission</th>
+            </tr>
+          </thead>
+          <tbody id="breakdownBody"></tbody>
+          <tfoot id="breakdownFoot"></tfoot>
+        </table>
+      </div>
+    </section>
+
+    <!-- SVG Chart -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+      <h2 class="font-semibold text-slate-700 text-base mb-4 flex items-center gap-2">
+        <span class="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
+        Commission vs. Sales
+      </h2>
+      <div class="relative" id="chartWrap">
+        <svg id="commChart" width="100%" viewBox="0 0 440 220" xmlns="http://www.w3.org/2000/svg"
+          class="w-full overflow-visible" style="touch-action:none;">
+          <defs>
+            <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#0ea5e9" stop-opacity="0.18"/>
+              <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0.01"/>
+            </linearGradient>
+          </defs>
+          <g id="chartGrid"></g>
+          <g id="chartAxes"></g>
+          <path id="chartArea" fill="url(#areaGrad)" />
+          <path id="chartLine" class="svg-line" stroke="#0284c7" />
+          <line id="chartMarker" stroke="#0284c7" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7" />
+          <circle id="chartDot" r="5" fill="#0284c7" stroke="white" stroke-width="2" />
+          <g id="chartKinks"></g>
+        </svg>
+        <div id="chartTooltip" class="tooltip-box opacity-0" style="left:0;top:0;"></div>
+      </div>
+      <p class="text-xs text-slate-400 mt-2 text-center">Hover or tap the chart to explore values. Kink points mark tier changes.</p>
+    </section>
+  </div>
+
+</main>
+
+<!-- ═══════════════════════════════════════════ FOOTER ══════════════════════════════════════════ -->
+<footer class="text-center text-xs text-slate-400 py-6 border-t border-slate-100 mt-4">
+  Commission Calculator · Halison App Studio ·
+  <a href="https://github.com/halisonworks/public-app-studio" target="_blank" class="underline hover:text-brand-600">Source</a>
+  · Personal &amp; educational use only
+</footer>
+
+<!-- ═══════════════════════════════════════════ SCRIPT ══════════════════════════════════════════ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ─────────────── DEFAULTS ─────────────── */
+  const DEFAULTS = {
+    mode: 'tiered',           // 'tiered' | 'flat'
+    quota: 500000,
+    salary: 80000,
+    sales: 425000,
+    flatRate: 5,
+    tiers: [
+      { label: 'Below Quota',     upTo: 100,  rate: 8   },
+      { label: 'Accelerator 1',   upTo: 150,  rate: 12  },
+      { label: 'Accelerator 2',   upTo: 200,  rate: 16  },
+      { label: 'Overachievement', upTo: null, rate: 20  },
+    ]
+  };
+
+  /* ─────────────── STATE ─────────────── */
+  let state = loadState();
+
+  /* ─────────────── ELEMENTS ─────────────── */
+  const $ = id => document.getElementById(id);
+  const inputQuota     = $('inputQuota');
+  const inputSalary    = $('inputSalary');
+  const inputSales     = $('inputSales');
+  const inputFlatRate  = $('inputFlatRate');
+  const sliderSales    = $('sliderSales');
+  const sliderPct      = $('sliderPct');
+  const sliderMax      = $('sliderMax');
+  const btnMode        = $('btnMode');
+  const btnReset       = $('btnReset');
+  const btnAddTier     = $('btnAddTier');
+  const panelFlat      = $('panelFlat');
+  const panelTiered    = $('panelTiered');
+  const tiersContainer = $('tiersContainer');
+  const resTotal       = $('resTotal');
+  const resTotalSub    = $('resTotalSub');
+  const resRate        = $('resRate');
+  const resAttainment  = $('resAttainment');
+  const resAttainmentSub= $('resAttainmentSub');
+  const breakdownBody  = $('breakdownBody');
+  const breakdownFoot  = $('breakdownFoot');
+  const commChart      = $('commChart');
+  const chartLine      = $('chartLine');
+  const chartArea      = $('chartArea');
+  const chartGrid      = $('chartGrid');
+  const chartAxes      = $('chartAxes');
+  const chartMarker    = $('chartMarker');
+  const chartDot       = $('chartDot');
+  const chartKinks     = $('chartKinks');
+  const chartTooltip   = $('chartTooltip');
+  const chartWrap      = $('chartWrap');
+
+  /* ─────────────── PERSISTENCE ─────────────── */
+  function loadState() {
+    try {
+      const raw = localStorage.getItem('commCalcState');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // Merge with defaults to handle added fields
+        return Object.assign({}, DEFAULTS, parsed, {
+          tiers: Array.isArray(parsed.tiers) && parsed.tiers.length ? parsed.tiers : DEFAULTS.tiers
+        });
+      }
+    } catch(e) {}
+    return Object.assign({}, DEFAULTS, { tiers: DEFAULTS.tiers.map(t => Object.assign({}, t)) });
+  }
+
+  function saveState() {
+    try { localStorage.setItem('commCalcState', JSON.stringify(state)); } catch(e) {}
+  }
+
+  /* ─────────────── FORMATTING ─────────────── */
+  const fmtUSD = (n, decimals=0) => new Intl.NumberFormat('en-US', {
+    style: 'currency', currency: 'USD', minimumFractionDigits: decimals, maximumFractionDigits: decimals
+  }).format(n);
+
+  const fmtNum = (n, d=0) => new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: d, maximumFractionDigits: d
+  }).format(n);
+
+  /* ─────────────── COMMISSION MATH ─────────────── */
+  function calcCommission(sales, quota, tiers, mode, flatRate) {
+    if (mode === 'flat') {
+      const comm = sales * (flatRate / 100);
+      return {
+        total: comm,
+        breakdown: [{ label: 'Flat Rate', range: 'All sales', rate: flatRate, salesInTier: sales, commission: comm }]
+      };
+    }
+
+    // Sort tiers by upTo ascending (null = Infinity)
+    const sorted = tiers.slice().sort((a, b) => {
+      const aU = a.upTo === null ? Infinity : a.upTo;
+      const bU = b.upTo === null ? Infinity : b.upTo;
+      return aU - bU;
+    });
+
+    let remaining = sales;
+    let prevThreshold = 0; // in $ (absolute)
+    let total = 0;
+    const breakdown = [];
+
+    for (let i = 0; i < sorted.length; i++) {
+      const tier = sorted[i];
+      const tierUpTo  = tier.upTo === null ? Infinity : tier.upTo;
+      const tierStart = prevThreshold;                  // $ absolute
+      const tierEnd   = tierUpTo === Infinity ? Infinity : (quota * tierUpTo / 100);
+
+      if (sales <= tierStart) break; // no sales reach this tier
+
+      const salesInThisTier = Math.min(sales, tierEnd === Infinity ? sales : tierEnd) - tierStart;
+      const clipped = Math.max(0, salesInThisTier);
+      const comm = clipped * (tier.rate / 100);
+      total += comm;
+
+      const rangeLabel = tierUpTo === Infinity
+        ? `> ${fmtNum(tierStart > 0 ? (tierStart/quota*100) : 0, 0)}% of quota`
+        : `${fmtNum(tierStart/quota*100, 0)}% – ${tier.upTo}% of quota`;
+
+      breakdown.push({
+        label: tier.label || `Tier ${i+1}`,
+        range: rangeLabel,
+        rate: tier.rate,
+        salesInTier: clipped,
+        commission: comm
+      });
+
+      prevThreshold = tierEnd === Infinity ? sales : tierEnd;
+      if (prevThreshold >= sales) break;
+    }
+
+    return { total, breakdown };
+  }
+
+  /* Build an array of {x, y} commission curve points for the chart */
+  function buildCurvePoints(quota, tiers, mode, flatRate) {
+    const maxSales = quota * 2.5;
+    const steps = 300;
+    const points = [];
+    for (let i = 0; i <= steps; i++) {
+      const s = (i / steps) * maxSales;
+      const { total } = calcCommission(s, quota, tiers, mode, flatRate);
+      points.push({ x: s, y: total });
+    }
+    return points;
+  }
+
+  /* ─────────────── UI: RENDER TIERS ─────────────── */
+  function renderTiers() {
+    tiersContainer.innerHTML = '';
+    state.tiers.forEach((tier, idx) => {
+      const isLast = idx === state.tiers.length - 1;
+      const row = document.createElement('div');
+      row.className = 'tier-row flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2 border border-slate-100';
+      row.dataset.idx = idx;
+      row.innerHTML = `
+        <div class="flex-1 min-w-0">
+          <input type="text" value="${escHtml(tier.label)}" placeholder="Tier name"
+            class="w-full text-xs font-medium text-slate-700 bg-transparent border-none outline-none focus:ring-0 truncate"
+            data-field="label" data-idx="${idx}" />
+        </div>
+        <div class="flex items-center gap-1 text-xs text-slate-500 whitespace-nowrap">
+          <span>0 –</span>
+          <input type="number" min="0" max="9999" step="5"
+            value="${tier.upTo !== null ? tier.upTo : ''}"
+            placeholder="∞"
+            title="Upper % of quota (leave empty for unlimited)"
+            class="number-input w-14 text-center border border-slate-200 rounded-md px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-brand-400 bg-white"
+            data-field="upTo" data-idx="${idx}" />
+          <span>% quota</span>
+        </div>
+        <div class="flex items-center gap-1 whitespace-nowrap">
+          <input type="number" min="0" max="100" step="0.5"
+            value="${tier.rate}"
+            class="number-input w-14 text-center border border-slate-200 rounded-md px-1.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-brand-400 bg-white"
+            data-field="rate" data-idx="${idx}" />
+          <span class="text-xs text-slate-500">%</span>
+        </div>
+        <button class="flex-shrink-0 text-slate-300 hover:text-red-400 transition text-lg leading-none px-1"
+          data-action="delete" data-idx="${idx}" title="Remove tier">×</button>
+      `;
+      tiersContainer.appendChild(row);
+    });
+
+    // Events for tier fields
+    tiersContainer.querySelectorAll('input').forEach(inp => {
+      inp.addEventListener('input', onTierFieldChange);
+    });
+    tiersContainer.querySelectorAll('[data-action="delete"]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const idx = parseInt(e.currentTarget.dataset.idx);
+        if (state.tiers.length <= 1) return;
+        state.tiers.splice(idx, 1);
+        saveState();
+        renderTiers();
+        compute();
+      });
+    });
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function onTierFieldChange(e) {
+    const idx   = parseInt(e.target.dataset.idx);
+    const field = e.target.dataset.field;
+    const raw   = e.target.value;
+    if (field === 'label') {
+      state.tiers[idx].label = raw;
+    } else if (field === 'upTo') {
+      state.tiers[idx].upTo = raw === '' ? null : parseFloat(raw);
+    } else if (field === 'rate') {
+      state.tiers[idx].rate = parseFloat(raw) || 0;
+    }
+    saveState();
+    compute();
+  }
+
+  /* ─────────────── UI: SYNC INPUTS FROM STATE ─────────────── */
+  function syncInputsFromState() {
+    inputQuota.value    = state.quota;
+    inputSalary.value   = state.salary;
+    inputSales.value    = state.sales;
+    inputFlatRate.value = state.flatRate;
+
+    const sliderMaxVal = Math.max(state.quota * 2.5, state.sales * 1.2);
+    sliderSales.max = sliderMaxVal;
+    sliderSales.value = state.sales;
+    sliderMax.textContent = fmtUSD(sliderMaxVal, 0);
+
+    updateModeUI();
+    renderTiers();
+  }
+
+  function updateModeUI() {
+    if (state.mode === 'flat') {
+      btnMode.textContent = 'Switch to Tiered Mode';
+      panelFlat.classList.remove('hidden');
+      panelTiered.classList.add('hidden');
+    } else {
+      btnMode.textContent = 'Switch to Flat Rate Mode';
+      panelFlat.classList.add('hidden');
+      panelTiered.classList.remove('hidden');
+    }
+  }
+
+  /* ─────────────── COMPUTE & RENDER RESULTS ─────────────── */
+  function compute() {
+    const sales    = parseFloat(inputSales.value)    || 0;
+    const quota    = parseFloat(inputQuota.value)    || 1;
+    const salary   = parseFloat(inputSalary.value)   || 0;
+    const flatRate = parseFloat(inputFlatRate.value) || 0;
+
+    const { total, breakdown } = calcCommission(sales, quota, state.tiers, state.mode, flatRate);
+
+    const effectiveRate = sales > 0 ? (total / sales * 100) : 0;
+    const attainment    = quota > 0 ? (sales / quota * 100) : 0;
+
+    // Summary cards
+    resTotal.textContent = fmtUSD(total);
+    resTotalSub.textContent = salary > 0
+      ? `+ ${fmtUSD(salary)} base = ${fmtUSD(total + salary)} OTE`
+      : 'Total earned commission';
+    resRate.textContent     = effectiveRate.toFixed(2) + '%';
+    resAttainment.textContent = fmtNum(attainment, 1) + '%';
+    resAttainmentSub.textContent = quota > 0 ? `of ${fmtUSD(quota, 0)} quota` : 'of quota';
+
+    // Color attainment
+    if (attainment >= 100) resAttainment.className = 'text-3xl font-bold text-emerald-600';
+    else if (attainment >= 75) resAttainment.className = 'text-3xl font-bold text-amber-500';
+    else resAttainment.className = 'text-3xl font-bold text-red-500';
+
+    // Slider label
+    sliderPct.textContent = fmtNum(attainment, 1) + '% of quota';
+
+    // Breakdown table
+    let bodyHtml = '';
+    breakdown.forEach((row, i) => {
+      const tierColors = ['bg-brand-50 text-brand-700','bg-emerald-50 text-emerald-700','bg-violet-50 text-violet-700','bg-amber-50 text-amber-700','bg-rose-50 text-rose-700'];
+      const colorClass = tierColors[i % tierColors.length];
+      bodyHtml += `<tr class="tier-row border-b border-slate-50">
+        <td class="py-2 pr-3">
+          <span class="inline-block text-xs px-2 py-0.5 rounded-full font-semibold ${colorClass}">${escHtml(row.label)}</span>
+        </td>
+        <td class="py-2 pr-3 text-xs text-slate-500 whitespace-nowrap">${escHtml(row.range)}</td>
+        <td class="py-2 pr-3 text-xs font-semibold text-slate-700 whitespace-nowrap">${row.rate.toFixed(1)}%</td>
+        <td class="py-2 pr-3 text-xs text-slate-600 whitespace-nowrap">${fmtUSD(row.salesInTier)}</td>
+        <td class="py-2 text-xs font-semibold text-brand-700 whitespace-nowrap">${fmtUSD(row.commission)}</td>
+      </tr>`;
+    });
+    breakdownBody.innerHTML = bodyHtml;
+    breakdownFoot.innerHTML = `<tr class="border-t-2 border-slate-200">
+      <td colspan="4" class="pt-2 text-xs font-bold text-slate-600 uppercase tracking-wider">Total</td>
+      <td class="pt-2 text-sm font-bold text-brand-700">${fmtUSD(total)}</td>
+    </tr>`;
+
+    // Update slider sync
+    const sliderMaxVal = Math.max(quota * 2.5, sales * 1.2, 10000);
+    sliderSales.max = sliderMaxVal;
+    sliderMax.textContent = fmtUSD(sliderMaxVal, 0);
+
+    // Chart
+    drawChart(sales, quota, state.tiers, state.mode, flatRate, total);
+  }
+
+  /* ─────────────── CHART ─────────────── */
+  const CHART_PAD = { top: 16, right: 24, bottom: 36, left: 52 };
+  const CHART_W = 440;
+  const CHART_H = 220;
+  const INNER_W = CHART_W - CHART_PAD.left - CHART_PAD.right;
+  const INNER_H = CHART_H - CHART_PAD.top  - CHART_PAD.bottom;
+
+  function makeSVGEl(tag, attrs) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k, v));
+    return el;
+  }
+
+  function drawChart(currentSales, quota, tiers, mode, flatRate, currentComm) {
+    const maxSales = Math.max(quota * 2.5, currentSales * 1.1, 10000);
+    const points   = buildCurvePoints(quota, tiers, mode, flatRate);
+    const maxComm  = Math.max(...points.map(p => p.y), 1);
+
+    const toSVG = (s, c) => ({
+      cx: CHART_PAD.left + (s / maxSales) * INNER_W,
+      cy: CHART_PAD.top  + INNER_H - (c / maxComm) * INNER_H
+    });
+
+    // Grid
+    chartGrid.innerHTML = '';
+    const yLines = 5;
+    for (let i = 0; i <= yLines; i++) {
+      const cy = CHART_PAD.top + (i / yLines) * INNER_H;
+      const val = maxComm * (1 - i / yLines);
+      const line = makeSVGEl('line', { x1: CHART_PAD.left, y1: cy, x2: CHART_PAD.left + INNER_W, y2: cy, stroke: '#e2e8f0', 'stroke-width': '1' });
+      chartGrid.appendChild(line);
+      const lbl = makeSVGEl('text', { x: CHART_PAD.left - 6, y: cy + 4, 'text-anchor': 'end', 'font-size': '9', fill: '#94a3b8' });
+      lbl.textContent = fmtUSD(val, 0).replace('$', '$').replace(/,000$/, 'k').replace(/,000,/, 'M').replace(/000$/, 'k');
+      // simpler label
+      lbl.textContent = val >= 1000000 ? '$' + (val/1000000).toFixed(1) + 'M' : val >= 1000 ? '$' + (val/1000).toFixed(0) + 'k' : '$' + val.toFixed(0);
+      chartGrid.appendChild(lbl);
+    }
+    // X axis ticks
+    const xTicks = 5;
+    for (let i = 0; i <= xTicks; i++) {
+      const s = (i / xTicks) * maxSales;
+      const cx = CHART_PAD.left + (i / xTicks) * INNER_W;
+      const lbl = makeSVGEl('text', { x: cx, y: CHART_PAD.top + INNER_H + 16, 'text-anchor': 'middle', 'font-size': '9', fill: '#94a3b8' });
+      lbl.textContent = s >= 1000000 ? '$' + (s/1000000).toFixed(1) + 'M' : s >= 1000 ? '$' + (s/1000).toFixed(0) + 'k' : '$' + s.toFixed(0);
+      chartGrid.appendChild(lbl);
+    }
+
+    // X axis label
+    const xAxisLabel = makeSVGEl('text', { x: CHART_PAD.left + INNER_W/2, y: CHART_H - 2, 'text-anchor': 'middle', 'font-size': '9', fill: '#94a3b8' });
+    xAxisLabel.textContent = 'Sales Amount';
+    chartGrid.appendChild(xAxisLabel);
+
+    // Quota line
+    if (quota > 0 && quota <= maxSales) {
+      const qx = CHART_PAD.left + (quota / maxSales) * INNER_W;
+      const qline = makeSVGEl('line', { x1: qx, y1: CHART_PAD.top, x2: qx, y2: CHART_PAD.top + INNER_H, stroke: '#f59e0b', 'stroke-width': '1.5', 'stroke-dasharray': '4,3' });
+      chartGrid.appendChild(qline);
+      const qlbl = makeSVGEl('text', { x: qx + 3, y: CHART_PAD.top + 12, 'font-size': '8', fill: '#d97706' });
+      qlbl.textContent = '100% quota';
+      chartGrid.appendChild(qlbl);
+    }
+
+    // Line path
+    const pathD = points.map((p, i) => {
+      const { cx, cy } = toSVG(p.x, p.y);
+      return (i === 0 ? 'M' : 'L') + cx.toFixed(2) + ',' + cy.toFixed(2);
+    }).join(' ');
+    chartLine.setAttribute('d', pathD);
+
+    // Area path (close below)
+    const lastPt = toSVG(points[points.length-1].x, points[points.length-1].y);
+    const firstPt = toSVG(points[0].x, 0);
+    const areaD = pathD
+      + ` L${lastPt.cx.toFixed(2)},${(CHART_PAD.top + INNER_H).toFixed(2)}`
+      + ` L${firstPt.cx.toFixed(2)},${(CHART_PAD.top + INNER_H).toFixed(2)} Z`;
+    chartArea.setAttribute('d', areaD);
+
+    // Kink markers at tier boundaries
+    chartKinks.innerHTML = '';
+    if (mode === 'tiered' && quota > 0) {
+      const sorted = tiers.slice().sort((a, b) => {
+        const aU = a.upTo === null ? Infinity : a.upTo;
+        const bU = b.upTo === null ? Infinity : b.upTo;
+        return aU - bU;
+      });
+      sorted.forEach(tier => {
+        if (tier.upTo === null) return;
+        const kinkSales = quota * tier.upTo / 100;
+        if (kinkSales > maxSales) return;
+        const { total: kinkComm } = calcCommission(kinkSales, quota, tiers, mode, flatRate);
+        const { cx, cy } = toSVG(kinkSales, kinkComm);
+        const circle = makeSVGEl('circle', { cx, cy, r: 4, fill: '#f59e0b', stroke: 'white', 'stroke-width': '1.5' });
+        chartKinks.appendChild(circle);
+      });
+    }
+
+    // Current sales marker
+    if (currentSales > 0 && currentSales <= maxSales) {
+      const { cx, cy } = toSVG(currentSales, currentComm);
+      chartMarker.setAttribute('x1', cx); chartMarker.setAttribute('y1', CHART_PAD.top);
+      chartMarker.setAttribute('x2', cx); chartMarker.setAttribute('y2', CHART_PAD.top + INNER_H);
+      chartDot.setAttribute('cx', cx); chartDot.setAttribute('cy', cy);
+    } else {
+      chartMarker.setAttribute('x1', -99); chartMarker.setAttribute('x2', -99);
+      chartDot.setAttribute('cx', -99);
+    }
+  }
+
+  /* ─────────────── CHART HOVER ─────────────── */
+  function onChartPointerMove(e) {
+    const rect = commChart.getBoundingClientRect();
+    const svgScaleX = CHART_W / rect.width;
+    const svgX = (e.clientX - rect.left) * svgScaleX;
+    const dataX = (svgX - CHART_PAD.left) / INNER_W;
+    if (dataX < 0 || dataX > 1) { chartTooltip.style.opacity = '0'; return; }
+
+    const quota    = parseFloat(inputQuota.value)    || 1;
+    const flatRate = parseFloat(inputFlatRate.value) || 0;
+    const maxSales = Math.max(quota * 2.5, (parseFloat(inputSales.value)||0) * 1.1, 10000);
+    const s = dataX * maxSales;
+    const { total: c } = calcCommission(s, quota, state.tiers, state.mode, flatRate);
+    const rate = s > 0 ? (c/s*100) : 0;
+
+    chartTooltip.innerHTML = `<strong>${fmtUSD(s, 0)}</strong> → <strong>${fmtUSD(c, 0)}</strong><br><span style="opacity:0.75">Rate: ${rate.toFixed(2)}%</span>`;
+
+    const tipLeft = e.clientX - rect.left + 12;
+    const tipTop  = e.clientY - rect.top  - 10;
+    chartTooltip.style.left    = tipLeft + 'px';
+    chartTooltip.style.top     = tipTop  + 'px';
+    chartTooltip.style.opacity = '1';
+  }
+
+  commChart.addEventListener('pointermove', onChartPointerMove);
+  commChart.addEventListener('pointerleave', () => { chartTooltip.style.opacity = '0'; });
+
+  /* ─────────────── EVENT HANDLERS ─────────────── */
+  function bindInputEvent(el, stateKey, parse) {
+    el.addEventListener('input', () => {
+      state[stateKey] = parse ? parse(el.value) : el.value;
+      saveState();
+      if (stateKey === 'quota' || stateKey === 'sales') {
+        const q = parseFloat(inputQuota.value) || 1;
+        const s = parseFloat(inputSales.value) || 0;
+        const sliderMaxVal = Math.max(q * 2.5, s * 1.2, 10000);
+        sliderSales.max = sliderMaxVal;
+        sliderMax.textContent = fmtUSD(sliderMaxVal, 0);
+        if (stateKey === 'sales') sliderSales.value = s;
+      }
+      compute();
+    });
+  }
+
+  bindInputEvent(inputQuota,    'quota',    v => parseFloat(v) || 0);
+  bindInputEvent(inputSalary,   'salary',   v => parseFloat(v) || 0);
+  bindInputEvent(inputSales,    'sales',    v => parseFloat(v) || 0);
+  bindInputEvent(inputFlatRate, 'flatRate', v => parseFloat(v) || 0);
+
+  sliderSales.addEventListener('input', () => {
+    const val = parseFloat(sliderSales.value) || 0;
+    inputSales.value = val;
+    state.sales = val;
+    saveState();
+    compute();
+  });
+
+  btnMode.addEventListener('click', () => {
+    state.mode = state.mode === 'flat' ? 'tiered' : 'flat';
+    saveState();
+    updateModeUI();
+    compute();
+  });
+
+  btnReset.addEventListener('click', () => {
+    if (!confirm('Reset all settings to defaults?')) return;
+    state = Object.assign({}, DEFAULTS, { tiers: DEFAULTS.tiers.map(t => Object.assign({}, t)) });
+    saveState();
+    syncInputsFromState();
+    compute();
+  });
+
+  btnAddTier.addEventListener('click', () => {
+    state.tiers.push({ label: 'New Tier', upTo: null, rate: 10 });
+    saveState();
+    renderTiers();
+    compute();
+  });
+
+  /* ─────────────── INIT ─────────────── */
+  syncInputsFromState();
+  compute();
+
+})();
+</script>
+</body>
+</html>

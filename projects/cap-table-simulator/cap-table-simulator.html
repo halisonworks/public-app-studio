@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<!--
+  Cap Table Simulator — Halison App Studio example
+
+  Model funding rounds and option pools and watch ownership dilute across Seed,
+  Series A and beyond. Add shareholders and rounds; saves to your browser.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cap Table Simulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .section-card { @apply bg-white rounded-xl shadow border border-gray-100 p-6 mb-6; }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="number"] { -moz-appearance: textfield; }
+    .tab-active { @apply border-b-2 border-indigo-600 text-indigo-700 font-semibold; }
+    .tab-inactive { @apply text-gray-500 hover:text-gray-700; }
+    tr:nth-child(even) td { background: #f9fafb; }
+    .tooltip { position: relative; display: inline-block; }
+    .tooltip .tip-text {
+      visibility: hidden; width: 220px; background: #1e293b; color: #fff;
+      text-align: left; border-radius: 6px; padding: 8px 10px; font-size: 12px;
+      position: absolute; z-index: 99; left: 50%; top: 130%; transform: translateX(-50%);
+      pointer-events: none; opacity: 0; transition: opacity 0.15s;
+    }
+    .tooltip:hover .tip-text { visibility: visible; opacity: 1; }
+    .stacked-bar-label { font-size: 10px; dominant-baseline: middle; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- HEADER -->
+<header class="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl font-bold text-indigo-700 tracking-tight">Cap Table</span>
+      <span class="text-xs bg-indigo-100 text-indigo-600 rounded-full px-2 py-0.5 font-medium">Simulator</span>
+    </div>
+    <div class="text-xs text-gray-400 hidden sm:block">Saves to your browser · No backend</div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="max-w-7xl mx-auto px-4 py-6">
+
+  <!-- SHAREHOLDERS SECTION -->
+  <div class="bg-white rounded-xl shadow border border-gray-100 p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="text-lg font-bold text-gray-800">Shareholders at Founding</h2>
+        <p class="text-xs text-gray-500 mt-0.5">Enter initial shares (absolute) or percentages. Percentages must sum to 100%.</p>
+      </div>
+      <button onclick="addShareholder()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-3 py-1.5 rounded-lg transition font-medium">+ Add</button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm" id="shareholders-table">
+        <thead>
+          <tr class="text-left text-gray-500 text-xs border-b border-gray-100">
+            <th class="pb-2 pr-4 font-medium">Name</th>
+            <th class="pb-2 pr-4 font-medium">Type</th>
+            <th class="pb-2 pr-4 font-medium w-40">Value</th>
+            <th class="pb-2 font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="shareholders-body"></tbody>
+      </table>
+    </div>
+    <div class="mt-3 flex items-center gap-4">
+      <span class="text-xs text-gray-500">Total founding shares: <strong id="total-founding-shares" class="text-gray-700">—</strong></span>
+      <span class="text-xs text-gray-500">Pre-seed total: <strong id="total-founding-pct" class="text-indigo-600">—</strong></span>
+    </div>
+  </div>
+
+  <!-- FUNDING ROUNDS SECTION -->
+  <div class="bg-white rounded-xl shadow border border-gray-100 p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="text-lg font-bold text-gray-800">Funding Rounds</h2>
+        <p class="text-xs text-gray-500 mt-0.5">Rounds are applied sequentially. Option pool is created <em>pre-money</em> (diluting existing holders before the investor buys in).</p>
+      </div>
+      <button onclick="addRound()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-3 py-1.5 rounded-lg transition font-medium">+ Add Round</button>
+    </div>
+    <div id="rounds-container"></div>
+  </div>
+
+  <!-- RESULTS TABS -->
+  <div class="bg-white rounded-xl shadow border border-gray-100 p-6 mb-6">
+    <div class="flex gap-6 border-b border-gray-100 mb-5">
+      <button onclick="showTab('table')" id="tab-table" class="pb-2 text-sm transition tab-active">Ownership Table</button>
+      <button onclick="showTab('chart')" id="tab-chart" class="pb-2 text-sm transition tab-inactive">Ownership Chart</button>
+      <button onclick="showTab('rounds')" id="tab-rounds" class="pb-2 text-sm transition tab-inactive">Round Details</button>
+    </div>
+
+    <!-- TAB: TABLE -->
+    <div id="panel-table">
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs" id="cap-table-result">
+          <thead id="cap-table-head"></thead>
+          <tbody id="cap-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: CHART -->
+    <div id="panel-chart" class="hidden">
+      <p class="text-xs text-gray-500 mb-3">100% stacked ownership across rounds. Hover bars for values.</p>
+      <div id="chart-container" class="overflow-x-auto"></div>
+    </div>
+
+    <!-- TAB: ROUND DETAILS -->
+    <div id="panel-rounds" class="hidden">
+      <div id="round-details-container"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- MODAL: Edit Shareholder -->
+<div id="sh-modal" class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center hidden">
+  <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
+    <h3 class="font-bold text-gray-800 mb-4" id="sh-modal-title">Edit Shareholder</h3>
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Name</label>
+        <input id="sh-name" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="e.g. Alice Chen" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Type</label>
+        <select id="sh-type" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          <option value="founder">Founder</option>
+          <option value="employee">Employee / Option Pool</option>
+          <option value="investor">Investor</option>
+          <option value="advisor">Advisor</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Input mode</label>
+        <select id="sh-mode" onchange="toggleShMode()" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          <option value="shares">Shares (absolute)</option>
+          <option value="pct">Percentage (%)</option>
+        </select>
+      </div>
+      <div id="sh-shares-field">
+        <label class="block text-xs text-gray-500 mb-1">Number of shares</label>
+        <input id="sh-shares" type="number" min="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="e.g. 4000000" />
+      </div>
+      <div id="sh-pct-field" class="hidden">
+        <label class="block text-xs text-gray-500 mb-1">Ownership %</label>
+        <input id="sh-pct" type="number" min="0" max="100" step="0.1" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="e.g. 50" />
+      </div>
+    </div>
+    <div class="flex gap-3 mt-5">
+      <button onclick="saveShareholder()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg py-2 text-sm font-medium transition">Save</button>
+      <button onclick="closeShModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg py-2 text-sm font-medium transition">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Edit Round -->
+<div id="round-modal" class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center hidden">
+  <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+    <h3 class="font-bold text-gray-800 mb-4" id="round-modal-title">Edit Funding Round</h3>
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Round name</label>
+        <input id="r-name" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="e.g. Seed, Series A" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-gray-500 mb-1">
+            Investment ($)
+            <span class="tooltip ml-1 cursor-help text-gray-400">&#9432;<span class="tip-text">Amount the new investor puts in. This buys new shares at the price per share implied by the pre-money valuation.</span></span>
+          </label>
+          <input id="r-investment" type="number" min="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="e.g. 1500000" />
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1">
+            Pre-money valuation ($)
+            <span class="tooltip ml-1 cursor-help text-gray-400">&#9432;<span class="tip-text">Value of the company before this investment. Post-money = pre-money + investment.</span></span>
+          </label>
+          <input id="r-premoney" type="number" min="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="e.g. 8000000" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">
+          New option pool (% of post-money, created pre-money)
+          <span class="tooltip ml-1 cursor-help text-gray-400">&#9432;<span class="tip-text">Shares reserved for a new option pool, expressed as % of post-money total shares. Created pre-money, so existing holders dilute before the investor price is set.</span></span>
+        </label>
+        <input id="r-optpool" type="number" min="0" max="30" step="0.1" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="e.g. 10 (leave blank for none)" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Investor name</label>
+        <input id="r-investor" type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="e.g. Benchmark Capital" />
+      </div>
+    </div>
+    <div class="flex gap-3 mt-5">
+      <button onclick="saveRound()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg py-2 text-sm font-medium transition">Save</button>
+      <button onclick="closeRoundModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg py-2 text-sm font-medium transition">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let state = {
+  shareholders: [],
+  rounds: []
+};
+
+let shEditIdx = null;
+let roundEditIdx = null;
+
+// ─── DEFAULTS ────────────────────────────────────────────────────────────────
+const DEFAULT_STATE = {
+  shareholders: [
+    { id: 's1', name: 'Alice Chen', type: 'founder', mode: 'shares', shares: 4000000, pct: null },
+    { id: 's2', name: 'Bob Martinez', type: 'founder', mode: 'shares', shares: 4000000, pct: null },
+    { id: 's3', name: 'Founding Option Pool', type: 'employee', mode: 'shares', shares: 2000000, pct: null }
+  ],
+  rounds: [
+    {
+      id: 'r1', name: 'Seed', investment: 1500000, preMoney: 8000000,
+      optPoolPct: 0, investor: 'Angel Syndicate'
+    },
+    {
+      id: 'r2', name: 'Series A', investment: 8000000, preMoney: 24000000,
+      optPoolPct: 10, investor: 'Benchmark Capital'
+    }
+  ]
+};
+
+// ─── PERSISTENCE ─────────────────────────────────────────────────────────────
+function saveState() {
+  try { localStorage.setItem('cap_table_v2', JSON.stringify(state)); } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem('cap_table_v2');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.shareholders && parsed.rounds) {
+        state = parsed;
+        return;
+      }
+    }
+  } catch(e) {}
+  state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+}
+
+// ─── ID GENERATOR ────────────────────────────────────────────────────────────
+function uid() { return Math.random().toString(36).slice(2, 9); }
+
+// ─── COLOR PALETTE ───────────────────────────────────────────────────────────
+const COLORS = [
+  '#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#a855f7','#ec4899',
+  '#14b8a6','#f97316','#84cc16','#06b6d4','#e11d48','#7c3aed','#059669'
+];
+function colorFor(idx) { return COLORS[idx % COLORS.length]; }
+
+// ─── MATH ENGINE ─────────────────────────────────────────────────────────────
+/*
+ * Standard pre-money dilution with pre-money option pool expansion:
+ *
+ * 1. Start with current total shares = sum of all existing shares.
+ * 2. If optPoolPct > 0: we want option-pool shares = optPoolPct% of POST-money shares.
+ *    Let S = current shares, P = option pool %, I = investment, V_pre = pre-money val.
+ *    Post-money shares = S + newPool + newInvestorShares
+ *    Price per share   = V_pre / (S + newPool)           [pre-money expansion]
+ *    newInvestorShares = I / pricePerShare
+ *    We solve:  newPool / (S + newPool + I/pricePerShare) = P/100
+ *             = newPool / (S + newPool + I*(S+newPool)/V_pre) = P/100
+ *    Let T = S + newPool
+ *    newPool / (T + I*T/V_pre) = P/100
+ *    newPool / (T*(1 + I/V_pre)) = P/100
+ *    newPool / (T * postMoneySF) = P/100   where postMoneySF = postMoney/V_pre
+ *    → T * postMoneySF * P/100 = newPool * postMoneySF ... simplify:
+ *    Actually direct formula:
+ *    postMoney = preMoney + investment
+ *    newPool   = P/100 * postMoney/preMoney * S  — THIS is the standard VC pre-money expand.
+ *    More precisely:
+ *      After expansion: pre-money diluted shares = S + newPool
+ *      PPS = preMoney / (S + newPool)
+ *      investorShares = investment / PPS
+ *      postMoneyShares = S + newPool + investorShares
+ *      Check: newPool / postMoneyShares should ≈ P/100 (it does if we solve correctly)
+ *
+ *    Standard formula for pre-money option pool:
+ *      newPool = (P/100 * (preMoney + investment) / preMoney) * S
+ *    Derivation:
+ *      We want: newPool / (S + newPool + investorShares) = P/100
+ *      investorShares = investment * (S + newPool) / preMoney
+ *      Let X = S + newPool
+ *      newPool / (X + investment*X/preMoney) = P/100
+ *      newPool / (X * (1 + investment/preMoney)) = P/100
+ *      newPool / (X * postMoney/preMoney) = P/100
+ *      (X - S) / (X * postMoney/preMoney) = P/100
+ *      1 - S/X = P/100 * postMoney/preMoney
+ *      S/X = 1 - P*postMoney/(100*preMoney)
+ *      X = S / (1 - P*postMoney/(100*preMoney))
+ *      newPool = X - S = S * (P*postMoney/(100*preMoney)) / (1 - P*postMoney/(100*preMoney))
+ */
+
+function computeCapTable() {
+  // Resolve founding shares
+  const founders = state.shareholders.map(sh => ({ ...sh }));
+  let totalPctMode = founders.filter(s => s.mode === 'pct').reduce((a, s) => a + (s.pct || 0), 0);
+  let totalSharesMode = founders.filter(s => s.mode === 'shares').reduce((a, s) => a + (s.shares || 0), 0);
+
+  // If any are pct-mode, we need a base shares count.
+  // Strategy: shares-mode defines absolute shares; pct-mode holders
+  // get their pct of the combined total. We derive total from shares-mode holders
+  // and pct-mode holders' percentages.
+  // total = sharesTotal / (1 - totalPct/100)
+  let baseTotal;
+  if (totalSharesMode === 0 && totalPctMode > 0) {
+    baseTotal = 10000000; // default 10M if all pct-mode
+  } else if (totalPctMode === 0) {
+    baseTotal = totalSharesMode;
+  } else {
+    baseTotal = totalSharesMode / (1 - totalPctMode / 100);
+  }
+  if (!isFinite(baseTotal) || baseTotal <= 0) baseTotal = 10000000;
+
+  // Assign actual founding shares
+  const sharesMap = {}; // id -> shares at each stage
+  founders.forEach(sh => {
+    sharesMap[sh.id] = sh.mode === 'shares'
+      ? (sh.shares || 0)
+      : Math.round((sh.pct || 0) / 100 * baseTotal);
+  });
+
+  // Round stages
+  const stages = []; // { label, sharesMap snapshot, roundInfo? }
+
+  // Stage 0: Founding
+  stages.push({
+    label: 'Founding',
+    shares: { ...sharesMap },
+    roundInfo: null
+  });
+
+  // Process rounds
+  let currentShares = { ...sharesMap };
+  // Option pool tracker (per option-pool item created in rounds)
+  let nextPoolId = 1;
+
+  state.rounds.forEach((round) => {
+    const preMoney = round.preMoney;
+    const investment = round.investment;
+    const optPoolPct = round.optPoolPct || 0;
+    const postMoney = preMoney + investment;
+
+    // Current total shares before this round
+    let totalBefore = Object.values(currentShares).reduce((a, b) => a + b, 0);
+
+    // Compute new option pool (pre-money expansion)
+    let newPoolShares = 0;
+    let poolId = null;
+    if (optPoolPct > 0) {
+      // newPool = S * (P*postMoney/(100*preMoney)) / (1 - P*postMoney/(100*preMoney))
+      const factor = (optPoolPct / 100) * (postMoney / preMoney);
+      if (factor < 1) {
+        newPoolShares = Math.round(totalBefore * factor / (1 - factor));
+      } else {
+        newPoolShares = Math.round(totalBefore * 0.25); // fallback cap
+      }
+      poolId = 'pool_r_' + round.id;
+    }
+
+    // Pre-money diluted total (after adding option pool)
+    const totalPreExpanded = totalBefore + newPoolShares;
+
+    // Price per share
+    const pps = preMoney / totalPreExpanded;
+
+    // New investor shares
+    const investorShares = Math.round(investment / pps);
+
+    // Post-money total
+    const totalPost = totalPreExpanded + investorShares;
+
+    // Assign new option pool
+    if (poolId && newPoolShares > 0) {
+      currentShares[poolId] = (currentShares[poolId] || 0) + newPoolShares;
+    }
+
+    // Assign investor shares
+    const investorId = 'inv_' + round.id;
+    currentShares[investorId] = investorShares;
+
+    stages.push({
+      label: round.name,
+      shares: { ...currentShares },
+      roundInfo: {
+        roundId: round.id,
+        roundName: round.name,
+        investor: round.investor,
+        preMoney,
+        investment,
+        postMoney,
+        optPoolPct,
+        newPoolShares,
+        poolId,
+        pps,
+        investorShares,
+        totalBefore,
+        totalPreExpanded,
+        totalPost
+      }
+    });
+  });
+
+  return { stages, sharesMap };
+}
+
+// All stakeholders across all stages (including pool/investor entries added by rounds)
+function getAllStakeholderIds(stages) {
+  const seen = new Set();
+  stages.forEach(st => Object.keys(st.shares).forEach(id => seen.add(id)));
+  return Array.from(seen);
+}
+
+function getStakeholderLabel(id) {
+  // Check founders
+  const found = state.shareholders.find(s => s.id === id);
+  if (found) return found.name;
+  // Round investor
+  const invMatch = id.match(/^inv_(.+)$/);
+  if (invMatch) {
+    const r = state.rounds.find(r => r.id === invMatch[1]);
+    return r ? (r.investor || r.name + ' Investor') : 'Investor';
+  }
+  // Option pool
+  const poolMatch = id.match(/^pool_r_(.+)$/);
+  if (poolMatch) {
+    const r = state.rounds.find(r => r.id === poolMatch[1]);
+    return r ? (r.name + ' Option Pool') : 'Option Pool';
+  }
+  return id;
+}
+
+function getStakeholderOrder(id) {
+  // founders first, then pools, then investors (by round order)
+  const foundIdx = state.shareholders.findIndex(s => s.id === id);
+  if (foundIdx >= 0) return foundIdx;
+  const invMatch = id.match(/^inv_(.+)$/);
+  if (invMatch) {
+    const rIdx = state.rounds.findIndex(r => r.id === invMatch[1]);
+    return 1000 + rIdx * 2 + 1;
+  }
+  const poolMatch = id.match(/^pool_r_(.+)$/);
+  if (poolMatch) {
+    const rIdx = state.rounds.findIndex(r => r.id === poolMatch[1]);
+    return 1000 + rIdx * 2;
+  }
+  return 9999;
+}
+
+// ─── RENDER SHAREHOLDERS TABLE ───────────────────────────────────────────────
+function renderShareholders() {
+  const tbody = document.getElementById('shareholders-body');
+  tbody.innerHTML = '';
+  let totalShares = 0, totalPct = 0;
+  state.shareholders.forEach((sh, idx) => {
+    if (sh.mode === 'shares') totalShares += sh.shares || 0;
+    else totalPct += sh.pct || 0;
+    const tr = document.createElement('tr');
+    tr.className = 'border-b border-gray-50';
+    tr.innerHTML = `
+      <td class="py-2 pr-4 font-medium text-gray-800">${escHtml(sh.name)}</td>
+      <td class="py-2 pr-4">
+        <span class="text-xs px-2 py-0.5 rounded-full ${typeColor(sh.type)}">${capitalize(sh.type)}</span>
+      </td>
+      <td class="py-2 pr-4 text-gray-600 text-xs">
+        ${sh.mode === 'shares'
+          ? fmtNum(sh.shares) + ' shares'
+          : fmtPct(sh.pct) + '%'}
+      </td>
+      <td class="py-2">
+        <button onclick="editShareholder(${idx})" class="text-indigo-500 hover:text-indigo-700 text-xs mr-3 transition">Edit</button>
+        <button onclick="removeShareholder(${idx})" class="text-red-400 hover:text-red-600 text-xs transition">Remove</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Totals
+  const allShares = state.shareholders.filter(s => s.mode === 'shares');
+  const allPcts   = state.shareholders.filter(s => s.mode === 'pct');
+  document.getElementById('total-founding-shares').textContent =
+    allShares.length ? fmtNum(allShares.reduce((a,s)=>a+(s.shares||0),0)) + ' shares' : '—';
+  document.getElementById('total-founding-pct').textContent =
+    allPcts.length ? fmtPct(allPcts.reduce((a,s)=>a+(s.pct||0),0)) + '%' : '100%';
+}
+
+// ─── RENDER ROUNDS LIST ──────────────────────────────────────────────────────
+function renderRounds() {
+  const container = document.getElementById('rounds-container');
+  if (state.rounds.length === 0) {
+    container.innerHTML = '<p class="text-sm text-gray-400 italic">No funding rounds yet. Click "+ Add Round" to add one.</p>';
+    return;
+  }
+  container.innerHTML = state.rounds.map((r, idx) => `
+    <div class="flex items-start gap-4 p-4 rounded-lg border border-gray-100 mb-3 bg-gray-50">
+      <div class="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">${idx+1}</div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="font-semibold text-gray-800">${escHtml(r.name)}</span>
+          ${r.investor ? `<span class="text-xs text-gray-400">· ${escHtml(r.investor)}</span>` : ''}
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2 text-xs text-gray-600">
+          <div><span class="text-gray-400">Investment</span><br/><strong>$${fmtMoney(r.investment)}</strong></div>
+          <div><span class="text-gray-400">Pre-money</span><br/><strong>$${fmtMoney(r.preMoney)}</strong></div>
+          <div><span class="text-gray-400">Post-money</span><br/><strong>$${fmtMoney(r.preMoney + r.investment)}</strong></div>
+          <div><span class="text-gray-400">New option pool</span><br/><strong>${r.optPoolPct > 0 ? r.optPoolPct + '%' : 'None'}</strong></div>
+        </div>
+      </div>
+      <div class="flex gap-2 flex-shrink-0">
+        <button onclick="editRound(${idx})" class="text-emerald-600 hover:text-emerald-800 text-xs transition">Edit</button>
+        <button onclick="removeRound(${idx})" class="text-red-400 hover:text-red-600 text-xs transition">Remove</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── RENDER CAP TABLE ────────────────────────────────────────────────────────
+function renderCapTable() {
+  const { stages } = computeCapTable();
+  const allIds = getAllStakeholderIds(stages).sort((a,b) => getStakeholderOrder(a) - getStakeholderOrder(b));
+
+  // HEAD
+  const thead = document.getElementById('cap-table-head');
+  thead.innerHTML = `<tr class="text-left text-xs text-gray-500 border-b border-gray-200">
+    <th class="pb-2 pr-3 font-medium sticky left-0 bg-white">Stakeholder</th>
+    ${stages.map(st => `<th class="pb-2 pr-3 font-medium text-center whitespace-nowrap">${escHtml(st.label)}</th>`).join('')}
+  </tr>`;
+
+  // BODY
+  const tbody = document.getElementById('cap-table-body');
+  tbody.innerHTML = '';
+  allIds.forEach((id, rowIdx) => {
+    const tr = document.createElement('tr');
+    tr.className = 'border-b border-gray-50 text-xs';
+    let cells = `<td class="py-1.5 pr-3 font-medium text-gray-700 sticky left-0 bg-white whitespace-nowrap">${escHtml(getStakeholderLabel(id))}</td>`;
+    stages.forEach(st => {
+      const total = Object.values(st.shares).reduce((a,b)=>a+b,0);
+      const sh = st.shares[id] || 0;
+      const pct = total > 0 ? sh / total * 100 : 0;
+      cells += `<td class="py-1.5 pr-3 text-center whitespace-nowrap">
+        ${sh > 0 ? `<span class="font-semibold text-gray-800">${fmtPct(pct)}%</span><br/><span class="text-gray-400">${fmtNum(sh)}</span>` : '<span class="text-gray-300">—</span>'}
+      </td>`;
+    });
+    tr.innerHTML = cells;
+    tbody.appendChild(tr);
+  });
+
+  // Totals row
+  const tfooter = document.createElement('tr');
+  tfooter.className = 'border-t-2 border-gray-200 text-xs font-bold bg-gray-50';
+  let fcells = `<td class="py-1.5 pr-3 text-gray-700">Total</td>`;
+  stages.forEach(st => {
+    const total = Object.values(st.shares).reduce((a,b)=>a+b,0);
+    fcells += `<td class="py-1.5 pr-3 text-center text-gray-700">${fmtNum(total)}</td>`;
+  });
+  tfooter.innerHTML = fcells;
+  tbody.appendChild(tfooter);
+}
+
+// ─── RENDER CHART ─────────────────────────────────────────────────────────────
+function renderChart() {
+  const { stages } = computeCapTable();
+  const allIds = getAllStakeholderIds(stages).sort((a,b) => getStakeholderOrder(a) - getStakeholderOrder(b));
+  const container = document.getElementById('chart-container');
+
+  if (stages.length === 0) {
+    container.innerHTML = '<p class="text-sm text-gray-400">No data.</p>';
+    return;
+  }
+
+  const BAR_W = 80;
+  const GAP = 36;
+  const H = 320;
+  const TOP = 20;
+  const BOT = 50;
+  const LEFT = 10;
+  const RIGHT = 20;
+  const chartH = H - TOP - BOT;
+  const totalW = LEFT + stages.length * (BAR_W + GAP) + RIGHT;
+
+  // Build pct arrays per stage per stakeholder
+  const data = stages.map(st => {
+    const total = Object.values(st.shares).reduce((a,b)=>a+b,0);
+    return allIds.map(id => total > 0 ? (st.shares[id] || 0) / total * 100 : 0);
+  });
+
+  // SVG
+  let svg = `<svg width="${totalW}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="min-width:${totalW}px">`;
+
+  // Y-axis lines
+  for (let pct = 0; pct <= 100; pct += 25) {
+    const y = TOP + chartH - (pct / 100 * chartH);
+    svg += `<line x1="${LEFT}" y1="${y}" x2="${totalW - RIGHT}" y2="${y}" stroke="#e5e7eb" stroke-width="1"/>`;
+    svg += `<text x="${LEFT}" y="${y - 3}" font-size="9" fill="#9ca3af">${pct}%</text>`;
+  }
+
+  // Bars
+  stages.forEach((st, sIdx) => {
+    const x = LEFT + sIdx * (BAR_W + GAP) + 20;
+    let yOff = TOP + chartH;
+
+    allIds.forEach((id, iIdx) => {
+      const pct = data[sIdx][iIdx];
+      if (pct < 0.1) return;
+      const barH = (pct / 100) * chartH;
+      yOff -= barH;
+      const color = colorFor(iIdx);
+      svg += `<rect x="${x}" y="${yOff}" width="${BAR_W}" height="${barH}" fill="${color}" rx="0">
+        <title>${escHtml(getStakeholderLabel(id))}: ${fmtPct(pct)}%</title>
+      </rect>`;
+      // Label inside bar if tall enough
+      if (barH > 14) {
+        svg += `<text x="${x + BAR_W/2}" y="${yOff + barH/2}" text-anchor="middle" fill="white" font-size="9" font-weight="600" dominant-baseline="middle">${fmtPct(pct)}%</text>`;
+      }
+    });
+
+    // Stage label
+    svg += `<text x="${x + BAR_W/2}" y="${TOP + chartH + 14}" text-anchor="middle" font-size="10" fill="#374151" font-weight="600">${escHtml(st.label)}</text>`;
+  });
+
+  // Legend
+  const legendY = TOP + chartH + 32;
+  let legendX = LEFT + 20;
+  allIds.forEach((id, iIdx) => {
+    const color = colorFor(iIdx);
+    const label = getStakeholderLabel(id);
+    const labelShort = label.length > 18 ? label.slice(0,16)+'…' : label;
+    svg += `<rect x="${legendX}" y="${legendY}" width="10" height="10" fill="${color}" rx="2"/>`;
+    svg += `<text x="${legendX + 13}" y="${legendY + 8}" font-size="9" fill="#6b7280">${escHtml(labelShort)}</text>`;
+    legendX += Math.max(labelShort.length * 5.5 + 18, 80);
+    if (legendX > totalW - 80) legendX = LEFT + 20; // wrap (simple)
+  });
+
+  svg += '</svg>';
+
+  container.innerHTML = svg;
+}
+
+// ─── RENDER ROUND DETAILS ────────────────────────────────────────────────────
+function renderRoundDetails() {
+  const { stages } = computeCapTable();
+  const container = document.getElementById('round-details-container');
+
+  const roundStages = stages.filter(s => s.roundInfo !== null);
+  if (roundStages.length === 0) {
+    container.innerHTML = '<p class="text-sm text-gray-400">No funding rounds yet.</p>';
+    return;
+  }
+
+  container.innerHTML = roundStages.map(st => {
+    const ri = st.roundInfo;
+    return `
+    <div class="mb-5 p-4 rounded-xl border border-gray-100 bg-gray-50">
+      <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+        <span class="text-base">${escHtml(ri.roundName)}</span>
+        <span class="text-xs text-gray-400 font-normal">${ri.investor ? '· ' + escHtml(ri.investor) : ''}</span>
+      </h3>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+        <div class="bg-white rounded-lg p-3 border border-gray-100">
+          <div class="text-xs text-gray-400 mb-1">Pre-money valuation</div>
+          <div class="font-bold text-gray-800">$${fmtMoney(ri.preMoney)}</div>
+        </div>
+        <div class="bg-white rounded-lg p-3 border border-gray-100">
+          <div class="text-xs text-gray-400 mb-1">Investment</div>
+          <div class="font-bold text-emerald-700">$${fmtMoney(ri.investment)}</div>
+        </div>
+        <div class="bg-white rounded-lg p-3 border border-gray-100">
+          <div class="text-xs text-gray-400 mb-1">Post-money valuation</div>
+          <div class="font-bold text-gray-800">$${fmtMoney(ri.postMoney)}</div>
+        </div>
+        <div class="bg-white rounded-lg p-3 border border-gray-100">
+          <div class="text-xs text-gray-400 mb-1">Price per share</div>
+          <div class="font-bold text-indigo-700">$${fmtDecimals(ri.pps)}</div>
+        </div>
+        <div class="bg-white rounded-lg p-3 border border-gray-100">
+          <div class="text-xs text-gray-400 mb-1">New investor shares</div>
+          <div class="font-bold text-gray-800">${fmtNum(ri.investorShares)}</div>
+          <div class="text-xs text-gray-400">${fmtPct(ri.investorShares / ri.totalPost * 100)}% of post</div>
+        </div>
+        ${ri.newPoolShares > 0 ? `
+        <div class="bg-white rounded-lg p-3 border border-gray-100">
+          <div class="text-xs text-gray-400 mb-1">New option pool</div>
+          <div class="font-bold text-amber-600">${fmtNum(ri.newPoolShares)} shares</div>
+          <div class="text-xs text-gray-400">${fmtPct(ri.newPoolShares / ri.totalPost * 100)}% of post</div>
+        </div>` : ''}
+        <div class="bg-white rounded-lg p-3 border border-gray-100">
+          <div class="text-xs text-gray-400 mb-1">Shares before round</div>
+          <div class="font-bold text-gray-700">${fmtNum(ri.totalBefore)}</div>
+        </div>
+        <div class="bg-white rounded-lg p-3 border border-gray-100">
+          <div class="text-xs text-gray-400 mb-1">Pre-money shares (expanded)</div>
+          <div class="font-bold text-gray-700">${fmtNum(ri.totalPreExpanded)}</div>
+        </div>
+        <div class="bg-white rounded-lg p-3 border border-gray-100">
+          <div class="text-xs text-gray-400 mb-1">Post-money shares</div>
+          <div class="font-bold text-gray-700">${fmtNum(ri.totalPost)}</div>
+        </div>
+      </div>
+      <div class="mt-3 text-xs text-gray-400">
+        <strong class="text-gray-500">Math:</strong>
+        PPS = pre-money / pre-expanded shares = $${fmtMoney(ri.preMoney)} / ${fmtNum(ri.totalPreExpanded)} = $${fmtDecimals(ri.pps)} &nbsp;·&nbsp;
+        Investor ownership = investment / post-money = ${fmtPct(ri.investment / ri.postMoney * 100)}%
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── FULL RENDER ─────────────────────────────────────────────────────────────
+function render() {
+  renderShareholders();
+  renderRounds();
+  renderCapTable();
+  renderChart();
+  renderRoundDetails();
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function showTab(tab) {
+  ['table','chart','rounds'].forEach(t => {
+    document.getElementById('panel-' + t).classList.toggle('hidden', t !== tab);
+    const btn = document.getElementById('tab-' + t);
+    if (t === tab) {
+      btn.classList.add('tab-active'); btn.classList.remove('tab-inactive');
+    } else {
+      btn.classList.remove('tab-active'); btn.classList.add('tab-inactive');
+    }
+  });
+}
+
+// ─── SHAREHOLDER MODAL ───────────────────────────────────────────────────────
+function addShareholder() {
+  shEditIdx = null;
+  document.getElementById('sh-modal-title').textContent = 'Add Shareholder';
+  document.getElementById('sh-name').value = '';
+  document.getElementById('sh-type').value = 'founder';
+  document.getElementById('sh-mode').value = 'shares';
+  document.getElementById('sh-shares').value = '';
+  document.getElementById('sh-pct').value = '';
+  toggleShMode();
+  document.getElementById('sh-modal').classList.remove('hidden');
+}
+
+function editShareholder(idx) {
+  shEditIdx = idx;
+  const sh = state.shareholders[idx];
+  document.getElementById('sh-modal-title').textContent = 'Edit Shareholder';
+  document.getElementById('sh-name').value = sh.name;
+  document.getElementById('sh-type').value = sh.type;
+  document.getElementById('sh-mode').value = sh.mode;
+  document.getElementById('sh-shares').value = sh.shares || '';
+  document.getElementById('sh-pct').value = sh.pct || '';
+  toggleShMode();
+  document.getElementById('sh-modal').classList.remove('hidden');
+}
+
+function removeShareholder(idx) {
+  if (!confirm('Remove this shareholder?')) return;
+  state.shareholders.splice(idx, 1);
+  saveState();
+  render();
+}
+
+function saveShareholder() {
+  const name = document.getElementById('sh-name').value.trim();
+  if (!name) { alert('Please enter a name.'); return; }
+  const mode = document.getElementById('sh-mode').value;
+  let shares = parseFloat(document.getElementById('sh-shares').value);
+  let pct = parseFloat(document.getElementById('sh-pct').value);
+  if (mode === 'shares' && (isNaN(shares) || shares < 0)) { alert('Enter a valid number of shares.'); return; }
+  if (mode === 'pct' && (isNaN(pct) || pct <= 0 || pct > 100)) { alert('Enter a valid percentage (0–100).'); return; }
+
+  const sh = {
+    id: shEditIdx !== null ? state.shareholders[shEditIdx].id : uid(),
+    name,
+    type: document.getElementById('sh-type').value,
+    mode,
+    shares: mode === 'shares' ? Math.round(shares) : null,
+    pct: mode === 'pct' ? pct : null
+  };
+
+  if (shEditIdx !== null) {
+    state.shareholders[shEditIdx] = sh;
+  } else {
+    state.shareholders.push(sh);
+  }
+  saveState();
+  closeShModal();
+  render();
+}
+
+function closeShModal() {
+  document.getElementById('sh-modal').classList.add('hidden');
+}
+
+function toggleShMode() {
+  const mode = document.getElementById('sh-mode').value;
+  document.getElementById('sh-shares-field').classList.toggle('hidden', mode !== 'shares');
+  document.getElementById('sh-pct-field').classList.toggle('hidden', mode !== 'pct');
+}
+
+// ─── ROUND MODAL ─────────────────────────────────────────────────────────────
+function addRound() {
+  roundEditIdx = null;
+  document.getElementById('round-modal-title').textContent = 'Add Funding Round';
+  document.getElementById('r-name').value = '';
+  document.getElementById('r-investment').value = '';
+  document.getElementById('r-premoney').value = '';
+  document.getElementById('r-optpool').value = '';
+  document.getElementById('r-investor').value = '';
+  document.getElementById('round-modal').classList.remove('hidden');
+}
+
+function editRound(idx) {
+  roundEditIdx = idx;
+  const r = state.rounds[idx];
+  document.getElementById('round-modal-title').textContent = 'Edit Funding Round';
+  document.getElementById('r-name').value = r.name;
+  document.getElementById('r-investment').value = r.investment;
+  document.getElementById('r-premoney').value = r.preMoney;
+  document.getElementById('r-optpool').value = r.optPoolPct > 0 ? r.optPoolPct : '';
+  document.getElementById('r-investor').value = r.investor || '';
+  document.getElementById('round-modal').classList.remove('hidden');
+}
+
+function removeRound(idx) {
+  if (!confirm('Remove this funding round?')) return;
+  state.rounds.splice(idx, 1);
+  saveState();
+  render();
+}
+
+function saveRound() {
+  const name = document.getElementById('r-name').value.trim();
+  if (!name) { alert('Please enter a round name.'); return; }
+  const investment = parseFloat(document.getElementById('r-investment').value);
+  const preMoney = parseFloat(document.getElementById('r-premoney').value);
+  if (isNaN(investment) || investment <= 0) { alert('Enter a valid investment amount.'); return; }
+  if (isNaN(preMoney) || preMoney <= 0) { alert('Enter a valid pre-money valuation.'); return; }
+  const optRaw = document.getElementById('r-optpool').value.trim();
+  const optPoolPct = optRaw !== '' ? parseFloat(optRaw) : 0;
+  if (optPoolPct < 0 || optPoolPct >= 100) { alert('Option pool % must be between 0 and 99.'); return; }
+  const investor = document.getElementById('r-investor').value.trim();
+
+  const round = {
+    id: roundEditIdx !== null ? state.rounds[roundEditIdx].id : uid(),
+    name, investment, preMoney, optPoolPct, investor
+  };
+
+  if (roundEditIdx !== null) {
+    state.rounds[roundEditIdx] = round;
+  } else {
+    state.rounds.push(round);
+  }
+  saveState();
+  closeRoundModal();
+  render();
+}
+
+function closeRoundModal() {
+  document.getElementById('round-modal').classList.add('hidden');
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtNum(n) {
+  if (n == null || isNaN(n)) return '0';
+  return Math.round(n).toLocaleString('en-US');
+}
+
+function fmtPct(n) {
+  if (n == null || isNaN(n)) return '0.0';
+  return n.toFixed(1);
+}
+
+function fmtMoney(n) {
+  if (n == null || isNaN(n)) return '0';
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+  return n.toFixed(0);
+}
+
+function fmtDecimals(n) {
+  if (n == null || isNaN(n)) return '0.00';
+  if (n < 0.01) return n.toFixed(6);
+  if (n < 1) return n.toFixed(4);
+  if (n < 100) return n.toFixed(2);
+  return n.toFixed(2);
+}
+
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
+function typeColor(type) {
+  const map = {
+    founder: 'bg-indigo-100 text-indigo-700',
+    employee: 'bg-emerald-100 text-emerald-700',
+    investor: 'bg-amber-100 text-amber-700',
+    advisor: 'bg-purple-100 text-purple-700',
+    other: 'bg-gray-100 text-gray-600'
+  };
+  return map[type] || map.other;
+}
+
+// Close modals on backdrop click
+document.getElementById('sh-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeShModal();
+});
+document.getElementById('round-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeRoundModal();
+});
+
+// ─── BOOT ────────────────────────────────────────────────────────────────────
+loadState();
+render();
+</script>
+</body>
+</html>

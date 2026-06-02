@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<!--
+  Link in Bio — Halison App Studio example
+
+  Build a Linktree-style bio page: profile, accent theme, and reorderable link
+  buttons, with an edit/preview toggle. Saves to your browser.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Link in Bio Builder</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom scrollbar for link list */
+    .link-list::-webkit-scrollbar { width: 6px; }
+    .link-list::-webkit-scrollbar-track { background: transparent; }
+    .link-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+
+    /* Smooth transition for preview page */
+    #preview-page { transition: background 0.4s ease; }
+
+    /* Emoji picker grid */
+    .emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+    .emoji-btn { font-size: 1.25rem; cursor: pointer; padding: 4px; border-radius: 4px; text-align: center; }
+    .emoji-btn:hover { background: #f1f5f9; }
+
+    /* Drag handle cursor */
+    .drag-handle { cursor: grab; }
+    .drag-handle:active { cursor: grabbing; }
+
+    /* Link button hover effect in preview */
+    .preview-link-btn { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .preview-link-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+
+    /* Avatar shimmer for initials */
+    .avatar-initials { user-select: none; }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen font-sans">
+
+<!-- ========== TOP NAV ========== -->
+<nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+  <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="text-xl">🔗</span>
+      <span class="font-bold text-slate-800 text-sm tracking-wide">Link in Bio Builder</span>
+    </div>
+    <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+      <button id="btn-edit-mode"
+        class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
+        onclick="setMode('edit')">
+        ✏️ Edit
+      </button>
+      <button id="btn-preview-mode"
+        class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
+        onclick="setMode('preview')">
+        👁 Preview
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- ========== EDIT MODE ========== -->
+<div id="edit-page" class="max-w-5xl mx-auto px-4 py-8 hidden">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- LEFT: Profile editor -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-5">
+      <h2 class="font-bold text-slate-700 text-base uppercase tracking-widest text-xs">Profile</h2>
+
+      <!-- Avatar section -->
+      <div class="flex items-center gap-4">
+        <div id="edit-avatar-display"
+          class="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold avatar-initials select-none cursor-pointer border-4 border-white shadow-md"
+          title="Click to change avatar"
+          onclick="openAvatarPicker()">
+        </div>
+        <div class="flex-1">
+          <p class="text-xs text-slate-500 mb-1">Avatar (initials or emoji)</p>
+          <button onclick="openAvatarPicker()"
+            class="text-sm px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-600 transition-colors">
+            Change Avatar
+          </button>
+        </div>
+      </div>
+
+      <!-- Display name -->
+      <div>
+        <label class="block text-xs font-medium text-slate-500 mb-1">Display Name</label>
+        <input id="field-name" type="text" maxlength="50"
+          class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 transition"
+          oninput="onProfileChange()" />
+      </div>
+
+      <!-- Handle -->
+      <div>
+        <label class="block text-xs font-medium text-slate-500 mb-1">Handle / Username</label>
+        <div class="flex items-center border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-300 transition">
+          <span class="px-3 text-slate-400 text-sm bg-slate-50 self-stretch flex items-center border-r border-slate-200">@</span>
+          <input id="field-handle" type="text" maxlength="40"
+            class="flex-1 px-3 py-2 text-sm focus:outline-none bg-white"
+            oninput="onProfileChange()" />
+        </div>
+      </div>
+
+      <!-- Bio -->
+      <div>
+        <label class="block text-xs font-medium text-slate-500 mb-1">Short Bio</label>
+        <textarea id="field-bio" rows="3" maxlength="160"
+          class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300 transition"
+          oninput="onProfileChange()"></textarea>
+        <p class="text-xs text-slate-400 text-right mt-0.5"><span id="bio-char-count">0</span>/160</p>
+      </div>
+
+      <!-- Accent color -->
+      <div>
+        <label class="block text-xs font-medium text-slate-500 mb-2">Accent Color</label>
+        <div class="flex flex-wrap gap-2" id="color-swatches"></div>
+      </div>
+
+      <!-- Background theme -->
+      <div>
+        <label class="block text-xs font-medium text-slate-500 mb-2">Background Theme</label>
+        <div class="flex flex-wrap gap-2" id="bg-swatches"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Links editor -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-bold text-slate-700 text-base uppercase tracking-widest text-xs">Links</h2>
+        <button onclick="addLink()"
+          class="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors font-medium shadow-sm">
+          <span class="text-base leading-none">+</span> Add Link
+        </button>
+      </div>
+
+      <div id="link-list" class="space-y-3 overflow-y-auto link-list max-h-[520px] pr-1">
+        <!-- Links rendered here -->
+      </div>
+
+      <p id="no-links-msg" class="text-center text-slate-400 text-sm py-6 hidden">No links yet. Add one above!</p>
+    </div>
+  </div>
+</div>
+
+<!-- ========== PREVIEW MODE ========== -->
+<div id="preview-page" class="min-h-screen hidden">
+  <div class="max-w-sm mx-auto px-4 py-12 flex flex-col items-center gap-5">
+    <!-- Avatar -->
+    <div id="preview-avatar"
+      class="w-24 h-24 rounded-full flex items-center justify-center text-4xl font-bold avatar-initials border-4 border-white shadow-lg">
+    </div>
+
+    <!-- Name + handle + bio -->
+    <div class="text-center">
+      <h1 id="preview-name" class="text-2xl font-bold text-white drop-shadow"></h1>
+      <p id="preview-handle" class="text-sm font-medium opacity-80 text-white mt-0.5"></p>
+      <p id="preview-bio" class="text-sm text-white opacity-90 mt-2 leading-relaxed max-w-xs"></p>
+    </div>
+
+    <!-- Links -->
+    <div id="preview-links" class="w-full space-y-3 mt-2"></div>
+  </div>
+</div>
+
+<!-- ========== AVATAR PICKER MODAL ========== -->
+<div id="avatar-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden" onclick="closeAvatarModal(event)">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-slate-700">Choose Avatar</h3>
+      <button onclick="closeAvatarModal()" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+
+    <!-- Initials option -->
+    <div class="mb-4">
+      <label class="block text-xs font-medium text-slate-500 mb-1">Use initials (auto-generated from name)</label>
+      <button onclick="selectInitialsAvatar()"
+        id="btn-use-initials"
+        class="w-full text-sm py-2 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-600 transition-colors">
+        Use Initials
+      </button>
+    </div>
+
+    <div class="text-xs font-medium text-slate-500 mb-2">Or pick an emoji</div>
+    <div class="emoji-grid mb-4 max-h-48 overflow-y-auto">
+      <!-- Emoji buttons rendered by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ========== LINK EMOJI PICKER MODAL ========== -->
+<div id="link-emoji-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden" onclick="closeLinkEmojiModal(event)">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-bold text-slate-700">Pick Link Icon</h3>
+      <button onclick="closeLinkEmojiModal()" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+    <div class="mb-3">
+      <button id="btn-no-icon" onclick="selectLinkEmoji(null)"
+        class="text-sm px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-500 transition-colors">
+        No icon
+      </button>
+    </div>
+    <div class="emoji-grid max-h-56 overflow-y-auto" id="link-emoji-grid">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA & DEFAULTS
+// ============================================================
+const STORAGE_KEY = 'lib_linkinbio_v1';
+
+const ACCENT_COLORS = [
+  { name: 'Indigo',  value: '#6366f1', text: '#ffffff' },
+  { name: 'Violet',  value: '#8b5cf6', text: '#ffffff' },
+  { name: 'Rose',    value: '#f43f5e', text: '#ffffff' },
+  { name: 'Amber',   value: '#f59e0b', text: '#ffffff' },
+  { name: 'Emerald', value: '#10b981', text: '#ffffff' },
+  { name: 'Sky',     value: '#0ea5e9', text: '#ffffff' },
+  { name: 'Fuchsia', value: '#d946ef', text: '#ffffff' },
+  { name: 'Slate',   value: '#475569', text: '#ffffff' },
+];
+
+const BG_THEMES = [
+  { name: 'Deep Violet', value: 'linear-gradient(135deg, #1e1b4b 0%, #4c1d95 100%)', preview: '#3b0764' },
+  { name: 'Sunset',      value: 'linear-gradient(135deg, #f97316 0%, #db2777 100%)', preview: '#be185d' },
+  { name: 'Ocean',       value: 'linear-gradient(135deg, #0369a1 0%, #0f766e 100%)', preview: '#065f46' },
+  { name: 'Midnight',    value: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', preview: '#0f172a' },
+  { name: 'Forest',      value: 'linear-gradient(135deg, #14532d 0%, #166534 100%)', preview: '#14532d' },
+  { name: 'Rose Gold',   value: 'linear-gradient(135deg, #9d174d 0%, #c2410c 100%)', preview: '#9d174d' },
+  { name: 'Sky Bright',  value: 'linear-gradient(135deg, #0284c7 0%, #7c3aed 100%)', preview: '#0284c7' },
+  { name: 'Charcoal',    value: 'linear-gradient(135deg, #374151 0%, #111827 100%)', preview: '#374151' },
+];
+
+const AVATAR_EMOJIS = [
+  '😊','😎','🤩','🥳','🎨','🎤','📸','✍️','🎧','🎮','🌸','🌊',
+  '🦋','🦁','🐺','🦊','🐙','🌙','⭐','🔥','💎','👑','🎭','🎬',
+  '🌈','🍀','🌺','🧠','💻','📱','🎸','🎵','🎺','🥁','🎻','🪗',
+  '🏄','🧗','🤸','🏋️','⚽','🎾','🏆','🎯','🎲','🃏','🪄','✨',
+];
+
+const LINK_EMOJIS = [
+  '🔗','🌐','📺','📸','🎵','🎥','📝','💼','🛒','📧','💬','📱',
+  '🎮','📚','🎨','✍️','🎤','🎧','🏠','📍','🌟','💡','🔔','📣',
+  '🎁','💰','🤝','📊','🗓️','🔖','🏷️','🪄','⚡','🔥','💎','👑',
+  '🌈','🍕','☕','🍷','🎂','🧁','🎯','🚀','✈️','🗺️','📷','🎬',
+];
+
+const DEFAULT_DATA = {
+  name: 'Mia Hartwell',
+  handle: 'miahartwell',
+  bio: 'Lifestyle & travel creator ✈️ | Sharing my adventures, honest reviews, and daily vibes. DMs open for collabs!',
+  avatarType: 'emoji',
+  avatarEmoji: '🌸',
+  accentColor: ACCENT_COLORS[0].value,
+  accentText: ACCENT_COLORS[0].text,
+  bgTheme: BG_THEMES[0].value,
+  links: [
+    { id: 'l1', title: 'My YouTube Channel', url: 'https://youtube.com', emoji: '🎥' },
+    { id: 'l2', title: 'Instagram', url: 'https://instagram.com', emoji: '📸' },
+    { id: 'l3', title: 'Latest Blog Post: Tokyo on a Budget', url: 'https://example.com/blog', emoji: '✍️' },
+    { id: 'l4', title: 'Shop My Favourites', url: 'https://example.com/shop', emoji: '🛒' },
+    { id: 'l5', title: 'Newsletter — Weekly Wanderlust', url: 'https://example.com/newsletter', emoji: '📧' },
+    { id: 'l6', title: 'TikTok', url: 'https://tiktok.com', emoji: '🎵' },
+  ]
+};
+
+// ============================================================
+// STATE
+// ============================================================
+let state = null;
+let currentMode = 'edit';
+let linkEmojiTargetId = null;
+
+// ============================================================
+// STORAGE
+// ============================================================
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      state = JSON.parse(raw);
+      // Ensure required fields exist (migration safety)
+      state.links = state.links || [];
+      state.accentColor = state.accentColor || ACCENT_COLORS[0].value;
+      state.accentText = state.accentText || ACCENT_COLORS[0].text;
+      state.bgTheme = state.bgTheme || BG_THEMES[0].value;
+    } else {
+      state = JSON.parse(JSON.stringify(DEFAULT_DATA));
+    }
+  } catch (e) {
+    state = JSON.parse(JSON.stringify(DEFAULT_DATA));
+  }
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) { /* storage full or private mode */ }
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function generateId() {
+  return 'l' + Math.random().toString(36).slice(2, 9);
+}
+
+function getInitials(name) {
+  if (!name || !name.trim()) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function getAvatarContent() {
+  if (state.avatarType === 'emoji' && state.avatarEmoji) return state.avatarEmoji;
+  return getInitials(state.name);
+}
+
+function lightenHex(hex, amount) {
+  // Simple lightening for avatar bg when using initials
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.min(255, (num >> 16) + amount);
+  const g = Math.min(255, ((num >> 8) & 0xff) + amount);
+  const b = Math.min(255, (num & 0xff) + amount);
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+function sanitizeUrl(url) {
+  if (!url) return '#';
+  const trimmed = url.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+  return 'https://' + trimmed;
+}
+
+// ============================================================
+// RENDER: COLOR / THEME SWATCHES
+// ============================================================
+function renderSwatches() {
+  const container = document.getElementById('color-swatches');
+  container.innerHTML = '';
+  ACCENT_COLORS.forEach(c => {
+    const btn = document.createElement('button');
+    btn.title = c.name;
+    btn.className = 'w-8 h-8 rounded-full border-2 transition-all hover:scale-110 focus:outline-none';
+    btn.style.backgroundColor = c.value;
+    btn.style.borderColor = state.accentColor === c.value ? '#1e293b' : 'transparent';
+    if (state.accentColor === c.value) btn.classList.add('ring-2', 'ring-offset-1', 'ring-slate-700');
+    btn.onclick = () => {
+      state.accentColor = c.value;
+      state.accentText = c.text;
+      saveState();
+      renderSwatches();
+      renderPreviewLinks();
+      updateEditAvatar();
+    };
+    container.appendChild(btn);
+  });
+
+  const bgContainer = document.getElementById('bg-swatches');
+  bgContainer.innerHTML = '';
+  BG_THEMES.forEach(t => {
+    const btn = document.createElement('button');
+    btn.title = t.name;
+    btn.className = 'w-8 h-8 rounded-full border-2 transition-all hover:scale-110 focus:outline-none';
+    btn.style.backgroundColor = t.preview;
+    btn.style.borderColor = state.bgTheme === t.value ? '#1e293b' : 'transparent';
+    if (state.bgTheme === t.value) btn.classList.add('ring-2', 'ring-offset-1', 'ring-slate-700');
+    btn.onclick = () => {
+      state.bgTheme = t.value;
+      saveState();
+      renderSwatches();
+      renderPreviewPage();
+    };
+    bgContainer.appendChild(btn);
+  });
+}
+
+// ============================================================
+// RENDER: EDIT AVATAR
+// ============================================================
+function updateEditAvatar() {
+  const el = document.getElementById('edit-avatar-display');
+  el.textContent = getAvatarContent();
+  el.style.backgroundColor = lightenHex(state.accentColor, 120);
+  el.style.color = state.accentColor;
+}
+
+// ============================================================
+// RENDER: LINKS LIST (EDIT)
+// ============================================================
+function renderLinkList() {
+  const container = document.getElementById('link-list');
+  const noMsg = document.getElementById('no-links-msg');
+  container.innerHTML = '';
+
+  if (state.links.length === 0) {
+    noMsg.classList.remove('hidden');
+    return;
+  }
+  noMsg.classList.add('hidden');
+
+  state.links.forEach((link, idx) => {
+    const div = document.createElement('div');
+    div.className = 'flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-3';
+    div.dataset.id = link.id;
+
+    // Up/down buttons
+    const moveDiv = document.createElement('div');
+    moveDiv.className = 'flex flex-col gap-0.5';
+    const upBtn = document.createElement('button');
+    upBtn.textContent = '▲';
+    upBtn.className = 'text-slate-400 hover:text-slate-700 text-xs w-5 h-5 flex items-center justify-center rounded transition-colors disabled:opacity-20';
+    upBtn.disabled = idx === 0;
+    upBtn.title = 'Move up';
+    upBtn.onclick = () => moveLink(link.id, -1);
+    const downBtn = document.createElement('button');
+    downBtn.textContent = '▼';
+    downBtn.className = 'text-slate-400 hover:text-slate-700 text-xs w-5 h-5 flex items-center justify-center rounded transition-colors disabled:opacity-20';
+    downBtn.disabled = idx === state.links.length - 1;
+    downBtn.title = 'Move down';
+    downBtn.onclick = () => moveLink(link.id, 1);
+    moveDiv.appendChild(upBtn);
+    moveDiv.appendChild(downBtn);
+
+    // Emoji button
+    const emojiBtn = document.createElement('button');
+    emojiBtn.className = 'w-8 h-8 text-lg flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-100 transition-colors flex-shrink-0';
+    emojiBtn.textContent = link.emoji || '🔗';
+    emojiBtn.title = 'Change icon';
+    emojiBtn.onclick = () => openLinkEmojiPicker(link.id);
+
+    // Fields container
+    const fieldsDiv = document.createElement('div');
+    fieldsDiv.className = 'flex-1 flex flex-col gap-1.5 min-w-0';
+
+    const titleInput = document.createElement('input');
+    titleInput.type = 'text';
+    titleInput.value = link.title;
+    titleInput.placeholder = 'Link title';
+    titleInput.maxLength = 80;
+    titleInput.className = 'w-full text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition bg-white';
+    titleInput.oninput = (e) => { link.title = e.target.value; saveState(); };
+
+    const urlInput = document.createElement('input');
+    urlInput.type = 'url';
+    urlInput.value = link.url;
+    urlInput.placeholder = 'https://example.com';
+    urlInput.maxLength = 500;
+    urlInput.className = 'w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition bg-white text-slate-500';
+    urlInput.oninput = (e) => { link.url = e.target.value; saveState(); };
+
+    fieldsDiv.appendChild(titleInput);
+    fieldsDiv.appendChild(urlInput);
+
+    // Delete button
+    const delBtn = document.createElement('button');
+    delBtn.innerHTML = '&times;';
+    delBtn.className = 'w-7 h-7 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg text-lg transition-colors flex-shrink-0';
+    delBtn.title = 'Remove link';
+    delBtn.onclick = () => removeLink(link.id);
+
+    div.appendChild(moveDiv);
+    div.appendChild(emojiBtn);
+    div.appendChild(fieldsDiv);
+    div.appendChild(delBtn);
+    container.appendChild(div);
+  });
+}
+
+// ============================================================
+// LINK ACTIONS
+// ============================================================
+function addLink() {
+  const newLink = { id: generateId(), title: 'New Link', url: 'https://', emoji: '🔗' };
+  state.links.push(newLink);
+  saveState();
+  renderLinkList();
+  // Scroll to bottom of list
+  const container = document.getElementById('link-list');
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeLink(id) {
+  state.links = state.links.filter(l => l.id !== id);
+  saveState();
+  renderLinkList();
+}
+
+function moveLink(id, direction) {
+  const idx = state.links.findIndex(l => l.id === id);
+  if (idx < 0) return;
+  const newIdx = idx + direction;
+  if (newIdx < 0 || newIdx >= state.links.length) return;
+  const temp = state.links[idx];
+  state.links[idx] = state.links[newIdx];
+  state.links[newIdx] = temp;
+  saveState();
+  renderLinkList();
+}
+
+// ============================================================
+// PROFILE CHANGE
+// ============================================================
+function onProfileChange() {
+  state.name = document.getElementById('field-name').value;
+  state.handle = document.getElementById('field-handle').value;
+  state.bio = document.getElementById('field-bio').value;
+  document.getElementById('bio-char-count').textContent = state.bio.length;
+  updateEditAvatar();
+  saveState();
+}
+
+function populateEditFields() {
+  document.getElementById('field-name').value = state.name;
+  document.getElementById('field-handle').value = state.handle;
+  document.getElementById('field-bio').value = state.bio;
+  document.getElementById('bio-char-count').textContent = state.bio.length;
+}
+
+// ============================================================
+// RENDER: PREVIEW PAGE
+// ============================================================
+function renderPreviewPage() {
+  const page = document.getElementById('preview-page');
+  page.style.background = state.bgTheme;
+
+  document.getElementById('preview-avatar').textContent = getAvatarContent();
+  document.getElementById('preview-avatar').style.backgroundColor = lightenHex(state.accentColor, 80);
+  document.getElementById('preview-avatar').style.color = state.accentColor;
+
+  document.getElementById('preview-name').textContent = state.name || 'Your Name';
+  document.getElementById('preview-handle').textContent = state.handle ? '@' + state.handle : '';
+  document.getElementById('preview-bio').textContent = state.bio;
+
+  renderPreviewLinks();
+}
+
+function renderPreviewLinks() {
+  const container = document.getElementById('preview-links');
+  container.innerHTML = '';
+
+  state.links.forEach(link => {
+    const a = document.createElement('a');
+    a.href = sanitizeUrl(link.url);
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.className = 'preview-link-btn flex items-center gap-3 w-full px-5 py-3.5 rounded-2xl font-semibold text-sm text-center shadow-md cursor-pointer select-none';
+    a.style.backgroundColor = state.accentColor;
+    a.style.color = state.accentText || '#ffffff';
+
+    if (link.emoji) {
+      const span = document.createElement('span');
+      span.textContent = link.emoji;
+      span.className = 'text-lg flex-shrink-0';
+      a.appendChild(span);
+    }
+
+    const titleSpan = document.createElement('span');
+    titleSpan.textContent = link.title || 'Untitled Link';
+    titleSpan.className = 'flex-1 text-center';
+    a.appendChild(titleSpan);
+
+    if (link.emoji) {
+      // Spacer to keep title centered
+      const spacer = document.createElement('span');
+      spacer.className = 'text-lg opacity-0 flex-shrink-0';
+      spacer.textContent = link.emoji;
+      a.appendChild(spacer);
+    }
+
+    container.appendChild(a);
+  });
+
+  if (state.links.length === 0) {
+    const p = document.createElement('p');
+    p.className = 'text-white/60 text-sm text-center';
+    p.textContent = 'No links added yet.';
+    container.appendChild(p);
+  }
+}
+
+// ============================================================
+// AVATAR PICKER MODAL
+// ============================================================
+function openAvatarPicker() {
+  const grid = document.querySelector('#avatar-modal .emoji-grid');
+  grid.innerHTML = '';
+  AVATAR_EMOJIS.forEach(em => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-btn';
+    btn.textContent = em;
+    btn.onclick = () => selectEmojiAvatar(em);
+    grid.appendChild(btn);
+  });
+  document.getElementById('avatar-modal').classList.remove('hidden');
+}
+
+function closeAvatarModal(event) {
+  if (!event || event.target === document.getElementById('avatar-modal')) {
+    document.getElementById('avatar-modal').classList.add('hidden');
+  }
+}
+
+function selectEmojiAvatar(emoji) {
+  state.avatarType = 'emoji';
+  state.avatarEmoji = emoji;
+  saveState();
+  updateEditAvatar();
+  document.getElementById('avatar-modal').classList.add('hidden');
+}
+
+function selectInitialsAvatar() {
+  state.avatarType = 'initials';
+  state.avatarEmoji = null;
+  saveState();
+  updateEditAvatar();
+  document.getElementById('avatar-modal').classList.add('hidden');
+}
+
+// ============================================================
+// LINK EMOJI PICKER MODAL
+// ============================================================
+function openLinkEmojiPicker(linkId) {
+  linkEmojiTargetId = linkId;
+  const grid = document.getElementById('link-emoji-grid');
+  grid.innerHTML = '';
+  LINK_EMOJIS.forEach(em => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-btn';
+    btn.textContent = em;
+    btn.onclick = () => selectLinkEmoji(em);
+    grid.appendChild(btn);
+  });
+  document.getElementById('link-emoji-modal').classList.remove('hidden');
+}
+
+function closeLinkEmojiModal(event) {
+  if (!event || event.target === document.getElementById('link-emoji-modal')) {
+    document.getElementById('link-emoji-modal').classList.add('hidden');
+    linkEmojiTargetId = null;
+  }
+}
+
+function selectLinkEmoji(emoji) {
+  if (linkEmojiTargetId) {
+    const link = state.links.find(l => l.id === linkEmojiTargetId);
+    if (link) {
+      link.emoji = emoji;
+      saveState();
+      renderLinkList();
+    }
+  }
+  document.getElementById('link-emoji-modal').classList.add('hidden');
+  linkEmojiTargetId = null;
+}
+
+// ============================================================
+// MODE TOGGLE
+// ============================================================
+function setMode(mode) {
+  currentMode = mode;
+  const editPage = document.getElementById('edit-page');
+  const previewPage = document.getElementById('preview-page');
+  const btnEdit = document.getElementById('btn-edit-mode');
+  const btnPreview = document.getElementById('btn-preview-mode');
+
+  if (mode === 'edit') {
+    editPage.classList.remove('hidden');
+    previewPage.classList.add('hidden');
+    btnEdit.className = 'px-4 py-1.5 rounded-lg text-sm font-medium transition-all bg-white text-slate-800 shadow-sm';
+    btnPreview.className = 'px-4 py-1.5 rounded-lg text-sm font-medium transition-all text-slate-500 hover:text-slate-700';
+  } else {
+    editPage.classList.add('hidden');
+    previewPage.classList.remove('hidden');
+    renderPreviewPage();
+    btnPreview.className = 'px-4 py-1.5 rounded-lg text-sm font-medium transition-all bg-white text-slate-800 shadow-sm';
+    btnEdit.className = 'px-4 py-1.5 rounded-lg text-sm font-medium transition-all text-slate-500 hover:text-slate-700';
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  loadState();
+  populateEditFields();
+  renderSwatches();
+  updateEditAvatar();
+  renderLinkList();
+  setMode('edit');
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

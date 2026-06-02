@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<!--
+  Chart Maker — Halison App Studio example
+
+  Paste data or fill a table, pick bar/line/donut, set a title and color, and get
+  a clean hand-rolled SVG chart. Saves to your browser; capture with PNG export.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chart Maker — App Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root {
+      --accent: #6366f1;
+      --bg-page: #0f0f1a;
+      --bg-card: #1a1a2e;
+      --bg-input: #12121e;
+      --border: #2a2a45;
+      --text-primary: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+    }
+
+    body {
+      background: var(--bg-page);
+      color: var(--text-primary);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+    }
+
+    input, textarea, select {
+      background: var(--bg-input);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    /* Tab buttons */
+    .tab-btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      background: transparent;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .tab-btn:not(.active):hover {
+      border-color: var(--border);
+      color: var(--text-primary);
+    }
+
+    /* Chart type selector */
+    .chart-type-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .chart-type-btn.active {
+      border-color: var(--accent);
+      color: var(--text-primary);
+      background: rgba(99,102,241,0.15);
+    }
+    .chart-type-btn:hover:not(.active) {
+      border-color: #44446a;
+      color: var(--text-primary);
+    }
+
+    /* Table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .data-table th {
+      text-align: left;
+      color: var(--text-dim);
+      font-weight: 500;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table td {
+      padding: 3px 4px;
+    }
+    .data-table input {
+      width: 100%;
+      padding: 5px 8px;
+      font-size: 13px;
+    }
+
+    .btn-icon {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text-muted);
+      font-size: 16px;
+      line-height: 1;
+      transition: all 0.15s;
+    }
+    .btn-icon:hover { color: var(--text-primary); border-color: #44446a; }
+    .btn-icon.danger:hover { color: #f87171; border-color: #f87171; }
+
+    .btn-add {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px dashed var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .btn-add:hover { color: var(--text-primary); border-color: #44446a; }
+
+    /* SVG chart */
+    #chart-svg text { font-family: 'Segoe UI', system-ui, sans-serif; }
+
+    /* Paste area */
+    #paste-area {
+      width: 100%;
+      resize: vertical;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      line-height: 1.6;
+      min-height: 160px;
+    }
+
+    /* Color swatch strip */
+    .color-swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.1s, transform 0.1s;
+      flex-shrink: 0;
+    }
+    .color-swatch.selected {
+      border-color: #fff;
+      transform: scale(1.2);
+    }
+
+    /* Error / empty state */
+    .state-msg {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--text-dim);
+      font-size: 14px;
+      height: 100%;
+      min-height: 200px;
+    }
+    .state-msg svg { opacity: 0.3; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #2a2a45; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="max-w-6xl mx-auto px-4 py-6">
+
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-white tracking-tight">Chart Maker</h1>
+    <p class="text-sm mt-1" style="color:var(--text-muted)">Paste data or edit the table — get a clean SVG chart instantly.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- LEFT PANEL: controls -->
+    <div class="flex flex-col gap-4">
+
+      <!-- Title + color -->
+      <div class="card p-4 flex flex-col gap-3">
+        <div>
+          <label class="block text-xs font-semibold mb-1" style="color:var(--text-muted)">CHART TITLE</label>
+          <input id="chart-title" type="text" placeholder="Monthly Revenue 2024"
+            class="w-full px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-2" style="color:var(--text-muted)">ACCENT COLOR</label>
+          <div class="flex items-center gap-3 flex-wrap">
+            <div id="swatches" class="flex gap-2 flex-wrap"></div>
+            <input id="custom-color" type="color" value="#6366f1"
+              title="Custom color"
+              style="width:28px;height:28px;border:none;background:none;cursor:pointer;padding:0;" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart type -->
+      <div class="card p-4">
+        <label class="block text-xs font-semibold mb-3" style="color:var(--text-muted)">CHART TYPE</label>
+        <div class="flex gap-3" id="chart-type-btns">
+
+          <button class="chart-type-btn active" data-type="bar">
+            <svg width="32" height="24" viewBox="0 0 32 24" fill="currentColor">
+              <rect x="1" y="10" width="6" height="14" rx="1" opacity=".9"/>
+              <rect x="9" y="4" width="6" height="20" rx="1" opacity=".9"/>
+              <rect x="17" y="7" width="6" height="17" rx="1" opacity=".9"/>
+              <rect x="25" y="1" width="6" height="23" rx="1" opacity=".9"/>
+            </svg>
+            Bar
+          </button>
+
+          <button class="chart-type-btn" data-type="line">
+            <svg width="32" height="24" viewBox="0 0 32 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1,20 9,12 17,15 25,4 31,7"/>
+              <circle cx="1" cy="20" r="2" fill="currentColor" stroke="none"/>
+              <circle cx="9" cy="12" r="2" fill="currentColor" stroke="none"/>
+              <circle cx="17" cy="15" r="2" fill="currentColor" stroke="none"/>
+              <circle cx="25" cy="4" r="2" fill="currentColor" stroke="none"/>
+              <circle cx="31" cy="7" r="2" fill="currentColor" stroke="none"/>
+            </svg>
+            Line
+          </button>
+
+          <button class="chart-type-btn" data-type="donut">
+            <svg width="32" height="24" viewBox="0 0 32 24" fill="none">
+              <circle cx="16" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity=".3"/>
+              <path d="M16 2 A10 10 0 0 1 26 12" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+              <path d="M26 12 A10 10 0 0 1 10 21.66" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity=".7"/>
+              <circle cx="16" cy="12" r="5" fill="#1a1a2e"/>
+            </svg>
+            Donut
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Data input: tabs -->
+      <div class="card p-4 flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-semibold" style="color:var(--text-muted)">DATA</label>
+          <div class="flex gap-1">
+            <button class="tab-btn active" id="tab-table" onclick="switchTab('table')">Table</button>
+            <button class="tab-btn" id="tab-paste" onclick="switchTab('paste')">Paste CSV</button>
+          </div>
+        </div>
+
+        <!-- Table view -->
+        <div id="panel-table">
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width:55%">Label</th>
+                  <th style="width:35%">Value</th>
+                  <th style="width:10%"></th>
+                </tr>
+              </thead>
+              <tbody id="table-body"></tbody>
+            </table>
+          </div>
+          <button class="btn-add mt-3" onclick="addRow()">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Add row
+          </button>
+        </div>
+
+        <!-- Paste view -->
+        <div id="panel-paste" style="display:none;">
+          <textarea id="paste-area" placeholder="Jan, 42000&#10;Feb, 51000&#10;Mar, 47800&#10;&#10;Also supports: &quot;Label: value&quot; or tab-separated columns."></textarea>
+          <p class="text-xs mt-2" style="color:var(--text-dim)">One row per line. Comma, tab, colon, or space-separated. Header rows are ignored.</p>
+          <div id="paste-error" class="text-xs mt-1" style="color:#f87171;display:none;"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT PANEL: chart output -->
+    <div class="card p-5 flex flex-col" style="min-height:480px;">
+      <div id="chart-title-display" class="text-base font-semibold mb-4 text-center" style="color:var(--text-primary);min-height:24px;"></div>
+      <div id="chart-container" class="flex-1 flex items-center justify-center" style="min-height:360px;">
+        <!-- SVG rendered here -->
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+
+const SAMPLE = [
+  { label: 'January',   value: 42000 },
+  { label: 'February',  value: 51300 },
+  { label: 'March',     value: 47800 },
+  { label: 'April',     value: 56200 },
+  { label: 'May',       value: 63100 },
+  { label: 'June',      value: 71500 },
+  { label: 'July',      value: 68900 },
+  { label: 'August',    value: 74200 },
+];
+
+const SWATCHES = [
+  '#6366f1', // indigo
+  '#8b5cf6', // violet
+  '#ec4899', // pink
+  '#f43f5e', // rose
+  '#f97316', // orange
+  '#eab308', // yellow
+  '#22c55e', // green
+  '#06b6d4', // cyan
+  '#3b82f6', // blue
+];
+
+let state = {
+  title: 'Monthly Revenue 2024',
+  chartType: 'bar',
+  accent: '#6366f1',
+  rows: SAMPLE.map(r => ({ ...r })),
+  activeTab: 'table',
+};
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem('chart-maker-state');
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (saved.title !== undefined) state.title = saved.title;
+    if (saved.chartType) state.chartType = saved.chartType;
+    if (saved.accent) state.accent = saved.accent;
+    if (Array.isArray(saved.rows) && saved.rows.length > 0) state.rows = saved.rows;
+  } catch(e) {}
+}
+
+function saveToStorage() {
+  try {
+    localStorage.setItem('chart-maker-state', JSON.stringify({
+      title: state.title,
+      chartType: state.chartType,
+      accent: state.accent,
+      rows: state.rows,
+    }));
+  } catch(e) {}
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+
+loadFromStorage();
+buildSwatches();
+syncUI();
+renderTable();
+renderChart();
+
+// ─── Swatches ─────────────────────────────────────────────────────────────────
+
+function buildSwatches() {
+  const container = document.getElementById('swatches');
+  container.innerHTML = '';
+  SWATCHES.forEach(color => {
+    const s = document.createElement('div');
+    s.className = 'color-swatch' + (state.accent === color ? ' selected' : '');
+    s.style.background = color;
+    s.title = color;
+    s.addEventListener('click', () => {
+      state.accent = color;
+      document.getElementById('custom-color').value = color;
+      updateSwatchSelection();
+      renderChart();
+      saveToStorage();
+    });
+    container.appendChild(s);
+  });
+}
+
+function updateSwatchSelection() {
+  document.querySelectorAll('.color-swatch').forEach((s, i) => {
+    s.classList.toggle('selected', SWATCHES[i] === state.accent);
+  });
+}
+
+document.getElementById('custom-color').addEventListener('input', e => {
+  state.accent = e.target.value;
+  updateSwatchSelection();
+  renderChart();
+  saveToStorage();
+});
+
+// ─── Title field ──────────────────────────────────────────────────────────────
+
+const titleInput = document.getElementById('chart-title');
+titleInput.addEventListener('input', () => {
+  state.title = titleInput.value;
+  document.getElementById('chart-title-display').textContent = state.title;
+  saveToStorage();
+});
+
+// ─── Chart type buttons ───────────────────────────────────────────────────────
+
+document.getElementById('chart-type-btns').addEventListener('click', e => {
+  const btn = e.target.closest('[data-type]');
+  if (!btn) return;
+  state.chartType = btn.dataset.type;
+  document.querySelectorAll('.chart-type-btn').forEach(b => b.classList.toggle('active', b === btn));
+  renderChart();
+  saveToStorage();
+});
+
+// ─── Tab switch ───────────────────────────────────────────────────────────────
+
+function switchTab(tab) {
+  state.activeTab = tab;
+  document.getElementById('panel-table').style.display = tab === 'table' ? '' : 'none';
+  document.getElementById('panel-paste').style.display = tab === 'paste' ? '' : 'none';
+  document.getElementById('tab-table').classList.toggle('active', tab === 'table');
+  document.getElementById('tab-paste').classList.toggle('active', tab === 'paste');
+  if (tab === 'paste') {
+    // Sync textarea from rows
+    document.getElementById('paste-area').value = state.rows.map(r => `${r.label}, ${r.value}`).join('\n');
+  }
+}
+
+// ─── Paste parsing ────────────────────────────────────────────────────────────
+
+document.getElementById('paste-area').addEventListener('input', parsePaste);
+
+function parsePaste() {
+  const raw = document.getElementById('paste-area').value;
+  const errEl = document.getElementById('paste-error');
+  const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const rows = [];
+
+  for (const line of lines) {
+    // Try comma, tab, colon, semicolon then last-resort space before trailing number
+    let parts = null;
+    if (line.includes(',')) parts = line.split(',');
+    else if (line.includes('\t')) parts = line.split('\t');
+    else if (line.includes(';')) parts = line.split(';');
+    else if (line.includes(':')) parts = line.split(':');
+    else {
+      // space split — label is everything except trailing numeric token
+      const m = line.match(/^(.+?)\s+([-\d.,]+)\s*$/);
+      if (m) parts = [m[1], m[2]];
+    }
+
+    if (!parts || parts.length < 2) continue;
+    const label = parts[0].trim();
+    const valStr = parts[parts.length - 1].replace(/,/g, '').trim();
+    const value = parseFloat(valStr);
+    if (!label) continue;
+    // Skip if it looks like a header (value not numeric)
+    if (isNaN(value)) continue;
+    rows.push({ label, value });
+  }
+
+  if (rows.length === 0 && raw.trim().length > 0) {
+    errEl.textContent = 'Could not parse any rows. Try: "Label, 123" per line.';
+    errEl.style.display = '';
+  } else {
+    errEl.style.display = 'none';
+  }
+
+  if (rows.length > 0) {
+    state.rows = rows;
+    renderTable();
+    renderChart();
+    saveToStorage();
+  }
+}
+
+// ─── Table ────────────────────────────────────────────────────────────────────
+
+function renderTable() {
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = '';
+  state.rows.forEach((row, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" value="${escHtml(row.label)}" data-i="${i}" data-field="label" /></td>
+      <td><input type="number" value="${row.value}" data-i="${i}" data-field="value" step="any" /></td>
+      <td>
+        <button class="btn-icon danger" data-action="del" data-i="${i}" title="Remove row">×</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('table-body').addEventListener('input', e => {
+  const el = e.target;
+  const i = +el.dataset.i;
+  const field = el.dataset.field;
+  if (field === 'label') state.rows[i].label = el.value;
+  if (field === 'value') state.rows[i].value = parseFloat(el.value) || 0;
+  renderChart();
+  saveToStorage();
+});
+
+document.getElementById('table-body').addEventListener('click', e => {
+  const btn = e.target.closest('[data-action="del"]');
+  if (!btn) return;
+  const i = +btn.dataset.i;
+  if (state.rows.length <= 1) return; // keep at least one
+  state.rows.splice(i, 1);
+  renderTable();
+  renderChart();
+  saveToStorage();
+});
+
+function addRow() {
+  state.rows.push({ label: 'New', value: 0 });
+  renderTable();
+  renderChart();
+  saveToStorage();
+}
+
+// ─── Sync UI from state ───────────────────────────────────────────────────────
+
+function syncUI() {
+  document.getElementById('chart-title').value = state.title;
+  document.getElementById('chart-title-display').textContent = state.title;
+  document.getElementById('custom-color').value = state.accent;
+  document.querySelectorAll('.chart-type-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.type === state.chartType);
+  });
+  updateSwatchSelection();
+}
+
+// ─── Chart rendering ──────────────────────────────────────────────────────────
+
+function renderChart() {
+  const container = document.getElementById('chart-container');
+  const rows = state.rows.filter(r => r.label && !isNaN(r.value));
+  if (rows.length === 0) {
+    container.innerHTML = `<div class="state-msg">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="8" y="8" width="32" height="32" rx="4"/>
+        <path d="M16 28v4M24 20v12M32 24v8"/>
+      </svg>
+      <span>Add some data to see your chart</span>
+    </div>`;
+    return;
+  }
+
+  let svg = '';
+  if (state.chartType === 'bar') svg = renderBar(rows);
+  else if (state.chartType === 'line') svg = renderLine(rows);
+  else if (state.chartType === 'donut') svg = renderDonut(rows);
+
+  container.innerHTML = svg;
+}
+
+// ── Shared helpers ────────────────────────────────────────────────────────────
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function niceMax(v) {
+  if (v <= 0) return 10;
+  const mag = Math.pow(10, Math.floor(Math.log10(v)));
+  const norm = v / mag;
+  let nice = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
+  return nice * mag;
+}
+
+function formatNum(v) {
+  if (Math.abs(v) >= 1e6) return (v/1e6).toFixed(1).replace(/\.0$/,'') + 'M';
+  if (Math.abs(v) >= 1e3) return (v/1e3).toFixed(1).replace(/\.0$/,'') + 'k';
+  return String(Math.round(v * 100) / 100);
+}
+
+function lighten(hex, amount) {
+  // Blend hex toward white
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  const rr = Math.round(r + (255-r)*amount);
+  const gg = Math.round(g + (255-g)*amount);
+  const bb = Math.round(b + (255-b)*amount);
+  return `#${rr.toString(16).padStart(2,'0')}${gg.toString(16).padStart(2,'0')}${bb.toString(16).padStart(2,'0')}`;
+}
+
+// ── Bar chart ─────────────────────────────────────────────────────────────────
+
+function renderBar(rows) {
+  const W = 540, H = 340;
+  const pad = { top: 20, right: 24, bottom: 60, left: 58 };
+  const chartW = W - pad.left - pad.right;
+  const chartH = H - pad.top - pad.bottom;
+
+  const vals = rows.map(r => r.value);
+  const minVal = Math.min(0, ...vals);
+  const maxVal = niceMax(Math.max(...vals));
+  const range = maxVal - minVal;
+
+  const barGap = 0.25;
+  const barW = (chartW / rows.length) * (1 - barGap);
+  const barStep = chartW / rows.length;
+
+  // Y-axis ticks
+  const tickCount = 5;
+  const ticks = [];
+  for (let i = 0; i <= tickCount; i++) {
+    ticks.push(minVal + (range / tickCount) * i);
+  }
+
+  const yScale = v => chartH - ((v - minVal) / range) * chartH;
+  const accent = state.accent;
+  const accentFade = hexToRgba(accent, 0.18);
+
+  let paths = '';
+
+  // Grid lines
+  ticks.forEach(t => {
+    const y = yScale(t);
+    paths += `<line x1="0" y1="${y.toFixed(1)}" x2="${chartW}" y2="${y.toFixed(1)}" stroke="#ffffff" stroke-opacity="0.06" stroke-dasharray="4 3"/>`;
+    paths += `<text x="-10" y="${(y+4).toFixed(1)}" text-anchor="end" fill="#64748b" font-size="11">${formatNum(t)}</text>`;
+  });
+
+  // Zero line
+  if (minVal < 0) {
+    const y0 = yScale(0);
+    paths += `<line x1="0" y1="${y0.toFixed(1)}" x2="${chartW}" y2="${y0.toFixed(1)}" stroke="#ffffff" stroke-opacity="0.25"/>`;
+  }
+
+  // Bars
+  rows.forEach((row, i) => {
+    const x = i * barStep + (barStep - barW) / 2;
+    const y0 = yScale(Math.max(0, minVal));
+    const y1 = yScale(row.value);
+    const barH = Math.abs(y0 - y1);
+    const barY = Math.min(y0, y1);
+
+    // Shadow / glow
+    paths += `<rect x="${x.toFixed(1)}" y="${barY.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="3" fill="${accentFade}"/>`;
+    paths += `<rect x="${(x+1).toFixed(1)}" y="${(barY+1).toFixed(1)}" width="${(barW-2).toFixed(1)}" height="${(barH-1).toFixed(1)}" rx="3" fill="${accent}"/>`;
+
+    // Value label on top
+    if (barH > 16) {
+      paths += `<text x="${(x + barW/2).toFixed(1)}" y="${(barY - 5).toFixed(1)}" text-anchor="middle" fill="${lighten(accent, 0.5)}" font-size="11" font-weight="600">${formatNum(row.value)}</text>`;
+    }
+
+    // X label
+    const labelY = chartH + 18;
+    const label = row.label.length > 10 ? row.label.slice(0,9)+'…' : row.label;
+    paths += `<text x="${(x + barW/2).toFixed(1)}" y="${labelY}" text-anchor="middle" fill="#94a3b8" font-size="11">${escHtml(label)}</text>`;
+  });
+
+  // Axes
+  paths += `<line x1="0" y1="0" x2="0" y2="${chartH}" stroke="#334155" stroke-width="1"/>`;
+  paths += `<line x1="0" y1="${chartH}" x2="${chartW}" y2="${chartH}" stroke="#334155" stroke-width="1"/>`;
+
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;max-height:380px;" xmlns="http://www.w3.org/2000/svg">
+    <g transform="translate(${pad.left},${pad.top})">${paths}</g>
+  </svg>`;
+}
+
+// ── Line chart ────────────────────────────────────────────────────────────────
+
+function renderLine(rows) {
+  const W = 540, H = 340;
+  const pad = { top: 24, right: 24, bottom: 60, left: 58 };
+  const chartW = W - pad.left - pad.right;
+  const chartH = H - pad.top - pad.bottom;
+
+  const vals = rows.map(r => r.value);
+  const minVal = Math.min(0, ...vals);
+  const maxVal = niceMax(Math.max(...vals));
+  const range = maxVal - minVal;
+
+  const tickCount = 5;
+  const ticks = [];
+  for (let i = 0; i <= tickCount; i++) {
+    ticks.push(minVal + (range / tickCount) * i);
+  }
+
+  const xScale = i => (i / (rows.length - 1)) * chartW;
+  const yScale = v => chartH - ((v - minVal) / range) * chartH;
+  const accent = state.accent;
+
+  let parts = '';
+
+  // Grid
+  ticks.forEach(t => {
+    const y = yScale(t);
+    parts += `<line x1="0" y1="${y.toFixed(1)}" x2="${chartW}" y2="${y.toFixed(1)}" stroke="#ffffff" stroke-opacity="0.06" stroke-dasharray="4 3"/>`;
+    parts += `<text x="-10" y="${(y+4).toFixed(1)}" text-anchor="end" fill="#64748b" font-size="11">${formatNum(t)}</text>`;
+  });
+
+  // Area fill
+  let areaPath = `M ${xScale(0).toFixed(1)},${chartH}`;
+  rows.forEach((row, i) => {
+    areaPath += ` L ${xScale(i).toFixed(1)},${yScale(row.value).toFixed(1)}`;
+  });
+  areaPath += ` L ${chartW.toFixed(1)},${chartH} Z`;
+  parts += `<path d="${areaPath}" fill="${accent}" fill-opacity="0.12"/>`;
+
+  // Line
+  let linePath = '';
+  rows.forEach((row, i) => {
+    const x = xScale(i).toFixed(1);
+    const y = yScale(row.value).toFixed(1);
+    linePath += i === 0 ? `M ${x},${y}` : ` L ${x},${y}`;
+  });
+  parts += `<path d="${linePath}" fill="none" stroke="${accent}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+
+  // Dots + labels
+  rows.forEach((row, i) => {
+    const x = xScale(i);
+    const y = yScale(row.value);
+    parts += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${accent}" stroke="#1a1a2e" stroke-width="2"/>`;
+    // Value above dot
+    parts += `<text x="${x.toFixed(1)}" y="${(y - 10).toFixed(1)}" text-anchor="middle" fill="${lighten(accent, 0.5)}" font-size="11" font-weight="600">${formatNum(row.value)}</text>`;
+    // X label
+    const label = row.label.length > 10 ? row.label.slice(0,9)+'…' : row.label;
+    parts += `<text x="${x.toFixed(1)}" y="${(chartH + 18)}" text-anchor="middle" fill="#94a3b8" font-size="11">${escHtml(label)}</text>`;
+  });
+
+  // Axes
+  parts += `<line x1="0" y1="0" x2="0" y2="${chartH}" stroke="#334155" stroke-width="1"/>`;
+  parts += `<line x1="0" y1="${chartH}" x2="${chartW}" y2="${chartH}" stroke="#334155" stroke-width="1"/>`;
+
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;max-height:380px;" xmlns="http://www.w3.org/2000/svg">
+    <g transform="translate(${pad.left},${pad.top})">${parts}</g>
+  </svg>`;
+}
+
+// ── Donut chart ───────────────────────────────────────────────────────────────
+
+function renderDonut(rows) {
+  const W = 540, H = 340;
+  const cx = 180, cy = H / 2, outerR = 120, innerR = 70;
+  const accent = state.accent;
+
+  // Palette: generate shades from accent
+  function generatePalette(n) {
+    const base = [
+      accent,
+      lighten(accent, 0.2),
+      lighten(accent, 0.38),
+      lighten(accent, 0.52),
+      lighten(accent, 0.63),
+      lighten(accent, 0.72),
+      lighten(accent, 0.80),
+    ];
+    // Also add some desaturation-like variants using opacity layering
+    const extra = [
+      hexToRgba(accent, 1),
+      hexToRgba(lighten(accent, 0.25), 1),
+    ];
+    const all = [...base];
+    while (all.length < n) all.push(...base);
+    return all.slice(0, n);
+  }
+
+  const positiveRows = rows.filter(r => r.value > 0);
+  if (positiveRows.length === 0) {
+    return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;max-height:380px;" xmlns="http://www.w3.org/2000/svg">
+      <text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#64748b" font-size="14">No positive values to display</text>
+    </svg>`;
+  }
+
+  const total = positiveRows.reduce((s, r) => s + r.value, 0);
+  const palette = generatePalette(positiveRows.length);
+
+  let slices = '';
+  let legendItems = '';
+  let startAngle = -Math.PI / 2; // start from top
+
+  positiveRows.forEach((row, i) => {
+    const fraction = row.value / total;
+    const sweep = fraction * 2 * Math.PI;
+    const endAngle = startAngle + sweep;
+    const large = sweep > Math.PI ? 1 : 0;
+
+    const x1 = (cx + outerR * Math.cos(startAngle)).toFixed(2);
+    const y1 = (cy + outerR * Math.sin(startAngle)).toFixed(2);
+    const x2 = (cx + outerR * Math.cos(endAngle)).toFixed(2);
+    const y2 = (cy + outerR * Math.sin(endAngle)).toFixed(2);
+    const ix1 = (cx + innerR * Math.cos(endAngle)).toFixed(2);
+    const iy1 = (cy + innerR * Math.sin(endAngle)).toFixed(2);
+    const ix2 = (cx + innerR * Math.cos(startAngle)).toFixed(2);
+    const iy2 = (cy + innerR * Math.sin(startAngle)).toFixed(2);
+
+    const color = palette[i % palette.length];
+    slices += `<path d="M ${x1},${y1} A ${outerR},${outerR} 0 ${large},1 ${x2},${y2} L ${ix1},${iy1} A ${innerR},${innerR} 0 ${large},0 ${ix2},${iy2} Z" fill="${color}" stroke="#1a1a2e" stroke-width="1.5"/>`;
+
+    // Percentage label on slice (only if big enough)
+    if (fraction > 0.06) {
+      const midAngle = startAngle + sweep / 2;
+      const labelR = (outerR + innerR) / 2;
+      const lx = (cx + labelR * Math.cos(midAngle)).toFixed(1);
+      const ly = (cy + labelR * Math.sin(midAngle) + 4).toFixed(1);
+      slices += `<text x="${lx}" y="${ly}" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">${(fraction*100).toFixed(1)}%</text>`;
+    }
+
+    // Legend
+    const lx = 330;
+    const ly = 40 + i * 30;
+    const labelText = row.label.length > 18 ? row.label.slice(0,17)+'…' : row.label;
+    legendItems += `<rect x="${lx}" y="${ly - 10}" width="12" height="12" rx="2" fill="${color}"/>`;
+    legendItems += `<text x="${lx + 18}" y="${ly}" fill="#e2e8f0" font-size="12">${escHtml(labelText)}</text>`;
+    legendItems += `<text x="${W - 10}" y="${ly}" text-anchor="end" fill="#94a3b8" font-size="12">${formatNum(row.value)}</text>`;
+
+    startAngle = endAngle;
+  });
+
+  // Center text
+  const centerTotal = formatNum(total);
+  slices += `<text x="${cx}" y="${cy - 8}" text-anchor="middle" fill="#94a3b8" font-size="12">Total</text>`;
+  slices += `<text x="${cx}" y="${cy + 14}" text-anchor="middle" fill="${lighten(accent, 0.4)}" font-size="18" font-weight="700">${centerTotal}</text>`;
+
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;max-height:380px;" xmlns="http://www.w3.org/2000/svg">
+    ${slices}
+    ${legendItems}
+  </svg>`;
+}
+</script>
+</body>
+</html>

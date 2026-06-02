@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<!--
+  Gantt Chart — Halison App Studio example
+
+  A project timeline: tasks with dates, duration, % complete and assignees, drawn
+  as bars on a scaled time grid with a "today" line. Saves to your browser.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gantt Chart</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Inter', system-ui, sans-serif; }
+
+    /* Timeline grid */
+    #timeline-scroll { overflow-x: auto; overflow-y: visible; }
+    .gantt-row { display: flex; align-items: center; min-height: 44px; }
+    .gantt-bar-wrap { position: relative; height: 28px; }
+    .gantt-bar-bg {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      border-radius: 6px; opacity: 0.25;
+    }
+    .gantt-bar-fill {
+      position: absolute; top: 0; left: 0; bottom: 0;
+      border-radius: 6px;
+      transition: width 0.3s ease;
+    }
+    .gantt-bar-label {
+      position: absolute; top: 50%; left: 6px;
+      transform: translateY(-50%);
+      font-size: 11px; font-weight: 600; white-space: nowrap;
+      color: white; pointer-events: none; text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+    .today-line {
+      position: absolute; top: 0; bottom: 0; width: 2px;
+      background: #ef4444; z-index: 20; pointer-events: none;
+    }
+    .today-label {
+      position: absolute; top: 2px; left: 3px;
+      font-size: 10px; font-weight: 700; color: #ef4444; white-space: nowrap;
+    }
+    .day-col { border-right: 1px solid #e5e7eb; }
+    .weekend-col { background: #f9fafb; }
+    .month-header { border-right: 2px solid #d1d5db; }
+
+    /* Modal overlay */
+    #modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      display: flex; align-items: center; justify-content: center; z-index: 100;
+    }
+    #modal-overlay.hidden { display: none; }
+
+    /* Scrollbar styling */
+    #timeline-scroll::-webkit-scrollbar { height: 6px; }
+    #timeline-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+    #timeline-scroll::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+
+    .task-row-hover:hover { background: #f8fafc; }
+    input[type="range"] { accent-color: #6366f1; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- Header -->
+<header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm">
+  <div class="flex items-center gap-3">
+    <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+      <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+      </svg>
+    </div>
+    <div>
+      <h1 class="text-lg font-bold text-gray-900 leading-none">Project Timeline</h1>
+      <p class="text-xs text-gray-500 mt-0.5" id="project-subtitle">Loading…</p>
+    </div>
+  </div>
+  <div class="flex items-center gap-2">
+    <div class="flex items-center bg-gray-100 rounded-lg p-1 text-sm">
+      <button onclick="setView('day')" id="btn-day"
+        class="px-3 py-1 rounded-md font-medium transition-colors">Day</button>
+      <button onclick="setView('week')" id="btn-week"
+        class="px-3 py-1 rounded-md font-medium transition-colors">Week</button>
+    </div>
+    <button onclick="openModal(null)"
+      class="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+      </svg>
+      Add Task
+    </button>
+  </div>
+</header>
+
+<!-- Main layout -->
+<div class="flex" style="height: calc(100vh - 65px);">
+
+  <!-- Left task list -->
+  <div class="bg-white border-r border-gray-200 flex-shrink-0 flex flex-col" style="width:320px;">
+    <div class="grid grid-cols-12 text-xs font-semibold text-gray-500 uppercase tracking-wide border-b border-gray-200 px-4 py-2 bg-gray-50">
+      <div class="col-span-5">Task</div>
+      <div class="col-span-3">Assignee</div>
+      <div class="col-span-2 text-center">Done</div>
+      <div class="col-span-2"></div>
+    </div>
+    <div id="task-list" class="flex-1 overflow-y-auto"></div>
+    <div class="border-t border-gray-100 px-4 py-2">
+      <p class="text-xs text-gray-400" id="task-count">0 tasks</p>
+    </div>
+  </div>
+
+  <!-- Right timeline -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <div id="timeline-scroll" class="flex-1 overflow-x-auto overflow-y-auto relative">
+      <div id="timeline-inner" class="relative" style="min-width: 100%;">
+        <!-- Header rows injected by JS -->
+        <div id="timeline-header" class="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm"></div>
+        <!-- Bar rows injected by JS -->
+        <div id="timeline-body" class="relative"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="modal-overlay" class="hidden">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <h2 class="text-lg font-bold text-gray-900" id="modal-title">Add Task</h2>
+      <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Task name <span class="text-red-500">*</span></label>
+        <input id="f-name" type="text" placeholder="e.g. Design homepage wireframes"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Start date <span class="text-red-500">*</span></label>
+          <input id="f-start" type="date"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">End date <span class="text-red-500">*</span></label>
+          <input id="f-end" type="date"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Assignee</label>
+          <input id="f-assignee" type="text" placeholder="e.g. Alice"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Color</label>
+          <div class="flex items-center gap-2">
+            <input id="f-color" type="color" value="#6366f1"
+              class="w-10 h-9 border border-gray-300 rounded-lg cursor-pointer p-0.5"/>
+            <div id="color-swatches" class="flex gap-1.5"></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          % Complete: <span id="pct-display" class="text-indigo-600 font-bold">0%</span>
+        </label>
+        <input id="f-pct" type="range" min="0" max="100" value="0" step="5"
+          class="w-full"
+          oninput="document.getElementById('pct-display').textContent=this.value+'%'"/>
+      </div>
+    </div>
+    <div class="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50">
+      <button id="btn-delete" onclick="deleteTask()" class="text-sm text-red-500 hover:text-red-700 font-medium hidden transition-colors">
+        Delete task
+      </button>
+      <div class="flex gap-2 ml-auto">
+        <button onclick="closeModal()" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors">Cancel</button>
+        <button onclick="saveTask()"
+          class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Colour palette ───────────────────────────────────────────────────────────
+const SWATCHES = ['#6366f1','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6'];
+
+// ─── Default sample tasks (dates relative to today) ──────────────────────────
+function buildDefaultTasks() {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const d = (offset) => {
+    const dt = new Date(today);
+    dt.setDate(dt.getDate() + offset);
+    return dt.toISOString().slice(0,10);
+  };
+  return [
+    { id: uid(), name: 'Discovery & Requirements', start: d(-18), end: d(-11), assignee: 'Sarah K.', color: '#6366f1', pct: 100 },
+    { id: uid(), name: 'UX Wireframes & Prototypes', start: d(-14), end: d(-4),  assignee: 'Marcus T.', color: '#0ea5e9', pct: 90  },
+    { id: uid(), name: 'Frontend Development',       start: d(-8),  end: d(10),  assignee: 'Priya N.', color: '#10b981', pct: 55  },
+    { id: uid(), name: 'Backend API Integration',    start: d(-5),  end: d(12),  assignee: 'James R.', color: '#f59e0b', pct: 40  },
+    { id: uid(), name: 'QA & Testing',               start: d(8),   end: d(18),  assignee: 'Laura M.', color: '#8b5cf6', pct: 0   },
+    { id: uid(), name: 'Deployment & Launch',        start: d(17),  end: d(22),  assignee: 'Sarah K.', color: '#ef4444', pct: 0   },
+  ];
+}
+
+function uid() { return Math.random().toString(36).slice(2,10); }
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let tasks = [];
+let viewMode = 'day'; // 'day' | 'week'
+let editingId = null;
+
+// ─── Persistence ─────────────────────────────────────────────────────────────
+function load() {
+  try {
+    const raw = localStorage.getItem('gantt_tasks_v2');
+    tasks = raw ? JSON.parse(raw) : buildDefaultTasks();
+  } catch(e) { tasks = buildDefaultTasks(); }
+  const vm = localStorage.getItem('gantt_view');
+  if (vm === 'week') viewMode = 'week';
+}
+function save() {
+  localStorage.setItem('gantt_tasks_v2', JSON.stringify(tasks));
+  localStorage.setItem('gantt_view', viewMode);
+}
+
+// ─── Date helpers ─────────────────────────────────────────────────────────────
+const DAY_MS = 86400000;
+function parseDate(s) { return new Date(s + 'T00:00:00'); }
+function fmtDate(d) { return d.toISOString().slice(0,10); }
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+function daysBetween(a,b) { return Math.round((b-a)/DAY_MS); }
+function today() { const d = new Date(); d.setHours(0,0,0,0); return d; }
+function monthName(d) { return d.toLocaleString('en-US',{month:'short'}); }
+function dayName(d) { return d.toLocaleString('en-US',{weekday:'short'}); }
+function isWeekend(d) { const w = d.getDay(); return w===0||w===6; }
+
+// ─── Timeline range ───────────────────────────────────────────────────────────
+function getRange() {
+  if (!tasks.length) {
+    const t = today();
+    return { start: addDays(t,-7), end: addDays(t,14) };
+  }
+  let minD = parseDate(tasks[0].start);
+  let maxD = parseDate(tasks[0].end);
+  for (const t of tasks) {
+    const s = parseDate(t.start), e = parseDate(t.end);
+    if (s < minD) minD = s;
+    if (e > maxD) maxD = e;
+  }
+  // Pad 5 days each side
+  return { start: addDays(minD,-5), end: addDays(maxD,5) };
+}
+
+// ─── View toggle ──────────────────────────────────────────────────────────────
+function setView(v) {
+  viewMode = v;
+  save();
+  renderAll();
+}
+
+// ─── Render everything ────────────────────────────────────────────────────────
+function renderAll() {
+  // View buttons
+  document.getElementById('btn-day').className =
+    'px-3 py-1 rounded-md font-medium transition-colors ' +
+    (viewMode==='day' ? 'bg-white shadow text-indigo-700' : 'text-gray-500 hover:text-gray-700');
+  document.getElementById('btn-week').className =
+    'px-3 py-1 rounded-md font-medium transition-colors ' +
+    (viewMode==='week' ? 'bg-white shadow text-indigo-700' : 'text-gray-500 hover:text-gray-700');
+
+  // Subtitle
+  document.getElementById('project-subtitle').textContent =
+    tasks.length + (tasks.length===1?' task':' tasks') + ' · Today: ' + today().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+
+  renderTaskList();
+  renderTimeline();
+}
+
+// ─── Task list (left panel) ────────────────────────────────────────────────────
+function renderTaskList() {
+  const container = document.getElementById('task-list');
+  document.getElementById('task-count').textContent = tasks.length + (tasks.length===1?' task':' tasks');
+  if (!tasks.length) {
+    container.innerHTML = '<div class="p-6 text-center text-gray-400 text-sm">No tasks yet.<br/>Click <strong>Add Task</strong> to get started.</div>';
+    return;
+  }
+  container.innerHTML = tasks.map((t,i) => {
+    const dur = daysBetween(parseDate(t.start), parseDate(t.end));
+    const initials = t.assignee ? t.assignee.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : '?';
+    return `
+    <div class="grid grid-cols-12 items-center px-4 py-2 border-b border-gray-100 task-row-hover min-h-[44px]" style="min-height:44px">
+      <div class="col-span-5 flex items-center gap-2 min-w-0">
+        <div class="w-2.5 h-2.5 rounded-sm flex-shrink-0" style="background:${t.color}"></div>
+        <span class="text-sm font-medium text-gray-800 truncate" title="${esc(t.name)}">${esc(t.name)}</span>
+      </div>
+      <div class="col-span-3 flex items-center gap-1 min-w-0">
+        <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style="background:${t.color}">${initials}</div>
+        <span class="text-xs text-gray-500 truncate" title="${esc(t.assignee||'')}">${esc(t.assignee||'—')}</span>
+      </div>
+      <div class="col-span-2 text-center">
+        <span class="text-xs font-semibold" style="color:${t.color}">${t.pct}%</span>
+      </div>
+      <div class="col-span-2 flex justify-end">
+        <button onclick="openModal('${t.id}')" class="text-gray-400 hover:text-indigo-600 transition-colors p-1 rounded" title="Edit task">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 11l6-6 3 3-6 6H9v-3z"/>
+          </svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Timeline ─────────────────────────────────────────────────────────────────
+function renderTimeline() {
+  const { start, end } = getRange();
+  const headerEl = document.getElementById('timeline-header');
+  const bodyEl = document.getElementById('timeline-body');
+
+  if (viewMode === 'day') {
+    renderDayView(start, end, headerEl, bodyEl);
+  } else {
+    renderWeekView(start, end, headerEl, bodyEl);
+  }
+}
+
+const COL_W_DAY = 36;   // px per day in day-view
+const COL_W_WEEK = 100; // px per week in week-view
+const ROW_H = 44;
+
+function renderDayView(start, end, headerEl, bodyEl) {
+  const totalDays = daysBetween(start, end) + 1;
+  const totalW = totalDays * COL_W_DAY;
+
+  // Build month segments for top header
+  let months = [];
+  let cur = new Date(start);
+  while (cur <= end) {
+    const m = cur.getMonth(), y = cur.getFullYear();
+    let count = 0;
+    while (cur <= end && cur.getMonth()===m && cur.getFullYear()===y) {
+      count++; cur = addDays(cur,1);
+    }
+    months.push({ label: monthName(new Date(y,m,1)) + ' ' + y, days: count });
+  }
+
+  // Month row
+  let monthCols = months.map(m =>
+    `<div class="month-header inline-flex items-center justify-center text-xs font-semibold text-gray-600 border-r-2 border-gray-300 bg-gray-50"
+      style="width:${m.days*COL_W_DAY}px;height:24px;flex-shrink:0;">${m.label}</div>`
+  ).join('');
+
+  // Day row
+  let dayCols = '';
+  let dayIdx = new Date(start);
+  for (let i=0; i<totalDays; i++) {
+    const we = isWeekend(dayIdx);
+    const isToday = fmtDate(dayIdx)===fmtDate(today());
+    dayCols += `<div class="day-col ${we?'weekend-col':''} inline-flex flex-col items-center justify-center flex-shrink-0 border-b border-gray-200"
+      style="width:${COL_W_DAY}px;height:30px;">
+      <span class="text-[9px] font-medium ${isToday?'text-red-500 font-bold':we?'text-gray-400':'text-gray-500'}">${dayName(dayIdx)[0]}</span>
+      <span class="text-[9px] ${isToday?'text-red-500 font-bold':we?'text-gray-400':'text-gray-500'}">${dayIdx.getDate()}</span>
+    </div>`;
+    dayIdx = addDays(dayIdx,1);
+  }
+
+  headerEl.innerHTML = `
+    <div style="width:${totalW}px;position:relative;">
+      <div class="flex" style="height:24px;">${monthCols}</div>
+      <div class="flex" style="height:30px;">${dayCols}</div>
+    </div>`;
+
+  // Body
+  const todayOffset = daysBetween(start, today());
+  let bodyHTML = `<div style="width:${totalW}px;position:relative;min-height:${Math.max(tasks.length,1)*ROW_H}px;">`;
+
+  // Column backgrounds (weekends + today)
+  for (let i=0; i<totalDays; i++) {
+    const d = addDays(start,i);
+    const isT = fmtDate(d)===fmtDate(today());
+    const isWE = isWeekend(d);
+    if (isWE || isT) {
+      bodyHTML += `<div style="position:absolute;left:${i*COL_W_DAY}px;top:0;width:${COL_W_DAY}px;bottom:0;
+        background:${isT?'rgba(239,68,68,0.05)':isWE?'rgba(0,0,0,0.015)':'transparent'};pointer-events:none;"></div>`;
+    }
+  }
+
+  // Vertical grid lines
+  for (let i=0; i<=totalDays; i++) {
+    bodyHTML += `<div style="position:absolute;left:${i*COL_W_DAY}px;top:0;bottom:0;width:1px;background:#f0f0f0;pointer-events:none;"></div>`;
+  }
+
+  // Task bars
+  tasks.forEach((t, idx) => {
+    const s = parseDate(t.start), e = parseDate(t.end);
+    const left = Math.max(0, daysBetween(start, s)) * COL_W_DAY;
+    const dur = Math.max(1, daysBetween(s, e) + 1);
+    const width = dur * COL_W_DAY;
+    const top = idx * ROW_H + 8;
+    const fillW = Math.round(width * t.pct / 100);
+    bodyHTML += `
+      <div class="gantt-bar-wrap" style="position:absolute;left:${left}px;top:${top}px;width:${width}px;" onclick="openModal('${t.id}')" title="${esc(t.name)} (${t.pct}% complete)">
+        <div class="gantt-bar-bg" style="background:${t.color};"></div>
+        <div class="gantt-bar-fill" style="background:${t.color};width:${fillW}px;"></div>
+        <span class="gantt-bar-label">${t.pct>0?t.pct+'% · ':''} ${esc(t.name)}</span>
+      </div>`;
+  });
+
+  // Today line
+  if (todayOffset >= 0 && todayOffset < totalDays) {
+    const tx = todayOffset * COL_W_DAY + COL_W_DAY/2;
+    bodyHTML += `<div class="today-line" style="left:${tx}px;"><span class="today-label">Today</span></div>`;
+  }
+
+  bodyHTML += '</div>';
+  bodyEl.innerHTML = bodyHTML;
+
+  // Scroll today into view
+  setTimeout(() => {
+    const scroll = document.getElementById('timeline-scroll');
+    const todayPx = todayOffset * COL_W_DAY - scroll.clientWidth/2 + COL_W_DAY/2;
+    scroll.scrollLeft = Math.max(0, todayPx);
+  }, 50);
+}
+
+function renderWeekView(start, end, headerEl, bodyEl) {
+  // Align start to Monday
+  const startMon = new Date(start);
+  startMon.setDate(startMon.getDate() - ((startMon.getDay()+6)%7));
+
+  const weeks = [];
+  let cur = new Date(startMon);
+  while (cur <= end) {
+    weeks.push(new Date(cur));
+    cur = addDays(cur, 7);
+  }
+  const totalW = weeks.length * COL_W_WEEK;
+
+  // Month header
+  let months = [];
+  weeks.forEach(w => {
+    const m = monthName(w) + ' ' + w.getFullYear();
+    if (!months.length || months[months.length-1].label !== m) {
+      months.push({ label: m, count: 1 });
+    } else { months[months.length-1].count++; }
+  });
+
+  const monthCols = months.map(m =>
+    `<div class="month-header inline-flex items-center justify-center text-xs font-semibold text-gray-600 bg-gray-50 border-r-2 border-gray-300"
+      style="width:${m.count*COL_W_WEEK}px;height:24px;flex-shrink:0;">${m.label}</div>`
+  ).join('');
+
+  const weekCols = weeks.map((w,i) => {
+    const isCurrentWeek = fmtDate(w) <= fmtDate(today()) && fmtDate(today()) <= fmtDate(addDays(w,6));
+    return `<div class="day-col inline-flex items-center justify-center text-xs font-medium border-b border-gray-200 flex-shrink-0"
+      style="width:${COL_W_WEEK}px;height:30px;" >
+      <span class="${isCurrentWeek?'text-red-500 font-bold':'text-gray-500'}">
+        ${w.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${addDays(w,6).toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+      </span>
+    </div>`;
+  }).join('');
+
+  headerEl.innerHTML = `<div style="width:${totalW}px;">
+    <div class="flex" style="height:24px;">${monthCols}</div>
+    <div class="flex" style="height:30px;">${weekCols}</div>
+  </div>`;
+
+  // Body
+  const todayWeekIdx = weeks.findIndex(w => fmtDate(w) <= fmtDate(today()) && fmtDate(today()) <= fmtDate(addDays(w,6)));
+  const totalDaysRange = daysBetween(startMon, end) + 1;
+
+  let bodyHTML = `<div style="width:${totalW}px;position:relative;min-height:${Math.max(tasks.length,1)*ROW_H}px;">`;
+
+  // Grid lines
+  weeks.forEach((_,i) => {
+    bodyHTML += `<div style="position:absolute;left:${i*COL_W_WEEK}px;top:0;bottom:0;width:1px;background:#e5e7eb;pointer-events:none;"></div>`;
+  });
+
+  // Current week highlight
+  if (todayWeekIdx>=0) {
+    bodyHTML += `<div style="position:absolute;left:${todayWeekIdx*COL_W_WEEK}px;top:0;width:${COL_W_WEEK}px;bottom:0;background:rgba(239,68,68,0.04);pointer-events:none;"></div>`;
+  }
+
+  tasks.forEach((t, idx) => {
+    const s = parseDate(t.start), e = parseDate(t.end);
+    const leftDays = daysBetween(startMon, s);
+    const durDays = Math.max(1, daysBetween(s,e)+1);
+    const totalDaysInRange = weeks.length * 7;
+    const left = (leftDays / totalDaysInRange) * totalW;
+    const width = (durDays / totalDaysInRange) * totalW;
+    const top = idx * ROW_H + 8;
+    const fillW = Math.round(width * t.pct / 100);
+    bodyHTML += `
+      <div class="gantt-bar-wrap" style="position:absolute;left:${Math.max(0,left)}px;top:${top}px;width:${width}px;" onclick="openModal('${t.id}')" title="${esc(t.name)} (${t.pct}% complete)">
+        <div class="gantt-bar-bg" style="background:${t.color};"></div>
+        <div class="gantt-bar-fill" style="background:${t.color};width:${fillW}px;"></div>
+        <span class="gantt-bar-label">${t.pct>0?t.pct+'% · ':''} ${esc(t.name)}</span>
+      </div>`;
+  });
+
+  // Today line
+  if (todayWeekIdx >= 0) {
+    const todayInWeek = (today().getDay()+6)%7; // 0=Mon
+    const tx = (todayWeekIdx + todayInWeek/7 + 0.5/7) * COL_W_WEEK;
+    bodyHTML += `<div class="today-line" style="left:${tx}px;"><span class="today-label">Today</span></div>`;
+  }
+
+  bodyHTML += '</div>';
+  bodyEl.innerHTML = bodyHTML;
+
+  setTimeout(() => {
+    const scroll = document.getElementById('timeline-scroll');
+    const todayPx = todayWeekIdx * COL_W_WEEK - scroll.clientWidth/3;
+    scroll.scrollLeft = Math.max(0, todayPx);
+  }, 50);
+}
+
+// ─── Modal ────────────────────────────────────────────────────────────────────
+function openModal(id) {
+  editingId = id;
+  const overlay = document.getElementById('modal-overlay');
+  const btnDel = document.getElementById('btn-delete');
+  document.getElementById('modal-title').textContent = id ? 'Edit Task' : 'Add Task';
+  btnDel.classList.toggle('hidden', !id);
+
+  // Populate colour swatches
+  const sw = document.getElementById('color-swatches');
+  sw.innerHTML = SWATCHES.map(c =>
+    `<button onclick="document.getElementById('f-color').value='${c}'" type="button"
+      class="w-5 h-5 rounded-full border-2 border-white shadow-sm hover:scale-110 transition-transform"
+      style="background:${c}" title="${c}"></button>`
+  ).join('');
+
+  if (id) {
+    const t = tasks.find(x=>x.id===id);
+    if (!t) return;
+    document.getElementById('f-name').value = t.name;
+    document.getElementById('f-start').value = t.start;
+    document.getElementById('f-end').value = t.end;
+    document.getElementById('f-assignee').value = t.assignee || '';
+    document.getElementById('f-color').value = t.color;
+    document.getElementById('f-pct').value = t.pct;
+    document.getElementById('pct-display').textContent = t.pct + '%';
+  } else {
+    document.getElementById('f-name').value = '';
+    // Default start = today, end = today + 7
+    document.getElementById('f-start').value = fmtDate(today());
+    document.getElementById('f-end').value = fmtDate(addDays(today(), 7));
+    document.getElementById('f-assignee').value = '';
+    document.getElementById('f-color').value = SWATCHES[Math.floor(Math.random()*SWATCHES.length)];
+    document.getElementById('f-pct').value = 0;
+    document.getElementById('pct-display').textContent = '0%';
+  }
+  overlay.classList.remove('hidden');
+  setTimeout(()=>document.getElementById('f-name').focus(),50);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+  editingId = null;
+}
+
+function saveTask() {
+  const name = document.getElementById('f-name').value.trim();
+  const start = document.getElementById('f-start').value;
+  const end = document.getElementById('f-end').value;
+  if (!name) { alert('Please enter a task name.'); return; }
+  if (!start || !end) { alert('Please set start and end dates.'); return; }
+  if (start > end) { alert('End date must be on or after start date.'); return; }
+
+  const task = {
+    id: editingId || uid(),
+    name,
+    start,
+    end,
+    assignee: document.getElementById('f-assignee').value.trim(),
+    color: document.getElementById('f-color').value,
+    pct: parseInt(document.getElementById('f-pct').value, 10),
+  };
+
+  if (editingId) {
+    const idx = tasks.findIndex(t=>t.id===editingId);
+    if (idx>=0) tasks[idx] = task;
+  } else {
+    tasks.push(task);
+  }
+  save();
+  closeModal();
+  renderAll();
+}
+
+function deleteTask() {
+  if (!editingId) return;
+  if (!confirm('Delete this task?')) return;
+  tasks = tasks.filter(t=>t.id!==editingId);
+  save();
+  closeModal();
+  renderAll();
+}
+
+// ─── Keyboard ─────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+  if ((e.key === 'Enter') && !document.getElementById('modal-overlay').classList.contains('hidden')) {
+    if (document.activeElement.tagName !== 'BUTTON') saveTask();
+  }
+});
+
+// Close modal on overlay click
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+});
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+load();
+renderAll();
+</script>
+</body>
+</html>

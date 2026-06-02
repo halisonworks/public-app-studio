@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<!--
+  Quote Builder — Halison App Studio example
+
+  Build a clean sales quote/proposal: client details, line items with per-line
+  and overall discounts, tax and totals, terms. Saves locally; print-friendly.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quote Builder</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; }
+      #quote-wrapper {
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+      }
+      #app-shell { padding: 0 !important; background: white !important; }
+      .print-clean-input {
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+      }
+    }
+    [contenteditable]:focus { outline: 2px solid #0ea5e9; border-radius: 2px; }
+    [contenteditable]:empty:before { content: attr(data-placeholder); color: #9ca3af; font-style: italic; }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
+    input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.6; }
+    .badge-onetime  { background: #e0f2fe; color: #0369a1; }
+    .badge-monthly  { background: #dcfce7; color: #15803d; }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen" id="app-shell">
+
+  <!-- ── Top toolbar (no-print) ──────────────────────────────────────────── -->
+  <div class="no-print sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
+      <span class="font-semibold text-sky-600 text-lg tracking-tight">Quote Builder</span>
+      <div class="flex items-center gap-2 ml-auto flex-wrap">
+        <!-- Currency -->
+        <label class="text-sm text-gray-600 font-medium">Currency:</label>
+        <select id="currency-select"
+          class="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white">
+          <option value="$">$ (USD)</option>
+          <option value="kr">kr (NOK)</option>
+          <option value="€">€ (EUR)</option>
+          <option value="£">£ (GBP)</option>
+          <option value="SEK">SEK</option>
+          <option value="DKK">DKK</option>
+          <option value="CAD">CAD</option>
+          <option value="AUD">AUD</option>
+        </select>
+        <!-- Tax rate -->
+        <label class="text-sm text-gray-600 font-medium ml-2">Tax:</label>
+        <select id="tax-select"
+          class="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white">
+          <option value="0">0 %</option>
+          <option value="5">5 %</option>
+          <option value="6">6 %</option>
+          <option value="7">7 %</option>
+          <option value="8">8 %</option>
+          <option value="10">10 %</option>
+          <option value="12">12 %</option>
+          <option value="13">13 %</option>
+          <option value="15">15 %</option>
+          <option value="20">20 %</option>
+          <option value="21">21 %</option>
+          <option value="25">25 %</option>
+        </select>
+        <!-- New quote -->
+        <button id="btn-new"
+          class="ml-2 text-sm px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded font-medium transition">
+          New Quote
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main area ────────────────────────────────────────────────────────── -->
+  <div class="max-w-5xl mx-auto px-4 py-8">
+    <div id="quote-wrapper"
+      class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+
+      <!-- Header band -->
+      <div class="bg-sky-700 px-8 py-7 flex flex-col sm:flex-row sm:items-start gap-6">
+        <!-- Seller info -->
+        <div class="flex-1">
+          <div class="text-sky-200 text-xs uppercase tracking-widest font-semibold mb-2">From</div>
+          <div
+            id="seller-name"
+            contenteditable="true"
+            data-placeholder="Your Company Name"
+            data-key="sellerName"
+            class="text-2xl font-bold text-white focus:bg-sky-600 focus:rounded px-1 -ml-1 min-w-[180px] block">
+          </div>
+          <div
+            id="seller-address"
+            contenteditable="true"
+            data-placeholder="123 Business Ave, Suite 400&#10;San Francisco, CA 94105"
+            data-key="sellerAddress"
+            class="text-sky-200 text-sm mt-1 whitespace-pre-wrap focus:bg-sky-600 focus:rounded px-1 -ml-1 block">
+          </div>
+          <div
+            id="seller-contact"
+            contenteditable="true"
+            data-placeholder="hello@yourcompany.com · (415) 555-0100"
+            data-key="sellerContact"
+            class="text-sky-200 text-sm mt-0.5 focus:bg-sky-600 focus:rounded px-1 -ml-1 block">
+          </div>
+        </div>
+
+        <!-- Quote meta -->
+        <div class="sm:text-right flex flex-col gap-2 min-w-[200px]">
+          <div class="text-sky-100 text-2xl font-bold uppercase tracking-widest">Proposal</div>
+          <div class="flex sm:justify-end items-center gap-2">
+            <span class="text-sky-300 text-sm font-medium">Quote #</span>
+            <input id="quote-number" type="text" data-key="quoteNumber"
+              placeholder="Q-2025-001"
+              class="print-clean-input bg-sky-600 text-white text-sm font-semibold rounded px-2 py-0.5 w-32 text-right border border-sky-400 focus:outline-none focus:ring-2 focus:ring-white placeholder-sky-300" />
+          </div>
+          <div class="flex sm:justify-end items-center gap-2">
+            <span class="text-sky-300 text-xs font-medium">Issue Date</span>
+            <input id="issue-date" type="date" data-key="issueDate"
+              class="print-clean-input bg-sky-600 text-sky-100 text-xs rounded px-2 py-0.5 border border-sky-400 focus:outline-none focus:ring-2 focus:ring-white" />
+          </div>
+          <div class="flex sm:justify-end items-center gap-2">
+            <span class="text-sky-300 text-xs font-medium">Valid Until</span>
+            <input id="valid-until" type="date" data-key="validUntil"
+              class="print-clean-input bg-sky-600 text-sky-100 text-xs rounded px-2 py-0.5 border border-sky-400 focus:outline-none focus:ring-2 focus:ring-white" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Client block -->
+      <div class="px-8 py-6 grid grid-cols-1 sm:grid-cols-2 gap-8 border-b border-gray-100 bg-gray-50">
+        <div>
+          <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Prepared For</div>
+          <div
+            id="client-name"
+            contenteditable="true"
+            data-placeholder="Client Company, Inc."
+            data-key="clientName"
+            class="font-bold text-gray-800 text-lg focus:outline-none focus:bg-sky-50 focus:rounded px-1 -ml-1 block">
+          </div>
+          <div
+            id="client-contact"
+            contenteditable="true"
+            data-placeholder="Contact: Jane Doe · jane@client.com"
+            data-key="clientContact"
+            class="text-gray-500 text-sm mt-0.5 focus:outline-none focus:bg-sky-50 focus:rounded px-1 -ml-1 block">
+          </div>
+          <div
+            id="client-address"
+            contenteditable="true"
+            data-placeholder="789 Client Blvd&#10;New York, NY 10001"
+            data-key="clientAddress"
+            class="text-gray-500 text-sm mt-1 whitespace-pre-wrap focus:outline-none focus:bg-sky-50 focus:rounded px-1 -ml-1 block">
+          </div>
+        </div>
+        <div class="flex flex-col justify-center">
+          <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Prepared By</div>
+          <div
+            id="rep-name"
+            contenteditable="true"
+            data-placeholder="Alex Johnson, Account Executive"
+            data-key="repName"
+            class="font-semibold text-gray-700 text-sm focus:outline-none focus:bg-sky-50 focus:rounded px-1 -ml-1 block">
+          </div>
+          <div
+            id="rep-contact"
+            contenteditable="true"
+            data-placeholder="alex@yourcompany.com · (415) 555-0101"
+            data-key="repContact"
+            class="text-gray-500 text-sm mt-0.5 focus:outline-none focus:bg-sky-50 focus:rounded px-1 -ml-1 block">
+          </div>
+        </div>
+      </div>
+
+      <!-- Intro / Scope note -->
+      <div class="px-8 py-6 border-b border-gray-100">
+        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Scope &amp; Overview</div>
+        <div
+          id="scope-note"
+          contenteditable="true"
+          data-placeholder="Describe the project scope, objectives, and what is included in this proposal..."
+          data-key="scopeNote"
+          class="text-sm text-gray-700 min-h-[60px] whitespace-pre-wrap leading-relaxed focus:outline-none focus:bg-sky-50 focus:rounded px-1 -ml-1 block">
+        </div>
+      </div>
+
+      <!-- Line items -->
+      <div class="px-8 pt-6 pb-2">
+        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Line Items</div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm" id="line-items-table">
+            <thead>
+              <tr class="border-b-2 border-gray-200 text-left">
+                <th class="pb-2 font-semibold text-gray-500 uppercase tracking-wider text-xs">Description</th>
+                <th class="pb-2 font-semibold text-gray-500 uppercase tracking-wider text-xs text-center no-print w-24">Type</th>
+                <th class="pb-2 font-semibold text-gray-500 uppercase tracking-wider text-xs text-right pr-3 w-16">Qty</th>
+                <th class="pb-2 font-semibold text-gray-500 uppercase tracking-wider text-xs text-right pr-3 w-28">Unit Price</th>
+                <th class="pb-2 font-semibold text-gray-500 uppercase tracking-wider text-xs text-right pr-3 w-20">Disc %</th>
+                <th class="pb-2 font-semibold text-gray-500 uppercase tracking-wider text-xs text-right w-28">Amount</th>
+                <th class="pb-2 no-print w-8"></th>
+              </tr>
+            </thead>
+            <tbody id="line-items-body">
+              <!-- rows injected by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Add row button -->
+        <div class="no-print mt-3 mb-4 flex gap-2">
+          <button id="btn-add-row"
+            class="flex items-center gap-1.5 text-sm text-sky-600 hover:text-sky-800 font-medium border border-dashed border-sky-300 hover:border-sky-500 rounded px-3 py-1.5 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+            </svg>
+            Add line item
+          </button>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="px-8 pb-8">
+        <div class="flex justify-end">
+          <div class="w-full sm:w-80 border-t border-gray-200 pt-4 space-y-2">
+            <div class="flex justify-between text-sm text-gray-600">
+              <span>Subtotal</span>
+              <span id="subtotal-display" class="font-medium tabular-nums">$ 0.00</span>
+            </div>
+            <div class="flex justify-between text-sm text-gray-600">
+              <div class="flex items-center gap-2">
+                <span>Overall discount</span>
+                <div class="no-print flex items-center gap-1">
+                  <input id="overall-discount" type="number" min="0" max="100" step="0.1" value="0"
+                    class="w-14 text-xs border border-gray-300 rounded px-1.5 py-0.5 text-right focus:outline-none focus:ring-2 focus:ring-sky-400" />
+                  <span class="text-xs text-gray-400">%</span>
+                </div>
+                <span id="overall-disc-pct-label" class="print-only text-xs text-gray-400"></span>
+              </div>
+              <span id="overall-discount-display" class="font-medium tabular-nums text-rose-600">- $ 0.00</span>
+            </div>
+            <div class="flex justify-between text-sm text-gray-600">
+              <span id="tax-label">Tax (0 %)</span>
+              <span id="tax-display" class="font-medium tabular-nums">$ 0.00</span>
+            </div>
+            <div class="flex justify-between text-base font-bold text-gray-800 border-t-2 border-gray-300 pt-3 mt-2">
+              <span>Grand Total</span>
+              <span id="total-display" class="tabular-nums text-sky-700 text-lg">$ 0.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Terms & conditions -->
+      <div class="px-8 pb-8 border-t border-gray-100 pt-6">
+        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Terms &amp; Conditions</div>
+        <div
+          id="terms"
+          contenteditable="true"
+          data-placeholder="Payment terms, delivery schedule, intellectual property notes, confidentiality, etc."
+          data-key="terms"
+          class="text-sm text-gray-600 min-h-[60px] whitespace-pre-wrap leading-relaxed focus:outline-none focus:bg-sky-50 focus:rounded px-1 -ml-1 block">
+        </div>
+      </div>
+
+      <!-- Signature block -->
+      <div class="px-8 pb-8 border-t border-gray-100 pt-6 grid grid-cols-1 sm:grid-cols-2 gap-10">
+        <div>
+          <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Authorized By</div>
+          <div class="border-b border-gray-300 pb-1 mb-1 min-h-[32px]"></div>
+          <div class="text-xs text-gray-400">Signature &amp; Date</div>
+          <div
+            id="auth-name"
+            contenteditable="true"
+            data-placeholder="Name &amp; Title"
+            data-key="authName"
+            class="text-sm text-gray-600 mt-2 focus:outline-none focus:bg-sky-50 focus:rounded px-1 -ml-1 block">
+          </div>
+        </div>
+        <div>
+          <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Accepted By (Client)</div>
+          <div class="border-b border-gray-300 pb-1 mb-1 min-h-[32px]"></div>
+          <div class="text-xs text-gray-400">Signature &amp; Date</div>
+          <div class="text-sm text-gray-400 mt-2 italic">Client signature</div>
+        </div>
+      </div>
+
+      <!-- Footer band -->
+      <div class="bg-gray-50 border-t border-gray-200 px-8 py-4 text-center text-xs text-gray-400">
+        <span id="footer-seller-name"></span>
+        <span id="footer-quote-number"></span>
+        &mdash; This quote is valid until <span id="footer-valid-until">the date shown above</span>.
+      </div>
+
+    </div><!-- /quote-wrapper -->
+  </div><!-- /main area -->
+
+<script>
+(function () {
+  'use strict';
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function fmtDate(d) {
+    var mm = ('0' + (d.getMonth() + 1)).slice(-2);
+    var dd = ('0' + d.getDate()).slice(-2);
+    return d.getFullYear() + '-' + mm + '-' + dd;
+  }
+
+  function formatMoney(n, sym) {
+    var num = Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return sym + ' ' + num;
+  }
+
+  // ── Default state ────────────────────────────────────────────────────────────
+  var today = new Date();
+  var valid = new Date(today);
+  valid.setDate(valid.getDate() + 30);
+
+  var DEFAULT_LINES = [
+    { desc: 'Enterprise Platform License (annual)', qty: 1,  price: 24000, disc: 0,  type: 'one-time' },
+    { desc: 'Onboarding & Implementation Services', qty: 1,  price: 8500,  disc: 10, type: 'one-time' },
+    { desc: 'Priority Support & Success Manager',   qty: 12, price: 750,   disc: 0,  type: 'monthly'  },
+    { desc: 'Custom API Integration (hours)',        qty: 20, price: 195,   disc: 5,  type: 'one-time' }
+  ];
+
+  var DEFAULT_STATE = {
+    sellerName:      'Acme Solutions, Inc.',
+    sellerAddress:   '500 Market Street, Suite 1200\nSan Francisco, CA 94105',
+    sellerContact:   'sales@acmesolutions.com  ·  (415) 555-0200',
+    clientName:      'Horizon Enterprises LLC',
+    clientContact:   'Contact: Sarah Mitchell · s.mitchell@horizonent.com',
+    clientAddress:   '200 Park Avenue, 31st Floor\nNew York, NY 10166',
+    repName:         'Jordan Park, Senior Account Executive',
+    repContact:      'jordan.park@acmesolutions.com  ·  (415) 555-0212',
+    quoteNumber:     'Q-2025-042',
+    issueDate:       fmtDate(today),
+    validUntil:      fmtDate(valid),
+    scopeNote:       'This proposal covers the full deployment of the Acme Enterprise Platform for Horizon Enterprises, including software licensing, onboarding services, and ongoing support. All work will be delivered within 60 days of signed agreement.\n\nPricing is fixed for the scope described. Any additional requirements will be quoted separately.',
+    terms:           'Payment: 50% upon signature, 50% upon go-live.\nDelivery: Implementation begins within 5 business days of signed agreement.\nLicenses are non-transferable. Annual license auto-renews unless cancelled 30 days prior.\nThis proposal is confidential and intended solely for the named recipient.',
+    authName:        'Jordan Park, Senior Account Executive',
+    currency:        '$',
+    taxRate:         0,
+    overallDiscount: 0,
+    lines:           JSON.parse(JSON.stringify(DEFAULT_LINES))
+  };
+
+  var state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+
+  // ── LocalStorage ─────────────────────────────────────────────────────────────
+  var LS_KEY = 'quote-builder-v1';
+
+  function saveState() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (!raw) return;
+      var saved = JSON.parse(raw);
+      Object.assign(state, saved);
+    } catch (e) {}
+  }
+
+  // ── DOM refs ─────────────────────────────────────────────────────────────────
+  var elSellerName     = document.getElementById('seller-name');
+  var elSellerAddress  = document.getElementById('seller-address');
+  var elSellerContact  = document.getElementById('seller-contact');
+  var elClientName     = document.getElementById('client-name');
+  var elClientContact  = document.getElementById('client-contact');
+  var elClientAddress  = document.getElementById('client-address');
+  var elRepName        = document.getElementById('rep-name');
+  var elRepContact     = document.getElementById('rep-contact');
+  var elQuoteNumber    = document.getElementById('quote-number');
+  var elIssueDate      = document.getElementById('issue-date');
+  var elValidUntil     = document.getElementById('valid-until');
+  var elScopeNote      = document.getElementById('scope-note');
+  var elTerms          = document.getElementById('terms');
+  var elAuthName       = document.getElementById('auth-name');
+  var elCurrency       = document.getElementById('currency-select');
+  var elTaxSelect      = document.getElementById('tax-select');
+  var elOverallDisc    = document.getElementById('overall-discount');
+  var elBody           = document.getElementById('line-items-body');
+  var elSubtotal       = document.getElementById('subtotal-display');
+  var elOverallDiscDisplay = document.getElementById('overall-discount-display');
+  var elTaxDisplay     = document.getElementById('tax-display');
+  var elTotal          = document.getElementById('total-display');
+  var elTaxLabel       = document.getElementById('tax-label');
+  var elFooterSeller   = document.getElementById('footer-seller-name');
+  var elFooterQuote    = document.getElementById('footer-quote-number');
+  var elFooterValid    = document.getElementById('footer-valid-until');
+  var btnAddRow        = document.getElementById('btn-add-row');
+  var btnNew           = document.getElementById('btn-new');
+
+  // ── Formatting ────────────────────────────────────────────────────────────────
+  function fmt(n) {
+    return formatMoney(n, state.currency);
+  }
+
+  // ── Render line items ─────────────────────────────────────────────────────────
+  function renderLines() {
+    elBody.innerHTML = '';
+    state.lines.forEach(function (line, idx) {
+      var qty   = parseFloat(line.qty)   || 0;
+      var price = parseFloat(line.price) || 0;
+      var disc  = parseFloat(line.disc)  || 0;
+      var lineSubtotal = qty * price;
+      var lineDiscount = lineSubtotal * disc / 100;
+      var amount = lineSubtotal - lineDiscount;
+      var type = line.type || 'one-time';
+      var badgeClass = type === 'monthly' ? 'badge-monthly' : 'badge-onetime';
+      var badgeLabel = type === 'monthly' ? 'Monthly' : 'One-time';
+
+      var tr = document.createElement('tr');
+      tr.className = 'border-b border-gray-100 group hover:bg-sky-50 transition-colors';
+      tr.dataset.idx = idx;
+
+      tr.innerHTML =
+        '<td class="py-2.5 pr-3">' +
+          '<input type="text" placeholder="Service or product description" value="' + escHtml(line.desc) + '" ' +
+                 'data-field="desc" data-idx="' + idx + '" ' +
+                 'class="w-full border-0 border-b border-transparent focus:border-sky-400 focus:outline-none bg-transparent text-gray-700 text-sm py-0.5 transition-colors" />' +
+        '</td>' +
+        '<td class="py-2.5 text-center no-print">' +
+          '<button data-type-toggle="' + idx + '" ' +
+                  'class="text-xs font-semibold px-2 py-0.5 rounded-full ' + badgeClass + ' hover:opacity-80 transition cursor-pointer" ' +
+                  'title="Click to toggle One-time / Monthly">' + badgeLabel + '</button>' +
+        '</td>' +
+        '<td class="py-2.5 pr-3 text-right">' +
+          '<input type="number" min="0" step="0.01" value="' + line.qty + '" ' +
+                 'data-field="qty" data-idx="' + idx + '" ' +
+                 'class="w-14 border-0 border-b border-transparent focus:border-sky-400 focus:outline-none bg-transparent text-gray-700 text-sm text-right py-0.5 transition-colors" />' +
+        '</td>' +
+        '<td class="py-2.5 pr-3 text-right">' +
+          '<input type="number" min="0" step="0.01" value="' + line.price + '" ' +
+                 'data-field="price" data-idx="' + idx + '" ' +
+                 'class="w-24 border-0 border-b border-transparent focus:border-sky-400 focus:outline-none bg-transparent text-gray-700 text-sm text-right py-0.5 transition-colors" />' +
+        '</td>' +
+        '<td class="py-2.5 pr-3 text-right">' +
+          '<input type="number" min="0" max="100" step="0.1" value="' + (disc > 0 ? disc : '') + '" placeholder="0" ' +
+                 'data-field="disc" data-idx="' + idx + '" ' +
+                 'class="w-16 border-0 border-b border-transparent focus:border-sky-400 focus:outline-none bg-transparent text-gray-700 text-sm text-right py-0.5 transition-colors" />' +
+        '</td>' +
+        '<td class="py-2.5 text-right text-gray-800 font-medium tabular-nums whitespace-nowrap amount-cell">' +
+          fmt(amount) +
+        '</td>' +
+        '<td class="py-2.5 pl-2 no-print">' +
+          '<button data-remove="' + idx + '" ' +
+                  'class="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition text-xl leading-none font-light" ' +
+                  'title="Remove row">&times;</button>' +
+        '</td>';
+
+      elBody.appendChild(tr);
+    });
+
+    updateTotals();
+  }
+
+  // ── Compute and update totals ──────────────────────────────────────────────
+  function updateTotals() {
+    // Line-level subtotals (after per-line discounts)
+    var lineDiscountTotal = 0;
+    var grossSubtotal = 0;
+    var netSubtotal = 0;
+
+    state.lines.forEach(function (l) {
+      var qty   = parseFloat(l.qty)   || 0;
+      var price = parseFloat(l.price) || 0;
+      var disc  = parseFloat(l.disc)  || 0;
+      var lineSub = qty * price;
+      var lineDisc = lineSub * disc / 100;
+      grossSubtotal += lineSub;
+      lineDiscountTotal += lineDisc;
+      netSubtotal += lineSub - lineDisc;
+    });
+
+    var overallDiscPct = parseFloat(state.overallDiscount) || 0;
+    var overallDiscAmt = netSubtotal * overallDiscPct / 100;
+    var afterDiscounts = netSubtotal - overallDiscAmt;
+
+    var taxRate = parseFloat(state.taxRate) || 0;
+    var taxAmt  = afterDiscounts * taxRate / 100;
+    var grandTotal = afterDiscounts + taxAmt;
+
+    elSubtotal.textContent = fmt(grossSubtotal);
+    elOverallDiscDisplay.textContent = lineDiscountTotal + overallDiscAmt > 0
+      ? '- ' + fmt(lineDiscountTotal + overallDiscAmt)
+      : fmt(0);
+    elTaxDisplay.textContent = fmt(taxAmt);
+    elTotal.textContent      = fmt(grandTotal);
+    elTaxLabel.textContent   = 'Tax (' + taxRate + ' %)';
+
+    // Update individual amount cells
+    var amtCells = elBody.querySelectorAll('.amount-cell');
+    amtCells.forEach(function (cell, idx) {
+      var l = state.lines[idx];
+      if (!l) return;
+      var qty   = parseFloat(l.qty)   || 0;
+      var price = parseFloat(l.price) || 0;
+      var disc  = parseFloat(l.disc)  || 0;
+      var lineSub = qty * price;
+      cell.textContent = fmt(lineSub - lineSub * disc / 100);
+    });
+  }
+
+  // ── Update footer ──────────────────────────────────────────────────────────
+  function updateFooter() {
+    elFooterSeller.textContent = state.sellerName ? state.sellerName + '  ' : '';
+    elFooterQuote.textContent  = state.quoteNumber ? '·  ' + state.quoteNumber + '  ' : '';
+    elFooterValid.textContent  = state.validUntil  || 'the date shown above';
+  }
+
+  // ── Populate fields from state ─────────────────────────────────────────────
+  function populateFields() {
+    elSellerName.textContent    = state.sellerName;
+    elSellerAddress.textContent = state.sellerAddress;
+    elSellerContact.textContent = state.sellerContact;
+    elClientName.textContent    = state.clientName;
+    elClientContact.textContent = state.clientContact;
+    elClientAddress.textContent = state.clientAddress;
+    elRepName.textContent       = state.repName;
+    elRepContact.textContent    = state.repContact;
+    elScopeNote.textContent     = state.scopeNote;
+    elTerms.textContent         = state.terms;
+    elAuthName.textContent      = state.authName;
+    elQuoteNumber.value         = state.quoteNumber;
+    elIssueDate.value           = state.issueDate;
+    elValidUntil.value          = state.validUntil;
+    elCurrency.value            = state.currency;
+    elTaxSelect.value           = String(state.taxRate);
+    elOverallDisc.value         = state.overallDiscount;
+    updateFooter();
+    renderLines();
+  }
+
+  // ── Bind contenteditable fields ───────────────────────────────────────────
+  var ceFields = [
+    elSellerName, elSellerAddress, elSellerContact,
+    elClientName, elClientContact, elClientAddress,
+    elRepName, elRepContact,
+    elScopeNote, elTerms, elAuthName
+  ];
+
+  ceFields.forEach(function (el) {
+    el.addEventListener('input', function () {
+      var key = el.dataset.key;
+      if (!key) return;
+      state[key] = el.textContent;
+      if (key === 'sellerName' || key === 'quoteNumber' || key === 'validUntil') updateFooter();
+      saveState();
+    });
+  });
+
+  // ── Bind simple inputs ─────────────────────────────────────────────────────
+  function bindInput(el, key, cb) {
+    el.addEventListener('input', function () {
+      state[key] = el.value;
+      if (cb) cb();
+      saveState();
+    });
+    el.addEventListener('change', function () {
+      state[key] = el.value;
+      if (cb) cb();
+      saveState();
+    });
+  }
+
+  bindInput(elQuoteNumber, 'quoteNumber', updateFooter);
+  bindInput(elIssueDate,   'issueDate');
+  bindInput(elValidUntil,  'validUntil',  updateFooter);
+
+  elCurrency.addEventListener('change', function () {
+    state.currency = elCurrency.value;
+    updateTotals();
+    saveState();
+  });
+
+  elTaxSelect.addEventListener('change', function () {
+    state.taxRate = parseFloat(elTaxSelect.value) || 0;
+    updateTotals();
+    saveState();
+  });
+
+  elOverallDisc.addEventListener('input', function () {
+    state.overallDiscount = parseFloat(elOverallDisc.value) || 0;
+    updateTotals();
+    saveState();
+  });
+
+  // ── Line item table delegation ─────────────────────────────────────────────
+  elBody.addEventListener('input', function (e) {
+    var el = e.target;
+    var idx = parseInt(el.dataset.idx, 10);
+    var field = el.dataset.field;
+    if (isNaN(idx) || !field) return;
+    if (field === 'desc')  state.lines[idx].desc  = el.value;
+    if (field === 'qty')   state.lines[idx].qty   = el.value;
+    if (field === 'price') state.lines[idx].price = el.value;
+    if (field === 'disc')  state.lines[idx].disc  = el.value;
+    updateTotals();
+    saveState();
+  });
+
+  elBody.addEventListener('click', function (e) {
+    // Remove row
+    var removeBtn = e.target.closest('[data-remove]');
+    if (removeBtn) {
+      var idx = parseInt(removeBtn.dataset.remove, 10);
+      if (!isNaN(idx)) {
+        state.lines.splice(idx, 1);
+        renderLines();
+        saveState();
+      }
+      return;
+    }
+    // Toggle type
+    var typeBtn = e.target.closest('[data-type-toggle]');
+    if (typeBtn) {
+      var tidx = parseInt(typeBtn.dataset.typeToggle, 10);
+      if (!isNaN(tidx)) {
+        var cur = state.lines[tidx].type || 'one-time';
+        state.lines[tidx].type = (cur === 'one-time') ? 'monthly' : 'one-time';
+        renderLines();
+        saveState();
+      }
+    }
+  });
+
+  btnAddRow.addEventListener('click', function () {
+    state.lines.push({ desc: '', qty: 1, price: 0, disc: 0, type: 'one-time' });
+    renderLines();
+    saveState();
+    var rows = elBody.querySelectorAll('tr');
+    var lastRow = rows[rows.length - 1];
+    if (lastRow) {
+      var inp = lastRow.querySelector('input[data-field="desc"]');
+      if (inp) inp.focus();
+    }
+  });
+
+  // ── New Quote ──────────────────────────────────────────────────────────────
+  btnNew.addEventListener('click', function () {
+    if (!confirm('Start a new quote? All current data will be cleared.')) return;
+    var newToday = new Date();
+    var newValid = new Date(newToday);
+    newValid.setDate(newValid.getDate() + 30);
+    var fresh = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    fresh.issueDate  = fmtDate(newToday);
+    fresh.validUntil = fmtDate(newValid);
+    // Increment quote number if possible
+    if (state.quoteNumber) {
+      var parts = state.quoteNumber.match(/^(.*?)(\d+)$/);
+      if (parts) {
+        fresh.quoteNumber = parts[1] + (parseInt(parts[2], 10) + 1);
+      }
+    }
+    // Preserve seller/rep info
+    fresh.sellerName    = state.sellerName;
+    fresh.sellerAddress = state.sellerAddress;
+    fresh.sellerContact = state.sellerContact;
+    fresh.repName       = state.repName;
+    fresh.repContact    = state.repContact;
+    fresh.currency      = state.currency;
+    fresh.taxRate       = state.taxRate;
+    // Clear client + deal info
+    fresh.clientName    = '';
+    fresh.clientContact = '';
+    fresh.clientAddress = '';
+    fresh.scopeNote     = '';
+    fresh.terms         = DEFAULT_STATE.terms;
+    fresh.lines         = [{ desc: '', qty: 1, price: 0, disc: 0, type: 'one-time' }];
+    Object.assign(state, fresh);
+    populateFields();
+    saveState();
+  });
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  loadState();
+  populateFields();
+
+}());
+</script>
+</body>
+</html>

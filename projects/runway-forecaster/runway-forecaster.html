@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<!--
+  Runway Forecaster — Halison App Studio example
+
+  Project your startup's cash over 24 months: runway, zero-cash date, net burn,
+  and an optional raise. Live chart and KPIs; saves to your browser.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Runway Forecaster — Halison App Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+    .kpi-danger  { border-color: #ef4444; }
+    .kpi-warning { border-color: #f59e0b; }
+    .kpi-good    { border-color: #22c55e; }
+    .kpi-neutral { border-color: #6366f1; }
+    .chart-tooltip {
+      position: absolute;
+      background: rgba(15,23,42,0.92);
+      color: #f1f5f9;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      pointer-events: none;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      z-index: 10;
+    }
+    .input-field {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f1f5f9;
+      border-radius: 8px;
+      padding: 10px 14px;
+      width: 100%;
+      font-size: 15px;
+      transition: border-color 0.15s;
+      outline: none;
+    }
+    .input-field:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+    .input-label { font-size: 12px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .section-card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 24px; }
+    .kpi-card { background: #1e293b; border: 2px solid #334155; border-radius: 14px; padding: 20px 24px; }
+    .kpi-value { font-size: 30px; font-weight: 800; line-height: 1; }
+    .kpi-label { font-size: 12px; color: #94a3b8; margin-top: 6px; font-weight: 500; }
+    .kpi-sub   { font-size: 13px; color: #64748b; margin-top: 4px; }
+    select.input-field { cursor: pointer; }
+    option { background: #1e293b; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-950 sticky top-0 z-20">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+            <path d="M3 17L7.5 10 11 14 14.5 7 17 11" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="17" cy="11" r="1.5" fill="#fff"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="font-bold text-base leading-tight text-slate-100">Runway Forecaster</h1>
+          <p class="text-xs text-slate-500 leading-tight hidden sm:block">Startup cash projection · 24 months</p>
+        </div>
+      </div>
+      <a href="https://github.com/halisonworks/public-app-studio" target="_blank" rel="noopener"
+         class="text-xs text-slate-500 hover:text-indigo-400 transition-colors hidden sm:block">
+        Halison App Studio
+      </a>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+
+    <!-- Inputs -->
+    <div class="section-card">
+      <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-6">Model Inputs</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+        <div>
+          <div class="input-label">Starting Cash ($)</div>
+          <input id="inp-cash" type="number" min="0" step="1000" class="input-field" placeholder="500,000" />
+        </div>
+
+        <div>
+          <div class="input-label">Monthly Revenue ($)</div>
+          <input id="inp-revenue" type="number" min="0" step="500" class="input-field" placeholder="25,000" />
+        </div>
+
+        <div>
+          <div class="input-label">Revenue Growth (%/mo)</div>
+          <input id="inp-growth" type="number" step="0.1" class="input-field" placeholder="5" />
+        </div>
+
+        <div>
+          <div class="input-label">Monthly Fixed Expenses ($)</div>
+          <input id="inp-expenses" type="number" min="0" step="500" class="input-field" placeholder="60,000" />
+        </div>
+
+        <div>
+          <div class="input-label">One-Time Raise ($)</div>
+          <input id="inp-raise" type="number" min="0" step="10000" class="input-field" placeholder="0 (optional)" />
+        </div>
+
+        <div>
+          <div class="input-label">Raise Applied at Month</div>
+          <select id="inp-raise-month" class="input-field">
+            <option value="0">— No Raise —</option>
+          </select>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="kpi-grid">
+      <div class="kpi-card kpi-neutral" id="kpi-runway">
+        <div class="kpi-value text-indigo-400" id="kpi-runway-val">—</div>
+        <div class="kpi-label">Runway</div>
+        <div class="kpi-sub" id="kpi-runway-sub">months remaining</div>
+      </div>
+      <div class="kpi-card kpi-neutral" id="kpi-zero">
+        <div class="kpi-value text-rose-400" id="kpi-zero-val">—</div>
+        <div class="kpi-label">Zero-Cash Date</div>
+        <div class="kpi-sub" id="kpi-zero-sub">estimated cash-out</div>
+      </div>
+      <div class="kpi-card kpi-neutral" id="kpi-burn">
+        <div class="kpi-value text-amber-400" id="kpi-burn-val">—</div>
+        <div class="kpi-label">Net Burn (Mo 1)</div>
+        <div class="kpi-sub" id="kpi-burn-sub">expenses − revenue</div>
+      </div>
+      <div class="kpi-card kpi-neutral" id="kpi-breakeven">
+        <div class="kpi-value text-emerald-400" id="kpi-breakeven-val">—</div>
+        <div class="kpi-label">Breakeven</div>
+        <div class="kpi-sub" id="kpi-breakeven-sub">revenue ≥ expenses</div>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="section-card">
+      <div class="flex items-center justify-between mb-4 gap-2 flex-wrap">
+        <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-widest">Cash Balance — 24 Month Projection</h2>
+        <div class="flex items-center gap-4 text-xs text-slate-500">
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-0.5 bg-indigo-500"></span> Balance</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-3 h-0.5 bg-rose-500 border-dashed"></span> Zero line</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Raise</span>
+        </div>
+      </div>
+      <div id="chart-wrap" class="relative w-full" style="height:320px;">
+        <svg id="chart-svg" width="100%" height="100%" style="display:block;"></svg>
+        <div class="chart-tooltip" id="chart-tooltip" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- Monthly Table -->
+    <div class="section-card overflow-x-auto">
+      <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-4">Month-by-Month Detail</h2>
+      <table class="w-full text-sm" id="detail-table">
+        <thead>
+          <tr class="text-slate-500 text-xs uppercase tracking-wider border-b border-slate-700">
+            <th class="text-left py-2 pr-4 font-semibold">Month</th>
+            <th class="text-right py-2 pr-4 font-semibold">Revenue</th>
+            <th class="text-right py-2 pr-4 font-semibold">Expenses</th>
+            <th class="text-right py-2 pr-4 font-semibold">Net Burn</th>
+            <th class="text-right py-2 pr-4 font-semibold">Raise</th>
+            <th class="text-right py-2 font-semibold">Cash Balance</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <footer class="border-t border-slate-800 mt-12 py-6 text-center text-xs text-slate-600">
+    Runway Forecaster · <a href="https://github.com/halisonworks/public-app-studio" target="_blank" rel="noopener" class="hover:text-indigo-400 transition-colors">Halison App Studio</a> · Non-commercial use
+  </footer>
+
+  <script>
+    // ─── State & Storage ──────────────────────────────────────────────────────
+    const STORAGE_KEY = 'runway-forecaster-v1';
+    const DEFAULTS = {
+      cash:       500000,
+      revenue:    25000,
+      growth:     5,
+      expenses:   60000,
+      raise:      0,
+      raiseMonth: 0
+    };
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return Object.assign({}, DEFAULTS, JSON.parse(raw));
+      } catch(e) {}
+      return Object.assign({}, DEFAULTS);
+    }
+
+    function saveState(s) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch(e) {}
+    }
+
+    // ─── DOM refs ─────────────────────────────────────────────────────────────
+    const $ = id => document.getElementById(id);
+    const inpCash        = $('inp-cash');
+    const inpRevenue     = $('inp-revenue');
+    const inpGrowth      = $('inp-growth');
+    const inpExpenses    = $('inp-expenses');
+    const inpRaise       = $('inp-raise');
+    const inpRaiseMonth  = $('inp-raise-month');
+
+    // ─── Populate raise-month select ─────────────────────────────────────────
+    (function buildSelect() {
+      const sel = inpRaiseMonth;
+      for (let m = 1; m <= 24; m++) {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = 'Month ' + m;
+        sel.appendChild(opt);
+      }
+    })();
+
+    // ─── Init inputs from state ───────────────────────────────────────────────
+    const state = loadState();
+    inpCash.value       = state.cash;
+    inpRevenue.value    = state.revenue;
+    inpGrowth.value     = state.growth;
+    inpExpenses.value   = state.expenses;
+    inpRaise.value      = state.raise;
+    inpRaiseMonth.value = state.raiseMonth;
+
+    // ─── Helpers ──────────────────────────────────────────────────────────────
+    function fmtMoney(n, compact) {
+      if (compact) {
+        const abs = Math.abs(n);
+        let s;
+        if (abs >= 1e6)  s = (n / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M';
+        else if (abs >= 1e3) s = (n / 1e3).toFixed(1).replace(/\.?0+$/, '') + 'k';
+        else s = Math.round(n).toString();
+        return '$' + s;
+      }
+      return '$' + Math.round(n).toLocaleString('en-US');
+    }
+
+    function fmtDate(monthIndex) {
+      // monthIndex 1..24 relative to today
+      const d = new Date();
+      d.setDate(1);
+      d.setMonth(d.getMonth() + monthIndex);
+      return d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+    }
+
+    // ─── Core Forecast ────────────────────────────────────────────────────────
+    function forecast(s) {
+      const MONTHS = 24;
+      const rows = [];
+      let cash    = s.cash;
+      let revenue = s.revenue;
+
+      for (let m = 1; m <= MONTHS; m++) {
+        const expenses  = s.expenses;
+        const raise     = (s.raiseMonth === m && s.raise > 0) ? s.raise : 0;
+        const net       = revenue - expenses;          // negative = burning
+        const newCash   = cash + net + raise;
+
+        rows.push({ month: m, revenue, expenses, net, raise, cashStart: cash, cashEnd: newCash });
+        cash    = newCash;
+        revenue = revenue * (1 + s.growth / 100);
+      }
+
+      // KPIs
+      let runwayMonths   = null;
+      let zeroCashMonth  = null;
+      let breakevenMonth = null;
+
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        if (runwayMonths === null && r.cashEnd < 0) {
+          // interpolate: how far into this month does cash hit 0?
+          const fraction = r.cashStart / (r.cashStart - r.cashEnd);
+          runwayMonths  = (i) + fraction; // months from start
+          zeroCashMonth = r.month;
+        }
+        if (breakevenMonth === null && r.revenue >= r.expenses) {
+          breakevenMonth = r.month;
+        }
+      }
+
+      const netBurnMo1 = rows[0].expenses - rows[0].revenue; // positive = burning
+
+      return { rows, runwayMonths, zeroCashMonth, breakevenMonth, netBurnMo1 };
+    }
+
+    // ─── Update KPIs ─────────────────────────────────────────────────────────
+    function updateKPIs(result) {
+      const { runwayMonths, zeroCashMonth, netBurnMo1, breakevenMonth } = result;
+
+      // Runway
+      const runwayCard = $('kpi-runway');
+      const runwayVal  = $('kpi-runway-val');
+      const runwaySub  = $('kpi-runway-sub');
+      if (runwayMonths === null) {
+        runwayVal.textContent = '24+';
+        runwaySub.textContent = 'months · still positive';
+        runwayCard.className = 'kpi-card kpi-good';
+      } else {
+        const mo = Math.floor(runwayMonths);
+        const wk = Math.round((runwayMonths - mo) * 4.33);
+        runwayVal.textContent = mo + 'mo ' + (wk > 0 ? wk + 'w' : '');
+        runwaySub.textContent = 'until cash runs out';
+        if (runwayMonths <= 3)       runwayCard.className = 'kpi-card kpi-danger';
+        else if (runwayMonths <= 9)  runwayCard.className = 'kpi-card kpi-warning';
+        else                         runwayCard.className = 'kpi-card kpi-good';
+      }
+
+      // Zero-cash date
+      const zeroVal = $('kpi-zero-val');
+      const zeroSub = $('kpi-zero-sub');
+      if (zeroCashMonth === null) {
+        zeroVal.textContent = 'None';
+        zeroSub.textContent = 'within 24 months';
+      } else {
+        zeroVal.textContent = fmtDate(zeroCashMonth);
+        zeroSub.textContent = 'projected cash-out';
+      }
+
+      // Net burn
+      const burnVal = $('kpi-burn-val');
+      const burnSub = $('kpi-burn-sub');
+      if (netBurnMo1 <= 0) {
+        burnVal.textContent = fmtMoney(Math.abs(netBurnMo1), true);
+        burnSub.textContent = 'net gain / month 1';
+        $('kpi-burn').className = 'kpi-card kpi-good';
+      } else {
+        burnVal.textContent = fmtMoney(netBurnMo1, true) + '/mo';
+        burnSub.textContent = 'net burn · month 1';
+        $('kpi-burn').className = netBurnMo1 > 30000 ? 'kpi-card kpi-danger' : 'kpi-card kpi-warning';
+      }
+
+      // Breakeven
+      const beVal = $('kpi-breakeven-val');
+      const beSub = $('kpi-breakeven-sub');
+      if (breakevenMonth === null) {
+        beVal.textContent = '>24mo';
+        beSub.textContent = 'no breakeven found';
+        $('kpi-breakeven').className = 'kpi-card kpi-warning';
+      } else if (breakevenMonth === 1) {
+        beVal.textContent = 'Now';
+        beSub.textContent = 'already profitable';
+        $('kpi-breakeven').className = 'kpi-card kpi-good';
+      } else {
+        beVal.textContent = 'Mo ' + breakevenMonth;
+        beSub.textContent = fmtDate(breakevenMonth);
+        $('kpi-breakeven').className = 'kpi-card kpi-good';
+      }
+    }
+
+    // ─── Update Table ─────────────────────────────────────────────────────────
+    function updateTable(rows) {
+      const tbody = $('table-body');
+      tbody.innerHTML = '';
+      rows.forEach(r => {
+        const cashClass = r.cashEnd < 0 ? 'text-rose-400 font-bold' :
+                          r.cashEnd < 50000 ? 'text-amber-400' : 'text-emerald-400';
+        const burnClass = r.net < 0 ? 'text-rose-400' : 'text-emerald-400';
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-slate-800 hover:bg-slate-800/40 transition-colors';
+        tr.innerHTML =
+          '<td class="py-2.5 pr-4 text-slate-300 font-medium">Mo ' + r.month + ' <span class="text-slate-600 font-normal text-xs">(' + fmtDate(r.month) + ')</span></td>' +
+          '<td class="py-2.5 pr-4 text-right text-slate-300">' + fmtMoney(r.revenue, true) + '</td>' +
+          '<td class="py-2.5 pr-4 text-right text-slate-300">' + fmtMoney(r.expenses, true) + '</td>' +
+          '<td class="py-2.5 pr-4 text-right ' + burnClass + '">' + (r.net >= 0 ? '+' : '') + fmtMoney(r.net, true) + '</td>' +
+          '<td class="py-2.5 pr-4 text-right text-indigo-400">' + (r.raise > 0 ? fmtMoney(r.raise, true) : '—') + '</td>' +
+          '<td class="py-2.5 text-right ' + cashClass + '">' + fmtMoney(r.cashEnd, true) + '</td>';
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ─── Chart ────────────────────────────────────────────────────────────────
+    function updateChart(rows, s) {
+      const wrap  = $('chart-wrap');
+      const svg   = $('chart-svg');
+      const tip   = $('chart-tooltip');
+      const W     = wrap.clientWidth  || 800;
+      const H     = wrap.clientHeight || 320;
+      const PAD   = { top: 20, right: 24, bottom: 44, left: 72 };
+      const IW    = W - PAD.left - PAD.right;
+      const IH    = H - PAD.top  - PAD.bottom;
+
+      // Data: include month 0 (starting cash) and months 1..24
+      const data = [{ month: 0, cash: s.cash }];
+      rows.forEach(r => data.push({ month: r.month, cash: r.cashEnd }));
+
+      const allCash = data.map(d => d.cash);
+      const minC    = Math.min(0, ...allCash);
+      const maxC    = Math.max(0, ...allCash);
+      const rangeC  = maxC - minC || 1;
+
+      function xOf(m)  { return PAD.left + (m / 24) * IW; }
+      function yOf(c)  { return PAD.top  + IH - ((c - minC) / rangeC) * IH; }
+
+      // Build polyline points
+      const pts = data.map(d => xOf(d.month).toFixed(1) + ',' + yOf(d.cash).toFixed(1)).join(' ');
+
+      // Area path (fill under line to zero)
+      const zeroY   = yOf(0);
+      let areaPath  = 'M ' + xOf(0).toFixed(1) + ' ' + zeroY;
+      areaPath     += ' L ' + xOf(0).toFixed(1) + ' ' + yOf(data[0].cash).toFixed(1);
+      data.forEach(d => { areaPath += ' L ' + xOf(d.month).toFixed(1) + ' ' + yOf(d.cash).toFixed(1); });
+      areaPath     += ' L ' + xOf(24).toFixed(1) + ' ' + zeroY + ' Z';
+
+      // Y-axis ticks
+      const tickCount = 5;
+      const ticks = [];
+      for (let i = 0; i <= tickCount; i++) {
+        const val = minC + (rangeC / tickCount) * i;
+        ticks.push({ val, y: yOf(val) });
+      }
+
+      // X-axis ticks every 4 months
+      const xTicks = [0, 4, 8, 12, 16, 20, 24];
+
+      // Raise marker
+      const raiseMonthNum = parseInt(s.raiseMonth) || 0;
+      const hasRaise      = raiseMonthNum > 0 && s.raise > 0;
+
+      // Build SVG
+      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+      let html = '';
+
+      // Defs for gradient
+      html += '<defs>';
+      html += '<linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">';
+      html += '<stop offset="0%" stop-color="#6366f1" stop-opacity="0.3"/>';
+      html += '<stop offset="100%" stop-color="#6366f1" stop-opacity="0.02"/>';
+      html += '</linearGradient>';
+      html += '</defs>';
+
+      // Grid lines
+      ticks.forEach(t => {
+        html += '<line x1="' + PAD.left + '" y1="' + t.y.toFixed(1) + '" x2="' + (W - PAD.right) + '" y2="' + t.y.toFixed(1) + '" stroke="#1e293b" stroke-width="1"/>';
+      });
+
+      // Zero line
+      html += '<line x1="' + PAD.left + '" y1="' + zeroY.toFixed(1) + '" x2="' + (W - PAD.right) + '" y2="' + zeroY.toFixed(1) + '" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.6"/>';
+
+      // Area fill
+      html += '<path d="' + areaPath + '" fill="url(#areaGrad)"/>';
+
+      // Line
+      html += '<polyline points="' + pts + '" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+
+      // Raise marker vertical line
+      if (hasRaise) {
+        const rx = xOf(raiseMonthNum);
+        html += '<line x1="' + rx.toFixed(1) + '" y1="' + PAD.top + '" x2="' + rx.toFixed(1) + '" y2="' + (H - PAD.bottom) + '" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.7"/>';
+        // Dot on line at raise month
+        const raiseRow = data.find(d => d.month === raiseMonthNum);
+        if (raiseRow) {
+          html += '<circle cx="' + rx.toFixed(1) + '" cy="' + yOf(raiseRow.cash).toFixed(1) + '" r="6" fill="#22c55e" stroke="#0f172a" stroke-width="2"/>';
+        }
+      }
+
+      // Y axis labels
+      ticks.forEach(t => {
+        html += '<text x="' + (PAD.left - 8) + '" y="' + (t.y + 4).toFixed(1) + '" text-anchor="end" font-size="10" fill="#64748b">' + fmtMoney(t.val, true) + '</text>';
+      });
+
+      // X axis labels
+      xTicks.forEach(m => {
+        const x = xOf(m);
+        const label = m === 0 ? 'Now' : 'Mo ' + m;
+        html += '<text x="' + x.toFixed(1) + '" y="' + (H - PAD.bottom + 18) + '" text-anchor="middle" font-size="10" fill="#64748b">' + label + '</text>';
+        html += '<line x1="' + x.toFixed(1) + '" y1="' + (H - PAD.bottom) + '" x2="' + x.toFixed(1) + '" y2="' + (H - PAD.bottom + 5) + '" stroke="#334155" stroke-width="1"/>';
+      });
+
+      // Data point dots (hidden, for tooltip hit areas)
+      data.forEach(d => {
+        html += '<circle class="chart-pt" cx="' + xOf(d.month).toFixed(1) + '" cy="' + yOf(d.cash).toFixed(1) + '" r="5" fill="transparent" stroke="transparent" data-month="' + d.month + '" data-cash="' + d.cash + '" style="cursor:crosshair"/>';
+      });
+
+      // Axis lines
+      html += '<line x1="' + PAD.left + '" y1="' + PAD.top + '" x2="' + PAD.left + '" y2="' + (H - PAD.bottom) + '" stroke="#334155" stroke-width="1"/>';
+      html += '<line x1="' + PAD.left + '" y1="' + (H - PAD.bottom) + '" x2="' + (W - PAD.right) + '" y2="' + (H - PAD.bottom) + '" stroke="#334155" stroke-width="1"/>';
+
+      svg.innerHTML = html;
+
+      // Tooltip
+      svg.addEventListener('mousemove', function(e) {
+        const rect   = svg.getBoundingClientRect();
+        const mx     = e.clientX - rect.left;
+        const mo     = Math.round(((mx - PAD.left) / IW) * 24);
+        const clamped = Math.max(0, Math.min(24, mo));
+        const d = data.find(x => x.month === clamped);
+        if (!d) { tip.style.display = 'none'; return; }
+
+        const cx = xOf(d.month);
+        const cy = yOf(d.cash);
+        const label = d.month === 0 ? 'Start' : 'Month ' + d.month + ' (' + fmtDate(d.month) + ')';
+        tip.innerHTML = '<strong>' + label + '</strong><br/>Cash: ' + fmtMoney(d.cash, false);
+        if (d.month > 0) {
+          const row = rows[d.month - 1];
+          tip.innerHTML += '<br/>Net: ' + (row.net >= 0 ? '+' : '') + fmtMoney(row.net, false);
+          if (row.raise > 0) tip.innerHTML += '<br/>Raise: +' + fmtMoney(row.raise, false);
+        }
+
+        let tx = cx + 14;
+        let ty = cy - 10;
+        tip.style.display = 'block';
+        const tw = tip.offsetWidth;
+        const th = tip.offsetHeight;
+        if (tx + tw > W - PAD.right) tx = cx - tw - 14;
+        if (ty < 0) ty = cy + 14;
+        if (ty + th > H - PAD.bottom) ty = H - PAD.bottom - th;
+        tip.style.left = tx + 'px';
+        tip.style.top  = ty + 'px';
+      });
+
+      svg.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+    }
+
+    // ─── Main render loop ─────────────────────────────────────────────────────
+    function getInputs() {
+      return {
+        cash:       parseFloat(inpCash.value)       || 0,
+        revenue:    parseFloat(inpRevenue.value)    || 0,
+        growth:     parseFloat(inpGrowth.value)     || 0,
+        expenses:   parseFloat(inpExpenses.value)   || 0,
+        raise:      parseFloat(inpRaise.value)      || 0,
+        raiseMonth: parseInt(inpRaiseMonth.value)   || 0
+      };
+    }
+
+    function render() {
+      const s       = getInputs();
+      const result  = forecast(s);
+      saveState(s);
+      updateKPIs(result);
+      updateTable(result.rows);
+      updateChart(result.rows, s);
+    }
+
+    // ─── Event listeners ──────────────────────────────────────────────────────
+    [inpCash, inpRevenue, inpGrowth, inpExpenses, inpRaise, inpRaiseMonth].forEach(el => {
+      el.addEventListener('input', render);
+    });
+
+    // Redraw chart on window resize
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(render, 120);
+    });
+
+    // ─── Boot ─────────────────────────────────────────────────────────────────
+    render();
+  </script>
+</body>
+</html>

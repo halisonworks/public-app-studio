@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<!--
+  A/B Test Calculator — Halison App Studio example
+
+  Check if an A/B test result is statistically significant: conversion rates,
+  uplift, p-value (two-proportion z-test), confidence interval, and a verdict.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A/B Test Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+    .bar-track { transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+    .fade-in { animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .badge-sig { background: #d1fae5; color: #065f46; border: 1.5px solid #6ee7b7; }
+    .badge-not { background: #fee2e2; color: #991b1b; border: 1.5px solid #fca5a5; }
+    .badge-neutral { background: #f3f4f6; color: #374151; border: 1.5px solid #d1d5db; }
+    .ci-bar { stroke: #6366f1; stroke-width: 2; }
+    .ci-cap { stroke: #6366f1; stroke-width: 2; }
+    .tooltip { position: relative; }
+    .tooltip:hover .tooltip-text { display: block; }
+    .tooltip-text { display: none; position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%);
+      background: #1e293b; color: #f8fafc; font-size: 11px; padding: 4px 8px; border-radius: 5px;
+      white-space: nowrap; z-index: 50; pointer-events: none; }
+    .tooltip-text::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+      border: 5px solid transparent; border-top-color: #1e293b; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-gray-900 leading-tight">A/B Test Calculator</h1>
+          <p class="text-xs text-gray-500">Statistical significance for conversion rate tests</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="text-xs text-gray-500 font-medium mr-1">Significance threshold</label>
+        <select id="sigThreshold" class="text-sm border border-gray-300 rounded-md px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          <option value="0.90">90%</option>
+          <option value="0.95" selected>95%</option>
+          <option value="0.99">99%</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 py-8 space-y-6">
+
+    <!-- Input Section -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-5">Test Data</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Variant A -->
+        <div class="rounded-xl border-2 border-gray-200 p-5 space-y-4">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">A</span>
+            <span class="font-semibold text-gray-800">Variant A</span>
+            <span class="ml-auto text-xs text-gray-400 italic">Control</span>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Visitors</label>
+            <input id="visitorsA" type="number" min="1" value="4200"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+              placeholder="e.g. 4200" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Conversions</label>
+            <input id="conversionsA" type="number" min="0" value="378"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+              placeholder="e.g. 378" />
+          </div>
+          <div class="bg-blue-50 rounded-lg px-4 py-2 flex items-center justify-between">
+            <span class="text-xs text-blue-600 font-medium">Conversion rate</span>
+            <span id="rateA" class="text-lg font-bold text-blue-700">—</span>
+          </div>
+        </div>
+
+        <!-- Variant B -->
+        <div class="rounded-xl border-2 border-indigo-200 p-5 space-y-4">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">B</span>
+            <span class="font-semibold text-gray-800">Variant B</span>
+            <span class="ml-auto text-xs text-gray-400 italic">Challenger</span>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Visitors</label>
+            <input id="visitorsB" type="number" min="1" value="4050"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+              placeholder="e.g. 4050" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Conversions</label>
+            <input id="conversionsB" type="number" min="0" value="425"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+              placeholder="e.g. 425" />
+          </div>
+          <div class="bg-indigo-50 rounded-lg px-4 py-2 flex items-center justify-between">
+            <span class="text-xs text-indigo-600 font-medium">Conversion rate</span>
+            <span id="rateB" class="text-lg font-bold text-indigo-700">—</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Error Banner -->
+    <div id="errorBanner" class="hidden bg-red-50 border border-red-200 rounded-xl px-5 py-3 text-red-700 text-sm flex items-center gap-2">
+      <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+      <span id="errorText"></span>
+    </div>
+
+    <!-- Results Section -->
+    <div id="resultsSection" class="space-y-5 fade-in">
+
+      <!-- Verdict Card -->
+      <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div class="flex-1">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Verdict</h2>
+            <p id="verdictText" class="text-xl font-bold text-gray-800"></p>
+            <p id="verdictSub" class="text-sm text-gray-500 mt-1"></p>
+          </div>
+          <div id="verdictBadge" class="flex-shrink-0 px-5 py-3 rounded-xl font-bold text-base text-center min-w-[160px]"></div>
+        </div>
+      </section>
+
+      <!-- Key Metrics Grid -->
+      <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div class="text-xs text-gray-500 font-medium mb-1 tooltip">
+            Absolute Uplift
+            <span class="tooltip-text">Conversion rate B minus conversion rate A</span>
+          </div>
+          <div id="absUplift" class="text-2xl font-bold text-gray-800">—</div>
+          <div class="text-xs text-gray-400 mt-0.5">percentage points</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div class="text-xs text-gray-500 font-medium mb-1 tooltip">
+            Relative Uplift
+            <span class="tooltip-text">Absolute uplift divided by rate A</span>
+          </div>
+          <div id="relUplift" class="text-2xl font-bold text-gray-800">—</div>
+          <div class="text-xs text-gray-400 mt-0.5">improvement</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div class="text-xs text-gray-500 font-medium mb-1 tooltip">
+            p-value
+            <span class="tooltip-text">Two-tailed p-value from z-test. Lower = stronger evidence.</span>
+          </div>
+          <div id="pValue" class="text-2xl font-bold text-gray-800">—</div>
+          <div class="text-xs text-gray-400 mt-0.5">two-tailed</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div class="text-xs text-gray-500 font-medium mb-1 tooltip">
+            Confidence Level
+            <span class="tooltip-text">1 minus p-value, expressed as a percentage</span>
+          </div>
+          <div id="confLevel" class="text-2xl font-bold text-gray-800">—</div>
+          <div class="text-xs text-gray-400 mt-0.5">confidence</div>
+        </div>
+      </section>
+
+      <!-- Z-score & CI Row -->
+      <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div class="text-xs text-gray-500 font-medium mb-1 tooltip">
+            Z-score
+            <span class="tooltip-text">Two-proportion z-statistic. |z| > 1.96 indicates p &lt; 0.05.</span>
+          </div>
+          <div id="zScore" class="text-2xl font-bold text-gray-800">—</div>
+          <div class="text-xs text-gray-400 mt-0.5">standard deviations from null</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div class="text-xs text-gray-500 font-medium mb-1 tooltip">
+            95% Confidence Interval for Difference (B − A)
+            <span class="tooltip-text">Range likely to contain the true difference in conversion rates</span>
+          </div>
+          <div id="ciText" class="text-xl font-bold text-gray-800">—</div>
+          <div class="text-xs text-gray-400 mt-0.5">absolute difference in conversion rate</div>
+        </div>
+      </section>
+
+      <!-- Visual Comparison -->
+      <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-5">Conversion Rate Comparison</h2>
+
+        <!-- Bar Chart with CI Whiskers -->
+        <div id="svgContainer" class="w-full overflow-x-auto">
+          <svg id="barChart" width="100%" viewBox="0 0 560 160" preserveAspectRatio="xMidYMid meet" class="block">
+          </svg>
+        </div>
+
+        <!-- Legend -->
+        <div class="flex flex-wrap gap-4 mt-4 text-xs text-gray-500">
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-sm bg-blue-400 inline-block"></span> Variant A (Control)
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-sm bg-indigo-500 inline-block"></span> Variant B (Challenger)
+          </div>
+          <div class="flex items-center gap-1.5">
+            <svg width="20" height="12" class="inline-block"><line x1="10" y1="2" x2="10" y2="10" stroke="#6366f1" stroke-width="1.5"/><line x1="4" y1="2" x2="16" y2="2" stroke="#6366f1" stroke-width="1.5"/><line x1="4" y1="10" x2="16" y2="10" stroke="#6366f1" stroke-width="1.5"/></svg>
+            95% confidence interval
+          </div>
+        </div>
+      </section>
+
+      <!-- Methodology Note -->
+      <section class="bg-gray-50 rounded-xl border border-gray-200 px-5 py-4 text-xs text-gray-500 leading-relaxed">
+        <strong class="text-gray-700">Methodology:</strong> Two-proportion z-test (large-sample approximation). P-value computed via Abramowitz &amp; Stegun erf approximation (error &lt; 1.5 × 10<sup>−7</sup>). Confidence interval uses the normal approximation for the difference of two proportions. This calculator assumes independent samples and no multiple-testing correction. Minimum recommended sample: ~100 conversions per variant.
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="max-w-4xl mx-auto px-4 py-6 text-center text-xs text-gray-400">
+    A/B Test Calculator &mdash; <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-indigo-500" target="_blank" rel="noopener">Halison App Studio</a>
+  </footer>
+
+<script>
+// ─── Statistical helpers ────────────────────────────────────────────────────
+
+/**
+ * Normal CDF using Abramowitz & Stegun erf approximation (formula 7.1.26).
+ * Max error: 1.5e-7.
+ */
+function erf(x) {
+  const sign = x < 0 ? -1 : 1;
+  x = Math.abs(x);
+  const t = 1.0 / (1.0 + 0.3275911 * x);
+  const y = 1.0 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+  return sign * y;
+}
+
+function normCDF(z) {
+  return 0.5 * (1.0 + erf(z / Math.SQRT2));
+}
+
+/**
+ * Two-tailed p-value from z-score.
+ */
+function twoTailP(z) {
+  return 2 * (1 - normCDF(Math.abs(z)));
+}
+
+/**
+ * Inverse normal CDF (probit) — rational approximation for the CI.
+ * Accurate enough for p in (0.0001, 0.9999).
+ */
+function normInv(p) {
+  // Rational approximation (Peter J. Acklam's method)
+  const a = [-3.969683028665376e+01, 2.209460984245205e+02,
+             -2.759285104469687e+02, 1.383577518672690e+02,
+             -3.066479806614716e+01, 2.506628277459239e+00];
+  const b = [-5.447609879822406e+01, 1.615858368580409e+02,
+             -1.556989798598866e+02, 6.680131188771972e+01,
+             -1.328068155288572e+01];
+  const c = [-7.784894002430293e-03, -3.223964580411365e-01,
+             -2.400758277161838e+00, -2.549732539343734e+00,
+              4.374664141464968e+00, 2.938163982698783e+00];
+  const d = [ 7.784695709041462e-03, 3.224671290700398e-01,
+              2.445134137142996e+00, 3.754408661907416e+00];
+  const pLow = 0.02425, pHigh = 1 - pLow;
+  let q, r;
+  if (p < pLow) {
+    q = Math.sqrt(-2 * Math.log(p));
+    return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) /
+           ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+  } else if (p <= pHigh) {
+    q = p - 0.5; r = q * q;
+    return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q /
+           (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+  } else {
+    q = Math.sqrt(-2 * Math.log(1 - p));
+    return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) /
+            ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+  }
+}
+
+/**
+ * Two-proportion z-score.
+ */
+function twoProportionZ(nA, cA, nB, cB) {
+  const pA = cA / nA;
+  const pB = cB / nB;
+  const pooled = (cA + cB) / (nA + nB);
+  const se = Math.sqrt(pooled * (1 - pooled) * (1/nA + 1/nB));
+  if (se === 0) return 0;
+  return (pB - pA) / se;
+}
+
+/**
+ * 95% CI for difference pB - pA (unpooled SE).
+ */
+function diffCI(nA, cA, nB, cB, level) {
+  const pA = cA / nA;
+  const pB = cB / nB;
+  const se = Math.sqrt(pA * (1 - pA) / nA + pB * (1 - pB) / nB);
+  const z = normInv(1 - (1 - level) / 2);
+  const diff = pB - pA;
+  return { lo: diff - z * se, hi: diff + z * se, diff, se };
+}
+
+// ─── Formatting ─────────────────────────────────────────────────────────────
+
+function pct(x, decimals = 2) {
+  return (x * 100).toFixed(decimals) + '%';
+}
+function fmtDiff(x) {
+  const sign = x > 0 ? '+' : '';
+  return sign + (x * 100).toFixed(2) + ' pp';
+}
+function fmtRel(x) {
+  const sign = x > 0 ? '+' : '';
+  return sign + (x * 100).toFixed(1) + '%';
+}
+
+// ─── DOM refs ───────────────────────────────────────────────────────────────
+
+const fields = {
+  vA: () => document.getElementById('visitorsA'),
+  cA: () => document.getElementById('conversionsA'),
+  vB: () => document.getElementById('visitorsB'),
+  cB: () => document.getElementById('conversionsB'),
+  threshold: () => document.getElementById('sigThreshold'),
+};
+const out = id => document.getElementById(id);
+
+// ─── SVG bar chart ──────────────────────────────────────────────────────────
+
+function drawChart(pA, pB, ciLo, ciHi) {
+  const svg = document.getElementById('barChart');
+  svg.innerHTML = '';
+
+  const W = 560, H = 160;
+  const marginL = 80, marginR = 30, marginTop = 20, marginBot = 30;
+  const chartW = W - marginL - marginR;
+  const chartH = H - marginTop - marginBot;
+  const barHeight = 32;
+  const barGap = (chartH - 2 * barHeight) / 3;
+  const yA = marginTop + barGap;
+  const yB = marginTop + 2 * barGap + barHeight;
+
+  // Determine scale: go from 0 to max(pA, pB) * 1.35 + a bit for whiskers
+  const maxVal = Math.max(pA, pB, pB + (ciHi - (pB - pA))) * 1.35;
+  const scale = (v) => (v / maxVal) * chartW;
+
+  function ns(tag, attrs) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    return el;
+  }
+
+  // Gridlines
+  const gridVals = [0, 0.25, 0.5, 0.75, 1.0].map(f => f * maxVal).filter(v => v <= maxVal);
+  for (const gv of gridVals) {
+    const gx = marginL + scale(gv);
+    svg.appendChild(ns('line', { x1: gx, y1: marginTop, x2: gx, y2: H - marginBot, stroke: '#e5e7eb', 'stroke-width': 1 }));
+    const lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    lbl.setAttribute('x', gx); lbl.setAttribute('y', H - marginBot + 14);
+    lbl.setAttribute('text-anchor', 'middle'); lbl.setAttribute('font-size', '9');
+    lbl.setAttribute('fill', '#9ca3af');
+    lbl.textContent = pct(gv, 1);
+    svg.appendChild(lbl);
+  }
+
+  // Bars
+  function drawBar(y, val, color, label, rate) {
+    const w = Math.max(scale(val), 2);
+    // Bar
+    svg.appendChild(ns('rect', { x: marginL, y, width: w, height: barHeight, fill: color, rx: 4, opacity: 0.85 }));
+    // Label left
+    const lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    lbl.setAttribute('x', marginL - 8); lbl.setAttribute('y', y + barHeight / 2 + 4);
+    lbl.setAttribute('text-anchor', 'end'); lbl.setAttribute('font-size', '12');
+    lbl.setAttribute('font-weight', '600'); lbl.setAttribute('fill', '#374151');
+    lbl.textContent = label;
+    svg.appendChild(lbl);
+    // Rate label inside/right of bar
+    const rlbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    const tx = marginL + w + 6;
+    rlbl.setAttribute('x', tx); rlbl.setAttribute('y', y + barHeight / 2 + 4);
+    rlbl.setAttribute('text-anchor', 'start'); rlbl.setAttribute('font-size', '11');
+    rlbl.setAttribute('font-weight', '700'); rlbl.setAttribute('fill', color);
+    rlbl.textContent = rate;
+    svg.appendChild(rlbl);
+  }
+
+  drawBar(yA, pA, '#60a5fa', 'A', pct(pA));
+  drawBar(yB, pB, '#6366f1', 'B', pct(pB));
+
+  // CI whisker for B (difference from A, visualized as marker on B bar)
+  // We show CI as whiskers on the B bar, centered at pB
+  const ciCenterX = marginL + scale(pB);
+  const ciLoX = marginL + scale(Math.max(pB + ciLo - (pB - pA + ciLo - ciLo), pB + (ciLo))) ;
+  // Actually: ciLo and ciHi are for the DIFFERENCE (pB - pA).
+  // pB's CI in absolute terms: pB + (ciLo - diff) = pA + ciLo ... no.
+  // CI is for (pB - pA): [ciLo, ciHi]. So pB point est ± se*z.
+  // Whisker endpoints in rate space: pA + ciLo to pA + ciHi — that's the CI for pB given pA=fixed.
+  // Better: just show whisker centered at pB, half-width = (ciHi - ciLo)/2
+  const halfCI = (ciHi - ciLo) / 2;
+  const wxLo = Math.max(marginL, marginL + scale(pB - halfCI));
+  const wxHi = Math.min(marginL + chartW, marginL + scale(pB + halfCI));
+  const wyMid = yB + barHeight / 2;
+  const capH = 8;
+
+  // Whisker line
+  svg.appendChild(ns('line', { x1: wxLo, y1: wyMid, x2: wxHi, y2: wyMid, stroke: '#c7d2fe', 'stroke-width': 2.5 }));
+  // Caps
+  svg.appendChild(ns('line', { x1: wxLo, y1: wyMid - capH/2, x2: wxLo, y2: wyMid + capH/2, stroke: '#818cf8', 'stroke-width': 2 }));
+  svg.appendChild(ns('line', { x1: wxHi, y1: wyMid - capH/2, x2: wxHi, y2: wyMid + capH/2, stroke: '#818cf8', 'stroke-width': 2 }));
+  // Center dot
+  svg.appendChild(ns('circle', { cx: ciCenterX, cy: wyMid, r: 4, fill: '#4338ca' }));
+}
+
+// ─── Main calculation ────────────────────────────────────────────────────────
+
+function calculate() {
+  const nA = parseInt(fields.vA().value, 10);
+  const cA = parseInt(fields.cA().value, 10);
+  const nB = parseInt(fields.vB().value, 10);
+  const cB = parseInt(fields.cB().value, 10);
+  const threshold = parseFloat(fields.threshold().value);
+  const thresholdPct = Math.round(threshold * 100);
+
+  const errBanner = out('errorBanner');
+  const errText = out('errorText');
+
+  // Validation
+  const errors = [];
+  if (!nA || nA < 1) errors.push('Variant A visitors must be at least 1.');
+  if (!nB || nB < 1) errors.push('Variant B visitors must be at least 1.');
+  if (isNaN(cA) || cA < 0) errors.push('Variant A conversions must be 0 or more.');
+  if (isNaN(cB) || cB < 0) errors.push('Variant B conversions must be 0 or more.');
+  if (cA > nA) errors.push('Variant A conversions cannot exceed visitors.');
+  if (cB > nB) errors.push('Variant B conversions cannot exceed visitors.');
+
+  if (errors.length > 0) {
+    errText.textContent = errors[0];
+    errBanner.classList.remove('hidden');
+    out('resultsSection').classList.add('opacity-30', 'pointer-events-none');
+    return;
+  }
+  errBanner.classList.add('hidden');
+  out('resultsSection').classList.remove('opacity-30', 'pointer-events-none');
+
+  const pA = cA / nA;
+  const pB = cB / nB;
+
+  // Rates
+  out('rateA').textContent = pct(pA);
+  out('rateB').textContent = pct(pB);
+
+  // Uplift
+  const absUp = pB - pA;
+  const relUp = pA !== 0 ? absUp / pA : 0;
+  const upColor = absUp > 0 ? 'text-green-600' : absUp < 0 ? 'text-red-500' : 'text-gray-700';
+  out('absUplift').className = 'text-2xl font-bold ' + upColor;
+  out('absUplift').textContent = fmtDiff(absUp);
+  out('relUplift').className = 'text-2xl font-bold ' + upColor;
+  out('relUplift').textContent = fmtRel(relUp);
+
+  // Z-score
+  const z = twoProportionZ(nA, cA, nB, cB);
+  const p = twoTailP(z);
+  const confLvl = 1 - p;
+
+  out('zScore').textContent = z.toFixed(4);
+  out('pValue').textContent = p < 0.0001 ? '< 0.0001' : p.toFixed(4);
+  out('confLevel').textContent = pct(confLvl, 1);
+
+  // CI for difference (using 95% CI always for the displayed interval)
+  const ci = diffCI(nA, cA, nB, cB, 0.95);
+  out('ciText').textContent = `[${fmtDiff(ci.lo)}, ${fmtDiff(ci.hi)}]`;
+
+  // Verdict
+  const significant = confLvl >= threshold;
+  const verdictBadge = out('verdictBadge');
+  const verdictText = out('verdictText');
+  const verdictSub = out('verdictSub');
+
+  verdictBadge.className = 'flex-shrink-0 px-5 py-3 rounded-xl font-bold text-base text-center min-w-[160px] ' +
+    (significant ? 'badge-sig' : 'badge-not');
+
+  if (significant) {
+    verdictBadge.textContent = `Significant at ${thresholdPct}%`;
+    if (absUp > 0) {
+      verdictText.textContent = `Variant B outperforms Variant A by ${fmtDiff(absUp)} (${fmtRel(relUp)})`;
+      verdictSub.textContent = `You can be ${pct(confLvl, 1)} confident this difference is real. p = ${p < 0.0001 ? '< 0.0001' : p.toFixed(4)}`;
+    } else if (absUp < 0) {
+      verdictText.textContent = `Variant A outperforms Variant B by ${fmtDiff(-absUp)} (${fmtRel(-relUp)})`;
+      verdictSub.textContent = `Variant B performs worse. Confidence: ${pct(confLvl, 1)}. p = ${p < 0.0001 ? '< 0.0001' : p.toFixed(4)}`;
+    } else {
+      verdictText.textContent = 'No difference detected between variants.';
+      verdictSub.textContent = `Conversion rates are identical.`;
+    }
+  } else {
+    verdictBadge.textContent = 'Not Yet Significant';
+    verdictText.textContent = `Results are inconclusive at the ${thresholdPct}% threshold.`;
+    verdictSub.textContent = `Current confidence: ${pct(confLvl, 1)}. p = ${p.toFixed(4)}. Collect more data before deciding.`;
+  }
+
+  // Persist to localStorage
+  try {
+    localStorage.setItem('abcalc', JSON.stringify({ nA, cA, nB, cB, threshold }));
+  } catch(e) { /* ignore */ }
+
+  // Draw chart
+  drawChart(pA, pB, ci.lo, ci.hi);
+}
+
+// ─── Event listeners ─────────────────────────────────────────────────────────
+
+['visitorsA', 'conversionsA', 'visitorsB', 'conversionsB', 'sigThreshold'].forEach(id => {
+  document.getElementById(id).addEventListener('input', calculate);
+});
+
+// ─── Load from localStorage ───────────────────────────────────────────────────
+
+(function restoreOrInit() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('abcalc'));
+    if (saved) {
+      fields.vA().value = saved.nA;
+      fields.cA().value = saved.cA;
+      fields.vB().value = saved.nB;
+      fields.cB().value = saved.cB;
+      fields.threshold().value = saved.threshold || 0.95;
+    }
+  } catch(e) { /* ignore */ }
+  calculate();
+})();
+</script>
+</body>
+</html>

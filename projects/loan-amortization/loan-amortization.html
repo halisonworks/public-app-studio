@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<!--
+  Loan Amortization — Halison App Studio example
+
+  A loan/mortgage calculator: monthly payment, total interest, payoff time with
+  optional extra payments, a full schedule, and a balance chart.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loan Amortization Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:  '#f0f4ff',
+              100: '#dde8ff',
+              200: '#c3d4ff',
+              300: '#9db6ff',
+              400: '#748eff',
+              500: '#4f65ff',
+              600: '#3a44f5',
+              700: '#2f34e0',
+              800: '#282cb5',
+              900: '#252c8e',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /* smooth number transitions */
+    .stat-value { transition: all 0.25s ease; }
+    /* table sticky header */
+    #schedule-wrapper { max-height: 420px; overflow-y: auto; }
+    #schedule-wrapper thead th {
+      position: sticky; top: 0; z-index: 1;
+      background: #1e1b4b;
+    }
+    /* custom scrollbar */
+    #schedule-wrapper::-webkit-scrollbar { width: 6px; }
+    #schedule-wrapper::-webkit-scrollbar-track { background: #1e1b4b; }
+    #schedule-wrapper::-webkit-scrollbar-thumb { background: #4f65ff; border-radius: 3px; }
+    /* SVG chart tooltip */
+    #chart-tooltip {
+      pointer-events: none;
+      transition: opacity 0.15s;
+    }
+    input[type=range]::-webkit-slider-thumb { cursor: pointer; }
+    /* Firefox number input spinner removal */
+    input[type=number] { -moz-appearance: textfield; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen font-sans antialiased">
+
+  <!-- ───────────────────────── HEADER ───────────────────────── -->
+  <header class="bg-brand-900 border-b border-brand-700 shadow-lg">
+    <div class="max-w-6xl mx-auto px-4 py-5 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-white">Loan Amortization Calculator</h1>
+        <p class="text-brand-300 text-sm mt-0.5">Monthly payment · Total interest · Full schedule · Balance chart</p>
+      </div>
+      <div class="hidden sm:flex items-center gap-2 text-brand-300 text-xs">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0-6C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+        </svg>
+        Inputs auto-saved
+      </div>
+    </div>
+  </header>
+
+  <!-- ───────────────────────── MAIN ───────────────────────── -->
+  <main class="max-w-6xl mx-auto px-4 py-8 space-y-8">
+
+    <!-- INPUT PANEL -->
+    <section class="bg-gray-900 rounded-2xl border border-gray-800 shadow-xl p-6">
+      <h2 class="text-lg font-semibold text-brand-300 mb-5 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.172-8.172z"/>
+        </svg>
+        Loan Details
+      </h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- Currency -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-sm font-medium text-gray-300">Currency</label>
+          <select id="currency"
+            class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+            <option value="kr">kr — Norwegian Krone</option>
+            <option value="$">$ — US Dollar</option>
+            <option value="€">€ — Euro</option>
+            <option value="£">£ — British Pound</option>
+            <option value="¥">¥ — Japanese Yen</option>
+          </select>
+        </div>
+
+        <!-- Principal -->
+        <div class="flex flex-col gap-1.5">
+          <label for="principal" class="text-sm font-medium text-gray-300">Loan Amount</label>
+          <div class="relative">
+            <span id="currency-prefix-1" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-mono text-sm select-none">kr</span>
+            <input id="principal" type="number" min="1000" max="100000000" step="1000" value="3000000"
+              class="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+          </div>
+          <input id="principal-range" type="range" min="50000" max="10000000" step="10000" value="3000000"
+            class="w-full accent-brand-500 mt-1" />
+          <div class="flex justify-between text-xs text-gray-500">
+            <span>50 000</span><span>10 000 000</span>
+          </div>
+        </div>
+
+        <!-- Interest Rate -->
+        <div class="flex flex-col gap-1.5">
+          <label for="rate" class="text-sm font-medium text-gray-300">Annual Interest Rate</label>
+          <div class="relative">
+            <input id="rate" type="number" min="0.01" max="30" step="0.01" value="4.50"
+              class="w-full bg-gray-800 border border-gray-700 rounded-lg pl-3 pr-8 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm select-none">%</span>
+          </div>
+          <input id="rate-range" type="range" min="0.25" max="20" step="0.05" value="4.50"
+            class="w-full accent-brand-500 mt-1" />
+          <div class="flex justify-between text-xs text-gray-500">
+            <span>0.25%</span><span>20%</span>
+          </div>
+        </div>
+
+        <!-- Term -->
+        <div class="flex flex-col gap-1.5">
+          <label for="term" class="text-sm font-medium text-gray-300">Loan Term (Years)</label>
+          <div class="relative">
+            <input id="term" type="number" min="1" max="50" step="1" value="25"
+              class="w-full bg-gray-800 border border-gray-700 rounded-lg pl-3 pr-14 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm select-none">yrs</span>
+          </div>
+          <input id="term-range" type="range" min="1" max="50" step="1" value="25"
+            class="w-full accent-brand-500 mt-1" />
+          <div class="flex justify-between text-xs text-gray-500">
+            <span>1 yr</span><span>50 yrs</span>
+          </div>
+        </div>
+
+        <!-- Start Month -->
+        <div class="flex flex-col gap-1.5">
+          <label for="start-date" class="text-sm font-medium text-gray-300">First Payment Month</label>
+          <input id="start-date" type="month"
+            class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+          <p class="text-xs text-gray-500">Used for schedule dates only</p>
+        </div>
+
+        <!-- Extra Payment -->
+        <div class="flex flex-col gap-1.5">
+          <label for="extra" class="text-sm font-medium text-gray-300">Extra Monthly Payment <span class="text-gray-500">(optional)</span></label>
+          <div class="relative">
+            <span id="currency-prefix-2" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-mono text-sm select-none">kr</span>
+            <input id="extra" type="number" min="0" max="1000000" step="100" value="0"
+              class="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent" />
+          </div>
+          <input id="extra-range" type="range" min="0" max="50000" step="100" value="0"
+            class="w-full accent-brand-500 mt-1" />
+          <div class="flex justify-between text-xs text-gray-500">
+            <span>0</span><span>50 000 / mo</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SUMMARY STATS -->
+    <section id="summary" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+      <div class="bg-brand-900 border border-brand-700 rounded-xl p-5 flex flex-col gap-1">
+        <p class="text-xs text-brand-300 uppercase tracking-wider font-medium">Monthly Payment</p>
+        <p id="stat-monthly" class="stat-value text-2xl font-bold text-white">—</p>
+        <p class="text-xs text-gray-400">Principal + interest</p>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 flex flex-col gap-1">
+        <p class="text-xs text-gray-400 uppercase tracking-wider font-medium">Total Interest</p>
+        <p id="stat-interest" class="stat-value text-2xl font-bold text-red-400">—</p>
+        <p id="stat-interest-pct" class="text-xs text-gray-500">— % of principal</p>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 flex flex-col gap-1">
+        <p class="text-xs text-gray-400 uppercase tracking-wider font-medium">Total Paid</p>
+        <p id="stat-total" class="stat-value text-2xl font-bold text-white">—</p>
+        <p class="text-xs text-gray-500">Principal + all interest</p>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 flex flex-col gap-1">
+        <p class="text-xs text-gray-400 uppercase tracking-wider font-medium">Payoff Time</p>
+        <p id="stat-payoff" class="stat-value text-2xl font-bold text-green-400">—</p>
+        <p id="stat-saved" class="text-xs text-green-500">—</p>
+      </div>
+
+    </section>
+
+    <!-- EXTRA PAYMENT SAVINGS BANNER -->
+    <div id="savings-banner" class="hidden bg-green-900/30 border border-green-700 rounded-xl px-5 py-4 flex items-start gap-3">
+      <svg class="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <p id="savings-text" class="text-green-300 text-sm leading-relaxed"></p>
+    </div>
+
+    <!-- CHART -->
+    <section class="bg-gray-900 rounded-2xl border border-gray-800 shadow-xl p-6">
+      <h2 class="text-lg font-semibold text-brand-300 mb-1 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+        </svg>
+        Balance &amp; Payment Breakdown Over Time
+      </h2>
+      <p class="text-xs text-gray-500 mb-4">Hover over the chart to inspect any month</p>
+
+      <div class="relative">
+        <svg id="chart" viewBox="0 0 900 340" class="w-full rounded-lg bg-gray-950" preserveAspectRatio="xMidYMid meet"
+          style="min-height:220px; max-height:380px;"
+          aria-label="Loan balance chart">
+          <defs>
+            <linearGradient id="balanceGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#4f65ff" stop-opacity="0.35"/>
+              <stop offset="100%" stop-color="#4f65ff" stop-opacity="0.02"/>
+            </linearGradient>
+            <linearGradient id="extraGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#22c55e" stop-opacity="0.35"/>
+              <stop offset="100%" stop-color="#22c55e" stop-opacity="0.02"/>
+            </linearGradient>
+            <clipPath id="chart-clip">
+              <rect x="60" y="10" width="820" height="270"/>
+            </clipPath>
+          </defs>
+          <!-- grid lines rendered by JS -->
+          <g id="chart-grid"></g>
+          <!-- y axis labels -->
+          <g id="chart-y-labels"></g>
+          <!-- x axis labels -->
+          <g id="chart-x-labels"></g>
+          <!-- interest area -->
+          <g clip-path="url(#chart-clip)">
+            <path id="interest-area" fill="#ef4444" fill-opacity="0.15" d=""/>
+            <path id="interest-line" fill="none" stroke="#ef4444" stroke-width="1.5" opacity="0.7" d=""/>
+            <!-- base balance area (with extra) -->
+            <path id="balance-area-extra" fill="url(#extraGrad)" d=""/>
+            <path id="balance-line-extra" fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="6 3" d=""/>
+            <!-- base balance area (standard) -->
+            <path id="balance-area" fill="url(#balanceGrad)" d=""/>
+            <path id="balance-line" fill="none" stroke="#748eff" stroke-width="2.5" d=""/>
+            <!-- hover indicator -->
+            <line id="hover-line" x1="0" y1="10" x2="0" y2="280" stroke="white" stroke-width="1" opacity="0" stroke-dasharray="4 3"/>
+            <circle id="hover-dot-balance" r="5" fill="#748eff" stroke="white" stroke-width="2" opacity="0"/>
+            <circle id="hover-dot-extra" r="5" fill="#22c55e" stroke="white" stroke-width="2" opacity="0"/>
+          </g>
+          <!-- axes -->
+          <line x1="60" y1="280" x2="880" y2="280" stroke="#374151" stroke-width="1"/>
+          <line x1="60" y1="10"  x2="60"  y2="280" stroke="#374151" stroke-width="1"/>
+          <!-- y axis title -->
+          <text transform="translate(14,180) rotate(-90)" text-anchor="middle" font-size="11" fill="#6b7280">Balance</text>
+          <!-- x axis title -->
+          <text x="470" y="320" text-anchor="middle" font-size="11" fill="#6b7280">Year</text>
+          <!-- legend -->
+          <g transform="translate(70,18)">
+            <rect x="0" y="-8" width="12" height="4" fill="#748eff" rx="2"/>
+            <text x="16" y="-3" font-size="11" fill="#9ca3af">Balance (standard)</text>
+            <rect x="155" y="-8" width="12" height="4" fill="#22c55e" rx="2"/>
+            <text x="171" y="-3" font-size="11" fill="#9ca3af">Balance (with extra)</text>
+            <rect x="330" y="-8" width="12" height="4" fill="#ef4444" rx="2"/>
+            <text x="346" y="-3" font-size="11" fill="#9ca3af">Cumulative interest</text>
+          </g>
+          <!-- overlay for mouse events -->
+          <rect id="chart-overlay" x="60" y="10" width="820" height="270" fill="transparent" style="cursor:crosshair"/>
+        </svg>
+
+        <!-- Tooltip -->
+        <div id="chart-tooltip"
+          class="absolute top-4 left-4 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs opacity-0 pointer-events-none shadow-xl min-w-[170px]">
+          <p id="tt-month" class="font-semibold text-white mb-1">Month —</p>
+          <p id="tt-balance" class="text-brand-300">Balance: —</p>
+          <p id="tt-extra-balance" class="text-green-400 hidden">With extra: —</p>
+          <p id="tt-interest" class="text-red-400">Cum. interest: —</p>
+          <p id="tt-payment" class="text-gray-400">Payment: —</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- AMORTIZATION SCHEDULE -->
+    <section class="bg-gray-900 rounded-2xl border border-gray-800 shadow-xl p-6">
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <h2 class="text-lg font-semibold text-brand-300 flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18M10 3v18M14 3v18M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/>
+          </svg>
+          Amortization Schedule
+        </h2>
+        <div class="flex items-center gap-3 text-sm">
+          <label class="flex items-center gap-2 cursor-pointer select-none text-gray-300">
+            <input id="toggle-extra-col" type="checkbox" class="accent-brand-500 w-4 h-4" />
+            Show extra-payment column
+          </label>
+          <span id="schedule-row-count" class="text-gray-500 text-xs"></span>
+        </div>
+      </div>
+
+      <div id="schedule-wrapper" class="rounded-xl overflow-hidden border border-gray-800">
+        <table class="w-full text-sm border-collapse">
+          <thead>
+            <tr class="text-xs text-gray-400 uppercase tracking-wider">
+              <th class="px-3 py-3 text-left font-medium">#</th>
+              <th class="px-3 py-3 text-left font-medium">Date</th>
+              <th class="px-3 py-3 text-right font-medium">Payment</th>
+              <th class="px-3 py-3 text-right font-medium">Principal</th>
+              <th class="px-3 py-3 text-right font-medium">Interest</th>
+              <th id="col-extra-hdr" class="px-3 py-3 text-right font-medium hidden">Extra</th>
+              <th class="px-3 py-3 text-right font-medium">Balance</th>
+              <th class="px-3 py-3 text-right font-medium hidden sm:table-cell">Cum. Interest</th>
+            </tr>
+          </thead>
+          <tbody id="schedule-body" class="divide-y divide-gray-800">
+          </tbody>
+        </table>
+      </div>
+      <p class="text-xs text-gray-600 mt-3">Scroll the table to see the full schedule. Values are rounded to the nearest whole number.</p>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-gray-800 mt-12 py-6 text-center text-xs text-gray-600 space-y-1">
+    <p>Loan Amortization Calculator — <a href="https://github.com/halisonworks/public-app-studio" class="text-brand-400 hover:text-brand-300 underline underline-offset-2">Halison App Studio</a></p>
+    <p>Personal &amp; educational use only. Not financial advice.</p>
+  </footer>
+
+  <script>
+    // ──────────────────────────────────────────────
+    //  STATE & ELEMENTS
+    // ──────────────────────────────────────────────
+    const LS_KEY = 'loan-amortization-v1';
+
+    const els = {
+      currency:       document.getElementById('currency'),
+      principal:      document.getElementById('principal'),
+      principalRange: document.getElementById('principal-range'),
+      rate:           document.getElementById('rate'),
+      rateRange:      document.getElementById('rate-range'),
+      term:           document.getElementById('term'),
+      termRange:      document.getElementById('term-range'),
+      extra:          document.getElementById('extra'),
+      extraRange:     document.getElementById('extra-range'),
+      startDate:      document.getElementById('start-date'),
+
+      statMonthly:    document.getElementById('stat-monthly'),
+      statInterest:   document.getElementById('stat-interest'),
+      statInterestPct:document.getElementById('stat-interest-pct'),
+      statTotal:      document.getElementById('stat-total'),
+      statPayoff:     document.getElementById('stat-payoff'),
+      statSaved:      document.getElementById('stat-saved'),
+
+      savingsBanner:  document.getElementById('savings-banner'),
+      savingsText:    document.getElementById('savings-text'),
+
+      scheduleBody:   document.getElementById('schedule-body'),
+      scheduleCount:  document.getElementById('schedule-row-count'),
+      toggleExtra:    document.getElementById('toggle-extra-col'),
+      colExtraHdr:    document.getElementById('col-extra-hdr'),
+
+      currencyPrefix1:document.getElementById('currency-prefix-1'),
+      currencyPrefix2:document.getElementById('currency-prefix-2'),
+    };
+
+    // SVG chart elements
+    const chartEls = {
+      balanceLine:    document.getElementById('balance-line'),
+      balanceArea:    document.getElementById('balance-area'),
+      extraLine:      document.getElementById('balance-line-extra'),
+      extraArea:      document.getElementById('balance-area-extra'),
+      interestLine:   document.getElementById('interest-line'),
+      interestArea:   document.getElementById('interest-area'),
+      grid:           document.getElementById('chart-grid'),
+      yLabels:        document.getElementById('chart-y-labels'),
+      xLabels:        document.getElementById('chart-x-labels'),
+      hoverLine:      document.getElementById('hover-line'),
+      hoverDotBalance:document.getElementById('hover-dot-balance'),
+      hoverDotExtra:  document.getElementById('hover-dot-extra'),
+      overlay:        document.getElementById('chart-overlay'),
+      tooltip:        document.getElementById('chart-tooltip'),
+      ttMonth:        document.getElementById('tt-month'),
+      ttBalance:      document.getElementById('tt-balance'),
+      ttExtraBalance: document.getElementById('tt-extra-balance'),
+      ttInterest:     document.getElementById('tt-interest'),
+      ttPayment:      document.getElementById('tt-payment'),
+    };
+
+    // Chart dimensions (matching viewBox)
+    const CX = { left: 60, right: 880, top: 10, bottom: 280 };
+    const CW = CX.right - CX.left;   // 820
+    const CH = CX.bottom - CX.top;   // 270
+
+    // ──────────────────────────────────────────────
+    //  FORMATTING
+    // ──────────────────────────────────────────────
+    function getCurrency() { return els.currency.value; }
+
+    function fmt(n) {
+      const sym = getCurrency();
+      const rounded = Math.round(n);
+      const formatted = rounded.toLocaleString('en-US');
+      // Put symbol before or after depending on convention
+      if (sym === 'kr') return formatted + ' ' + sym;
+      return sym + formatted;
+    }
+
+    function fmtMonths(months) {
+      const y = Math.floor(months / 12);
+      const m = months % 12;
+      const parts = [];
+      if (y > 0) parts.push(y + ' yr' + (y !== 1 ? 's' : ''));
+      if (m > 0) parts.push(m + ' mo' + (m !== 1 ? 's' : ''));
+      return parts.join(' ') || '< 1 month';
+    }
+
+    // ──────────────────────────────────────────────
+    //  AMORTIZATION CORE
+    // ──────────────────────────────────────────────
+    function buildSchedule(principal, annualRate, termYears, extraMonthly) {
+      const monthlyRate = annualRate / 100 / 12;
+      const n = termYears * 12;
+
+      let basePayment;
+      if (monthlyRate === 0) {
+        basePayment = principal / n;
+      } else {
+        basePayment = principal * (monthlyRate * Math.pow(1 + monthlyRate, n)) /
+                      (Math.pow(1 + monthlyRate, n) - 1);
+      }
+
+      const schedule = [];
+      let balance = principal;
+      let cumInterest = 0;
+
+      for (let mo = 1; balance > 0.005; mo++) {
+        const interestCharge = balance * monthlyRate;
+        let principalCharge = basePayment - interestCharge;
+
+        if (principalCharge < 0) principalCharge = 0;
+
+        let extra = extraMonthly;
+        // Don't overpay in final month
+        if (principalCharge + extra > balance) {
+          extra = Math.max(0, balance - principalCharge);
+        }
+
+        const totalPayment = basePayment + extra;
+        balance = balance - principalCharge - extra;
+        if (balance < 0.005) balance = 0;
+        cumInterest += interestCharge;
+
+        schedule.push({
+          month:          mo,
+          payment:        totalPayment,
+          principalPaid:  principalCharge + extra,
+          interest:       interestCharge,
+          extra:          extra,
+          balance:        balance,
+          cumInterest:    cumInterest,
+        });
+
+        if (balance <= 0) break;
+        if (mo > 12000) break; // safety cap (1000 years)
+      }
+
+      return { basePayment, schedule };
+    }
+
+    // Build a "no extra" schedule too for comparison
+    function buildBaseSchedule(principal, annualRate, termYears) {
+      const monthlyRate = annualRate / 100 / 12;
+      const n = termYears * 12;
+      let basePayment;
+      if (monthlyRate === 0) {
+        basePayment = principal / n;
+      } else {
+        basePayment = principal * (monthlyRate * Math.pow(1 + monthlyRate, n)) /
+                      (Math.pow(1 + monthlyRate, n) - 1);
+      }
+      const balances = [principal];
+      let balance = principal;
+      for (let mo = 1; mo <= n && balance > 0.005; mo++) {
+        const interestCharge = balance * monthlyRate;
+        let principalCharge = basePayment - interestCharge;
+        if (principalCharge < 0) principalCharge = 0;
+        balance -= principalCharge;
+        if (balance < 0.005) balance = 0;
+        balances.push(balance);
+      }
+      return balances;
+    }
+
+    // ──────────────────────────────────────────────
+    //  CHART RENDERING
+    // ──────────────────────────────────────────────
+    function renderChart(schedule, baseBalances, principal) {
+      const totalMonths = schedule.length;
+      if (totalMonths === 0) return;
+
+      // We'll sample at most ~300 points for performance
+      const step = Math.max(1, Math.floor(totalMonths / 300));
+      const pts = [];
+      for (let i = 0; i < schedule.length; i += step) {
+        pts.push(schedule[i]);
+      }
+      // Always include last point
+      const last = schedule[schedule.length - 1];
+      if (pts[pts.length - 1] !== last) pts.push(last);
+
+      const maxVal = principal;
+      const maxInterest = schedule[schedule.length - 1].cumInterest;
+      const yMax = Math.max(maxVal, maxInterest) * 1.05;
+
+      // Helper: x position for a month index
+      function xPos(month) {
+        return CX.left + ((month - 1) / (totalMonths - 1 || 1)) * CW;
+      }
+      function yPos(val) {
+        return CX.bottom - (val / yMax) * CH;
+      }
+
+      // ── Grid lines & labels ──
+      const gridLines = 5;
+      let gridHtml = '';
+      let yLabelHtml = '';
+      for (let i = 0; i <= gridLines; i++) {
+        const val = (yMax / gridLines) * i;
+        const y = yPos(val);
+        gridHtml += `<line x1="${CX.left}" y1="${y.toFixed(1)}" x2="${CX.right}" y2="${y.toFixed(1)}" stroke="#1f2937" stroke-width="1"/>`;
+        yLabelHtml += `<text x="${CX.left - 6}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="10" fill="#6b7280">${shortNum(val)}</text>`;
+      }
+      chartEls.grid.innerHTML = gridHtml;
+      chartEls.yLabels.innerHTML = yLabelHtml;
+
+      // X axis: year labels
+      const totalYears = Math.ceil(totalMonths / 12);
+      const yearStep = totalYears <= 10 ? 1 : totalYears <= 30 ? 5 : 10;
+      let xLabelHtml = '';
+      for (let yr = 0; yr <= totalYears; yr += yearStep) {
+        const mo = yr * 12 + 1;
+        const x = xPos(Math.min(mo, totalMonths));
+        xLabelHtml += `<text x="${x.toFixed(1)}" y="${CX.bottom + 16}" text-anchor="middle" font-size="10" fill="#6b7280">Yr ${yr}</text>`;
+      }
+      chartEls.xLabels.innerHTML = xLabelHtml;
+
+      // ── Balance line (standard/no-extra) ──
+      // Use baseBalances (includes initial balance at index 0)
+      const baseLen = baseBalances.length;
+      const baseStep = Math.max(1, Math.floor(baseLen / 300));
+      let basePts = [];
+      for (let i = 0; i < baseLen; i += baseStep) basePts.push({ month: i + 1, balance: baseBalances[i] });
+      if (basePts[basePts.length - 1].month !== baseLen) basePts.push({ month: baseLen, balance: baseBalances[baseLen - 1] });
+
+      const balancePath = basePts.map((p, i) => {
+        const x = xPos(p.month).toFixed(1);
+        const y = yPos(p.balance).toFixed(1);
+        return (i === 0 ? 'M' : 'L') + x + ' ' + y;
+      }).join(' ');
+      const balanceArea = balancePath
+        + ` L${xPos(basePts[basePts.length - 1].month).toFixed(1)} ${CX.bottom} L${CX.left} ${CX.bottom} Z`;
+
+      chartEls.balanceLine.setAttribute('d', balancePath);
+      chartEls.balanceArea.setAttribute('d', balanceArea);
+
+      // ── Extra-payment balance line ──
+      const hasExtra = schedule.some(r => r.extra > 0);
+      if (hasExtra) {
+        const extraPath = pts.map((p, i) => {
+          const x = xPos(p.month).toFixed(1);
+          const y = yPos(p.balance).toFixed(1);
+          return (i === 0 ? 'M' : 'L') + x + ' ' + y;
+        }).join(' ');
+        const extraArea = extraPath
+          + ` L${xPos(pts[pts.length - 1].month).toFixed(1)} ${CX.bottom} L${CX.left} ${CX.bottom} Z`;
+        chartEls.extraLine.setAttribute('d', extraPath);
+        chartEls.extraArea.setAttribute('d', extraArea);
+        chartEls.extraLine.style.opacity = '1';
+        chartEls.extraArea.style.opacity = '1';
+      } else {
+        chartEls.extraLine.setAttribute('d', '');
+        chartEls.extraArea.setAttribute('d', '');
+        chartEls.extraLine.style.opacity = '0';
+        chartEls.extraArea.style.opacity = '0';
+      }
+
+      // ── Cumulative interest line ──
+      const intPath = pts.map((p, i) => {
+        const x = xPos(p.month).toFixed(1);
+        const y = yPos(p.cumInterest).toFixed(1);
+        return (i === 0 ? 'M' : 'L') + x + ' ' + y;
+      }).join(' ');
+      const intArea = intPath
+        + ` L${xPos(pts[pts.length - 1].month).toFixed(1)} ${CX.bottom} L${CX.left} ${CX.bottom} Z`;
+      chartEls.interestLine.setAttribute('d', intPath);
+      chartEls.interestArea.setAttribute('d', intArea);
+
+      // ── Store data for hover ──
+      chartEls.overlay._chartData = { schedule, baseBalances, totalMonths, yMax, hasExtra };
+    }
+
+    function shortNum(n) {
+      if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+      if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+      return Math.round(n).toString();
+    }
+
+    // ── Chart hover ──
+    chartEls.overlay.addEventListener('mousemove', function(e) {
+      const data = this._chartData;
+      if (!data) return;
+
+      const svgEl = document.getElementById('chart');
+      const rect = svgEl.getBoundingClientRect();
+      // Map mouse x to SVG coordinate space
+      const svgW = 900; // viewBox width
+      const scaleX = svgW / rect.width;
+      const mouseX = (e.clientX - rect.left) * scaleX;
+
+      if (mouseX < CX.left || mouseX > CX.right) {
+        hideTooltip(); return;
+      }
+
+      const frac = (mouseX - CX.left) / CW;
+      const monthIdx = Math.round(frac * (data.totalMonths - 1));
+      const row = data.schedule[Math.max(0, Math.min(monthIdx, data.schedule.length - 1))];
+      const baseBalance = data.baseBalances[Math.min(monthIdx, data.baseBalances.length - 1)] || 0;
+
+      // Position hover line
+      const hx = (CX.left + frac * CW).toFixed(1);
+      chartEls.hoverLine.setAttribute('x1', hx);
+      chartEls.hoverLine.setAttribute('x2', hx);
+      chartEls.hoverLine.setAttribute('opacity', '0.4');
+
+      const yMax = data.yMax;
+      const yBalBase = (CX.bottom - (baseBalance / yMax) * CH).toFixed(1);
+      chartEls.hoverDotBalance.setAttribute('cx', hx);
+      chartEls.hoverDotBalance.setAttribute('cy', yBalBase);
+      chartEls.hoverDotBalance.setAttribute('opacity', '1');
+
+      if (data.hasExtra) {
+        const yBalExtra = (CX.bottom - (row.balance / yMax) * CH).toFixed(1);
+        chartEls.hoverDotExtra.setAttribute('cx', hx);
+        chartEls.hoverDotExtra.setAttribute('cy', yBalExtra);
+        chartEls.hoverDotExtra.setAttribute('opacity', '1');
+      } else {
+        chartEls.hoverDotExtra.setAttribute('opacity', '0');
+      }
+
+      // Update tooltip
+      const yr = Math.floor((row.month - 1) / 12);
+      const mo = ((row.month - 1) % 12) + 1;
+      chartEls.ttMonth.textContent = `Month ${row.month} (Yr ${yr}, Mo ${mo})`;
+      chartEls.ttBalance.textContent = `Balance: ${fmt(baseBalance)}`;
+      if (data.hasExtra) {
+        chartEls.ttExtraBalance.textContent = `With extra: ${fmt(row.balance)}`;
+        chartEls.ttExtraBalance.classList.remove('hidden');
+      } else {
+        chartEls.ttExtraBalance.classList.add('hidden');
+      }
+      chartEls.ttInterest.textContent = `Cum. interest: ${fmt(row.cumInterest)}`;
+      chartEls.ttPayment.textContent = `Payment: ${fmt(row.payment)}`;
+
+      // Position tooltip div — keep inside viewport
+      const tooltipEl = chartEls.tooltip;
+      tooltipEl.style.opacity = '1';
+      const tipLeft = (frac > 0.65) ? 'auto' : '1rem';
+      const tipRight = (frac > 0.65) ? '1rem' : 'auto';
+      tooltipEl.style.left = tipLeft;
+      tooltipEl.style.right = tipRight;
+    });
+
+    chartEls.overlay.addEventListener('mouseleave', hideTooltip);
+
+    function hideTooltip() {
+      chartEls.hoverLine.setAttribute('opacity', '0');
+      chartEls.hoverDotBalance.setAttribute('opacity', '0');
+      chartEls.hoverDotExtra.setAttribute('opacity', '0');
+      chartEls.tooltip.style.opacity = '0';
+    }
+
+    // ──────────────────────────────────────────────
+    //  SCHEDULE TABLE
+    // ──────────────────────────────────────────────
+    function getStartDate() {
+      const val = els.startDate.value;
+      if (!val) return null;
+      const [y, m] = val.split('-').map(Number);
+      return { year: y, month: m };
+    }
+
+    function formatMonthDate(startDate, monthNum) {
+      if (!startDate) return `Month ${monthNum}`;
+      let m = startDate.month - 1 + monthNum;
+      const y = startDate.year + Math.floor(m / 12);
+      m = m % 12;
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${months[m]} ${y}`;
+    }
+
+    function renderSchedule(schedule) {
+      const showExtra = els.toggleExtra.checked;
+      els.colExtraHdr.classList.toggle('hidden', !showExtra);
+
+      const startDate = getStartDate();
+      const frag = document.createDocumentFragment();
+
+      schedule.forEach((row, i) => {
+        const tr = document.createElement('tr');
+        tr.className = i % 2 === 0
+          ? 'bg-gray-900 hover:bg-gray-800/60 transition-colors'
+          : 'bg-gray-950/50 hover:bg-gray-800/60 transition-colors';
+
+        const balanceColor = row.balance < 0.01
+          ? 'text-green-400 font-semibold'
+          : 'text-gray-100';
+
+        const extraCell = showExtra
+          ? `<td class="px-3 py-2 text-right text-green-400 font-mono text-xs">${row.extra > 0 ? fmt(row.extra) : '—'}</td>`
+          : '';
+
+        tr.innerHTML = `
+          <td class="px-3 py-2 text-gray-500 text-xs tabular-nums">${row.month}</td>
+          <td class="px-3 py-2 text-gray-400 text-xs whitespace-nowrap">${formatMonthDate(startDate, row.month)}</td>
+          <td class="px-3 py-2 text-right font-mono text-xs text-gray-200">${fmt(row.payment)}</td>
+          <td class="px-3 py-2 text-right font-mono text-xs text-brand-300">${fmt(row.principalPaid)}</td>
+          <td class="px-3 py-2 text-right font-mono text-xs text-red-400">${fmt(row.interest)}</td>
+          ${extraCell}
+          <td class="px-3 py-2 text-right font-mono text-xs ${balanceColor}">${fmt(row.balance)}</td>
+          <td class="px-3 py-2 text-right font-mono text-xs text-gray-500 hidden sm:table-cell">${fmt(row.cumInterest)}</td>
+        `;
+        frag.appendChild(tr);
+      });
+
+      els.scheduleBody.innerHTML = '';
+      els.scheduleBody.appendChild(frag);
+      els.scheduleCount.textContent = `${schedule.length} payments`;
+    }
+
+    // ──────────────────────────────────────────────
+    //  MAIN COMPUTE
+    // ──────────────────────────────────────────────
+    function compute() {
+      const principal   = Math.max(1, parseFloat(els.principal.value) || 0);
+      const annualRate  = Math.max(0, parseFloat(els.rate.value) || 0);
+      const termYears   = Math.max(1, Math.min(50, parseInt(els.term.value) || 1));
+      const extraMonthly= Math.max(0, parseFloat(els.extra.value) || 0);
+
+      const { basePayment, schedule } = buildSchedule(principal, annualRate, termYears, extraMonthly);
+      const baseBalances = buildBaseSchedule(principal, annualRate, termYears);
+
+      if (schedule.length === 0) return;
+
+      const totalMonths  = schedule.length;
+      const totalInterest= schedule[schedule.length - 1].cumInterest;
+      const totalPaid    = schedule.reduce((s, r) => s + r.payment, 0);
+      const stdMonths    = termYears * 12;
+
+      // Update stats
+      els.statMonthly.textContent  = fmt(basePayment + extraMonthly);
+      els.statInterest.textContent = fmt(totalInterest);
+      els.statInterestPct.textContent = (totalInterest / principal * 100).toFixed(1) + '% of principal';
+      els.statTotal.textContent    = fmt(totalPaid);
+      els.statPayoff.textContent   = fmtMonths(totalMonths);
+
+      const monthsSaved = stdMonths - totalMonths;
+      if (extraMonthly > 0 && monthsSaved > 0) {
+        const interestSaved = baseBalances[baseBalances.length - 1 - 1] ?? 0;
+        // compute what total interest would have been without extra
+        const stdResult = buildSchedule(principal, annualRate, termYears, 0);
+        const stdTotalInterest = stdResult.schedule[stdResult.schedule.length - 1].cumInterest;
+        const interestSavedAmt = stdTotalInterest - totalInterest;
+
+        els.statSaved.textContent = `${fmtMonths(monthsSaved)} saved`;
+        els.savingsText.textContent =
+          `By paying an extra ${fmt(extraMonthly)} per month, you pay off the loan ${fmtMonths(monthsSaved)} earlier ` +
+          `and save ${fmt(interestSavedAmt)} in interest.`;
+        els.savingsBanner.classList.remove('hidden');
+      } else {
+        els.statSaved.textContent = 'On schedule';
+        els.savingsBanner.classList.add('hidden');
+      }
+
+      // Chart
+      renderChart(schedule, baseBalances, principal);
+
+      // Table
+      renderSchedule(schedule);
+
+      // Persist
+      persistInputs();
+    }
+
+    // ──────────────────────────────────────────────
+    //  LOCAL STORAGE
+    // ──────────────────────────────────────────────
+    function persistInputs() {
+      try {
+        localStorage.setItem(LS_KEY, JSON.stringify({
+          currency:   els.currency.value,
+          principal:  els.principal.value,
+          rate:       els.rate.value,
+          term:       els.term.value,
+          extra:      els.extra.value,
+          startDate:  els.startDate.value,
+          showExtra:  els.toggleExtra.checked,
+        }));
+      } catch(e) {}
+    }
+
+    function loadInputs() {
+      try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (!raw) return false;
+        const saved = JSON.parse(raw);
+        if (saved.currency)   els.currency.value   = saved.currency;
+        if (saved.principal)  { els.principal.value = saved.principal; els.principalRange.value = saved.principal; }
+        if (saved.rate)       { els.rate.value      = saved.rate;      els.rateRange.value      = saved.rate; }
+        if (saved.term)       { els.term.value      = saved.term;      els.termRange.value      = saved.term; }
+        if (saved.extra !== undefined) { els.extra.value  = saved.extra; els.extraRange.value   = saved.extra; }
+        if (saved.startDate)  els.startDate.value   = saved.startDate;
+        if (saved.showExtra !== undefined) els.toggleExtra.checked = saved.showExtra;
+        syncCurrencyPrefixes();
+        return true;
+      } catch(e) { return false; }
+    }
+
+    // ──────────────────────────────────────────────
+    //  INPUT SYNC & EVENT WIRING
+    // ──────────────────────────────────────────────
+    function syncCurrencyPrefixes() {
+      const sym = getCurrency();
+      els.currencyPrefix1.textContent = sym;
+      els.currencyPrefix2.textContent = sym;
+    }
+
+    // Two-way sync between number input and range slider
+    function linkInputRange(inputEl, rangeEl) {
+      inputEl.addEventListener('input', () => {
+        rangeEl.value = inputEl.value;
+        compute();
+      });
+      rangeEl.addEventListener('input', () => {
+        inputEl.value = rangeEl.value;
+        compute();
+      });
+    }
+
+    linkInputRange(els.principal,  els.principalRange);
+    linkInputRange(els.rate,       els.rateRange);
+    linkInputRange(els.term,       els.termRange);
+    linkInputRange(els.extra,      els.extraRange);
+
+    els.currency.addEventListener('change', () => {
+      syncCurrencyPrefixes();
+      compute();
+    });
+    els.startDate.addEventListener('change', () => compute());
+    els.toggleExtra.addEventListener('change', () => {
+      const showExtra = els.toggleExtra.checked;
+      els.colExtraHdr.classList.toggle('hidden', !showExtra);
+      // Re-render table with/without extra column
+      const principal    = Math.max(1, parseFloat(els.principal.value) || 0);
+      const annualRate   = Math.max(0, parseFloat(els.rate.value) || 0);
+      const termYears    = Math.max(1, Math.min(50, parseInt(els.term.value) || 1));
+      const extraMonthly = Math.max(0, parseFloat(els.extra.value) || 0);
+      const { schedule } = buildSchedule(principal, annualRate, termYears, extraMonthly);
+      renderSchedule(schedule);
+      persistInputs();
+    });
+
+    // ──────────────────────────────────────────────
+    //  INIT
+    // ──────────────────────────────────────────────
+    (function init() {
+      // Set default start date to next month
+      const now = new Date();
+      now.setMonth(now.getMonth() + 1);
+      const yy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      els.startDate.value = `${yy}-${mm}`;
+
+      const loaded = loadInputs();
+      if (!loaded) syncCurrencyPrefixes();
+
+      compute();
+    })();
+  </script>
+
+</body>
+</html>
