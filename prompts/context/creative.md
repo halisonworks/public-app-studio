@@ -26,3 +26,16 @@ This project is a creative / generative tool. Shape it accordingly:
 
 Color-palette / gradient generator, quote- or stat-card maker, social post /
 infographic layout, SVG pattern or avatar generator, type-pairing previewer.
+
+## Try it (starter prompt)
+
+With [`../authoring-guide.md`](../authoring-guide.md) and this add-on uploaded, a
+few lines like this is enough:
+
+```
+Build a color-palette generator. Show a harmonious 5-color palette on load, with
+a "Generate" button for a new one and a lock toggle per swatch to keep colors I
+like. Show each color's hex, and let me click a swatch to copy its hex. Big,
+clean swatches.
+```
+

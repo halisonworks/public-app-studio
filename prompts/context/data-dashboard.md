@@ -28,3 +28,16 @@ This project is a data / dashboard tool. Shape it accordingly:
 The [UX retention simulator](../examples/ux-retention-simulator.md) follows this
 pattern: KPI cards, a custom SVG chart, a milestone table, and a single state
 object that redraws everything on change.
+
+## Try it (starter prompt)
+
+With [`../authoring-guide.md`](../authoring-guide.md) and this add-on uploaded, a
+few lines like this is enough:
+
+```
+Build a sales KPI dashboard for a small SaaS, as a single default-exported React
+component. Show four KPI cards (MRR, active users, churn, NPS), a line chart of
+MRR over the last 12 months, and a table of the top 5 customers by revenue. Use
+recharts for the chart and mock realistic data inline.
+```
+

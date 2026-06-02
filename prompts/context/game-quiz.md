@@ -25,3 +25,16 @@ This project is a small game or quiz. Shape it accordingly:
 
 Flashcards, multiple-choice quiz with scoring, memory match, typing-speed test,
 "guess the number / word", category-sorting game.
+
+## Try it (starter prompt)
+
+With [`../authoring-guide.md`](../authoring-guide.md) and this add-on uploaded, a
+few lines like this is enough:
+
+```
+Build a multiple-choice quiz game. Define 8 questions inline (each with 4 options
+and one correct answer). Show one question at a time with instant right/wrong
+feedback, track the score, and end on a results screen with a "Play again"
+button. Let me answer with keys 1–4 or by clicking.
+```
+

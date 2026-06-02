@@ -27,3 +27,16 @@ demo an idea — not a production system. Shape it accordingly:
 
 SaaS dashboard mockup, mobile-app screen flow, onboarding wizard, settings page,
 checkout flow, landing-page concept, CRM or admin-panel prototype.
+
+## Try it (starter prompt)
+
+With [`../authoring-guide.md`](../authoring-guide.md) and this add-on uploaded, a
+few lines like this is enough:
+
+```
+Build an interactive prototype of a project-management SaaS. A sidebar switches
+between Dashboard, Tasks, and Settings. The Tasks view is a board with To do /
+Doing / Done columns where I can move tasks between columns. Use realistic mock
+data, and make the navigation and task moves actually work.
+```
+

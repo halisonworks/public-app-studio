@@ -26,3 +26,15 @@ device. Shape it accordingly:
 
 Habit tracker, weekly planner, budget / expense tracker, pomodoro timer,
 packing list, decision matrix, reading log.
+
+## Try it (starter prompt)
+
+With [`../authoring-guide.md`](../authoring-guide.md) and this add-on uploaded, a
+few lines like this is enough:
+
+```
+Build a weekly habit tracker. Let me add and remove habits, show a 7-day grid
+where I tick each day, and display a current streak and a weekly completion %
+per habit. Remember everything across reloads.
+```
+
