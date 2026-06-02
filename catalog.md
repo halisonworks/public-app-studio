@@ -57,6 +57,30 @@ and anyone who wants to make a quick prototype of an app idea.
 | [gantt-chart](projects/business/gantt-chart/) | Business / managers | HTML | EN | — |
 | [rubric-grader](projects/educational/rubric-grader/) | Educational | HTML | EN | — |
 | [link-in-bio](projects/creative/link-in-bio/) | Creative | HTML | EN | — |
+| [relationship-calculator](projects/genealogy/relationship-calculator/) | Genealogy | HTML | EN | — |
+| [ancestor-birth-date](projects/genealogy/ancestor-birth-date/) | Genealogy | HTML | EN | — |
+| [soundex-coder](projects/genealogy/soundex-coder/) | Genealogy | HTML | EN | — |
+| [shared-cm-predictor](projects/genealogy/shared-cm-predictor/) | Genealogy · DNA | HTML | EN | — |
+| [citation-builder](projects/genealogy/citation-builder/) | Genealogy | HTML | EN | — |
+| [ahnentafel-numbering](projects/genealogy/ahnentafel-numbering/) | Genealogy | HTML | EN | — |
+| [old-style-date-converter](projects/genealogy/old-style-date-converter/) | Genealogy | HTML | EN | — |
+
+## Genealogy (family history)
+
+Self-contained tools for family-history research — relationship terms, date
+arithmetic, Soundex codes, DNA shared-cM predictions, source citations, and
+calendar conversions. All run fully offline. See
+[`projects/genealogy/`](projects/genealogy/).
+
+| Tool | What it does |
+|------|--------------|
+| [Relationship Calculator](projects/genealogy/relationship-calculator/) | Names how two relatives are related, with reciprocal and degree of kinship |
+| [Age & Birth-Date Calculator](projects/genealogy/ancestor-birth-date/) | Birth date from a gravestone/death age; exact age; census birth-year window |
+| [Soundex Surname Coder](projects/genealogy/soundex-coder/) | American Soundex codes for census/immigration index searching; batch & compare |
+| [Shared cM Relationship Predictor](projects/genealogy/shared-cm-predictor/) | Plausible relationships for a DNA match's total shared centimorgans |
+| [Source Citation Builder](projects/genealogy/citation-builder/) | Full note / short note / bibliography citations for 8 record types |
+| [Ahnentafel Number Tool](projects/genealogy/ahnentafel-numbering/) | Sosa-Stradonitz number ↔ ancestral path, plus a numbered chart |
+| [Old Style / New Style Date Converter](projects/genealogy/old-style-date-converter/) | Julian ↔ Gregorian, day of the week, double dating |
 
 ## Math (Norwegian curriculum · LK20)
 
@@ -74,6 +98,13 @@ Interactive maths learning tools in Norwegian, organized by level. See
 | [![funksjonsdrofting](projects/math/NO-2P/funksjonsdrofting/screenshot.png)](projects/math/NO-2P/funksjonsdrofting/) **Funksjonsdrøfting** | [![regresjon](projects/math/NO-2P/regresjon/screenshot.png)](projects/math/NO-2P/regresjon/) **Regresjon** | |
 
 **Verktøy og øving:** [![graftegner](projects/math/graftegner/screenshot.png)](projects/math/graftegner/) [**Digital graftegner**](projects/math/graftegner/) · [![eksamen](projects/math/eksamenstrening-2p/screenshot.png)](projects/math/eksamenstrening-2p/) [**Eksamenstrening 2P**](projects/math/eksamenstrening-2p/)
+
+### Praktisk 2P — hverdagsmatte (jobb og privat)
+
+| | | |
+|---|---|---|
+| [![enhetspris](projects/math/praktisk-2p/enhetspris/screenshot.png)](projects/math/praktisk-2p/enhetspris/) **Enhetspris (beste kjøp)** | [![strom](projects/math/praktisk-2p/stromkostnad/screenshot.png)](projects/math/praktisk-2p/stromkostnad/) **Strømkostnad** | [![material](projects/math/praktisk-2p/materialberegning/screenshot.png)](projects/math/praktisk-2p/materialberegning/) **Materialberegning** |
+| [![drivstoff](projects/math/praktisk-2p/drivstoff-og-kjorekostnad/screenshot.png)](projects/math/praktisk-2p/drivstoff-og-kjorekostnad/) **Drivstoff og kjørekostnad** | [![lonn](projects/math/praktisk-2p/lonn-med-tillegg/screenshot.png)](projects/math/praktisk-2p/lonn-med-tillegg/) **Lønn med tillegg** | [![rabatt](projects/math/praktisk-2p/rabatt-og-tilbud/screenshot.png)](projects/math/praktisk-2p/rabatt-og-tilbud/) **Rabatt og tilbud** |
 
 ### Matematikk 1P
 

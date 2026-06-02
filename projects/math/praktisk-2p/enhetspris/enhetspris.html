@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<!--
+  Enhetspris — Halison App Studio-eksempel
+
+  Praktisk matematikk for 2P (LK20): regn ut pris per kg/liter/stk og finn beste
+  kjøp når pakningene har ulik størrelse — nyttig på handletur.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enhetspris — Finn beste kjøp</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .winner-glow {
+      box-shadow: 0 0 0 3px #16a34a, 0 4px 16px rgba(22,163,74,0.18);
+    }
+    .row-transition {
+      transition: background 0.25s, box-shadow 0.25s;
+    }
+    .unit-badge {
+      min-width: 3.5rem;
+    }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 shadow-sm">
+    <div class="max-w-3xl mx-auto px-4 py-5">
+      <div class="flex items-center gap-3">
+        <span class="text-3xl" aria-hidden="true">🛒</span>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 leading-tight">Enhetspris</h1>
+          <p class="text-sm text-gray-500">Matematikk 2P · Finn beste kjøp</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- Forklaring -->
+    <section class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-900 leading-relaxed">
+      <h2 class="font-semibold text-base mb-1">Hva er enhetspris?</h2>
+      <p>
+        Enhetspris er prisen per enhet — for eksempel <strong>kr per kg</strong> eller <strong>kr per liter</strong>.
+        Når to produkter har ulik pakningsstørrelse, er det umulig å sammenligne dem direkte ved å se på totalprisen.
+        Ved å regne ut enhetsprisen kan du alltid finne det <em>billigste alternativet per mengde</em>,
+        uansett hvor store eller små pakkene er. Dette er en nyttig regneferdighet på handletur.
+      </p>
+      <p class="mt-2">
+        <span class="font-semibold">Formel:</span>
+        Enhetspris = Pris (kr) ÷ Mengde (omregnet til standardenhet)
+      </p>
+    </section>
+
+    <!-- Produkttabell -->
+    <section>
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold text-gray-800">Produkter</h2>
+        <button
+          id="addRowBtn"
+          class="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+        >
+          <span class="text-lg leading-none">+</span> Legg til produkt
+        </button>
+      </div>
+
+      <div id="rowsContainer" class="space-y-3"></div>
+    </section>
+
+    <!-- Resultat -->
+    <section id="resultSection" class="hidden">
+      <h2 class="text-lg font-semibold text-gray-800 mb-3">Resultat</h2>
+      <div id="resultCards" class="space-y-3"></div>
+
+      <!-- Spareindikator -->
+      <div id="savingsBox" class="hidden mt-4 bg-green-50 border border-green-300 rounded-xl p-4">
+        <p class="text-green-800 font-semibold text-sm" id="savingsText"></p>
+      </div>
+    </section>
+
+    <!-- Eksempler -->
+    <section class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+      <h2 class="font-semibold text-base text-amber-900 mb-2">💡 Eksempler å prøve</h2>
+      <div class="grid sm:grid-cols-2 gap-2" id="examplesContainer"></div>
+    </section>
+
+  </main>
+
+  <footer class="text-center text-xs text-gray-400 py-6 mt-2">
+    Halison App Studio · Matematikk 2P (LK20) · Enhetspris
+  </footer>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── Unit normalisation ──────────────────────────────────────────────────────
+  // Returns { canonical, factor } where value_in_standard_unit = input_value * factor
+  const UNIT_INFO = {
+    // Mass → kg
+    'g':   { kind: 'mass', label: 'g',   factor: 0.001,  canonical: 'kg' },
+    'kg':  { kind: 'mass', label: 'kg',  factor: 1,      canonical: 'kg' },
+    // Volume → L
+    'mL':  { kind: 'volume', label: 'mL', factor: 0.001, canonical: 'L' },
+    'dL':  { kind: 'volume', label: 'dL', factor: 0.1,   canonical: 'L' },
+    'L':   { kind: 'volume', label: 'L',  factor: 1,     canonical: 'L' },
+    // Count
+    'stk': { kind: 'count', label: 'stk', factor: 1,     canonical: 'stk' },
+  };
+  const ALL_UNITS = Object.keys(UNIT_INFO);
+
+  function toStandard(value, unit) {
+    const info = UNIT_INFO[unit];
+    if (!info) return null;
+    return { std: value * info.factor, canonical: info.canonical, kind: info.kind };
+  }
+
+  // ── State ───────────────────────────────────────────────────────────────────
+  let rows = [];
+  let nextId = 1;
+
+  function makeRow(navn, pris, mengde, unit) {
+    return { id: nextId++, navn: navn || '', pris: pris || '', mengde: mengde || '', unit: unit || 'kg' };
+  }
+
+  // ── Persistence ─────────────────────────────────────────────────────────────
+  const LS_KEY = 'enhetspris_rows_v1';
+
+  function saveState() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(rows)); } catch (e) {}
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length >= 2) {
+          rows = parsed;
+          // Ensure ids are consistent
+          nextId = Math.max(...rows.map(r => r.id)) + 1;
+          return true;
+        }
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  // ── Default data ─────────────────────────────────────────────────────────────
+  function loadDefaults() {
+    rows = [
+      makeRow('Norvegia ost 400 g', '49.90', '400', 'g'),
+      makeRow('Norvegia ost 1 kg', '109.00', '1', 'kg'),
+      makeRow('Norvegia ost 500 g', '59.00', '500', 'g'),
+    ];
+  }
+
+  // ── Render rows ──────────────────────────────────────────────────────────────
+  function renderRows() {
+    const container = document.getElementById('rowsContainer');
+    container.innerHTML = '';
+
+    rows.forEach(function (row) {
+      const div = document.createElement('div');
+      div.className = 'row-transition bg-white rounded-xl border border-gray-200 shadow-sm p-3 flex flex-wrap gap-2 items-end';
+      div.dataset.id = row.id;
+
+      // Unit options
+      const unitOptions = ALL_UNITS.map(function (u) {
+        return '<option value="' + u + '"' + (row.unit === u ? ' selected' : '') + '>' + u + '</option>';
+      }).join('');
+
+      div.innerHTML = `
+        <div class="flex-1 min-w-[10rem]">
+          <label class="block text-xs text-gray-500 mb-1 font-medium">Produktnavn</label>
+          <input
+            type="text"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            placeholder="f.eks. Lettmelk 1 L"
+            value="${escHtml(row.navn)}"
+            data-field="navn"
+          />
+        </div>
+        <div class="w-28">
+          <label class="block text-xs text-gray-500 mb-1 font-medium">Pris (kr)</label>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            placeholder="f.eks. 24.90"
+            value="${escHtml(row.pris)}"
+            data-field="pris"
+          />
+        </div>
+        <div class="w-24">
+          <label class="block text-xs text-gray-500 mb-1 font-medium">Mengde</label>
+          <input
+            type="number"
+            min="0"
+            step="any"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            placeholder="f.eks. 1"
+            value="${escHtml(row.mengde)}"
+            data-field="mengde"
+          />
+        </div>
+        <div class="w-20">
+          <label class="block text-xs text-gray-500 mb-1 font-medium">Enhet</label>
+          <select
+            class="unit-badge w-full border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+            data-field="unit"
+          >${unitOptions}</select>
+        </div>
+        <div class="flex items-end pb-0.5">
+          <button
+            class="remove-btn text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg p-2 transition-colors"
+            title="Fjern produkt"
+            ${rows.length <= 2 ? 'disabled' : ''}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      `;
+
+      // Input listeners
+      div.querySelectorAll('[data-field]').forEach(function (el) {
+        el.addEventListener('input', function () {
+          const id = parseInt(div.dataset.id);
+          const field = el.dataset.field;
+          const r = rows.find(function (x) { return x.id === id; });
+          if (r) {
+            r[field] = el.value;
+            saveState();
+            computeAndRender();
+          }
+        });
+        // Also for select
+        el.addEventListener('change', function () {
+          const id = parseInt(div.dataset.id);
+          const field = el.dataset.field;
+          const r = rows.find(function (x) { return x.id === id; });
+          if (r) {
+            r[field] = el.value;
+            saveState();
+            computeAndRender();
+          }
+        });
+      });
+
+      // Remove button
+      div.querySelector('.remove-btn').addEventListener('click', function () {
+        if (rows.length <= 2) return;
+        rows = rows.filter(function (x) { return x.id !== parseInt(div.dataset.id); });
+        saveState();
+        renderRows();
+        computeAndRender();
+      });
+
+      container.appendChild(div);
+    });
+  }
+
+  // ── Compute and render results ───────────────────────────────────────────────
+  function computeAndRender() {
+    const resultSection = document.getElementById('resultSection');
+    const resultCards = document.getElementById('resultCards');
+    const savingsBox = document.getElementById('savingsBox');
+    const savingsText = document.getElementById('savingsText');
+
+    // Compute enhetspris for each row
+    const computed = rows.map(function (row) {
+      const pris = parseFloat(row.pris);
+      const mengde = parseFloat(row.mengde);
+
+      if (!row.navn.trim() || isNaN(pris) || isNaN(mengde) || mengde <= 0 || pris < 0) {
+        return { row: row, valid: false };
+      }
+
+      const std = toStandard(mengde, row.unit);
+      if (!std) return { row: row, valid: false };
+
+      const enhetspris = pris / std.std;
+      return {
+        row: row,
+        valid: true,
+        pris: pris,
+        mengde: mengde,
+        unit: row.unit,
+        kind: std.kind,
+        canonical: std.canonical,
+        enhetspris: enhetspris,
+      };
+    });
+
+    const valid = computed.filter(function (c) { return c.valid; });
+
+    if (valid.length < 2) {
+      resultSection.classList.add('hidden');
+      return;
+    }
+
+    // Check that all valid rows share the same kind
+    const kinds = [...new Set(valid.map(function (c) { return c.kind; }))];
+    if (kinds.length > 1) {
+      // Mixed kinds — show warning
+      resultCards.innerHTML = `
+        <div class="bg-yellow-50 border border-yellow-300 rounded-xl p-4 text-yellow-800 text-sm">
+          <strong>Merk:</strong> Du blander ulike enhetstyper (f.eks. vekt og volum).
+          Enhetspris kan bare sammenlignes innen samme type (alle i kg, alle i L, osv.).
+          Grupper produktene etter type for å sammenligne.
+        </div>`;
+      savingsBox.classList.add('hidden');
+      resultSection.classList.remove('hidden');
+      return;
+    }
+
+    // Sort by enhetspris ascending
+    const sorted = valid.slice().sort(function (a, b) { return a.enhetspris - b.enhetspris; });
+    const best = sorted[0];
+    const worst = sorted[sorted.length - 1];
+
+    // Render result cards in original order
+    resultCards.innerHTML = '';
+    valid.forEach(function (c) {
+      const isBest = c.enhetspris === best.enhetspris;
+      const card = document.createElement('div');
+      card.className = 'row-transition rounded-xl border p-4 flex flex-wrap gap-3 items-center justify-between ' +
+        (isBest
+          ? 'bg-green-50 border-green-400 winner-glow'
+          : 'bg-white border-gray-200');
+
+      const enhetsprisFormatted = formatKr(c.enhetspris);
+      const label = 'kr/' + c.canonical;
+
+      card.innerHTML = `
+        <div class="flex items-center gap-2 flex-1 min-w-0">
+          ${isBest
+            ? '<span class="shrink-0 text-green-600 text-xl" title="Beste kjøp">✓</span>'
+            : '<span class="shrink-0 text-gray-300 text-xl">○</span>'}
+          <span class="font-medium text-gray-900 truncate">${escHtml(c.row.navn)}</span>
+        </div>
+        <div class="text-right shrink-0">
+          <div class="text-lg font-bold ${isBest ? 'text-green-700' : 'text-gray-700'}">
+            ${enhetsprisFormatted} <span class="text-sm font-normal">${escHtml(label)}</span>
+          </div>
+          <div class="text-xs text-gray-400">${formatKr(c.pris)} kr for ${c.mengde} ${escHtml(c.unit)}</div>
+        </div>
+        ${isBest
+          ? '<div class="w-full"><span class="inline-block bg-green-100 text-green-800 text-xs font-semibold px-2 py-0.5 rounded-full">Beste kjøp</span></div>'
+          : ''}
+      `;
+
+      resultCards.appendChild(card);
+    });
+
+    // Savings calculation: compare best to worst (by enhetspris)
+    if (valid.length >= 2 && best.enhetspris !== worst.enhetspris) {
+      const savingsPct = ((worst.enhetspris - best.enhetspris) / worst.enhetspris) * 100;
+      // How much you save per standard unit
+      const diffPerUnit = worst.enhetspris - best.enhetspris;
+      savingsText.innerHTML =
+        'Velger du <strong>' + escHtml(best.row.navn) + '</strong> fremfor <strong>' + escHtml(worst.row.navn) + '</strong> ' +
+        'sparer du <strong>' + formatKr(diffPerUnit) + ' kr/' + escHtml(best.canonical) + '</strong> ' +
+        '— det er <strong>' + savingsPct.toFixed(1) + ' %</strong> billigere per ' + escHtml(best.canonical) + '.';
+      savingsBox.classList.remove('hidden');
+    } else {
+      savingsBox.classList.add('hidden');
+    }
+
+    resultSection.classList.remove('hidden');
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function formatKr(n) {
+    // Show up to 2 decimal places, but trim trailing zeros
+    if (n >= 100) return n.toFixed(2).replace(/\.?0+$/, '');
+    if (n >= 10) return n.toFixed(2);
+    if (n >= 1) return n.toFixed(2);
+    return n.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+  }
+
+  // ── Example sets ─────────────────────────────────────────────────────────────
+  const EXAMPLES = [
+    {
+      label: 'Melk – ulike størrelser',
+      rows: [
+        { navn: 'Q-meieriene lettmelk 1 L', pris: '21.90', mengde: '1', unit: 'L' },
+        { navn: 'Q-meieriene lettmelk 1,5 L', pris: '28.90', mengde: '1.5', unit: 'L' },
+        { navn: 'Q-meieriene lettmelk 2 L', pris: '35.90', mengde: '2', unit: 'L' },
+      ]
+    },
+    {
+      label: 'Ost – g vs kg',
+      rows: [
+        { navn: 'Norvegia 400 g', pris: '49.90', mengde: '400', unit: 'g' },
+        { navn: 'Norvegia 1 kg', pris: '109.00', mengde: '1', unit: 'kg' },
+        { navn: 'Norvegia 500 g', pris: '59.00', mengde: '500', unit: 'g' },
+      ]
+    },
+    {
+      label: 'Juice – mL vs dL vs L',
+      rows: [
+        { navn: 'Appelsinjuice 200 mL', pris: '5.90', mengde: '200', unit: 'mL' },
+        { navn: 'Appelsinjuice 5 dL', pris: '12.90', mengde: '5', unit: 'dL' },
+        { navn: 'Appelsinjuice 1,5 L', pris: '28.90', mengde: '1.5', unit: 'L' },
+      ]
+    },
+    {
+      label: 'Egg – ulike antall',
+      rows: [
+        { navn: 'Egg 6 stk', pris: '24.90', mengde: '6', unit: 'stk' },
+        { navn: 'Egg 10 stk', pris: '37.90', mengde: '10', unit: 'stk' },
+        { navn: 'Egg 18 stk', pris: '59.90', mengde: '18', unit: 'stk' },
+      ]
+    },
+    {
+      label: 'Havregryn – g vs kg',
+      rows: [
+        { navn: 'Havregryn 500 g', pris: '15.90', mengde: '500', unit: 'g' },
+        { navn: 'Havregryn 1 kg', pris: '24.90', mengde: '1', unit: 'kg' },
+        { navn: 'Havregryn 2 kg', pris: '44.90', mengde: '2', unit: 'kg' },
+      ]
+    },
+    {
+      label: 'Yoghurt – ulike størrelser',
+      rows: [
+        { navn: 'Biola naturell 150 g', pris: '8.90', mengde: '150', unit: 'g' },
+        { navn: 'Biola naturell 500 g', pris: '21.90', mengde: '500', unit: 'g' },
+        { navn: 'Biola naturell 1 kg', pris: '37.90', mengde: '1', unit: 'kg' },
+      ]
+    },
+  ];
+
+  function renderExamples() {
+    const container = document.getElementById('examplesContainer');
+    EXAMPLES.forEach(function (ex) {
+      const btn = document.createElement('button');
+      btn.className =
+        'text-left px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm text-amber-800 ' +
+        'hover:bg-amber-100 hover:border-amber-400 transition-colors font-medium shadow-sm';
+      btn.textContent = ex.label;
+      btn.addEventListener('click', function () {
+        nextId = 1;
+        rows = ex.rows.map(function (r) {
+          return makeRow(r.navn, r.pris, r.mengde, r.unit);
+        });
+        saveState();
+        renderRows();
+        computeAndRender();
+        document.getElementById('rowsContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      container.appendChild(btn);
+    });
+  }
+
+  // ── Add row button ────────────────────────────────────────────────────────────
+  document.getElementById('addRowBtn').addEventListener('click', function () {
+    rows.push(makeRow('', '', '', 'kg'));
+    saveState();
+    renderRows();
+    computeAndRender();
+    // Focus the new row's navn input
+    const allRows = document.querySelectorAll('#rowsContainer > div');
+    if (allRows.length) {
+      const lastInput = allRows[allRows.length - 1].querySelector('input[data-field="navn"]');
+      if (lastInput) lastInput.focus();
+    }
+  });
+
+  // ── Init ──────────────────────────────────────────────────────────────────────
+  if (!loadState()) {
+    loadDefaults();
+  }
+  renderExamples();
+  renderRows();
+  computeAndRender();
+
+})();
+</script>
+</body>
+</html>

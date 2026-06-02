@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<!--
+  Rabatt og tilbud — Halison App Studio-eksempel
+
+  Praktisk matematikk for 2P (LK20): regn ut rabatt og ny pris, sammenlikn
+  mengdetilbud, og se hvorfor flere rabatter ikke bare legges sammen.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rabatt og tilbud — Matematikk 2P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom styles */
+    .tab-btn.active {
+      background-color: #1d4ed8;
+      color: #ffffff;
+    }
+    .result-box {
+      transition: all 0.2s ease;
+    }
+    .fade-in {
+      animation: fadeIn 0.3s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .step-line {
+      border-left: 3px solid #93c5fd;
+      padding-left: 0.75rem;
+      margin-left: 0.25rem;
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans text-gray-800">
+
+  <!-- Header -->
+  <header class="bg-blue-700 text-white shadow-md">
+    <div class="max-w-3xl mx-auto px-4 py-5">
+      <p class="text-xs font-semibold uppercase tracking-widest text-blue-200 mb-1">Matematikk 2P · LK20</p>
+      <h1 class="text-2xl font-bold leading-tight">Rabatt og tilbud</h1>
+      <p class="text-sm text-blue-100 mt-1">Er det egentlig et godt tilbud?</p>
+    </div>
+  </header>
+
+  <!-- Tab navigation -->
+  <nav class="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+    <div class="max-w-3xl mx-auto px-4 flex gap-1 py-2 overflow-x-auto">
+      <button class="tab-btn active whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-blue-50 transition" onclick="showTab('prosent')">1 · Prosentavslag</button>
+      <button class="tab-btn whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-blue-50 transition" onclick="showTab('mengde')">2 · Mengdetilbud</button>
+      <button class="tab-btn whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-blue-50 transition" onclick="showTab('kjede')">3 · Flere rabatter etter hverandre</button>
+    </div>
+  </nav>
+
+  <main class="max-w-3xl mx-auto px-4 py-8 space-y-8">
+
+    <!-- ============================================================
+         TAB 1: Prosentavslag
+    ============================================================ -->
+    <section id="tab-prosent" class="tab-content space-y-6">
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-lg font-semibold text-blue-800 mb-1">Prosentavslag</h2>
+        <p class="text-sm text-gray-500 mb-4">Oppgi ordinær pris og rabatt — eller fyll inn før- og etterpris for å finne prosenten.</p>
+
+        <!-- Mode toggle -->
+        <div class="flex gap-2 mb-5">
+          <button id="mode-btn-a" onclick="setProsentMode('a')"
+            class="px-3 py-1.5 rounded-full text-xs font-semibold border border-blue-300 bg-blue-600 text-white transition">
+            Pris + prosent → ny pris
+          </button>
+          <button id="mode-btn-b" onclick="setProsentMode('b')"
+            class="px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition">
+            Før- og etterpris → prosent
+          </button>
+        </div>
+
+        <!-- Mode A -->
+        <div id="prosent-mode-a" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Ordinær pris (kr)</label>
+              <input id="p-pris" type="number" min="0" step="1" value="499"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Rabatt (%)</label>
+              <input id="p-prosent" type="number" min="0" max="100" step="1" value="20"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+          </div>
+          <button onclick="beregnProsent()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition">Beregn</button>
+          <div id="prosent-result-a" class="result-box"></div>
+        </div>
+
+        <!-- Mode B -->
+        <div id="prosent-mode-b" class="hidden space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Ordinær pris / førpris (kr)</label>
+              <input id="p-for" type="number" min="0" step="1" value="499"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tilbudspris / etterpris (kr)</label>
+              <input id="p-etter" type="number" min="0" step="1" value="399"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+          </div>
+          <button onclick="beregnProsentB()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition">Beregn</button>
+          <div id="prosent-result-b" class="result-box"></div>
+        </div>
+      </div>
+
+      <!-- Eksempler -->
+      <div class="bg-blue-50 rounded-xl border border-blue-100 p-5">
+        <h3 class="text-sm font-semibold text-blue-800 mb-3">Prøv et kjent eksempel</h3>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="loadExample('sportsgenser')" class="example-chip px-3 py-1.5 bg-white border border-blue-200 rounded-full text-xs text-blue-700 hover:bg-blue-100 transition">Sportsgenser 699 kr, −30 %</button>
+          <button onclick="loadExample('joggesko')" class="example-chip px-3 py-1.5 bg-white border border-blue-200 rounded-full text-xs text-blue-700 hover:bg-blue-100 transition">Joggesko 1 299 kr, −40 %</button>
+          <button onclick="loadExample('mobil')" class="example-chip px-3 py-1.5 bg-white border border-blue-200 rounded-full text-xs text-blue-700 hover:bg-blue-100 transition">Mobil 8 490 kr → 6 990 kr</button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ============================================================
+         TAB 2: Mengdetilbud
+    ============================================================ -->
+    <section id="tab-mengde" class="tab-content hidden space-y-6">
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-lg font-semibold text-blue-800 mb-1">Sammenlikn mengdetilbud</h2>
+        <p class="text-sm text-gray-500 mb-4">Legg inn opptil tre tilbud. Kalkulatoren regner ut effektiv enhetspris og kårer vinneren.</p>
+
+        <div class="space-y-4">
+
+          <!-- Tilbud 1 -->
+          <div class="border border-gray-200 rounded-lg p-4 space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center font-bold">A</span>
+              <span class="text-sm font-medium text-gray-700">Tilbud A</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">Type tilbud</label>
+                <select id="m-type-a" onchange="updateMengdeType('a')" class="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                  <option value="stykk">Stykkpris (kr / stk)</option>
+                  <option value="pakke">Pakketilbud (X stk for Y kr)</option>
+                  <option value="prosent">Prosentrabatt (−X %)</option>
+                  <option value="3for2">Ta 3, betal for 2</option>
+                </select>
+              </div>
+              <div id="m-input-a" class="sm:col-span-2 grid grid-cols-2 gap-2"></div>
+            </div>
+          </div>
+
+          <!-- Tilbud 2 -->
+          <div class="border border-gray-200 rounded-lg p-4 space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-emerald-600 text-white text-xs flex items-center justify-center font-bold">B</span>
+              <span class="text-sm font-medium text-gray-700">Tilbud B</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">Type tilbud</label>
+                <select id="m-type-b" onchange="updateMengdeType('b')" class="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                  <option value="stykk">Stykkpris (kr / stk)</option>
+                  <option value="pakke">Pakketilbud (X stk for Y kr)</option>
+                  <option value="prosent" selected>Prosentrabatt (−X %)</option>
+                  <option value="3for2">Ta 3, betal for 2</option>
+                </select>
+              </div>
+              <div id="m-input-b" class="sm:col-span-2 grid grid-cols-2 gap-2"></div>
+            </div>
+          </div>
+
+          <!-- Tilbud 3 (optional) -->
+          <div id="tilbud-c-wrapper" class="border border-dashed border-gray-200 rounded-lg p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-amber-500 text-white text-xs flex items-center justify-center font-bold">C</span>
+                <span class="text-sm font-medium text-gray-700">Tilbud C (valgfritt)</span>
+              </div>
+              <button id="toggle-c-btn" onclick="toggleTilbudC()" class="text-xs text-blue-600 hover:underline">+ Legg til</button>
+            </div>
+            <div id="tilbud-c-content" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">Type tilbud</label>
+                <select id="m-type-c" onchange="updateMengdeType('c')" class="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                  <option value="stykk">Stykkpris (kr / stk)</option>
+                  <option value="pakke" selected>Pakketilbud (X stk for Y kr)</option>
+                  <option value="prosent">Prosentrabatt (−X %)</option>
+                  <option value="3for2">Ta 3, betal for 2</option>
+                </select>
+              </div>
+              <div id="m-input-c" class="sm:col-span-2 grid grid-cols-2 gap-2"></div>
+            </div>
+          </div>
+
+          <button onclick="beregnMengde()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition">Sammenlikn tilbud</button>
+        </div>
+
+        <div id="mengde-result" class="result-box mt-4"></div>
+      </div>
+
+      <!-- Ferdiglagde eksempler -->
+      <div class="bg-blue-50 rounded-xl border border-blue-100 p-5">
+        <h3 class="text-sm font-semibold text-blue-800 mb-3">Prøv et ferdig eksempel</h3>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="loadMengdeExample('cola')" class="px-3 py-1.5 bg-white border border-blue-200 rounded-full text-xs text-blue-700 hover:bg-blue-100 transition">Brus: 3 for 2 vs. −25 % vs. 18,90 kr/stk</button>
+          <button onclick="loadMengdeExample('shampo')" class="px-3 py-1.5 bg-white border border-blue-200 rounded-full text-xs text-blue-700 hover:bg-blue-100 transition">Shampo: 3-pak 89 kr vs. 32 kr/stk</button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ============================================================
+         TAB 3: Kjederabatter
+    ============================================================ -->
+    <section id="tab-kjede" class="tab-content hidden space-y-6">
+
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-lg font-semibold text-blue-800 mb-1">Flere rabatter etter hverandre</h2>
+        <p class="text-sm text-gray-500 mb-4">Mange tror −20 % og deretter −10 % gir −30 %. Det er feil! Vi bruker <strong>vekstfaktorer</strong> og viser hva den virkelige rabatten blir.</p>
+
+        <div class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Utgangspris (kr)</label>
+              <input id="k-pris" type="number" min="1" step="1" value="1000"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+          </div>
+
+          <div id="kjede-rabatter" class="space-y-3">
+            <!-- Rabatter genereres dynamisk -->
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <button onclick="addRabatt()" class="text-sm text-blue-600 border border-blue-300 hover:bg-blue-50 px-4 py-2 rounded-lg transition">+ Legg til en rabatt til</button>
+            <button onclick="removeRabatt()" id="remove-rabatt-btn" class="text-sm text-red-500 border border-red-200 hover:bg-red-50 px-4 py-2 rounded-lg transition hidden">− Fjern siste rabatt</button>
+          </div>
+
+          <button onclick="beregnKjede()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition">Beregn</button>
+          <div id="kjede-result" class="result-box"></div>
+        </div>
+      </div>
+
+      <!-- Ferdiglagde eksempler -->
+      <div class="bg-blue-50 rounded-xl border border-blue-100 p-5">
+        <h3 class="text-sm font-semibold text-blue-800 mb-3">Prøv et ferdig eksempel</h3>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="loadKjedeExample('klassiker')" class="px-3 py-1.5 bg-white border border-blue-200 rounded-full text-xs text-blue-700 hover:bg-blue-100 transition">Sesongrabatt −20 %, deretter lojalitetsrabatt −10 %</button>
+          <button onclick="loadKjedeExample('trippel')" class="px-3 py-1.5 bg-white border border-blue-200 rounded-full text-xs text-blue-700 hover:bg-blue-100 transition">Black Friday: −15 %, −15 %, −15 % (tre ganger)</button>
+          <button onclick="loadKjedeExample('retur')" class="px-3 py-1.5 bg-white border border-blue-200 rounded-full text-xs text-blue-700 hover:bg-blue-100 transition">Elektronikk: −25 % og deretter ekstra −5 %</button>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer class="mt-12 py-6 border-t border-gray-200 bg-white">
+    <div class="max-w-3xl mx-auto px-4 text-xs text-gray-400 text-center space-y-1">
+      <p>Matematikk 2P (LK20) · Halison App Studio-eksempel</p>
+      <p><a href="https://github.com/halisonworks/public-app-studio" class="hover:underline text-blue-400">github.com/halisonworks/public-app-studio</a></p>
+    </div>
+  </footer>
+
+<script>
+// ================================================================
+// UTILS
+// ================================================================
+function fmt(n) {
+  // Format number to Norwegian style: comma as decimal, space as thousands
+  if (isNaN(n)) return '–';
+  return n.toLocaleString('nb-NO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtPct(n) {
+  if (isNaN(n)) return '–';
+  return n.toLocaleString('nb-NO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' %';
+}
+
+function round2(n) {
+  return Math.round(n * 100) / 100;
+}
+
+function resultHtml(content) {
+  return `<div class="fade-in mt-4 bg-gray-50 border border-gray-200 rounded-lg p-5 text-sm leading-relaxed space-y-3">${content}</div>`;
+}
+
+function errorHtml(msg) {
+  return `<div class="fade-in mt-4 bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">${msg}</div>`;
+}
+
+// ================================================================
+// TABS
+// ================================================================
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.remove('hidden');
+  event.target.classList.add('active');
+}
+
+// ================================================================
+// TAB 1: PROSENTAVSLAG
+// ================================================================
+let prosentMode = 'a';
+
+function setProsentMode(mode) {
+  prosentMode = mode;
+  document.getElementById('prosent-mode-a').classList.toggle('hidden', mode !== 'a');
+  document.getElementById('prosent-mode-b').classList.toggle('hidden', mode !== 'b');
+
+  const btnA = document.getElementById('mode-btn-a');
+  const btnB = document.getElementById('mode-btn-b');
+  if (mode === 'a') {
+    btnA.classList.remove('bg-white', 'text-gray-600', 'border-gray-300');
+    btnA.classList.add('bg-blue-600', 'text-white', 'border-blue-300');
+    btnB.classList.remove('bg-blue-600', 'text-white', 'border-blue-300');
+    btnB.classList.add('bg-white', 'text-gray-600', 'border-gray-300');
+  } else {
+    btnB.classList.remove('bg-white', 'text-gray-600', 'border-gray-300');
+    btnB.classList.add('bg-blue-600', 'text-white', 'border-blue-300');
+    btnA.classList.remove('bg-blue-600', 'text-white', 'border-blue-300');
+    btnA.classList.add('bg-white', 'text-gray-600', 'border-gray-300');
+  }
+  document.getElementById('prosent-result-a').innerHTML = '';
+  document.getElementById('prosent-result-b').innerHTML = '';
+}
+
+function beregnProsent() {
+  const pris = parseFloat(document.getElementById('p-pris').value);
+  const prosent = parseFloat(document.getElementById('p-prosent').value);
+
+  if (isNaN(pris) || pris <= 0) {
+    document.getElementById('prosent-result-a').innerHTML = errorHtml('Oppgi en gyldig positiv pris.');
+    return;
+  }
+  if (isNaN(prosent) || prosent < 0 || prosent > 100) {
+    document.getElementById('prosent-result-a').innerHTML = errorHtml('Rabatt må være mellom 0 og 100 %.');
+    return;
+  }
+
+  const vekstfaktor = 1 - prosent / 100;
+  const nyPris = round2(pris * vekstfaktor);
+  const spart = round2(pris - nyPris);
+
+  const html = `
+    <div class="grid grid-cols-2 gap-x-4 gap-y-2">
+      <span class="text-gray-500">Ordinær pris:</span>
+      <span class="font-semibold">${fmt(pris)} kr</span>
+      <span class="text-gray-500">Rabatt:</span>
+      <span class="font-semibold text-red-600">− ${fmtPct(prosent)}</span>
+      <span class="text-gray-500">Spart beløp:</span>
+      <span class="font-semibold text-red-600">− ${fmt(spart)} kr</span>
+      <span class="text-gray-500">Tilbudspris:</span>
+      <span class="font-bold text-green-700 text-base">${fmt(nyPris)} kr</span>
+    </div>
+    <div class="step-line text-xs text-gray-500 mt-2 space-y-1">
+      <p><span class="font-mono font-semibold text-gray-700">Vekstfaktor</span> = 1 − ${prosent}/100 = ${vekstfaktor.toFixed(4)}</p>
+      <p><span class="font-mono font-semibold text-gray-700">Ny pris</span> = ${fmt(pris)} × ${vekstfaktor.toFixed(4)} = <strong>${fmt(nyPris)} kr</strong></p>
+      <p><span class="font-mono font-semibold text-gray-700">Spart</span> = ${fmt(pris)} − ${fmt(nyPris)} = <strong>${fmt(spart)} kr</strong></p>
+    </div>
+  `;
+  document.getElementById('prosent-result-a').innerHTML = resultHtml(html);
+}
+
+function beregnProsentB() {
+  const forPris = parseFloat(document.getElementById('p-for').value);
+  const etterPris = parseFloat(document.getElementById('p-etter').value);
+
+  if (isNaN(forPris) || forPris <= 0) {
+    document.getElementById('prosent-result-b').innerHTML = errorHtml('Oppgi en gyldig positiv førpris.');
+    return;
+  }
+  if (isNaN(etterPris) || etterPris < 0) {
+    document.getElementById('prosent-result-b').innerHTML = errorHtml('Oppgi en gyldig etterpris.');
+    return;
+  }
+  if (etterPris >= forPris) {
+    document.getElementById('prosent-result-b').innerHTML = errorHtml('Etterpris må være lavere enn førpris for at det skal være et avslag.');
+    return;
+  }
+
+  const spart = round2(forPris - etterPris);
+  const prosent = round2((spart / forPris) * 100);
+  const vekstfaktor = round2(etterPris / forPris * 10000) / 10000;
+
+  const html = `
+    <div class="grid grid-cols-2 gap-x-4 gap-y-2">
+      <span class="text-gray-500">Førpris:</span>
+      <span class="font-semibold">${fmt(forPris)} kr</span>
+      <span class="text-gray-500">Etterpris:</span>
+      <span class="font-semibold">${fmt(etterPris)} kr</span>
+      <span class="text-gray-500">Spart beløp:</span>
+      <span class="font-semibold text-red-600">− ${fmt(spart)} kr</span>
+      <span class="text-gray-500">Prosentavslag:</span>
+      <span class="font-bold text-green-700 text-base">− ${fmtPct(prosent)}</span>
+    </div>
+    <div class="step-line text-xs text-gray-500 mt-2 space-y-1">
+      <p><span class="font-mono font-semibold text-gray-700">Spart</span> = ${fmt(forPris)} − ${fmt(etterPris)} = ${fmt(spart)} kr</p>
+      <p><span class="font-mono font-semibold text-gray-700">Prosent</span> = (${fmt(spart)} / ${fmt(forPris)}) × 100 = <strong>${fmtPct(prosent)}</strong></p>
+      <p><span class="font-mono font-semibold text-gray-700">Vekstfaktor</span> = ${fmt(etterPris)} / ${fmt(forPris)} = ${vekstfaktor.toFixed(4)}</p>
+    </div>
+  `;
+  document.getElementById('prosent-result-b').innerHTML = resultHtml(html);
+}
+
+function loadExample(ex) {
+  if (ex === 'sportsgenser') {
+    setProsentMode('a');
+    document.getElementById('p-pris').value = 699;
+    document.getElementById('p-prosent').value = 30;
+    beregnProsent();
+  } else if (ex === 'joggesko') {
+    setProsentMode('a');
+    document.getElementById('p-pris').value = 1299;
+    document.getElementById('p-prosent').value = 40;
+    beregnProsent();
+  } else if (ex === 'mobil') {
+    setProsentMode('b');
+    document.getElementById('p-for').value = 8490;
+    document.getElementById('p-etter').value = 6990;
+    beregnProsentB();
+  }
+}
+
+// ================================================================
+// TAB 2: MENGDETILBUD
+// ================================================================
+let tilbudCVisible = false;
+
+const mengdeDefaults = {
+  a: { type: 'stykk', stykk: 25.90 },
+  b: { type: 'prosent', stykk: 25.90, prosent: 25 },
+  c: { type: 'pakke', antall: 3, pakke_pris: 59.90 }
+};
+
+function updateMengdeType(id) {
+  const type = document.getElementById('m-type-' + id).value;
+  const container = document.getElementById('m-input-' + id);
+  container.innerHTML = '';
+
+  if (type === 'stykk') {
+    container.innerHTML = `
+      <div class="col-span-2">
+        <label class="block text-xs text-gray-500 mb-1">Stykkpris (kr)</label>
+        <input id="m-stykk-${id}" type="number" min="0" step="0.01" value="${mengdeDefaults[id] ? (mengdeDefaults[id].stykk || 25.90) : 25.90}"
+          class="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      </div>`;
+  } else if (type === 'pakke') {
+    const ant = mengdeDefaults[id] ? (mengdeDefaults[id].antall || 3) : 3;
+    const pp = mengdeDefaults[id] ? (mengdeDefaults[id].pakke_pris || 59.90) : 59.90;
+    container.innerHTML = `
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Antall i pakken</label>
+        <input id="m-antall-${id}" type="number" min="1" step="1" value="${ant}"
+          class="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Pris for pakken (kr)</label>
+        <input id="m-pakkepris-${id}" type="number" min="0" step="0.01" value="${pp}"
+          class="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      </div>`;
+  } else if (type === 'prosent') {
+    const sp = mengdeDefaults[id] ? (mengdeDefaults[id].stykk || 25.90) : 25.90;
+    const pr = mengdeDefaults[id] ? (mengdeDefaults[id].prosent || 25) : 25;
+    container.innerHTML = `
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Ordinær stykkpris (kr)</label>
+        <input id="m-stykk-${id}" type="number" min="0" step="0.01" value="${sp}"
+          class="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      </div>
+      <div>
+        <label class="block text-xs text-gray-500 mb-1">Rabatt (%)</label>
+        <input id="m-prosent-${id}" type="number" min="0" max="100" step="1" value="${pr}"
+          class="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      </div>`;
+  } else if (type === '3for2') {
+    const sp = mengdeDefaults[id] ? (mengdeDefaults[id].stykk || 25.90) : 25.90;
+    container.innerHTML = `
+      <div class="col-span-2">
+        <label class="block text-xs text-gray-500 mb-1">Ordinær stykkpris (kr)</label>
+        <input id="m-stykk-${id}" type="number" min="0" step="0.01" value="${sp}"
+          class="w-full border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        <p class="text-xs text-gray-400 mt-1">«Ta 3, betal for 2» — du får 3 stk, men betaler for 2.</p>
+      </div>`;
+  }
+}
+
+function getMengdeEnhetspris(id) {
+  // Returns { enhetspris, label } or null if invalid
+  const type = document.getElementById('m-type-' + id).value;
+  let ep, label;
+
+  if (type === 'stykk') {
+    const p = parseFloat(document.getElementById('m-stykk-' + id).value);
+    if (isNaN(p) || p < 0) return null;
+    ep = p;
+    label = `Stykkpris: ${fmt(p)} kr/stk`;
+  } else if (type === 'pakke') {
+    const ant = parseFloat(document.getElementById('m-antall-' + id).value);
+    const pp = parseFloat(document.getElementById('m-pakkepris-' + id).value);
+    if (isNaN(ant) || ant <= 0 || isNaN(pp) || pp < 0) return null;
+    ep = pp / ant;
+    label = `${ant} stk for ${fmt(pp)} kr → ${fmt(ep)} kr/stk`;
+  } else if (type === 'prosent') {
+    const p = parseFloat(document.getElementById('m-stykk-' + id).value);
+    const pr = parseFloat(document.getElementById('m-prosent-' + id).value);
+    if (isNaN(p) || p < 0 || isNaN(pr) || pr < 0 || pr > 100) return null;
+    ep = p * (1 - pr / 100);
+    label = `${fmt(p)} kr − ${pr} % = ${fmt(ep)} kr/stk`;
+  } else if (type === '3for2') {
+    const p = parseFloat(document.getElementById('m-stykk-' + id).value);
+    if (isNaN(p) || p < 0) return null;
+    ep = (2 * p) / 3;
+    label = `Ta 3, betal for 2: (2 × ${fmt(p)}) / 3 = ${fmt(ep)} kr/stk`;
+  }
+  return { enhetspris: ep, label };
+}
+
+function beregnMengde() {
+  const resultEl = document.getElementById('mengde-result');
+  const ids = tilbudCVisible ? ['a', 'b', 'c'] : ['a', 'b'];
+  const letters = { a: 'A', b: 'B', c: 'C' };
+  const colors = { a: 'text-blue-700', b: 'text-emerald-700', c: 'text-amber-700' };
+
+  const tilbud = [];
+  for (const id of ids) {
+    const res = getMengdeEnhetspris(id);
+    if (!res) {
+      resultEl.innerHTML = errorHtml(`Sjekk inndataene for tilbud ${letters[id].toUpperCase()}.`);
+      return;
+    }
+    tilbud.push({ id, ...res });
+  }
+
+  // Sort ascending by enhetspris
+  const sorted = [...tilbud].sort((a, b) => a.enhetspris - b.enhetspris);
+  const winner = sorted[0];
+
+  let rows = tilbud.map(t => {
+    const isBest = t.id === winner.id;
+    const bg = isBest ? 'bg-green-50 border-green-200' : 'bg-white border-gray-100';
+    const badge = isBest ? '<span class="ml-2 text-xs bg-green-100 text-green-700 border border-green-200 rounded-full px-2 py-0.5 font-semibold">Billigst</span>' : '';
+    return `
+      <div class="border rounded-lg p-3 ${bg} flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+        <div>
+          <span class="font-semibold ${colors[t.id]}">Tilbud ${letters[t.id]}</span>${badge}
+          <p class="text-xs text-gray-500 mt-0.5">${t.label}</p>
+        </div>
+        <span class="font-bold text-base ${isBest ? 'text-green-700' : 'text-gray-700'}">${fmt(t.enhetspris)} kr/stk</span>
+      </div>`;
+  }).join('');
+
+  // Savings vs most expensive
+  const mostExpensive = sorted[sorted.length - 1];
+  const savings = round2(mostExpensive.enhetspris - winner.enhetspris);
+  const savingsPct = round2((savings / mostExpensive.enhetspris) * 100);
+
+  const summary = `
+    <div class="mt-1 p-3 bg-green-50 border border-green-200 rounded-lg text-sm">
+      <p class="font-semibold text-green-800">Tilbud ${letters[winner.id]} er billigst</p>
+      <p class="text-green-700 text-xs mt-0.5">
+        Du sparer <strong>${fmt(savings)} kr/stk</strong> (${fmtPct(savingsPct)}) sammenliknet med dyreste alternativ.
+      </p>
+    </div>`;
+
+  resultEl.innerHTML = resultHtml(rows + (tilbud.length > 1 ? summary : ''));
+}
+
+function toggleTilbudC() {
+  tilbudCVisible = !tilbudCVisible;
+  const content = document.getElementById('tilbud-c-content');
+  const btn = document.getElementById('toggle-c-btn');
+  content.classList.toggle('hidden', !tilbudCVisible);
+  btn.textContent = tilbudCVisible ? '− Fjern' : '+ Legg til';
+  if (tilbudCVisible) {
+    updateMengdeType('c');
+  }
+  document.getElementById('mengde-result').innerHTML = '';
+}
+
+function loadMengdeExample(ex) {
+  if (ex === 'cola') {
+    // A: stykkpris 18.90 / B: -25% av 18.90 / C: ta 3 betal for 2 av 18.90
+    document.getElementById('m-type-a').value = 'stykk';
+    mengdeDefaults.a = { type: 'stykk', stykk: 18.90 };
+    updateMengdeType('a');
+
+    document.getElementById('m-type-b').value = 'prosent';
+    mengdeDefaults.b = { type: 'prosent', stykk: 18.90, prosent: 25 };
+    updateMengdeType('b');
+
+    if (!tilbudCVisible) toggleTilbudC();
+    document.getElementById('m-type-c').value = '3for2';
+    mengdeDefaults.c = { type: '3for2', stykk: 18.90 };
+    updateMengdeType('c');
+
+    setTimeout(beregnMengde, 50);
+  } else if (ex === 'shampo') {
+    document.getElementById('m-type-a').value = 'stykk';
+    mengdeDefaults.a = { type: 'stykk', stykk: 32 };
+    updateMengdeType('a');
+
+    document.getElementById('m-type-b').value = 'pakke';
+    mengdeDefaults.b = { type: 'pakke', antall: 3, pakke_pris: 89 };
+    updateMengdeType('b');
+
+    if (tilbudCVisible) toggleTilbudC();
+    setTimeout(beregnMengde, 50);
+  }
+}
+
+// ================================================================
+// TAB 3: KJEDERABATTER
+// ================================================================
+let kjedeRabatter = [20, 10];
+
+function renderKjedeInputs() {
+  const container = document.getElementById('kjede-rabatter');
+  container.innerHTML = '';
+  kjedeRabatter.forEach((val, i) => {
+    const label = i === 0 ? 'Første rabatt (%)' : `Neste rabatt ${i + 1} (%)`;
+    container.innerHTML += `
+      <div class="flex items-center gap-3">
+        <span class="text-gray-400 text-sm w-5">${i + 1}.</span>
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-gray-700 mb-1">${label}</label>
+          <input id="k-r-${i}" type="number" min="0" max="100" step="1" value="${val}"
+            class="w-full max-w-xs border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+      </div>`;
+  });
+  document.getElementById('remove-rabatt-btn').classList.toggle('hidden', kjedeRabatter.length <= 1);
+}
+
+function addRabatt() {
+  kjedeRabatter.push(5);
+  renderKjedeInputs();
+  document.getElementById('kjede-result').innerHTML = '';
+}
+
+function removeRabatt() {
+  if (kjedeRabatter.length > 1) {
+    kjedeRabatter.pop();
+    renderKjedeInputs();
+    document.getElementById('kjede-result').innerHTML = '';
+  }
+}
+
+function readKjedeRabatter() {
+  const vals = [];
+  for (let i = 0; i < kjedeRabatter.length; i++) {
+    const v = parseFloat(document.getElementById('k-r-' + i).value);
+    vals.push(v);
+  }
+  return vals;
+}
+
+function beregnKjede() {
+  const pris = parseFloat(document.getElementById('k-pris').value);
+  if (isNaN(pris) || pris <= 0) {
+    document.getElementById('kjede-result').innerHTML = errorHtml('Oppgi en gyldig positiv utgangspris.');
+    return;
+  }
+
+  const rabatter = readKjedeRabatter();
+  for (const r of rabatter) {
+    if (isNaN(r) || r < 0 || r > 100) {
+      document.getElementById('kjede-result').innerHTML = errorHtml('Alle rabatter må være mellom 0 og 100 %.');
+      return;
+    }
+  }
+
+  // Compute actual chained discount
+  let vekstProdukt = 1;
+  let stegHtml = '';
+  let lopendePris = pris;
+
+  rabatter.forEach((r, i) => {
+    const vf = 1 - r / 100;
+    const forrige = lopendePris;
+    lopendePris = round2(lopendePris * vf);
+    const spart = round2(forrige - lopendePris);
+    vekstProdukt *= vf;
+    stegHtml += `
+      <div class="step-line text-xs text-gray-500 space-y-0.5">
+        <p class="font-semibold text-gray-700">Trinn ${i + 1}: − ${r} %</p>
+        <p>Vekstfaktor = 1 − ${r}/100 = ${vf.toFixed(4)}</p>
+        <p>${fmt(forrige)} kr × ${vf.toFixed(4)} = ${fmt(lopendePris)} kr &nbsp;(spart: ${fmt(spart)} kr)</p>
+      </div>`;
+  });
+
+  const nyPris = lopendePris;
+  const totaltSpart = round2(pris - nyPris);
+  const virkeligProsent = round2((totaltSpart / pris) * 100);
+  const sumRabatter = rabatter.reduce((a, b) => a + b, 0);
+  const feilPris = round2(pris * (1 - sumRabatter / 100));
+
+  const erForskjell = Math.abs(sumRabatter - virkeligProsent) > 0.005;
+
+  const merknadHtml = erForskjell ? `
+    <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm">
+      <p class="font-semibold text-amber-800">Mange tror feil!</p>
+      <p class="text-amber-700 text-xs mt-1">
+        Mange legger bare sammen: ${rabatter.join(' + ')} = <strong>${sumRabatter} %</strong>, og tror prisen blir <strong>${fmt(feilPris)} kr</strong>.
+        Men det er <em>feil</em>. Den faktiske rabatten er <strong>${fmtPct(virkeligProsent)}</strong> — og prisen er <strong>${fmt(nyPris)} kr</strong>.
+        Differansen: <strong>${fmt(round2(feilPris - nyPris))} kr</strong>.
+      </p>
+    </div>` : `
+    <div class="p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-500">
+      Med bare én rabatt er resultatet det samme enten du legger sammen eller bruker vekstfaktor.
+    </div>`;
+
+  const totalVfHtml = `
+    <div class="step-line text-xs text-gray-500 space-y-0.5">
+      <p class="font-semibold text-gray-700">Samlet vekstfaktor</p>
+      <p>${rabatter.map((r, i) => `(1 − ${r}/100)`).join(' × ')} = ${vekstProdukt.toFixed(6)}</p>
+      <p>${fmt(pris)} × ${vekstProdukt.toFixed(6)} = <strong>${fmt(nyPris)} kr</strong></p>
+      <p>Samlet rabatt = (1 − ${vekstProdukt.toFixed(6)}) × 100 = <strong>${fmtPct(virkeligProsent)}</strong></p>
+    </div>`;
+
+  const html = `
+    <div class="grid grid-cols-2 gap-x-4 gap-y-2 mb-3">
+      <span class="text-gray-500">Utgangspris:</span>
+      <span class="font-semibold">${fmt(pris)} kr</span>
+      <span class="text-gray-500">Rabatter:</span>
+      <span class="font-semibold">${rabatter.map(r => '− ' + r + ' %').join(' og deretter ')}</span>
+      <span class="text-gray-500">Endelig pris:</span>
+      <span class="font-bold text-green-700 text-base">${fmt(nyPris)} kr</span>
+      <span class="text-gray-500">Totalt spart:</span>
+      <span class="font-semibold text-red-600">− ${fmt(totaltSpart)} kr (${fmtPct(virkeligProsent)})</span>
+    </div>
+    <p class="text-xs font-semibold text-gray-600 mb-2">Steg for steg:</p>
+    ${stegHtml}
+    ${totalVfHtml}
+    <div class="mt-3">${merknadHtml}</div>
+  `;
+  document.getElementById('kjede-result').innerHTML = resultHtml(html);
+}
+
+function loadKjedeExample(ex) {
+  if (ex === 'klassiker') {
+    document.getElementById('k-pris').value = 1000;
+    kjedeRabatter = [20, 10];
+  } else if (ex === 'trippel') {
+    document.getElementById('k-pris').value = 2490;
+    kjedeRabatter = [15, 15, 15];
+  } else if (ex === 'retur') {
+    document.getElementById('k-pris').value = 3990;
+    kjedeRabatter = [25, 5];
+  }
+  renderKjedeInputs();
+  beregnKjede();
+}
+
+// ================================================================
+// INIT
+// ================================================================
+function init() {
+  // Tab 2: initialize A and B inputs
+  updateMengdeType('a');
+  updateMengdeType('b');
+
+  // Tab 3: initialize rabatt inputs
+  renderKjedeInputs();
+}
+
+init();
+</script>
+</body>
+</html>

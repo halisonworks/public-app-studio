@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<!--
+  Materialberegning — Halison App Studio-eksempel
+
+  Praktisk matematikk for 2P (LK20): regn ut hvor mye maling, fliser/gulv eller
+  betong du trenger ut fra areal/volum — og hva det koster.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Materialberegning – Matematikk 2P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom tab underline animation */
+    .tab-btn {
+      position: relative;
+      transition: color 0.2s;
+    }
+    .tab-btn::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: #2563eb;
+      border-radius: 2px;
+      transform: scaleX(0);
+      transition: transform 0.2s;
+    }
+    .tab-btn.active {
+      color: #2563eb;
+      font-weight: 600;
+    }
+    .tab-btn.active::after {
+      transform: scaleX(1);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Calc box */
+    .calc-box {
+      background: #f0f9ff;
+      border-left: 4px solid #2563eb;
+      font-family: 'Courier New', monospace;
+      font-size: 0.875rem;
+      line-height: 1.6;
+    }
+    .result-box {
+      background: #f0fdf4;
+      border-left: 4px solid #16a34a;
+    }
+
+    /* Input focus */
+    input[type="number"], input[type="text"] {
+      -moz-appearance: textfield;
+    }
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-blue-700 text-white shadow-md">
+    <div class="max-w-3xl mx-auto px-4 py-5">
+      <p class="text-xs font-semibold uppercase tracking-widest text-blue-200 mb-1">Matematikk 2P · LK20 · Praktisk regning</p>
+      <h1 class="text-2xl sm:text-3xl font-bold">Materialberegning</h1>
+      <p class="text-blue-100 mt-1 text-sm">Regn ut hvor mye materiale du trenger – og hva det koster.</p>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="max-w-3xl mx-auto px-4 py-6">
+
+    <!-- Tab bar -->
+    <div class="flex gap-6 border-b border-gray-300 mb-6">
+      <button class="tab-btn active text-gray-700 py-2 text-base" data-tab="maling">🎨 Maling</button>
+      <button class="tab-btn text-gray-700 py-2 text-base" data-tab="fliser">🏠 Fliser / gulv</button>
+      <button class="tab-btn text-gray-700 py-2 text-base" data-tab="betong">🧱 Betong</button>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         TAB 1 — MALING
+    ═══════════════════════════════════════════ -->
+    <section id="tab-maling" class="tab-panel active" aria-label="Malingskalkulator">
+
+      <h2 class="text-lg font-semibold text-gray-800 mb-4">Malingskalkulator</h2>
+
+      <!-- Arealmetode valg -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Hvordan vil du oppgi arealet?</label>
+        <div class="flex gap-4">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="maling-areal-mode" value="direkte" checked
+              class="accent-blue-600" id="maling-mode-direkte" />
+            <span class="text-sm">Skriv inn areal direkte</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="maling-areal-mode" value="rom"
+              class="accent-blue-600" id="maling-mode-rom" />
+            <span class="text-sm">Beregn fra romdimensjoner</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Direkte areal -->
+      <div id="maling-direkte" class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1" for="maling-areal">
+          Veggenes areal (m²)
+        </label>
+        <input type="number" id="maling-areal" min="0" step="0.1" placeholder="f.eks. 48"
+          class="w-full sm:w-48 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      </div>
+
+      <!-- Romdimensjoner -->
+      <div id="maling-rom" class="hidden mb-4 p-4 bg-gray-100 rounded-lg">
+        <p class="text-xs text-gray-500 mb-3">
+          Arealet beregnes som: 2 × (lengde + bredde) × høyde, minus dører og vinduer.
+        </p>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1" for="rom-lengde">Lengde (m)</label>
+            <input type="number" id="rom-lengde" min="0" step="0.1" placeholder="5.0"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1" for="rom-bredde">Bredde (m)</label>
+            <input type="number" id="rom-bredde" min="0" step="0.1" placeholder="4.0"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1" for="rom-hoyde">Høyde (m)</label>
+            <input type="number" id="rom-hoyde" min="0" step="0.1" placeholder="2.4"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1" for="rom-dorer">
+              Dører + vinduer (m²)
+              <span class="font-normal text-gray-400">(trekkes fra)</span>
+            </label>
+            <input type="number" id="rom-dorer" min="0" step="0.1" placeholder="4.5"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          </div>
+        </div>
+        <p class="text-sm text-blue-700 mt-2 font-medium" id="maling-rom-areal-vis"></p>
+      </div>
+
+      <!-- Malingparametre -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="maling-dekkevne">
+            Dekkevne (m² per liter)
+            <span class="text-xs text-gray-400 font-normal">typisk 8–12</span>
+          </label>
+          <input type="number" id="maling-dekkevne" min="0.1" step="0.1" placeholder="10"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="maling-strok">
+            Antall strøk
+          </label>
+          <input type="number" id="maling-strok" min="1" step="1" placeholder="2"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="maling-boksstorrelse">
+            Boksestørrelse (liter per boks)
+            <span class="text-xs text-gray-400 font-normal">f.eks. 2,7 eller 10</span>
+          </label>
+          <input type="number" id="maling-boksstorrelse" min="0.1" step="0.1" placeholder="2.7"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="maling-prisboks">
+            Pris per boks (kr)
+          </label>
+          <input type="number" id="maling-prisboks" min="0" step="1" placeholder="349"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+      </div>
+
+      <button onclick="beregnMaling()"
+        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm">
+        Beregn
+      </button>
+
+      <div id="maling-resultat" class="mt-6 hidden">
+        <h3 class="font-semibold text-gray-800 mb-2">Utregning</h3>
+        <div id="maling-calc" class="calc-box rounded-lg p-4 mb-3 whitespace-pre-wrap"></div>
+        <div id="maling-svar" class="result-box rounded-lg p-4 text-sm font-medium text-green-800"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         TAB 2 — FLISER / GULV
+    ═══════════════════════════════════════════ -->
+    <section id="tab-fliser" class="tab-panel" aria-label="Fliser og gulvkalkulator">
+
+      <h2 class="text-lg font-semibold text-gray-800 mb-4">Fliser / gulvkalkulator</h2>
+
+      <!-- Arealmetode -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Oppgi areal som</label>
+        <div class="flex gap-4">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="fliser-areal-mode" value="direkte" checked
+              class="accent-blue-600" id="fliser-mode-direkte" />
+            <span class="text-sm">Direkte areal (m²)</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="fliser-areal-mode" value="mal"
+              class="accent-blue-600" id="fliser-mode-mal" />
+            <span class="text-sm">Mål rommet (m × m)</span>
+          </label>
+        </div>
+      </div>
+
+      <div id="fliser-direkte" class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1" for="fliser-areal">
+          Gulvareal (m²)
+        </label>
+        <input type="number" id="fliser-areal" min="0" step="0.1" placeholder="f.eks. 18"
+          class="w-full sm:w-48 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      </div>
+
+      <div id="fliser-mal" class="hidden mb-4 p-4 bg-gray-100 rounded-lg">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1" for="fliser-lengde">Lengde (m)</label>
+            <input type="number" id="fliser-lengde" min="0" step="0.1" placeholder="4.5"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1" for="fliser-bredde">Bredde (m)</label>
+            <input type="number" id="fliser-bredde" min="0" step="0.1" placeholder="4.0"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          </div>
+        </div>
+        <p class="text-sm text-blue-700 mt-2 font-medium" id="fliser-mal-areal-vis"></p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="fliser-dekning">
+            Dekning per pakke (m²)
+            <span class="text-xs text-gray-400 font-normal">f.eks. 1,44 for 60×60</span>
+          </label>
+          <input type="number" id="fliser-dekning" min="0.01" step="0.01" placeholder="1.44"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="fliser-svinn">
+            Svinn-tillegg (%)
+            <span class="text-xs text-gray-400 font-normal">anbefalt 10 %</span>
+          </label>
+          <input type="number" id="fliser-svinn" min="0" max="50" step="1" placeholder="10"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="fliser-prispakke">
+            Pris per pakke (kr)
+          </label>
+          <input type="number" id="fliser-prispakke" min="0" step="1" placeholder="279"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+      </div>
+
+      <button onclick="beregnFliser()"
+        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm">
+        Beregn
+      </button>
+
+      <div id="fliser-resultat" class="mt-6 hidden">
+        <h3 class="font-semibold text-gray-800 mb-2">Utregning</h3>
+        <div id="fliser-calc" class="calc-box rounded-lg p-4 mb-3 whitespace-pre-wrap"></div>
+        <div id="fliser-svar" class="result-box rounded-lg p-4 text-sm font-medium text-green-800"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════
+         TAB 3 — BETONG
+    ═══════════════════════════════════════════ -->
+    <section id="tab-betong" class="tab-panel" aria-label="Betongkalkulator">
+
+      <h2 class="text-lg font-semibold text-gray-800 mb-4">Betongkalkulator</h2>
+      <p class="text-sm text-gray-500 mb-4">
+        Beregn antall sekker tørrbetong ut fra lengde, bredde og tykkelse/høyde.
+        Én sekk (25 kg) gir vanligvis ca. 12 liter ferdig betong.
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="betong-lengde">
+            Lengde (m)
+          </label>
+          <input type="number" id="betong-lengde" min="0" step="0.01" placeholder="3.0"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="betong-bredde">
+            Bredde (m)
+          </label>
+          <input type="number" id="betong-bredde" min="0" step="0.01" placeholder="2.0"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="betong-hoyde">
+            Tykkelse / høyde (m)
+            <span class="text-xs text-gray-400 font-normal">f.eks. 0,10 = 10 cm</span>
+          </label>
+          <input type="number" id="betong-hoyde" min="0" step="0.001" placeholder="0.10"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="betong-liter-sekk">
+            Liter ferdig betong per sekk
+            <span class="text-xs text-gray-400 font-normal">typisk 12 l/sekk (25 kg)</span>
+          </label>
+          <input type="number" id="betong-liter-sekk" min="1" step="0.5" placeholder="12"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1" for="betong-prissekk">
+            Pris per sekk (kr)
+          </label>
+          <input type="number" id="betong-prissekk" min="0" step="1" placeholder="85"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+      </div>
+
+      <button onclick="beregnBetong()"
+        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg transition-colors text-sm">
+        Beregn
+      </button>
+
+      <div id="betong-resultat" class="mt-6 hidden">
+        <h3 class="font-semibold text-gray-800 mb-2">Utregning</h3>
+        <div id="betong-calc" class="calc-box rounded-lg p-4 mb-3 whitespace-pre-wrap"></div>
+        <div id="betong-svar" class="result-box rounded-lg p-4 text-sm font-medium text-green-800"></div>
+      </div>
+    </section>
+
+    <!-- Info / pedagogisk boks -->
+    <aside class="mt-10 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-900">
+      <p class="font-semibold mb-1">Matematikk 2P – hva trener vi her?</p>
+      <ul class="list-disc list-inside space-y-1 text-yellow-800">
+        <li>Beregne areal og volum med formler</li>
+        <li>Divisjon og runding oppover (⌈x⌉ – takfunksjonen)</li>
+        <li>Prosentregning (svinn-tillegg)</li>
+        <li>Kostnadsvurdering og enhetspriser</li>
+      </ul>
+    </aside>
+
+  </main>
+
+  <footer class="text-center text-xs text-gray-400 py-6 mt-4">
+    Halison App Studio · Matematikk 2P-eksempel · Kun til pedagogisk og ikke-kommersiell bruk
+  </footer>
+
+  <script>
+    /* =========================================================
+       TABS
+    ========================================================= */
+    (function () {
+      var btns = document.querySelectorAll('.tab-btn');
+      btns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var tab = btn.getAttribute('data-tab');
+          btns.forEach(function (b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          document.querySelectorAll('.tab-panel').forEach(function (p) {
+            p.classList.remove('active');
+          });
+          document.getElementById('tab-' + tab).classList.add('active');
+        });
+      });
+    })();
+
+    /* =========================================================
+       HELPERS
+    ========================================================= */
+    function norNum(val, decimals) {
+      // Format number Norwegian style (. as thousand sep, , as decimal)
+      if (decimals === undefined) decimals = 2;
+      return val.toLocaleString('nb-NO', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function getNum(id) {
+      var v = parseFloat(document.getElementById(id).value);
+      return isNaN(v) ? null : v;
+    }
+
+    function showError(resultId, msg) {
+      var box = document.getElementById(resultId);
+      box.classList.remove('hidden');
+      box.querySelector('[id$="-calc"]') && (box.querySelector('[id$="-calc"]').textContent = '');
+      // Find the svar element inside resultId's parent section
+      var svar = box.parentElement ? box.parentElement.querySelector('[id$="-svar"]') : null;
+      if (!svar) return;
+      svar.textContent = '⚠️ ' + msg;
+      svar.className = 'rounded-lg p-4 text-sm font-medium text-red-700 bg-red-50 border-l-4 border-red-500';
+    }
+
+    /* =========================================================
+       TAB 1 — MALING
+    ========================================================= */
+    // Toggle areal-mode
+    document.querySelectorAll('input[name="maling-areal-mode"]').forEach(function (r) {
+      r.addEventListener('change', function () {
+        var v = document.querySelector('input[name="maling-areal-mode"]:checked').value;
+        document.getElementById('maling-direkte').classList.toggle('hidden', v !== 'direkte');
+        document.getElementById('maling-rom').classList.toggle('hidden', v !== 'rom');
+        oppdaterRomAreal();
+      });
+    });
+
+    ['rom-lengde', 'rom-bredde', 'rom-hoyde', 'rom-dorer'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('input', oppdaterRomAreal);
+    });
+
+    function oppdaterRomAreal() {
+      var l = getNum('rom-lengde'), b = getNum('rom-bredde'),
+          h = getNum('rom-hoyde'), d = getNum('rom-dorer') || 0;
+      var vis = document.getElementById('maling-rom-areal-vis');
+      if (l && b && h) {
+        var a = 2 * (l + b) * h - d;
+        if (a < 0) a = 0;
+        vis.textContent = 'Beregnet veggareal: ' + norNum(a) + ' m²';
+      } else {
+        vis.textContent = '';
+      }
+    }
+
+    function getMalingAreal() {
+      var mode = document.querySelector('input[name="maling-areal-mode"]:checked').value;
+      if (mode === 'direkte') {
+        return { areal: getNum('maling-areal'), utregning: null };
+      } else {
+        var l = getNum('rom-lengde'), b = getNum('rom-bredde'),
+            h = getNum('rom-hoyde'), d = getNum('rom-dorer') || 0;
+        if (!l || !b || !h) return { areal: null, utregning: null };
+        var a = 2 * (l + b) * h - d;
+        if (a < 0) a = 0;
+        var utregning = 'Veggareal = 2 × (lengde + bredde) × høyde − dører/vinduer\n' +
+          '          = 2 × (' + norNum(l) + ' + ' + norNum(b) + ') × ' + norNum(h) + ' − ' + norNum(d) + '\n' +
+          '          = 2 × ' + norNum(l + b) + ' × ' + norNum(h) + ' − ' + norNum(d) + '\n' +
+          '          = ' + norNum(2 * (l + b) * h) + ' − ' + norNum(d) + '\n' +
+          '          = ' + norNum(a) + ' m²';
+        return { areal: a, utregning: utregning };
+      }
+    }
+
+    function beregnMaling() {
+      var arealRes = getMalingAreal();
+      var A = arealRes.areal;
+      var dekkevne = getNum('maling-dekkevne');
+      var strok = getNum('maling-strok');
+      var boksstorrelse = getNum('maling-boksstorrelse');
+      var prisboks = getNum('maling-prisboks');
+
+      // Validate
+      if (!A || A <= 0) { visMailingFeil('Oppgi et gyldig areal (større enn 0).'); return; }
+      if (!dekkevne || dekkevne <= 0) { visMailingFeil('Oppgi dekkevne (m² per liter).'); return; }
+      if (!strok || strok < 1) { visMailingFeil('Antall strøk må være minst 1.'); return; }
+      if (!boksstorrelse || boksstorrelse <= 0) { visMailingFeil('Oppgi boksestørrelse i liter.'); return; }
+
+      var totaltLiter = (A / dekkevne) * strok;
+      var antallBokser = Math.ceil(totaltLiter / boksstorrelse);
+
+      var lines = [];
+      if (arealRes.utregning) {
+        lines.push('— Arealberegning —');
+        lines.push(arealRes.utregning);
+        lines.push('');
+      }
+      lines.push('— Malingsbehov —');
+      lines.push('Totalt areal (A)   = ' + norNum(A) + ' m²');
+      lines.push('Dekkevne           = ' + norNum(dekkevne) + ' m²/liter');
+      lines.push('Antall strøk       = ' + strok);
+      lines.push('');
+      lines.push('Liter per strøk    = A ÷ dekkevne');
+      lines.push('                   = ' + norNum(A) + ' ÷ ' + norNum(dekkevne));
+      lines.push('                   = ' + norNum(A / dekkevne) + ' liter');
+      lines.push('');
+      lines.push('Totalt liter       = liter per strøk × antall strøk');
+      lines.push('                   = ' + norNum(A / dekkevne) + ' × ' + strok);
+      lines.push('                   = ' + norNum(totaltLiter) + ' liter');
+      lines.push('');
+      lines.push('Bokser (rund opp)  = ⌈' + norNum(totaltLiter) + ' ÷ ' + norNum(boksstorrelse) + '⌉');
+      lines.push('                   = ⌈' + norNum(totaltLiter / boksstorrelse) + '⌉');
+      lines.push('                   = ' + antallBokser + ' bokser');
+
+      var svarTekst = 'Du trenger ' + antallBokser + ' boks' + (antallBokser !== 1 ? 'er' : '') +
+        ' à ' + norNum(boksstorrelse) + ' liter (' + norNum(antallBokser * boksstorrelse) + ' liter totalt, ' +
+        strok + ' strøk over ' + norNum(A) + ' m²).';
+
+      if (prisboks && prisboks > 0) {
+        var kostnad = antallBokser * prisboks;
+        lines.push('');
+        lines.push('— Kostnad —');
+        lines.push('Kostnad = antall bokser × pris per boks');
+        lines.push('        = ' + antallBokser + ' × ' + norNum(prisboks, 0) + ' kr');
+        lines.push('        = ' + norNum(kostnad, 0) + ' kr');
+        svarTekst += ' Estimert kostnad: ' + norNum(kostnad, 0) + ' kr.';
+      }
+
+      document.getElementById('maling-calc').textContent = lines.join('\n');
+      var svarEl = document.getElementById('maling-svar');
+      svarEl.textContent = svarTekst;
+      svarEl.className = 'result-box rounded-lg p-4 text-sm font-medium text-green-800';
+      document.getElementById('maling-resultat').classList.remove('hidden');
+    }
+
+    function visMailingFeil(msg) {
+      document.getElementById('maling-resultat').classList.remove('hidden');
+      document.getElementById('maling-calc').textContent = '';
+      var el = document.getElementById('maling-svar');
+      el.textContent = '⚠️ ' + msg;
+      el.className = 'rounded-lg p-4 text-sm font-medium text-red-700 bg-red-50 border-l-4 border-red-500';
+    }
+
+    /* =========================================================
+       TAB 2 — FLISER
+    ========================================================= */
+    document.querySelectorAll('input[name="fliser-areal-mode"]').forEach(function (r) {
+      r.addEventListener('change', function () {
+        var v = document.querySelector('input[name="fliser-areal-mode"]:checked').value;
+        document.getElementById('fliser-direkte').classList.toggle('hidden', v !== 'direkte');
+        document.getElementById('fliser-mal').classList.toggle('hidden', v !== 'mal');
+        oppdaterFliserAreal();
+      });
+    });
+
+    ['fliser-lengde', 'fliser-bredde'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('input', oppdaterFliserAreal);
+    });
+
+    function oppdaterFliserAreal() {
+      var l = getNum('fliser-lengde'), b = getNum('fliser-bredde');
+      var vis = document.getElementById('fliser-mal-areal-vis');
+      if (l && b) {
+        vis.textContent = 'Beregnet gulvareal: ' + norNum(l * b) + ' m²';
+      } else {
+        vis.textContent = '';
+      }
+    }
+
+    function getFliserAreal() {
+      var mode = document.querySelector('input[name="fliser-areal-mode"]:checked').value;
+      if (mode === 'direkte') {
+        return { areal: getNum('fliser-areal'), utregning: null };
+      } else {
+        var l = getNum('fliser-lengde'), b = getNum('fliser-bredde');
+        if (!l || !b) return { areal: null, utregning: null };
+        var a = l * b;
+        var utregning = 'Gulvareal = lengde × bredde\n' +
+          '          = ' + norNum(l) + ' × ' + norNum(b) + '\n' +
+          '          = ' + norNum(a) + ' m²';
+        return { areal: a, utregning: utregning };
+      }
+    }
+
+    function beregnFliser() {
+      var arealRes = getFliserAreal();
+      var A = arealRes.areal;
+      var dekning = getNum('fliser-dekning');
+      var svinnProsent = getNum('fliser-svinn');
+      var prispakke = getNum('fliser-prispakke');
+
+      if (!A || A <= 0) { visFliserFeil('Oppgi et gyldig gulvareal (større enn 0).'); return; }
+      if (!dekning || dekning <= 0) { visFliserFeil('Oppgi dekning per pakke (m²).'); return; }
+      if (svinnProsent === null || svinnProsent < 0) { visFliserFeil('Oppgi svinn-tillegg i prosent (minst 0).'); return; }
+
+      var svinnFaktor = 1 + svinnProsent / 100;
+      var arealMedSvinn = A * svinnFaktor;
+      var antallPakker = Math.ceil(arealMedSvinn / dekning);
+
+      var lines = [];
+      if (arealRes.utregning) {
+        lines.push('— Arealberegning —');
+        lines.push(arealRes.utregning);
+        lines.push('');
+      }
+      lines.push('— Fliser/gulvberegning —');
+      lines.push('Netto gulvareal (A)     = ' + norNum(A) + ' m²');
+      lines.push('Svinn-tillegg           = ' + norNum(svinnProsent, 1) + ' %');
+      lines.push('Svinnfaktor             = 1 + ' + norNum(svinnProsent, 1) + ' / 100 = ' + norNum(svinnFaktor, 4));
+      lines.push('');
+      lines.push('Areal inkl. svinn       = A × svinnfaktor');
+      lines.push('                        = ' + norNum(A) + ' × ' + norNum(svinnFaktor, 4));
+      lines.push('                        = ' + norNum(arealMedSvinn) + ' m²');
+      lines.push('');
+      lines.push('Pakker (rund opp)       = ⌈' + norNum(arealMedSvinn) + ' ÷ ' + norNum(dekning) + '⌉');
+      lines.push('                        = ⌈' + norNum(arealMedSvinn / dekning) + '⌉');
+      lines.push('                        = ' + antallPakker + ' pakker');
+
+      var svarTekst = 'Du trenger ' + antallPakker + ' pakke' + (antallPakker !== 1 ? 'r' : '') +
+        ' (à ' + norNum(dekning) + ' m²) for et gulv på ' + norNum(A) + ' m² med ' +
+        norNum(svinnProsent, 0) + ' % svinn-tillegg.';
+
+      if (prispakke && prispakke > 0) {
+        var kostnad = antallPakker * prispakke;
+        lines.push('');
+        lines.push('— Kostnad —');
+        lines.push('Kostnad = antall pakker × pris per pakke');
+        lines.push('        = ' + antallPakker + ' × ' + norNum(prispakke, 0) + ' kr');
+        lines.push('        = ' + norNum(kostnad, 0) + ' kr');
+        svarTekst += ' Estimert kostnad: ' + norNum(kostnad, 0) + ' kr.';
+      }
+
+      document.getElementById('fliser-calc').textContent = lines.join('\n');
+      var svarEl = document.getElementById('fliser-svar');
+      svarEl.textContent = svarTekst;
+      svarEl.className = 'result-box rounded-lg p-4 text-sm font-medium text-green-800';
+      document.getElementById('fliser-resultat').classList.remove('hidden');
+    }
+
+    function visFliserFeil(msg) {
+      document.getElementById('fliser-resultat').classList.remove('hidden');
+      document.getElementById('fliser-calc').textContent = '';
+      var el = document.getElementById('fliser-svar');
+      el.textContent = '⚠️ ' + msg;
+      el.className = 'rounded-lg p-4 text-sm font-medium text-red-700 bg-red-50 border-l-4 border-red-500';
+    }
+
+    /* =========================================================
+       TAB 3 — BETONG
+    ========================================================= */
+    function beregnBetong() {
+      var l = getNum('betong-lengde');
+      var b = getNum('betong-bredde');
+      var h = getNum('betong-hoyde');
+      var literPerSekk = getNum('betong-liter-sekk');
+      var prissekk = getNum('betong-prissekk');
+
+      if (!l || l <= 0) { visBetongFeil('Oppgi lengde (m).'); return; }
+      if (!b || b <= 0) { visBetongFeil('Oppgi bredde (m).'); return; }
+      if (!h || h <= 0) { visBetongFeil('Oppgi tykkelse/høyde (m).'); return; }
+      if (!literPerSekk || literPerSekk <= 0) { visBetongFeil('Oppgi liter ferdig betong per sekk.'); return; }
+
+      var volum_m3 = l * b * h;
+      var volum_liter = volum_m3 * 1000;
+      var antallSekker = Math.ceil(volum_liter / literPerSekk);
+
+      var lines = [];
+      lines.push('— Volumberegning —');
+      lines.push('Volum (m³) = lengde × bredde × tykkelse');
+      lines.push('           = ' + norNum(l) + ' × ' + norNum(b) + ' × ' + norNum(h, 3));
+      lines.push('           = ' + norNum(volum_m3, 4) + ' m³');
+      lines.push('');
+      lines.push('Omregning til liter:');
+      lines.push('           1 m³ = 1 000 liter');
+      lines.push('Volum (l)  = ' + norNum(volum_m3, 4) + ' × 1 000');
+      lines.push('           = ' + norNum(volum_liter, 1) + ' liter');
+      lines.push('');
+      lines.push('— Beregning av sekker —');
+      lines.push('Liter per sekk     = ' + norNum(literPerSekk, 1) + ' l');
+      lines.push('Sekker (rund opp)  = ⌈' + norNum(volum_liter, 1) + ' ÷ ' + norNum(literPerSekk, 1) + '⌉');
+      lines.push('                   = ⌈' + norNum(volum_liter / literPerSekk) + '⌉');
+      lines.push('                   = ' + antallSekker + ' sekker');
+
+      var svarTekst = 'Volumet er ' + norNum(volum_m3, 4) + ' m³ (' + norNum(volum_liter, 1) + ' liter). ' +
+        'Du trenger ' + antallSekker + ' sekk' + (antallSekker !== 1 ? 'er' : '') +
+        ' tørrbetong (à ' + norNum(literPerSekk, 1) + ' liter).';
+
+      if (prissekk && prissekk > 0) {
+        var kostnad = antallSekker * prissekk;
+        lines.push('');
+        lines.push('— Kostnad —');
+        lines.push('Kostnad = antall sekker × pris per sekk');
+        lines.push('        = ' + antallSekker + ' × ' + norNum(prissekk, 0) + ' kr');
+        lines.push('        = ' + norNum(kostnad, 0) + ' kr');
+        svarTekst += ' Estimert kostnad: ' + norNum(kostnad, 0) + ' kr.';
+      }
+
+      document.getElementById('betong-calc').textContent = lines.join('\n');
+      var svarEl = document.getElementById('betong-svar');
+      svarEl.textContent = svarTekst;
+      svarEl.className = 'result-box rounded-lg p-4 text-sm font-medium text-green-800';
+      document.getElementById('betong-resultat').classList.remove('hidden');
+    }
+
+    function visBetongFeil(msg) {
+      document.getElementById('betong-resultat').classList.remove('hidden');
+      document.getElementById('betong-calc').textContent = '';
+      var el = document.getElementById('betong-svar');
+      el.textContent = '⚠️ ' + msg;
+      el.className = 'rounded-lg p-4 text-sm font-medium text-red-700 bg-red-50 border-l-4 border-red-500';
+    }
+  </script>
+</body>
+</html>

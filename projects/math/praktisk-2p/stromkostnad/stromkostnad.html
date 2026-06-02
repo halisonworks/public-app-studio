@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<!--
+  Strømkostnad — Halison App Studio-eksempel
+
+  Praktisk matematikk for 2P (LK20): regn ut strømforbruk (kWh) og kostnad — fra
+  pris og forbruk, eller fra et apparats effekt og brukstid.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Strømkostnad — 2P Matematikk</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .tab-active { border-bottom: 3px solid #2563eb; color: #2563eb; font-weight: 600; }
+    .tab-inactive { border-bottom: 3px solid transparent; color: #6b7280; }
+    .utregning { background: #f0f9ff; border-left: 4px solid #3b82f6; }
+    .forklaring { background: #f0fdf4; border-left: 4px solid #22c55e; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { opacity: 0.5; }
+    .apparat-rad { transition: background 0.15s; }
+    .apparat-rad:hover { background: #f8fafc; }
+    .rad-sum { background: #eff6ff; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- HEADER -->
+  <header class="bg-blue-700 text-white py-5 px-4 shadow-md">
+    <div class="max-w-3xl mx-auto">
+      <h1 class="text-2xl font-bold tracking-tight">Strømforbruk og strømkostnad</h1>
+      <p class="text-blue-200 text-sm mt-1">Matematikk 2P · LK20 · Praktisk regning</p>
+    </div>
+  </header>
+
+  <!-- FANER -->
+  <div class="max-w-3xl mx-auto mt-6 px-4">
+    <div class="flex gap-0 border-b border-gray-200 bg-white rounded-t-lg shadow-sm overflow-hidden">
+      <button id="tab-forbruk" onclick="byttFane('forbruk')"
+        class="flex-1 py-3 px-2 text-sm sm:text-base tab-active focus:outline-none">
+        Modus 1 — Fra forbruk (kWh)
+      </button>
+      <button id="tab-apparat" onclick="byttFane('apparat')"
+        class="flex-1 py-3 px-2 text-sm sm:text-base tab-inactive focus:outline-none">
+        Modus 2 — Fra apparat (W)
+      </button>
+      <button id="tab-forklaring" onclick="byttFane('forklaring')"
+        class="flex-1 py-3 px-2 text-sm sm:text-base tab-inactive focus:outline-none">
+        Forklaring
+      </button>
+    </div>
+
+    <!-- ===== MODUS 1: FRA FORBRUK ===== -->
+    <div id="panel-forbruk" class="bg-white rounded-b-lg shadow-sm p-5 mb-6">
+      <h2 class="text-lg font-semibold text-gray-800 mb-1">Beregn kostnad fra kjent forbruk</h2>
+      <p class="text-sm text-gray-500 mb-5">
+        Skriv inn forbruket ditt (fra strømmåleren eller fakturaen) og prisen per kWh.
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Forbruk (kWh)</label>
+          <input id="f1-forbruk" type="number" min="0" step="0.1" value="250"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            oninput="regnModus1()" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Strømpris (kr/kWh)</label>
+          <input id="f1-pris" type="number" min="0" step="0.01" value="1.00"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            oninput="regnModus1()" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nettleie / påslag (øre/kWh)</label>
+          <input id="f1-paslag" type="number" min="0" step="1" value="45"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            oninput="regnModus1()" />
+          <p class="text-xs text-gray-400 mt-1">Typisk nettleie i Norge er 40–60 øre/kWh</p>
+        </div>
+      </div>
+
+      <div id="f1-resultat" class="mt-5"></div>
+    </div>
+
+    <!-- ===== MODUS 2: FRA APPARAT ===== -->
+    <div id="panel-apparat" class="hidden bg-white rounded-b-lg shadow-sm p-5 mb-6">
+      <h2 class="text-lg font-semibold text-gray-800 mb-1">Beregn forbruk og kostnad fra apparat</h2>
+      <p class="text-sm text-gray-500 mb-4">
+        Legg til ett eller flere apparater. Effekten (W) finner du ofte på typeskiltet eller i bruksanvisningen.
+      </p>
+
+      <!-- Strømpris-innstilling for modus 2 -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5 p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Strømpris (kr/kWh)</label>
+          <input id="f2-pris" type="number" min="0" step="0.01" value="1.00"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            oninput="regnModus2()" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nettleie / påslag (øre/kWh)</label>
+          <input id="f2-paslag" type="number" min="0" step="1" value="45"
+            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            oninput="regnModus2()" />
+        </div>
+      </div>
+
+      <!-- Legg til apparat-skjema -->
+      <div class="p-4 border border-dashed border-blue-300 rounded-lg bg-blue-50 mb-5">
+        <h3 class="text-sm font-semibold text-blue-800 mb-3">Legg til apparat</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-1">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Navn på apparat</label>
+            <input id="ny-navn" type="text" placeholder="f.eks. Vaskemaskin"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Effekt (W)</label>
+            <input id="ny-effekt" type="number" min="1" step="1" placeholder="f.eks. 2000"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Bruk (timer/dag)</label>
+            <input id="ny-timer" type="number" min="0.1" step="0.1" placeholder="f.eks. 1.5"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          </div>
+        </div>
+        <button onclick="leggTilApparat()"
+          class="mt-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-5 py-2 rounded-md transition-colors">
+          + Legg til
+        </button>
+        <p id="ny-feil" class="text-red-500 text-xs mt-2 hidden">Fyll ut alle felt med gyldige verdier.</p>
+      </div>
+
+      <!-- Apparatliste -->
+      <div id="apparat-liste-wrapper" class="hidden">
+        <div class="overflow-x-auto rounded-lg border border-gray-200">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-100 text-gray-600 text-xs uppercase">
+                <th class="text-left px-3 py-2">Apparat</th>
+                <th class="text-right px-3 py-2">Effekt (W)</th>
+                <th class="text-right px-3 py-2">t/dag</th>
+                <th class="text-right px-3 py-2">kWh/dag</th>
+                <th class="text-right px-3 py-2">kWh/mnd</th>
+                <th class="text-right px-3 py-2">kWh/år</th>
+                <th class="text-right px-3 py-2">Kr/mnd</th>
+                <th class="px-2 py-2"></th>
+              </tr>
+            </thead>
+            <tbody id="apparat-tbody"></tbody>
+            <tfoot id="apparat-tfoot"></tfoot>
+          </table>
+        </div>
+        <div id="f2-utregning" class="mt-4"></div>
+      </div>
+
+      <p id="apparat-tom-melding" class="text-gray-400 text-sm text-center py-6">
+        Ingen apparater lagt til ennå. Bruk skjemaet over.
+      </p>
+    </div>
+
+    <!-- ===== FORKLARING ===== -->
+    <div id="panel-forklaring" class="hidden bg-white rounded-b-lg shadow-sm p-5 mb-6">
+      <h2 class="text-lg font-semibold text-gray-800 mb-4">Hva er kWh, og hva påvirker strømregninga?</h2>
+
+      <div class="forklaring rounded-lg p-4 mb-5">
+        <h3 class="font-semibold text-green-800 mb-2">Hva er kilowattime (kWh)?</h3>
+        <p class="text-gray-700 text-sm mb-2">
+          Kilowattime er enheten vi bruker for å måle <strong>energi</strong> — altså mengden strøm som faktisk er brukt.
+        </p>
+        <p class="text-gray-700 text-sm mb-3">
+          <strong>1 kWh = 1 000 watt brukt i 1 time</strong>
+        </p>
+        <div class="bg-white rounded p-3 text-sm font-mono text-blue-900 border border-green-200">
+          kWh = (Effekt i watt ÷ 1 000) × antall timer
+        </div>
+        <p class="text-gray-600 text-sm mt-3">
+          <strong>Eksempel:</strong> En vaskemaskin på 2 000 W (= 2 kW) som kjører i 1,5 timer bruker:
+          <br />2 kW × 1,5 timer = <strong>3 kWh</strong>
+        </p>
+      </div>
+
+      <div class="forklaring rounded-lg p-4 mb-5">
+        <h3 class="font-semibold text-green-800 mb-2">Hva koster strømmen?</h3>
+        <p class="text-gray-700 text-sm mb-2">
+          Strømregninga din består av to hoveddeler:
+        </p>
+        <ul class="list-disc list-inside text-sm text-gray-700 space-y-1 mb-3">
+          <li><strong>Strømpris (spotpris):</strong> Prisen på selve strømmen, varierer daglig. Typisk 0,50–2,00 kr/kWh.</li>
+          <li><strong>Nettleie:</strong> Betaling for å leie strømnettet (linjene frem til hjemmet ditt). Typisk 40–60 øre/kWh + et fastledd.</li>
+        </ul>
+        <p class="text-gray-700 text-sm">
+          <strong>Total kostnad = Forbruk (kWh) × (strømpris + nettleie) kr/kWh</strong>
+        </p>
+      </div>
+
+      <div class="forklaring rounded-lg p-4 mb-5">
+        <h3 class="font-semibold text-green-800 mb-2">Hva påvirker strømregninga?</h3>
+        <ul class="list-disc list-inside text-sm text-gray-700 space-y-1">
+          <li><strong>Oppvarming</strong> utgjør ofte 50–70 % av forbruket i norske hjem.</li>
+          <li><strong>Varmtvann</strong> (varmtvannsbereder) er gjerne den nest største posten.</li>
+          <li>Isolasjon og bygningens alder påvirker varmetap og dermed strømforbruket.</li>
+          <li>Hvitevarer (vaskemaskin, oppvaskmaskin, kjøleskap) bidrar merkbart.</li>
+          <li>Lading av elbil kan doble eller tredoble forbruket.</li>
+          <li>Strømpris varierer etter sesong — vinteren er dyrere enn sommeren i Norge.</li>
+        </ul>
+      </div>
+
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm">
+        <h3 class="font-semibold text-yellow-800 mb-1">Typiske forbrukstall for norske hjem</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs mt-2">
+            <thead>
+              <tr class="text-left text-gray-600 border-b border-yellow-200">
+                <th class="py-1 pr-3">Boligtype</th>
+                <th class="py-1 pr-3 text-right">Årsforbruk (kWh)</th>
+                <th class="py-1 text-right">Ca. kostnad/år*</th>
+              </tr>
+            </thead>
+            <tbody class="text-gray-700">
+              <tr class="border-b border-yellow-100">
+                <td class="py-1 pr-3">Liten leilighet (50 m²)</td>
+                <td class="py-1 pr-3 text-right">5 000</td>
+                <td class="py-1 text-right">7 500 kr</td>
+              </tr>
+              <tr class="border-b border-yellow-100">
+                <td class="py-1 pr-3">Mellomstor leilighet (80 m²)</td>
+                <td class="py-1 pr-3 text-right">10 000</td>
+                <td class="py-1 text-right">15 000 kr</td>
+              </tr>
+              <tr class="border-b border-yellow-100">
+                <td class="py-1 pr-3">Enebolig (150 m²)</td>
+                <td class="py-1 pr-3 text-right">20 000</td>
+                <td class="py-1 text-right">30 000 kr</td>
+              </tr>
+              <tr>
+                <td class="py-1 pr-3">Stor enebolig (250 m²)</td>
+                <td class="py-1 pr-3 text-right">30 000</td>
+                <td class="py-1 text-right">45 000 kr</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="text-xs text-gray-500 mt-2">* Beregnet med 1,50 kr/kWh (strømpris + nettleie)</p>
+      </div>
+    </div>
+
+  </div><!-- /max-w-3xl -->
+
+  <footer class="text-center text-xs text-gray-400 pb-8 mt-2">
+    Halison App Studio · Matematikk 2P · Kun til pedagogisk bruk
+  </footer>
+
+<script>
+  // ===== HJELPEFUNKSJONER =====
+
+  function nr(val, desimaler) {
+    return Number(val).toLocaleString('nb-NO', {
+      minimumFractionDigits: desimaler,
+      maximumFractionDigits: desimaler
+    });
+  }
+
+  function valNum(id) {
+    var v = parseFloat(document.getElementById(id).value);
+    return isNaN(v) ? 0 : v;
+  }
+
+  // ===== FANER =====
+
+  function byttFane(fane) {
+    var faner = ['forbruk', 'apparat', 'forklaring'];
+    faner.forEach(function(f) {
+      var tab = document.getElementById('tab-' + f);
+      var panel = document.getElementById('panel-' + f);
+      if (f === fane) {
+        tab.className = tab.className.replace('tab-inactive', 'tab-active');
+        panel.classList.remove('hidden');
+      } else {
+        tab.className = tab.className.replace('tab-active', 'tab-inactive');
+        panel.classList.add('hidden');
+      }
+    });
+  }
+
+  // ===== MODUS 1: FRA FORBRUK =====
+
+  function regnModus1() {
+    var forbruk = valNum('f1-forbruk');
+    var pris = valNum('f1-pris');
+    var paslag = valNum('f1-paslag');
+    var paslagKr = paslag / 100;
+    var totalPris = pris + paslagKr;
+    var kostnad = forbruk * totalPris;
+    var div = document.getElementById('f1-resultat');
+
+    if (forbruk <= 0 || pris <= 0) {
+      div.innerHTML = '';
+      return;
+    }
+
+    var paslagLinje = '';
+    if (paslag > 0) {
+      paslagLinje = '<tr><td class="py-1 text-gray-600">+ Nettleie/påslag</td>'
+        + '<td class="py-1 text-right font-mono">' + nr(paslag, 0) + ' øre/kWh</td>'
+        + '<td class="py-1 text-right font-mono">= ' + nr(paslagKr, 2) + ' kr/kWh</td></tr>';
+    }
+
+    div.innerHTML = '<div class="utregning rounded-lg p-4 mb-3">'
+      + '<h3 class="font-semibold text-blue-800 mb-3">Utregning</h3>'
+      + '<div class="overflow-x-auto">'
+      + '<table class="w-full text-sm mb-3">'
+      + '<tbody>'
+      + '<tr><td class="py-1 text-gray-600">Forbruk</td>'
+      + '    <td class="py-1 text-right font-mono" colspan="2">' + nr(forbruk, 2) + ' kWh</td></tr>'
+      + '<tr><td class="py-1 text-gray-600">Strømpris</td>'
+      + '    <td class="py-1 text-right font-mono" colspan="2">' + nr(pris, 2) + ' kr/kWh</td></tr>'
+      + paslagLinje
+      + '<tr class="border-t border-blue-200"><td class="py-1 font-medium">Total pris per kWh</td>'
+      + '    <td class="py-1 text-right font-mono" colspan="2">' + nr(totalPris, 4) + ' kr/kWh</td></tr>'
+      + '</tbody>'
+      + '</table>'
+      + '<div class="bg-white rounded p-3 font-mono text-sm text-blue-900 border border-blue-200 mb-2">'
+      + 'Kostnad = ' + nr(forbruk, 2) + ' kWh × ' + nr(totalPris, 4) + ' kr/kWh'
+      + '<br/>Kostnad = <strong>' + nr(kostnad, 2) + ' kr</strong>'
+      + '</div>'
+      + '</div>'
+      + '</div>'
+      + '<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">'
+      + lagResultatKort('Strømpris alene', nr(forbruk * pris, 2) + ' kr', 'bg-blue-50 border-blue-200')
+      + (paslag > 0 ? lagResultatKort('Nettleie/påslag', nr(forbruk * paslagKr, 2) + ' kr', 'bg-purple-50 border-purple-200') : '')
+      + lagResultatKort('Total kostnad', nr(kostnad, 2) + ' kr', 'bg-green-50 border-green-300 font-bold')
+      + '</div>';
+  }
+
+  function lagResultatKort(tittel, verdi, klasser) {
+    return '<div class="rounded-lg border p-3 text-center ' + klasser + '">'
+      + '<div class="text-xs text-gray-500 mb-1">' + tittel + '</div>'
+      + '<div class="text-lg font-bold text-gray-800">' + verdi + '</div>'
+      + '</div>';
+  }
+
+  // ===== MODUS 2: FRA APPARAT =====
+
+  var apparater = [];
+
+  function lastFraStorage() {
+    try {
+      var data = localStorage.getItem('stromkostnad-apparater');
+      if (data) apparater = JSON.parse(data);
+    } catch(e) { apparater = []; }
+  }
+
+  function lagreTilStorage() {
+    try {
+      localStorage.setItem('stromkostnad-apparater', JSON.stringify(apparater));
+    } catch(e) {}
+  }
+
+  function leggTilApparat() {
+    var navn = document.getElementById('ny-navn').value.trim();
+    var effekt = parseFloat(document.getElementById('ny-effekt').value);
+    var timer = parseFloat(document.getElementById('ny-timer').value);
+    var feil = document.getElementById('ny-feil');
+
+    if (!navn || isNaN(effekt) || effekt <= 0 || isNaN(timer) || timer <= 0) {
+      feil.classList.remove('hidden');
+      return;
+    }
+    feil.classList.add('hidden');
+
+    apparater.push({ navn: navn, effekt: effekt, timer: timer });
+    lagreTilStorage();
+
+    document.getElementById('ny-navn').value = '';
+    document.getElementById('ny-effekt').value = '';
+    document.getElementById('ny-timer').value = '';
+
+    regnModus2();
+  }
+
+  function fjernApparat(idx) {
+    apparater.splice(idx, 1);
+    lagreTilStorage();
+    regnModus2();
+  }
+
+  function regnModus2() {
+    var pris = valNum('f2-pris');
+    var paslag = valNum('f2-paslag');
+    var paslagKr = paslag / 100;
+    var totalPris = pris + paslagKr;
+
+    var tbody = document.getElementById('apparat-tbody');
+    var tfoot = document.getElementById('apparat-tfoot');
+    var wrapper = document.getElementById('apparat-liste-wrapper');
+    var tomMelding = document.getElementById('apparat-tom-melding');
+    var utregningDiv = document.getElementById('f2-utregning');
+
+    if (apparater.length === 0) {
+      wrapper.classList.add('hidden');
+      tomMelding.classList.remove('hidden');
+      utregningDiv.innerHTML = '';
+      return;
+    }
+
+    wrapper.classList.remove('hidden');
+    tomMelding.classList.add('hidden');
+
+    var sumKwhDag = 0, sumKwhMnd = 0, sumKwhAar = 0, sumKrMnd = 0;
+
+    var rader = '';
+    apparater.forEach(function(a, i) {
+      var kwhDag = (a.effekt / 1000) * a.timer;
+      var kwhMnd = kwhDag * 30;
+      var kwhAar = kwhDag * 365;
+      var krMnd = kwhMnd * totalPris;
+      sumKwhDag += kwhDag;
+      sumKwhMnd += kwhMnd;
+      sumKwhAar += kwhAar;
+      sumKrMnd += krMnd;
+
+      rader += '<tr class="apparat-rad border-b border-gray-100">'
+        + '<td class="px-3 py-2 text-gray-800">' + escHtml(a.navn) + '</td>'
+        + '<td class="px-3 py-2 text-right font-mono text-gray-700">' + nr(a.effekt, 0) + '</td>'
+        + '<td class="px-3 py-2 text-right font-mono text-gray-700">' + nr(a.timer, 1) + '</td>'
+        + '<td class="px-3 py-2 text-right font-mono text-gray-700">' + nr(kwhDag, 3) + '</td>'
+        + '<td class="px-3 py-2 text-right font-mono text-gray-700">' + nr(kwhMnd, 2) + '</td>'
+        + '<td class="px-3 py-2 text-right font-mono text-gray-700">' + nr(kwhAar, 1) + '</td>'
+        + '<td class="px-3 py-2 text-right font-mono font-medium text-blue-700">' + nr(krMnd, 2) + '</td>'
+        + '<td class="px-2 py-2 text-center">'
+        + '<button onclick="fjernApparat(' + i + ')" title="Fjern" '
+        + 'class="text-red-400 hover:text-red-600 text-lg leading-none focus:outline-none">×</button>'
+        + '</td>'
+        + '</tr>';
+    });
+
+    tbody.innerHTML = rader;
+
+    tfoot.innerHTML = '<tr class="rad-sum font-semibold">'
+      + '<td class="px-3 py-2 text-gray-800">Totalt</td>'
+      + '<td class="px-3 py-2"></td>'
+      + '<td class="px-3 py-2"></td>'
+      + '<td class="px-3 py-2 text-right font-mono">' + nr(sumKwhDag, 3) + '</td>'
+      + '<td class="px-3 py-2 text-right font-mono">' + nr(sumKwhMnd, 2) + '</td>'
+      + '<td class="px-3 py-2 text-right font-mono">' + nr(sumKwhAar, 1) + '</td>'
+      + '<td class="px-3 py-2 text-right font-mono text-blue-800">' + nr(sumKrMnd, 2) + '</td>'
+      + '<td></td>'
+      + '</tr>';
+
+    // Vis utregning for det første apparatet som eksempel
+    var a0 = apparater[0];
+    var kwhDag0 = (a0.effekt / 1000) * a0.timer;
+    var kwhMnd0 = kwhDag0 * 30;
+    var krMnd0 = kwhMnd0 * totalPris;
+
+    utregningDiv.innerHTML = '<div class="utregning rounded-lg p-4 mt-4">'
+      + '<h3 class="font-semibold text-blue-800 mb-2">Utregning — eksempel: ' + escHtml(a0.navn) + '</h3>'
+      + '<div class="font-mono text-sm text-blue-900 bg-white rounded p-3 border border-blue-200 space-y-1">'
+      + '<div>kWh/dag = (' + nr(a0.effekt, 0) + ' W ÷ 1 000) × ' + nr(a0.timer, 1) + ' t = <strong>' + nr(kwhDag0, 3) + ' kWh/dag</strong></div>'
+      + '<div>kWh/mnd = ' + nr(kwhDag0, 3) + ' × 30 dager = <strong>' + nr(kwhMnd0, 2) + ' kWh/mnd</strong></div>'
+      + '<div>Kostnad/mnd = ' + nr(kwhMnd0, 2) + ' kWh × ' + nr(totalPris, 4) + ' kr/kWh = <strong>' + nr(krMnd0, 2) + ' kr/mnd</strong></div>'
+      + '</div>'
+      + '</div>'
+      + '<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">'
+      + lagResultatKort('Totalt kWh/mnd', nr(sumKwhMnd, 1) + ' kWh', 'bg-blue-50 border-blue-200')
+      + lagResultatKort('Totalt kWh/år', nr(sumKwhAar, 0) + ' kWh', 'bg-purple-50 border-purple-200')
+      + lagResultatKort('Totalt kr/mnd', nr(sumKrMnd, 2) + ' kr', 'bg-green-50 border-green-300 font-bold')
+      + '</div>';
+  }
+
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // ===== INIT =====
+
+  lastFraStorage();
+  regnModus1();
+  regnModus2();
+</script>
+</body>
+</html>

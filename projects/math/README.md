@@ -10,6 +10,7 @@ results.
 
 - [`NO-2P/`](./NO-2P/) — matematikk 2P (praktisk matematikk)
 - [`NO-1P/`](./NO-1P/) — matematikk 1P (praktisk matematikk)
+- [`praktisk-2p/`](./praktisk-2p/) — **hverdagsmatte for jobb og privat** (enhetspris, strøm, materialer, drivstoff, lønn, rabatt)
 - [`geometri/`](./geometri/) — focused geometry tools (1P/2P): angles, Pythagoras,
   circle, composite shapes, volume/surface, scale, similarity, coordinate geometry
 
