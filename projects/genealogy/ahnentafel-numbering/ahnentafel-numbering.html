@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<!--
+  Ahnentafel Number Tool — Halison App Studio example
+
+  Decode a Sosa-Stradonitz ahnentafel number into the exact ancestral path (and back), and generate a numbered ancestor chart.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ahnentafel Number Tool</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+    .fade-in { animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .bit-lead { background: #4338ca; color: #fff; }
+    .bit-f { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+    .bit-m { background: #fce7f3; color: #9d174b; border: 1px solid #f9a8d4; }
+    .bit-cell { display: inline-flex; flex-direction: column; align-items: center; gap: 2px;
+      padding: 6px 9px; border-radius: 8px; font-family: 'Menlo', ui-monospace, monospace;
+      font-weight: 700; font-size: 15px; min-width: 30px; }
+    .bit-cell small { font-size: 9px; font-weight: 600; opacity: 0.85; }
+    .path-link { background: #eef2ff; color: #4338ca; padding: 2px 8px; border-radius: 6px; font-weight: 600; }
+    .sex-m { color: #2563eb; }
+    .sex-f { color: #db2777; }
+    .gen-row:nth-child(even) { background: #fafafa; }
+    .chart-num { font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="5" r="2.2" />
+          <circle cx="6" cy="18" r="2.2" />
+          <circle cx="18" cy="18" r="2.2" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.2v3.3M12 10.5H6v5.3M12 10.5h6v5.3" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-gray-900 leading-tight">Ahnentafel Number Tool</h1>
+        <p class="text-xs text-gray-500">Sosa-Stradonitz ancestor numbering — decode, encode &amp; chart</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 py-8 space-y-6">
+
+    <!-- ───────────── DECODE ───────────── -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div class="flex items-center gap-2 mb-5">
+        <span class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">1</span>
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Decode a number</h2>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-end">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Ahnentafel number</label>
+          <input id="decodeInput" type="text" inputmode="numeric" value="11"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+            placeholder="e.g. 11" />
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button data-decode="1" class="quick-btn text-xs px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium">1</button>
+          <button data-decode="4" class="quick-btn text-xs px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium">4</button>
+          <button data-decode="11" class="quick-btn text-xs px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium">11</button>
+          <button data-decode="22" class="quick-btn text-xs px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium">22</button>
+          <button data-decode="1024" class="quick-btn text-xs px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium">1024</button>
+        </div>
+      </div>
+
+      <!-- Decode error -->
+      <div id="decodeError" class="hidden mt-4 bg-red-50 border border-red-200 rounded-xl px-5 py-3 text-red-700 text-sm flex items-center gap-2">
+        <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        <span id="decodeErrorText"></span>
+      </div>
+
+      <!-- Decode results -->
+      <div id="decodeResults" class="mt-6 space-y-5 fade-in">
+
+        <!-- Headline relationship -->
+        <div class="rounded-xl bg-indigo-50 border border-indigo-100 p-5">
+          <div class="text-xs text-indigo-500 font-semibold uppercase tracking-wider mb-1">Person #<span id="dNum">11</span></div>
+          <p id="dRelationship" class="text-2xl font-bold text-gray-900 capitalize"></p>
+          <p id="dChain" class="text-sm text-gray-600 mt-1"></p>
+        </div>
+
+        <!-- Facts grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div class="text-xs text-gray-500 font-medium mb-1">Generation</div>
+            <div id="dGen" class="text-2xl font-bold text-gray-800">—</div>
+            <div id="dGenLabel" class="text-xs text-gray-400 mt-0.5">—</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div class="text-xs text-gray-500 font-medium mb-1">Sex</div>
+            <div id="dSex" class="text-2xl font-bold text-gray-800">—</div>
+            <div class="text-xs text-gray-400 mt-0.5">even = male, odd = female</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div class="text-xs text-gray-500 font-medium mb-1">Father (2n)</div>
+            <div id="dFather" class="text-2xl font-bold text-gray-800">—</div>
+            <div class="text-xs text-gray-400 mt-0.5">this person's father</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div class="text-xs text-gray-500 font-medium mb-1">Mother (2n+1)</div>
+            <div id="dMother" class="text-2xl font-bold text-gray-800">—</div>
+            <div class="text-xs text-gray-400 mt-0.5">this person's mother</div>
+          </div>
+        </div>
+
+        <!-- Binary breakdown -->
+        <div class="bg-gray-50 rounded-xl border border-gray-200 p-5">
+          <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Binary path</div>
+          <div id="dBinary" class="flex flex-wrap items-center gap-2"></div>
+          <p class="text-xs text-gray-500 mt-3 leading-relaxed">
+            The leading <span class="font-semibold text-indigo-700">1</span> is the subject. Each remaining bit is a step away from you:
+            <span class="font-semibold sex-m">0 = father</span>, <span class="font-semibold sex-f">1 = mother</span>, read left to right.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── ENCODE ───────────── -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div class="flex items-center gap-2 mb-5">
+        <span class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">2</span>
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Build a path → get the number</h2>
+      </div>
+
+      <div class="flex flex-wrap gap-2 mb-5">
+        <button id="encFather" class="flex-1 min-w-[120px] px-4 py-2.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-sm border border-blue-200 transition">
+          + Father <span class="text-xs font-normal text-blue-400">(×2)</span>
+        </button>
+        <button id="encMother" class="flex-1 min-w-[120px] px-4 py-2.5 rounded-lg bg-pink-50 hover:bg-pink-100 text-pink-700 font-semibold text-sm border border-pink-200 transition">
+          + Mother <span class="text-xs font-normal text-pink-400">(×2+1)</span>
+        </button>
+        <button id="encUndo" class="px-4 py-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold text-sm border border-gray-200 transition">Undo</button>
+        <button id="encReset" class="px-4 py-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold text-sm border border-gray-200 transition">Reset</button>
+      </div>
+
+      <div class="rounded-xl border border-gray-200 p-5 bg-gray-50 mb-4">
+        <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-2">Path from subject</div>
+        <div id="encChain" class="flex flex-wrap items-center gap-1.5 text-sm"></div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm text-center">
+          <div class="text-xs text-gray-500 font-medium mb-1">Ahnentafel #</div>
+          <div id="encNum" class="text-3xl font-bold text-indigo-700">1</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm text-center">
+          <div class="text-xs text-gray-500 font-medium mb-1">Generation</div>
+          <div id="encGen" class="text-3xl font-bold text-gray-800">1</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm text-center">
+          <div class="text-xs text-gray-500 font-medium mb-1">Sex</div>
+          <div id="encSex" class="text-3xl font-bold text-gray-800">—</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── CHART ───────────── -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div class="flex items-center justify-between flex-wrap gap-3 mb-5">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">3</span>
+          <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Ancestor chart</h2>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-gray-500 font-medium">Generations</label>
+          <input id="chartGens" type="number" min="1" max="8" value="4"
+            class="w-20 border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-700 text-center focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+        </div>
+      </div>
+      <div id="chartBody" class="space-y-6"></div>
+    </section>
+
+    <!-- ───────────── ABOUT ───────────── -->
+    <section class="bg-gray-50 rounded-2xl border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">About — how ahnentafel numbering works</h2>
+      <div class="text-sm text-gray-600 leading-relaxed space-y-3">
+        <p>
+          An <strong>ahnentafel</strong> (German for "ancestor table"), also called the
+          <strong>Sosa-Stradonitz system</strong>, assigns a single number to every ancestor of one starting person.
+        </p>
+        <ul class="list-disc pl-5 space-y-1.5">
+          <li><strong>#1 is the subject</strong> — the person whose ancestry is being charted (the <em>de cujus</em>).</li>
+          <li>A person numbered <strong>n</strong> has <strong>father 2n</strong> and <strong>mother 2n+1</strong>.</li>
+          <li>Every man is <strong>even</strong> and every woman is <strong>odd</strong> — the only exception is #1, who may be either.</li>
+          <li>The generation is <code class="bg-white px-1 py-0.5 rounded border border-gray-200">floor(log₂(n)) + 1</code>: #1 is gen 1, #2–3 are gen 2, #4–7 are gen 3, and so on.</li>
+          <li>Write <strong>n</strong> in binary and drop the leading 1; the remaining bits spell the path from the subject, where <span class="font-semibold sex-m">0 = father</span> and <span class="font-semibold sex-f">1 = mother</span>, read left to right.</li>
+        </ul>
+        <p class="text-xs text-gray-500">
+          Example: 11 in binary is <code class="bg-white px-1 py-0.5 rounded border border-gray-200">1011</code>. Drop the leading 1 to get
+          <code class="bg-white px-1 py-0.5 rounded border border-gray-200">011</code> → father, mother, mother → "your father's mother's mother", i.e. a maternal great-grandmother on the paternal side.
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="max-w-4xl mx-auto px-4 py-6 text-center text-xs text-gray-400">
+    Ahnentafel Number Tool &mdash; <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-indigo-500" target="_blank" rel="noopener">Halison App Studio</a>
+  </footer>
+
+<script>
+// ─── Core ahnentafel logic ──────────────────────────────────────────────────
+
+// Generation: #1 -> 1, #2-3 -> 2, #4-7 -> 3, ...
+function generation(n){ return Math.floor(Math.log2(n)) + 1; } // n>=1
+
+// Path bits: binary of n without the leading '1'. 0 -> father, 1 -> mother.
+function pathBits(n){
+  return n <= 1 ? [] : n.toString(2).slice(1).split('').map(b => b === '0' ? 'father' : 'mother');
+}
+
+// Chain text from the subject, e.g. ['father','mother','father'] -> "father's mother's father"
+function chainText(bits){
+  if (bits.length === 0) return 'the subject (you)';
+  return bits.map((b, i) => i < bits.length - 1 ? b + "'s" : b).join(' ');
+}
+
+// grandTerm(gen) with sex: gen2 -> father/mother; gen3 -> grandfather/grandmother;
+// gen>=4 -> ('great-' * (gen-3)) + grandfather/grandmother.
+function grandTerm(gen, isMale){
+  if (gen <= 1) return 'the subject';
+  if (gen === 2) return isMale ? 'father' : 'mother';
+  var base = isMale ? 'grandfather' : 'grandmother';
+  if (gen === 3) return base;
+  return 'great-'.repeat(gen - 3) + base;
+}
+
+// Relationship label for n>=2, optionally with a paternal/maternal qualifier
+// derived from the first path bit (father side / mother side).
+function relationshipLabel(n){
+  if (n === 1) return 'the subject';
+  var gen = generation(n);
+  var isMale = (n % 2 === 0);
+  var term = grandTerm(gen, isMale);
+  if (gen === 2) return term;                 // father / mother
+  var bits = pathBits(n);
+  var side = bits[0] === 'father' ? 'paternal ' : 'maternal ';
+  return side + term;
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function isMaleNum(n){ return n === 1 ? null : (n % 2 === 0); }
+function fmt(n){ return n.toLocaleString('en-US'); }
+
+// MAX number we treat as exact (Number safe range). 2^53.
+var MAX_SAFE = 9007199254740991;
+
+// ─── DECODE ─────────────────────────────────────────────────────────────────
+
+var decodeInput = document.getElementById('decodeInput');
+var decodeError = document.getElementById('decodeError');
+var decodeErrorText = document.getElementById('decodeErrorText');
+var decodeResults = document.getElementById('decodeResults');
+
+function showDecodeError(msg){
+  decodeErrorText.textContent = msg;
+  decodeError.classList.remove('hidden');
+  decodeResults.classList.add('opacity-30', 'pointer-events-none');
+}
+
+function decode(){
+  var raw = (decodeInput.value || '').trim().replace(/[\s,]/g, '');
+  if (raw === ''){ showDecodeError('Enter an ahnentafel number (1 or greater).'); return; }
+  if (!/^\d+$/.test(raw)){ showDecodeError('Use whole numbers only — no letters or symbols.'); return; }
+  var n = Number(raw);
+  if (n < 1){ showDecodeError('Ahnentafel numbers start at 1 (the subject).'); return; }
+  if (n > MAX_SAFE){ showDecodeError('That number is too large to compute exactly (max ' + fmt(MAX_SAFE) + ', ~53 generations).'); return; }
+
+  decodeError.classList.add('hidden');
+  decodeResults.classList.remove('opacity-30', 'pointer-events-none');
+
+  var gen = generation(n);
+  var bits = pathBits(n);
+  var male = isMaleNum(n);
+
+  document.getElementById('dNum').textContent = fmt(n);
+
+  // Relationship headline
+  var rel = relationshipLabel(n);
+  document.getElementById('dRelationship').textContent = rel;
+
+  // Chain
+  var chainEl = document.getElementById('dChain');
+  if (n === 1){
+    chainEl.textContent = 'This is you — the starting point of the chart.';
+  } else {
+    chainEl.innerHTML = 'Path from you: <span class="path-link">your ' + chainText(bits) + '</span>';
+  }
+
+  // Generation label
+  var genLabels = { 1: 'the subject', 2: 'parents', 3: 'grandparents', 4: 'great-grandparents' };
+  var genLabel;
+  if (genLabels[gen]) genLabel = genLabels[gen];
+  else genLabel = 'great-'.repeat(gen - 3) + 'grandparents';
+  document.getElementById('dGen').textContent = gen;
+  document.getElementById('dGenLabel').textContent = genLabel;
+
+  // Sex
+  var sexEl = document.getElementById('dSex');
+  if (male === null){ sexEl.textContent = '—'; sexEl.className = 'text-2xl font-bold text-gray-800'; }
+  else if (male){ sexEl.textContent = 'Male'; sexEl.className = 'text-2xl font-bold sex-m'; }
+  else { sexEl.textContent = 'Female'; sexEl.className = 'text-2xl font-bold sex-f'; }
+
+  // Parents
+  var fatherN = 2 * n;
+  var motherN = 2 * n + 1;
+  if (fatherN > MAX_SAFE){
+    document.getElementById('dFather').textContent = '∞';
+    document.getElementById('dMother').textContent = '∞';
+  } else {
+    document.getElementById('dFather').textContent = fmt(fatherN);
+    document.getElementById('dMother').textContent = fmt(motherN);
+  }
+
+  // Binary breakdown
+  var binStr = n.toString(2);
+  var binEl = document.getElementById('dBinary');
+  binEl.innerHTML = '';
+  for (var i = 0; i < binStr.length; i++){
+    var cell = document.createElement('span');
+    cell.className = 'bit-cell';
+    var digit = binStr[i];
+    var top = document.createElement('span');
+    top.textContent = digit;
+    var label = document.createElement('small');
+    if (i === 0){ cell.classList.add('bit-lead'); label.textContent = 'you'; }
+    else if (digit === '0'){ cell.classList.add('bit-f'); label.textContent = 'father'; }
+    else { cell.classList.add('bit-m'); label.textContent = 'mother'; }
+    cell.appendChild(top);
+    cell.appendChild(label);
+    binEl.appendChild(cell);
+  }
+
+  saveState();
+}
+
+decodeInput.addEventListener('input', decode);
+document.querySelectorAll('.quick-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    decodeInput.value = btn.getAttribute('data-decode');
+    decode();
+  });
+});
+
+// ─── ENCODE ─────────────────────────────────────────────────────────────────
+
+var encSteps = []; // array of 'father' | 'mother'
+
+function encNumber(){
+  var n = 1;
+  for (var i = 0; i < encSteps.length; i++){
+    n = encSteps[i] === 'father' ? 2 * n : 2 * n + 1;
+  }
+  return n;
+}
+
+function renderEncode(){
+  var n = encNumber();
+  var gen = generation(n);
+  var male = isMaleNum(n);
+
+  document.getElementById('encNum').textContent = fmt(n);
+  document.getElementById('encGen').textContent = gen;
+
+  var sexEl = document.getElementById('encSex');
+  if (male === null){ sexEl.textContent = '—'; sexEl.className = 'text-3xl font-bold text-gray-800'; }
+  else if (male){ sexEl.textContent = 'M'; sexEl.className = 'text-3xl font-bold sex-m'; }
+  else { sexEl.textContent = 'F'; sexEl.className = 'text-3xl font-bold sex-f'; }
+
+  // Chain
+  var chainEl = document.getElementById('encChain');
+  chainEl.innerHTML = '';
+  var subj = document.createElement('span');
+  subj.className = 'path-link';
+  subj.textContent = 'Subject';
+  chainEl.appendChild(subj);
+  for (var i = 0; i < encSteps.length; i++){
+    var arrow = document.createElement('span');
+    arrow.className = 'text-gray-300';
+    arrow.textContent = '→';
+    chainEl.appendChild(arrow);
+    var step = document.createElement('span');
+    step.className = encSteps[i] === 'father' ? 'path-link sex-m' : 'path-link sex-f';
+    step.style.background = encSteps[i] === 'father' ? '#dbeafe' : '#fce7f3';
+    step.textContent = encSteps[i] === 'father' ? 'Father' : 'Mother';
+    chainEl.appendChild(step);
+  }
+  if (encSteps.length === 0){
+    var hint = document.createElement('span');
+    hint.className = 'text-gray-400 text-xs ml-1';
+    hint.textContent = '(click Father / Mother to build a path)';
+    chainEl.appendChild(hint);
+  }
+
+  // Disable add buttons if next step would exceed safe range
+  var atLimit = (2 * n + 1) > MAX_SAFE;
+  document.getElementById('encFather').disabled = atLimit;
+  document.getElementById('encMother').disabled = atLimit;
+  document.getElementById('encFather').classList.toggle('opacity-40', atLimit);
+  document.getElementById('encMother').classList.toggle('opacity-40', atLimit);
+
+  saveState();
+}
+
+document.getElementById('encFather').addEventListener('click', function(){ encSteps.push('father'); renderEncode(); });
+document.getElementById('encMother').addEventListener('click', function(){ encSteps.push('mother'); renderEncode(); });
+document.getElementById('encUndo').addEventListener('click', function(){ encSteps.pop(); renderEncode(); });
+document.getElementById('encReset').addEventListener('click', function(){ encSteps = []; renderEncode(); });
+
+// ─── CHART ──────────────────────────────────────────────────────────────────
+
+var chartGens = document.getElementById('chartGens');
+var chartBody = document.getElementById('chartBody');
+
+function renderChart(){
+  var g = parseInt(chartGens.value, 10);
+  if (isNaN(g) || g < 1) g = 1;
+  if (g > 8) g = 8;
+
+  chartBody.innerHTML = '';
+
+  var genLabels = { 1: 'Subject', 2: 'Parents', 3: 'Grandparents', 4: 'Great-grandparents' };
+
+  for (var gen = 1; gen <= g; gen++){
+    var start = Math.pow(2, gen - 1);
+    var end = Math.pow(2, gen) - 1;
+
+    var wrap = document.createElement('div');
+
+    var head = document.createElement('div');
+    head.className = 'flex items-baseline gap-2 mb-2';
+    var hLabel = genLabels[gen] || ('great-'.repeat(gen - 3) + 'grandparents');
+    head.innerHTML = '<span class="text-sm font-bold text-gray-800 capitalize">Generation ' + gen + ' — ' + hLabel + '</span>' +
+      '<span class="text-xs text-gray-400">#' + fmt(start) + (start === end ? '' : '–' + fmt(end)) + '</span>';
+    wrap.appendChild(head);
+
+    var list = document.createElement('div');
+    list.className = 'rounded-xl border border-gray-200 overflow-hidden';
+
+    for (var num = start; num <= end; num++){
+      var row = document.createElement('div');
+      row.className = 'gen-row flex items-center gap-3 px-4 py-2 border-b border-gray-100 last:border-b-0';
+
+      var male = isMaleNum(num);
+      var numBadgeClass = 'bg-gray-100 text-gray-600';
+      if (male === true) numBadgeClass = 'bg-blue-50 text-blue-700';
+      else if (male === false) numBadgeClass = 'bg-pink-50 text-pink-700';
+
+      var rel = relationshipLabel(num);
+      var bits = pathBits(num);
+      var chain = num === 1 ? 'you' : 'your ' + chainText(bits);
+
+      row.innerHTML =
+        '<span class="chart-num inline-flex items-center justify-center min-w-[2.5rem] px-2 py-1 rounded-md text-sm font-bold ' + numBadgeClass + '">' + fmt(num) + '</span>' +
+        '<span class="flex-1 min-w-0">' +
+          '<span class="text-sm font-semibold text-gray-800 capitalize">' + rel + '</span>' +
+          '<span class="block text-xs text-gray-400 truncate">' + chain + '</span>' +
+        '</span>';
+      list.appendChild(row);
+    }
+
+    wrap.appendChild(list);
+    chartBody.appendChild(wrap);
+  }
+
+  saveState();
+}
+
+chartGens.addEventListener('input', renderChart);
+
+// ─── Persistence ────────────────────────────────────────────────────────────
+
+function saveState(){
+  try {
+    localStorage.setItem('ahnentafel', JSON.stringify({
+      decode: decodeInput.value,
+      encSteps: encSteps,
+      chartGens: chartGens.value
+    }));
+  } catch(e){ /* ignore */ }
+}
+
+(function restoreOrInit(){
+  try {
+    var saved = JSON.parse(localStorage.getItem('ahnentafel'));
+    if (saved){
+      if (typeof saved.decode === 'string' && saved.decode !== '') decodeInput.value = saved.decode;
+      if (Array.isArray(saved.encSteps)) encSteps = saved.encSteps.filter(function(s){ return s === 'father' || s === 'mother'; });
+      if (saved.chartGens) chartGens.value = saved.chartGens;
+    }
+  } catch(e){ /* ignore */ }
+  decode();
+  renderEncode();
+  renderChart();
+})();
+</script>
+</body>
+</html>

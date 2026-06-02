@@ -31,6 +31,11 @@ need.
   restart *(teachers, marketers, presenters)*
 - [`prototype.md`](./prototype.md) — interactive product/feature mockups
   *(founders, PMs, designers prototyping app ideas)*
+- [`travel.md`](./travel.md) — travel / tourism tools, for a personal traveller
+  **and** the *Sales, Service and Tourism* (reiseliv) classroom *(travellers,
+  teachers, students)*
+- [`diy-hobby.md`](./diy-hobby.md) — practical maker's calculators and planners
+  *(knitting, cooking, gardening, carpentry, renovation)*
 
 These map to who App Studio is for: founders, investors, managers, sales people,
 marketers, teachers, presenters, finance people, spreadsheet / Miro / graph /

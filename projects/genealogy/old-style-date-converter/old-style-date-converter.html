@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<!--
+  Old Style / New Style Date Converter — Halison App Studio example
+
+  Convert between Julian (Old Style) and Gregorian (New Style) calendar dates, find the day of the week for any historical date, and understand double-dated years.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Old Style / New Style Date Converter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+    .fade-in { animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .seg { transition: all 0.15s ease; }
+    .seg-active { background: #4f46e5; color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+    .seg-idle { background: transparent; color: #4b5563; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-gray-900 leading-tight">Old Style / New Style Date Converter</h1>
+        <p class="text-xs text-gray-500">Julian &harr; Gregorian, day of the week, and double dating for genealogy</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-8 space-y-6">
+
+    <!-- ── 1. CONVERT ──────────────────────────────────────────────────────── -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">1 &middot; Convert a date</h2>
+      <p class="text-xs text-gray-500 mb-5">Enter a date and tell us which calendar it is recorded in. We show the equivalent date in the other calendar.</p>
+
+      <div class="grid grid-cols-3 gap-3 mb-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Day</label>
+          <input id="c_day" type="number" min="1" max="31" value="11"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Month</label>
+          <select id="c_month" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Year</label>
+          <input id="c_year" type="number" value="1732"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent" />
+        </div>
+      </div>
+
+      <label class="block text-xs font-medium text-gray-500 mb-1.5">This date is recorded in</label>
+      <div class="inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1 mb-4" role="radiogroup">
+        <button type="button" data-cal="julian" class="c-cal seg seg-active rounded-md px-4 py-1.5 text-sm font-medium">Old Style / Julian</button>
+        <button type="button" data-cal="gregorian" class="c-cal seg seg-idle rounded-md px-4 py-1.5 text-sm font-medium">New Style / Gregorian</button>
+      </div>
+
+      <div id="c_error" class="hidden bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 text-red-700 text-sm flex items-center gap-2 mb-4">
+        <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        <span id="c_error_text"></span>
+      </div>
+
+      <div id="c_result" class="fade-in">
+        <div class="rounded-xl bg-indigo-50 border border-indigo-100 p-5 mb-4">
+          <div class="text-xs text-indigo-500 font-medium uppercase tracking-wide mb-1">Equivalent in the other calendar</div>
+          <div id="c_converted" class="text-2xl font-bold text-indigo-800 leading-snug">—</div>
+          <div id="c_original" class="text-sm text-indigo-600 mt-1">—</div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="bg-white rounded-xl border border-gray-200 p-4">
+            <div class="text-xs text-gray-500 font-medium mb-1">Day of the week</div>
+            <div id="c_weekday" class="text-lg font-bold text-gray-800">—</div>
+            <div class="text-xs text-gray-400 mt-0.5">same physical day in both</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-200 p-4">
+            <div class="text-xs text-gray-500 font-medium mb-1">Julian Day Number</div>
+            <div id="c_jdn" class="text-lg font-bold text-gray-800">—</div>
+            <div class="text-xs text-gray-400 mt-0.5">astronomical day count</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-200 p-4">
+            <div class="text-xs text-gray-500 font-medium mb-1">Calendar gap</div>
+            <div id="c_gap" class="text-lg font-bold text-gray-800">—</div>
+            <div class="text-xs text-gray-400 mt-0.5">days between OS and NS</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 2. DAY OF THE WEEK ──────────────────────────────────────────────── -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">2 &middot; Day of the week</h2>
+      <p class="text-xs text-gray-500 mb-5">Find the weekday for any historical date. For British or American records dated before 14 September 1752, use the <strong>Old Style / Julian</strong> option.</p>
+
+      <div class="grid grid-cols-3 gap-3 mb-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Day</label>
+          <input id="w_day" type="number" min="1" max="31" value="2"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Month</label>
+          <select id="w_month" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Year</label>
+          <input id="w_year" type="number" value="1752"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent" />
+        </div>
+      </div>
+
+      <label class="block text-xs font-medium text-gray-500 mb-1.5">Calendar of this date</label>
+      <div class="inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1 mb-4" role="radiogroup">
+        <button type="button" data-cal="julian" class="w-cal seg seg-active rounded-md px-4 py-1.5 text-sm font-medium">Old Style / Julian</button>
+        <button type="button" data-cal="gregorian" class="w-cal seg seg-idle rounded-md px-4 py-1.5 text-sm font-medium">New Style / Gregorian</button>
+      </div>
+
+      <div id="w_error" class="hidden bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 text-red-700 text-sm flex items-center gap-2 mb-4">
+        <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        <span id="w_error_text"></span>
+      </div>
+
+      <div id="w_result" class="fade-in flex flex-col sm:flex-row sm:items-center gap-4">
+        <div class="flex-shrink-0 px-8 py-5 rounded-2xl bg-indigo-600 text-white text-center min-w-[180px]">
+          <div id="w_weekday" class="text-2xl font-bold leading-tight">—</div>
+        </div>
+        <div class="text-sm text-gray-600">
+          <span id="w_full" class="font-semibold text-gray-800">—</span>
+          <span id="w_jdn_note" class="block text-xs text-gray-400 mt-1"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 3. DOUBLE DATING ────────────────────────────────────────────────── -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">3 &middot; Double dating helper</h2>
+      <p class="text-xs text-gray-500 mb-5">Enter a date in the <strong>Julian</strong> calendar. Dates from 1 January to 24 March fell in the old English civil year that had not yet rolled over, so records often write them with a split year such as <em>1731/32</em>.</p>
+
+      <div class="grid grid-cols-3 gap-3 mb-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Day</label>
+          <input id="d_day" type="number" min="1" max="31" value="11"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Month</label>
+          <select id="d_month" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Year</label>
+          <input id="d_year" type="number" value="1732"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent" />
+        </div>
+      </div>
+
+      <label class="flex items-start gap-2 mb-4 text-sm text-gray-600 cursor-pointer select-none">
+        <input id="d_ladyday" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-400" />
+        <span>My source already uses the historical year start (year begins on 25 March / Lady Day), so the year I typed is the <em>old-style</em> year number.</span>
+      </label>
+
+      <div id="d_error" class="hidden bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 text-red-700 text-sm flex items-center gap-2 mb-4">
+        <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        <span id="d_error_text"></span>
+      </div>
+
+      <div id="d_result" class="fade-in rounded-xl border border-gray-200 p-5">
+        <div id="d_inwindow">
+          <div class="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Double-dated historical form</div>
+          <div id="d_form" class="text-2xl font-bold text-indigo-800">—</div>
+          <p id="d_explain" class="text-sm text-gray-600 mt-2 leading-relaxed"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── ABOUT / BACKGROUND ──────────────────────────────────────────────── -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">About &amp; background</h2>
+      <div class="space-y-3 text-sm text-gray-600 leading-relaxed">
+        <p>
+          For centuries Europe used the <strong>Julian calendar</strong> (the <em>Old Style</em>, or OS). Because the Julian year is slightly too long, the calendar slowly drifted out of step with the seasons. The <strong>Gregorian calendar</strong> (the <em>New Style</em>, or NS) corrected this. Catholic countries adopted it in <strong>1582</strong>, but Britain and its colonies held out until <strong>September 1752</strong>.
+        </p>
+        <p>
+          When Britain switched, it had to drop <strong>11 days</strong> to catch up: <strong>Wednesday 2 September 1752</strong> was immediately followed by <strong>Thursday 14 September 1752</strong>. No days went missing physically — only the labels changed.
+        </p>
+        <p>
+          Separately, England's <strong>civil year began on 25 March</strong> (Lady Day), not 1 January, until 1752. So a date such as 11 February that we would call 1732 was, at the time, still written as part of <strong>1731</strong>. To avoid confusion, historians and registers often <strong>double date</strong> these dates between 1 January and 24 March — for example <strong>11 February 1731/32</strong>.
+        </p>
+        <p class="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
+          <strong class="text-gray-700">For understanding historical records.</strong> This tool uses one consistent Julian Day Number engine and the <em>proleptic</em> Julian and Gregorian calendars (extending each backward beyond its real-world adoption). Different regions changed over on different dates, so always interpret a source against the calendar actually in use where and when it was written. Years are treated as astronomical-style continuous numbers; there is no year 0 in the historical record, so take great care with dates around 1 BC / AD 1.
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="max-w-3xl mx-auto px-4 py-6 text-center text-xs text-gray-400">
+    Old Style / New Style Date Converter &mdash; <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-indigo-500" target="_blank" rel="noopener">Halison App Studio</a>
+  </footer>
+
+<script>
+// ─── Julian Day Number engine (transcribed exactly; integer / floor math) ────
+
+function gregorianToJDN(y,m,d){
+  const a=Math.floor((14-m)/12), yy=y+4800-a, mm=m+12*a-3;
+  return d+Math.floor((153*mm+2)/5)+365*yy+Math.floor(yy/4)-Math.floor(yy/100)+Math.floor(yy/400)-32045;
+}
+function julianToJDN(y,m,d){
+  const a=Math.floor((14-m)/12), yy=y+4800-a, mm=m+12*a-3;
+  return d+Math.floor((153*mm+2)/5)+365*yy+Math.floor(yy/4)-32083;
+}
+function jdnToGregorian(J){
+  let a=J+32044, b=Math.floor((4*a+3)/146097), c=a-Math.floor(146097*b/4);
+  let dd=Math.floor((4*c+3)/1461), e=c-Math.floor(1461*dd/4), mm=Math.floor((5*e+2)/153);
+  const day=e-Math.floor((153*mm+2)/5)+1, month=mm+3-12*Math.floor(mm/10), year=100*b+dd-4800+Math.floor(mm/10);
+  return {year,month,day};
+}
+function jdnToJulian(J){
+  let c=J+32082, dd=Math.floor((4*c+3)/1461), e=c-Math.floor(1461*dd/4), mm=Math.floor((5*e+2)/153);
+  const day=e-Math.floor((153*mm+2)/5)+1, month=mm+3-12*Math.floor(mm/10), year=dd-4800+Math.floor(mm/10);
+  return {year,month,day};
+}
+// Day of week: JDN 0 was a Monday. weekday index (0=Mon..6=Sun) = ((J % 7)+7)%7
+const WEEKDAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+function weekday(J){ return WEEKDAYS[((J%7)+7)%7]; }
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+// Round-trip validity check: convert to JDN and back; if it differs, the date
+// (e.g. 31 February) does not exist in that calendar.
+function isValidDate(cal, y, m, d) {
+  if (!Number.isInteger(y) || !Number.isInteger(m) || !Number.isInteger(d)) return false;
+  if (m < 1 || m > 12 || d < 1 || d > 31) return false;
+  const J = cal === 'julian' ? julianToJDN(y, m, d) : gregorianToJDN(y, m, d);
+  const back = cal === 'julian' ? jdnToJulian(J) : jdnToGregorian(J);
+  return back.year === y && back.month === m && back.day === d;
+}
+
+function fmtDate(parts, styleLabel) {
+  return parts.day + ' ' + MONTHS[parts.month - 1] + ' ' + parts.year + (styleLabel ? ' (' + styleLabel + ')' : '');
+}
+
+function readDate(prefix) {
+  const day = parseInt(document.getElementById(prefix + '_day').value, 10);
+  const month = parseInt(document.getElementById(prefix + '_month').value, 10);
+  const year = parseInt(document.getElementById(prefix + '_year').value, 10);
+  return { day, month, year };
+}
+
+function showError(prefix, msg, resultId) {
+  const box = document.getElementById(prefix + '_error');
+  document.getElementById(prefix + '_error_text').textContent = msg;
+  box.classList.remove('hidden');
+  document.getElementById(resultId).classList.add('opacity-30', 'pointer-events-none');
+}
+function clearError(prefix, resultId) {
+  document.getElementById(prefix + '_error').classList.add('hidden');
+  document.getElementById(resultId).classList.remove('opacity-30', 'pointer-events-none');
+}
+
+// Track which calendar each segmented control has selected.
+const calState = { c: 'julian', w: 'julian' };
+
+// ─── Populate month dropdowns ────────────────────────────────────────────────
+
+['c', 'w', 'd'].forEach(prefix => {
+  const sel = document.getElementById(prefix + '_month');
+  MONTHS.forEach((name, i) => {
+    const opt = document.createElement('option');
+    opt.value = i + 1;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+});
+// Defaults: Convert -> February, Day of week -> September, Double -> February
+document.getElementById('c_month').value = 2;
+document.getElementById('w_month').value = 9;
+document.getElementById('d_month').value = 2;
+
+// ─── Section 1: Convert ──────────────────────────────────────────────────────
+
+function runConvert() {
+  const { day, month, year } = readDate('c');
+  const cal = calState.c;
+  if ([day, month, year].some(v => Number.isNaN(v))) {
+    showError('c', 'Please fill in a full day, month, and year.', 'c_result');
+    return;
+  }
+  if (!isValidDate(cal, year, month, day)) {
+    showError('c', day + ' ' + MONTHS[month - 1] + ' ' + year + ' is not a real date in the ' +
+      (cal === 'julian' ? 'Julian' : 'Gregorian') + ' calendar.', 'c_result');
+    return;
+  }
+  clearError('c', 'c_result');
+
+  const J = cal === 'julian' ? julianToJDN(year, month, day) : gregorianToJDN(year, month, day);
+  const other = cal === 'julian' ? jdnToGregorian(J) : jdnToJulian(J);
+  const otherLabel = cal === 'julian' ? 'New Style' : 'Old Style';
+  const thisLabel = cal === 'julian' ? 'Old Style' : 'New Style';
+
+  // Gap = Gregorian JDN minus Julian JDN for the SAME y/m/d numbers,
+  // i.e. how many days NS is ahead of OS for this date.
+  const gap = gregorianToJDN(year, month, day) - julianToJDN(year, month, day);
+
+  document.getElementById('c_converted').textContent = fmtDate(other, otherLabel);
+  document.getElementById('c_original').textContent =
+    'You entered ' + fmtDate({ day, month, year }, thisLabel) + '.';
+  document.getElementById('c_weekday').textContent = weekday(J);
+  document.getElementById('c_jdn').textContent = J.toLocaleString('en-US');
+  document.getElementById('c_gap').textContent = gap + (Math.abs(gap) === 1 ? ' day' : ' days');
+
+  persist();
+}
+
+// ─── Section 2: Day of the week ──────────────────────────────────────────────
+
+function runWeekday() {
+  const { day, month, year } = readDate('w');
+  const cal = calState.w;
+  if ([day, month, year].some(v => Number.isNaN(v))) {
+    showError('w', 'Please fill in a full day, month, and year.', 'w_result');
+    return;
+  }
+  if (!isValidDate(cal, year, month, day)) {
+    showError('w', day + ' ' + MONTHS[month - 1] + ' ' + year + ' is not a real date in the ' +
+      (cal === 'julian' ? 'Julian' : 'Gregorian') + ' calendar.', 'w_result');
+    return;
+  }
+  clearError('w', 'w_result');
+
+  const J = cal === 'julian' ? julianToJDN(year, month, day) : gregorianToJDN(year, month, day);
+  const label = cal === 'julian' ? 'Old Style' : 'New Style';
+
+  document.getElementById('w_weekday').textContent = weekday(J);
+  document.getElementById('w_full').textContent = fmtDate({ day, month, year }, label);
+  document.getElementById('w_jdn_note').textContent = 'Julian Day Number ' + J.toLocaleString('en-US') + '.';
+
+  persist();
+}
+
+// ─── Section 3: Double dating ────────────────────────────────────────────────
+
+function runDouble() {
+  const { day, month, year } = readDate('d');
+  const ladyday = document.getElementById('d_ladyday').checked;
+  if ([day, month, year].some(v => Number.isNaN(v))) {
+    showError('d', 'Please fill in a full day, month, and year.', 'd_result');
+    return;
+  }
+  if (!isValidDate('julian', year, month, day)) {
+    showError('d', day + ' ' + MONTHS[month - 1] + ' ' + year + ' is not a real date in the Julian calendar.', 'd_result');
+    return;
+  }
+  clearError('d', 'd_result');
+
+  // In the window 1 Jan .. 24 Mar inclusive?
+  const inWindow = (month === 1) || (month === 2) || (month === 3 && day <= 24);
+
+  const form = document.getElementById('d_form');
+  const explain = document.getElementById('d_explain');
+  const head = document.querySelector('#d_inwindow .text-xs');
+
+  if (!inWindow) {
+    head.textContent = 'Outside the double-dating window';
+    form.textContent = fmtDate({ day, month, year }, null);
+    explain.innerHTML = 'This date falls between 25 March and 31 December, so the old English civil year and the modern year agree. No double dating is needed — the year is simply <strong>' + year + '</strong>.';
+    persist();
+    return;
+  }
+
+  head.textContent = 'Double-dated historical form';
+
+  // Determine the two adjacent year numbers.
+  // Modern (New Year = 1 Jan) year and the old civil (Lady Day) year differ by 1
+  // in this window: old civil year = modern year - 1.
+  let modernYear, oldYear;
+  if (ladyday) {
+    // The typed year is already the OLD civil-year number.
+    oldYear = year;
+    modernYear = year + 1;
+  } else {
+    // The typed year is the MODERN year number.
+    modernYear = year;
+    oldYear = year - 1;
+  }
+
+  // Build "1731/32" style: old year, slash, last two digits of modern year.
+  const twoDigit = ('0' + (modernYear % 100)).slice(-2);
+  const dual = oldYear + '/' + twoDigit;
+
+  form.textContent = day + ' ' + MONTHS[month - 1] + ' ' + dual;
+  explain.innerHTML =
+    'Under the old English civil calendar the year number had not yet rolled over on this date — the new year did not begin until 25 March (Lady Day). ' +
+    'A contemporary register would have recorded the year as <strong>' + oldYear + '</strong>, while by our modern reckoning (new year on 1 January) it is <strong>' + modernYear + '</strong>. ' +
+    'Writing it as <strong>' + dual + '</strong> makes both readings clear.';
+
+  persist();
+}
+
+// ─── Segmented (radio) controls ──────────────────────────────────────────────
+
+function wireSegments(cls, key, onChange) {
+  const buttons = Array.from(document.querySelectorAll('.' + cls));
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      calState[key] = btn.dataset.cal;
+      buttons.forEach(b => {
+        const active = b === btn;
+        b.classList.toggle('seg-active', active);
+        b.classList.toggle('seg-idle', !active);
+      });
+      onChange();
+    });
+  });
+}
+wireSegments('c-cal', 'c', runConvert);
+wireSegments('w-cal', 'w', runWeekday);
+
+// ─── Persistence ─────────────────────────────────────────────────────────────
+
+function persist() {
+  try {
+    localStorage.setItem('osns_converter', JSON.stringify({
+      c: { ...readDate('c'), cal: calState.c },
+      w: { ...readDate('w'), cal: calState.w },
+      d: { ...readDate('d'), ladyday: document.getElementById('d_ladyday').checked }
+    }));
+  } catch (e) { /* ignore */ }
+}
+
+function setSegment(cls, key, cal) {
+  calState[key] = cal;
+  document.querySelectorAll('.' + cls).forEach(b => {
+    const active = b.dataset.cal === cal;
+    b.classList.toggle('seg-active', active);
+    b.classList.toggle('seg-idle', !active);
+  });
+}
+
+function restore() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('osns_converter'));
+    if (!saved) return;
+    if (saved.c) {
+      document.getElementById('c_day').value = saved.c.day;
+      document.getElementById('c_month').value = saved.c.month;
+      document.getElementById('c_year').value = saved.c.year;
+      if (saved.c.cal) setSegment('c-cal', 'c', saved.c.cal);
+    }
+    if (saved.w) {
+      document.getElementById('w_day').value = saved.w.day;
+      document.getElementById('w_month').value = saved.w.month;
+      document.getElementById('w_year').value = saved.w.year;
+      if (saved.w.cal) setSegment('w-cal', 'w', saved.w.cal);
+    }
+    if (saved.d) {
+      document.getElementById('d_day').value = saved.d.day;
+      document.getElementById('d_month').value = saved.d.month;
+      document.getElementById('d_year').value = saved.d.year;
+      document.getElementById('d_ladyday').checked = !!saved.d.ladyday;
+    }
+  } catch (e) { /* ignore */ }
+}
+
+// ─── Wire inputs ─────────────────────────────────────────────────────────────
+
+['c_day', 'c_month', 'c_year'].forEach(id => document.getElementById(id).addEventListener('input', runConvert));
+['w_day', 'w_month', 'w_year'].forEach(id => document.getElementById(id).addEventListener('input', runWeekday));
+['d_day', 'd_month', 'd_year', 'd_ladyday'].forEach(id => document.getElementById(id).addEventListener('input', runDouble));
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+
+restore();
+runConvert();
+runWeekday();
+runDouble();
+</script>
+</body>
+</html>

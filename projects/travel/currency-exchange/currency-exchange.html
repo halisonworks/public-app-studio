@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<!--
+  Currency Exchange & the Spread — Halison App Studio example
+
+  A teaching tool for the Sales, Service and Tourism classroom: why you get less
+  money back than you changed. Shows mid-market rate, the buy/sell spread, and
+  fees — with editable mock rates (no live data).
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Currency Exchange &amp; the Spread</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #f8fafc; }
+
+    /* Tab underline */
+    .tab-btn { position: relative; transition: color 0.18s; }
+    .tab-btn.active { color: #2563eb; }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute; bottom: -2px; left: 0; right: 0;
+      height: 3px; border-radius: 99px;
+      background: #2563eb;
+    }
+
+    /* Range slider */
+    input[type=range] { accent-color: #2563eb; cursor: pointer; }
+
+    /* Editable rate cell */
+    .rate-cell {
+      background: #f1f5f9; border: 1px solid #e2e8f0;
+      border-radius: 6px; padding: 2px 6px;
+      font-variant-numeric: tabular-nums;
+      width: 72px; text-align: right;
+      font-size: 0.85rem; font-weight: 600;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .rate-cell:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px #bfdbfe; background: #fff; }
+
+    /* Bar chart */
+    .bar-wrap { height: 28px; border-radius: 6px; overflow: hidden; background: #e2e8f0; }
+    .bar-fill { height: 100%; border-radius: 6px; transition: width 0.4s ease; }
+
+    /* Present mode overlay */
+    #present-overlay {
+      display: none; position: fixed; inset: 0; z-index: 100;
+      background: #0f172a; color: #f8fafc;
+      flex-direction: column; align-items: center; justify-content: center;
+      padding: 2rem;
+    }
+    #present-overlay.active { display: flex; }
+
+    /* Tooltip */
+    .tip {
+      position: relative; cursor: help; border-bottom: 1px dashed #94a3b8;
+    }
+    .tip:hover::after {
+      content: attr(data-tip);
+      position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%);
+      background: #1e293b; color: #f1f5f9; border-radius: 6px;
+      font-size: 0.7rem; padding: 5px 8px; white-space: nowrap;
+      z-index: 20; pointer-events: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    /* Number highlight */
+    .num { font-variant-numeric: tabular-nums; }
+
+    /* Card */
+    .card { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.25rem 1.5rem; }
+
+    /* Loss pill */
+    .loss-pill { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 6px; padding: 2px 8px; font-size: 0.78rem; font-weight: 600; }
+    .gain-pill { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; border-radius: 6px; padding: 2px 8px; font-size: 0.78rem; font-weight: 600; }
+
+    /* Learn accordion */
+    .accordion-panel { overflow: hidden; max-height: 0; transition: max-height 0.35s ease; }
+    .accordion-panel.open { max-height: 600px; }
+
+    /* Flag emoji sizing */
+    .flag { font-size: 1.1rem; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<!-- ============================================================
+     PRESENT MODE OVERLAY
+     ============================================================ -->
+<div id="present-overlay">
+  <button id="exit-present-btn"
+    class="absolute top-5 right-6 text-slate-400 hover:text-white text-sm flex items-center gap-1 transition-colors">
+    <span>✕ Exit (ESC)</span>
+  </button>
+
+  <div class="text-center max-w-3xl w-full">
+    <p class="text-slate-400 text-sm uppercase tracking-widest mb-2">Currency Exchange &amp; the Spread</p>
+    <div class="flex items-center justify-center gap-3 mb-8">
+      <span id="p-flag" class="text-5xl"></span>
+      <h1 id="p-pair" class="text-4xl font-bold text-white">NOK / EUR</h1>
+    </div>
+
+    <div class="grid grid-cols-3 gap-6 mb-8">
+      <div class="bg-slate-800 rounded-2xl p-5">
+        <p class="text-slate-400 text-xs uppercase tracking-wide mb-1">Mid-market rate</p>
+        <p id="p-mid" class="text-3xl font-bold text-white num">–</p>
+        <p class="text-slate-500 text-xs mt-1">kr per 1 unit</p>
+      </div>
+      <div class="bg-slate-800 rounded-2xl p-5">
+        <p class="text-slate-400 text-xs uppercase tracking-wide mb-1">Bureau sell rate</p>
+        <p id="p-sell" class="text-3xl font-bold text-amber-400 num">–</p>
+        <p class="text-slate-500 text-xs mt-1">you pay this to buy foreign</p>
+      </div>
+      <div class="bg-slate-800 rounded-2xl p-5">
+        <p class="text-slate-400 text-xs uppercase tracking-wide mb-1">Bureau buy rate</p>
+        <p id="p-buy" class="text-3xl font-bold text-sky-400 num">–</p>
+        <p class="text-slate-500 text-xs mt-1">you get this when selling back</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-6 mb-8">
+      <div class="bg-slate-800 rounded-2xl p-5">
+        <p class="text-slate-400 text-xs uppercase tracking-wide mb-1">Spread</p>
+        <p id="p-spread" class="text-4xl font-bold text-rose-400 num">–</p>
+      </div>
+      <div class="bg-slate-800 rounded-2xl p-5">
+        <p class="text-slate-400 text-xs uppercase tracking-wide mb-1">Round-trip loss on 5 000 kr</p>
+        <p id="p-loss" class="text-4xl font-bold text-rose-400 num">–</p>
+        <p id="p-loss-pct" class="text-slate-400 text-sm mt-1 num">–</p>
+      </div>
+    </div>
+
+    <p class="text-slate-500 text-xs">Rates are editable mock data — not a live feed</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     MAIN APP
+     ============================================================ -->
+<div class="flex flex-col min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 px-5 py-3 flex items-center justify-between sticky top-0 z-10">
+    <div class="flex items-center gap-2">
+      <span class="text-xl">💱</span>
+      <div>
+        <h1 class="text-base font-bold text-slate-800 leading-tight">Currency Exchange &amp; the Spread</h1>
+        <p class="text-xs text-slate-500 leading-tight hidden sm:block">Why do you always get less money back than you changed?</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <!-- Tabs -->
+      <nav class="flex gap-1 border-b-2 border-transparent" role="tablist">
+        <button id="tab-learn" class="tab-btn active px-3 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800"
+          onclick="switchTab('learn')">Learn</button>
+        <button id="tab-practice" class="tab-btn px-3 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800"
+          onclick="switchTab('practice')">Practice</button>
+      </nav>
+      <button id="enter-present-btn"
+        class="ml-2 bg-slate-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-colors flex items-center gap-1">
+        <span>📽</span> Present
+      </button>
+    </div>
+  </header>
+
+  <!-- Tab: Learn -->
+  <div id="tab-learn-panel" class="flex-1 overflow-y-auto p-4 md:p-6 max-w-3xl mx-auto w-full">
+
+    <!-- Intro -->
+    <div class="card mb-4">
+      <h2 class="text-lg font-bold text-slate-800 mb-2">Why do you always lose money at a currency exchange?</h2>
+      <p class="text-sm text-slate-600 leading-relaxed">
+        Every time you exchange money — at an airport kiosk, a bank, or an ATM abroad — you lose a little.
+        Even if you change back the same amount you started with, you end up with <em>less</em> than you began with.
+        That's not a glitch. It's a built-in margin called the <strong>spread</strong>.
+      </p>
+    </div>
+
+    <!-- Accordion sections -->
+    <div class="space-y-3">
+
+      <!-- 1. Mid-market rate -->
+      <div class="card p-0 overflow-hidden">
+        <button class="w-full text-left px-5 py-4 flex items-center justify-between font-semibold text-slate-700 hover:bg-slate-50 transition-colors accordion-toggle"
+          data-target="acc1">
+          <span class="flex items-center gap-2">
+            <span class="text-blue-500 text-lg">①</span> The mid-market rate — the "real" rate
+          </span>
+          <span class="accordion-arrow text-slate-400 transition-transform">▼</span>
+        </button>
+        <div id="acc1" class="accordion-panel px-5 pb-4">
+          <p class="text-sm text-slate-600 leading-relaxed mb-3">
+            The <strong>mid-market rate</strong> (also called the interbank rate) is the midpoint between
+            the price traders are willing to buy and sell a currency for on wholesale markets.
+            It's what you see on Google or XE.com — and it's <em>not</em> the rate you get at a bureau.
+          </p>
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+            <strong>Example:</strong> The mid-market rate for EUR is <strong>11.50 kr per €1</strong>.
+            This is the "fair" reference price. Bureaux add a margin around it.
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Buy & sell rates -->
+      <div class="card p-0 overflow-hidden">
+        <button class="w-full text-left px-5 py-4 flex items-center justify-between font-semibold text-slate-700 hover:bg-slate-50 transition-colors accordion-toggle"
+          data-target="acc2">
+          <span class="flex items-center gap-2">
+            <span class="text-amber-500 text-lg">②</span> Buy rate and sell rate
+          </span>
+          <span class="accordion-arrow text-slate-400 transition-transform">▼</span>
+        </button>
+        <div id="acc2" class="accordion-panel px-5 pb-4">
+          <p class="text-sm text-slate-600 leading-relaxed mb-3">
+            A bureau quotes two rates. <strong>Remember: the terms are from the bureau's perspective.</strong>
+          </p>
+          <div class="grid sm:grid-cols-2 gap-3 mb-3">
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
+              <strong class="text-amber-700">Sell rate</strong><br/>
+              The bureau <em>sells</em> you foreign currency.<br/>
+              You pay <em>more</em> kr per unit than mid. This is the worse rate when you're going abroad.
+            </div>
+            <div class="bg-sky-50 border border-sky-200 rounded-lg p-3 text-sm">
+              <strong class="text-sky-700">Buy rate</strong><br/>
+              The bureau <em>buys</em> foreign currency back from you.<br/>
+              You receive <em>fewer</em> kr per unit than mid. This is the worse rate when you return home.
+            </div>
+          </div>
+          <p class="text-sm text-slate-600">
+            With a 2.5% spread: EUR mid = 11.50 → sell rate ≈ 11.79 kr, buy rate ≈ 11.21 kr.
+          </p>
+        </div>
+      </div>
+
+      <!-- 3. The spread -->
+      <div class="card p-0 overflow-hidden">
+        <button class="w-full text-left px-5 py-4 flex items-center justify-between font-semibold text-slate-700 hover:bg-slate-50 transition-colors accordion-toggle"
+          data-target="acc3">
+          <span class="flex items-center gap-2">
+            <span class="text-rose-500 text-lg">③</span> The spread — the bureau's margin
+          </span>
+          <span class="accordion-arrow text-slate-400 transition-transform">▼</span>
+        </button>
+        <div id="acc3" class="accordion-panel px-5 pb-4">
+          <p class="text-sm text-slate-600 leading-relaxed mb-3">
+            The <strong>spread</strong> is the gap between the sell rate and buy rate, expressed as a % of mid.
+            A ±2.5% spread means the bureau earns about 5% on a round trip.
+          </p>
+          <div class="bg-slate-50 rounded-lg p-3 text-sm font-mono text-slate-700 mb-3 space-y-1">
+            <div>sell rate = mid × (1 + spread%)</div>
+            <div>buy rate  = mid × (1 − spread%)</div>
+            <div class="text-slate-400 mt-1">e.g. 11.50 × 1.025 = 11.79 | 11.50 × 0.975 = 11.21</div>
+          </div>
+          <p class="text-sm text-slate-600">
+            Airports and tourist centres often charge 3–5%. Banks are typically 1–3%.
+            Some fintech cards use the true mid-market rate with a flat fee.
+          </p>
+        </div>
+      </div>
+
+      <!-- 4. Fees & commission -->
+      <div class="card p-0 overflow-hidden">
+        <button class="w-full text-left px-5 py-4 flex items-center justify-between font-semibold text-slate-700 hover:bg-slate-50 transition-colors accordion-toggle"
+          data-target="acc4">
+          <span class="flex items-center gap-2">
+            <span class="text-purple-500 text-lg">④</span> Fees and commission
+          </span>
+          <span class="accordion-arrow text-slate-400 transition-transform">▼</span>
+        </button>
+        <div id="acc4" class="accordion-panel px-5 pb-4">
+          <p class="text-sm text-slate-600 leading-relaxed mb-3">
+            On top of the spread, many bureaux charge a <strong>fixed fee</strong> (e.g. 35 kr per transaction)
+            and/or a <strong>commission %</strong> (e.g. 0.5% of the amount).
+            These hit small transactions hardest.
+          </p>
+          <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 text-sm">
+            Changing 500 kr with a 35 kr fee = 7% gone just in fees before the spread even applies.
+            Changing 5 000 kr = only 0.7% in fees.
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Worked example -->
+      <div class="card p-0 overflow-hidden">
+        <button class="w-full text-left px-5 py-4 flex items-center justify-between font-semibold text-slate-700 hover:bg-slate-50 transition-colors accordion-toggle"
+          data-target="acc5">
+          <span class="flex items-center gap-2">
+            <span class="text-green-600 text-lg">⑤</span> Worked example — 5 000 kr to EUR and back
+          </span>
+          <span class="accordion-arrow text-slate-400 transition-transform">▼</span>
+        </button>
+        <div id="acc5" class="accordion-panel px-5 pb-4">
+          <p class="text-sm text-slate-500 mb-3">Assumptions: EUR mid = 11.50 kr, spread ±2.5%, fixed fee 30 kr.</p>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between bg-slate-50 rounded p-2">
+              <span class="text-slate-600">Start with</span>
+              <span class="font-bold num">5 000 kr</span>
+            </div>
+            <div class="flex justify-between bg-amber-50 rounded p-2">
+              <span class="text-amber-700">Step 1: Buy EUR at sell rate 11.7875 kr/€ minus 30 kr fee</span>
+              <span class="font-bold text-amber-700 num">≈ 420.80 €</span>
+            </div>
+            <div class="flex justify-between bg-sky-50 rounded p-2">
+              <span class="text-sky-700">Step 2: Sell EUR back at buy rate 11.2125 kr/€ minus 30 kr fee</span>
+              <span class="font-bold text-sky-700 num">≈ 4 688 kr</span>
+            </div>
+            <div class="flex justify-between bg-rose-50 rounded p-2 font-bold">
+              <span class="text-rose-700">Loss (round trip)</span>
+              <span class="text-rose-700 num">≈ 312 kr (6.2%)</span>
+            </div>
+            <div class="flex justify-between bg-slate-50 rounded p-2">
+              <span class="text-slate-600">At mid-market (no spread/fees)</span>
+              <span class="font-bold num">5 000 kr</span>
+            </div>
+          </div>
+          <p class="text-xs text-slate-400 mt-3">Use the Practice tab to try your own numbers.</p>
+        </div>
+      </div>
+
+      <!-- Glossary -->
+      <div class="card">
+        <h3 class="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">Key Terms</h3>
+        <dl class="space-y-2 text-sm">
+          <div class="grid grid-cols-[130px_1fr] gap-2">
+            <dt class="font-semibold text-slate-700">Mid-market rate</dt>
+            <dd class="text-slate-600">The midpoint of wholesale buy/sell prices. The "fair" reference rate.</dd>
+          </div>
+          <div class="grid grid-cols-[130px_1fr] gap-2">
+            <dt class="font-semibold text-slate-700">Spread</dt>
+            <dd class="text-slate-600">The % margin above and below mid that the bureau applies to buy and sell rates.</dd>
+          </div>
+          <div class="grid grid-cols-[130px_1fr] gap-2">
+            <dt class="font-semibold text-slate-700">Sell rate</dt>
+            <dd class="text-slate-600">Rate at which the bureau sells foreign currency to you (higher than mid = worse for you).</dd>
+          </div>
+          <div class="grid grid-cols-[130px_1fr] gap-2">
+            <dt class="font-semibold text-slate-700">Buy rate</dt>
+            <dd class="text-slate-600">Rate at which the bureau buys foreign currency from you (lower than mid = worse for you).</dd>
+          </div>
+          <div class="grid grid-cols-[130px_1fr] gap-2">
+            <dt class="font-semibold text-slate-700">Commission</dt>
+            <dd class="text-slate-600">A % fee charged on the full transaction amount, on top of the spread.</dd>
+          </div>
+          <div class="grid grid-cols-[130px_1fr] gap-2">
+            <dt class="font-semibold text-slate-700">Fixed fee</dt>
+            <dd class="text-slate-600">A flat kr fee per transaction, regardless of amount (hurts small transactions most).</dd>
+          </div>
+        </dl>
+      </div>
+
+    </div><!-- end accordion list -->
+  </div><!-- end learn panel -->
+
+  <!-- Tab: Practice -->
+  <div id="tab-practice-panel" class="flex-1 overflow-y-auto p-4 md:p-6 hidden">
+    <div class="max-w-5xl mx-auto grid lg:grid-cols-[1fr_1.3fr] gap-5">
+
+      <!-- LEFT COLUMN: rates + controls -->
+      <div class="space-y-4">
+
+        <!-- Rate table -->
+        <div class="card">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-bold text-slate-800 text-sm">Mock Exchange Rates</h2>
+            <div class="flex gap-2">
+              <span class="text-xs text-slate-400 italic">kr per 1 unit — editable</span>
+              <button id="reset-rates-btn" class="text-xs text-blue-600 hover:underline font-medium">Reset</button>
+            </div>
+          </div>
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-xs text-slate-400 border-b border-slate-100">
+                <th class="text-left pb-2 font-medium">Currency</th>
+                <th class="text-right pb-2 font-medium">Mid (kr)</th>
+                <th class="text-right pb-2 font-medium text-amber-600">Sell</th>
+                <th class="text-right pb-2 font-medium text-sky-600">Buy</th>
+              </tr>
+            </thead>
+            <tbody id="rate-table-body" class="divide-y divide-slate-50">
+              <!-- filled by JS -->
+            </tbody>
+          </table>
+          <p class="text-xs text-slate-400 mt-3 italic">Click any mid-rate value to edit it. Sell/buy update instantly.</p>
+        </div>
+
+        <!-- Controls -->
+        <div class="card">
+          <h2 class="font-bold text-slate-800 text-sm mb-4">Bureau Settings</h2>
+
+          <!-- Spread slider -->
+          <div class="mb-4">
+            <div class="flex justify-between text-sm mb-1">
+              <label class="font-medium text-slate-700">
+                <span class="tip" data-tip="% added above and subtracted below the mid-market rate">Spread ±</span>
+              </label>
+              <span id="spread-display" class="font-bold text-rose-600 num">2.5%</span>
+            </div>
+            <input id="spread-slider" type="range" min="0" max="10" step="0.1" value="2.5"
+              class="w-full h-2" oninput="onControlChange()"/>
+            <div class="flex justify-between text-xs text-slate-400 mt-1">
+              <span>0% (no margin)</span><span>5% typical</span><span>10% max</span>
+            </div>
+          </div>
+
+          <!-- Fixed fee -->
+          <div class="mb-4">
+            <div class="flex justify-between text-sm mb-1">
+              <label class="font-medium text-slate-700">Fixed fee per transaction</label>
+              <span class="text-xs text-slate-400">kr</span>
+            </div>
+            <input id="fixed-fee" type="number" min="0" max="500" step="5" value="30"
+              class="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200 num"
+              oninput="onControlChange()"/>
+          </div>
+
+          <!-- Commission % -->
+          <div>
+            <div class="flex justify-between text-sm mb-1">
+              <label class="font-medium text-slate-700">Commission %</label>
+              <span class="text-xs text-slate-400">of transaction</span>
+            </div>
+            <input id="commission-pct" type="number" min="0" max="5" step="0.1" value="0"
+              class="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200 num"
+              oninput="onControlChange()"/>
+          </div>
+        </div>
+
+      </div><!-- end left col -->
+
+      <!-- RIGHT COLUMN: converter + round-trip -->
+      <div class="space-y-4">
+
+        <!-- Single conversion -->
+        <div class="card">
+          <h2 class="font-bold text-slate-800 text-sm mb-4">Convert</h2>
+
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <!-- Currency picker -->
+            <div>
+              <label class="text-xs text-slate-500 font-medium block mb-1">Currency</label>
+              <select id="conv-currency"
+                class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 bg-white"
+                onchange="onControlChange()">
+                <!-- filled by JS -->
+              </select>
+            </div>
+            <!-- Direction -->
+            <div>
+              <label class="text-xs text-slate-500 font-medium block mb-1">Direction</label>
+              <select id="conv-direction"
+                class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 bg-white"
+                onchange="onControlChange()">
+                <option value="kr-to-foreign">kr → foreign (going abroad)</option>
+                <option value="foreign-to-kr">foreign → kr (coming home)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Amount input -->
+          <div class="mb-4">
+            <label class="text-xs text-slate-500 font-medium block mb-1" id="conv-amount-label">Amount (kr)</label>
+            <input id="conv-amount" type="number" min="1" value="5000"
+              class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200 num text-right font-bold text-lg"
+              oninput="onControlChange()"/>
+          </div>
+
+          <!-- Results grid -->
+          <div class="bg-slate-50 rounded-xl p-4 space-y-2">
+            <div class="flex justify-between text-sm">
+              <span class="text-slate-500">You get (at bureau rate)</span>
+              <span id="conv-result-bureau" class="font-bold num text-slate-800">–</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-slate-500">You'd get at mid-market</span>
+              <span id="conv-result-mid" class="font-bold num text-slate-500">–</span>
+            </div>
+            <div class="border-t border-slate-200 pt-2 flex justify-between text-sm">
+              <span class="text-slate-500">Difference (bureau's margin)</span>
+              <span id="conv-result-diff" class="font-bold num text-rose-600">–</span>
+            </div>
+            <div class="text-xs text-slate-400 flex justify-between pt-1" id="conv-breakdown">
+              <span></span><span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Round-trip demo -->
+        <div class="card">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="font-bold text-slate-800 text-sm">Round-Trip Demo</h2>
+            <span class="text-xs text-slate-400">Change X kr → foreign → kr</span>
+          </div>
+
+          <div class="flex items-center gap-3 mb-4">
+            <div class="flex-1">
+              <label class="text-xs text-slate-500 font-medium block mb-1">Starting amount (kr)</label>
+              <input id="rt-amount" type="number" min="100" value="5000"
+                class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 num text-right font-bold"
+                oninput="onControlChange()"/>
+            </div>
+            <div class="flex-1">
+              <label class="text-xs text-slate-500 font-medium block mb-1">Currency</label>
+              <select id="rt-currency"
+                class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 bg-white"
+                onchange="onControlChange()">
+                <!-- filled by JS -->
+              </select>
+            </div>
+          </div>
+
+          <!-- Steps -->
+          <div class="space-y-2 text-sm mb-4" id="rt-steps">
+            <!-- filled by JS -->
+          </div>
+
+          <!-- Bar comparison -->
+          <div class="space-y-2">
+            <div>
+              <div class="flex justify-between text-xs text-slate-500 mb-1">
+                <span>Mid-market (no cost)</span>
+                <span id="bar-mid-label" class="num font-semibold">–</span>
+              </div>
+              <div class="bar-wrap">
+                <div class="bar-fill bg-green-400" style="width:100%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs text-slate-500 mb-1">
+                <span>What you actually get</span>
+                <span id="bar-actual-label" class="num font-semibold text-rose-600">–</span>
+              </div>
+              <div class="bar-wrap">
+                <div id="bar-actual-fill" class="bar-fill bg-rose-400" style="width:80%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div class="mt-4 bg-rose-50 border border-rose-200 rounded-xl p-3 flex items-center justify-between">
+            <div>
+              <p class="text-xs text-rose-700 font-medium">Total round-trip loss</p>
+              <p class="text-xs text-rose-500 mt-0.5">spread cost + 2× fixed fee + 2× commission</p>
+            </div>
+            <div class="text-right">
+              <p id="rt-loss-kr" class="text-xl font-bold text-rose-700 num">–</p>
+              <p id="rt-loss-pct" class="text-sm text-rose-500 num">–</p>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end right col -->
+    </div><!-- end grid -->
+  </div><!-- end practice panel -->
+
+</div><!-- end main app -->
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+(function () {
+  'use strict';
+
+  // ── DEFAULT RATES (kr per 1 foreign unit) ──────────────────────────────────
+  const DEFAULT_RATES = [
+    { code: 'EUR', name: 'Euro',           flag: '🇪🇺', mid: 11.50 },
+    { code: 'USD', name: 'US Dollar',      flag: '🇺🇸', mid: 10.70 },
+    { code: 'GBP', name: 'British Pound',  flag: '🇬🇧', mid: 13.50 },
+    { code: 'SEK', name: 'Swedish Krona',  flag: '🇸🇪', mid: 0.99  },
+    { code: 'THB', name: 'Thai Baht',      flag: '🇹🇭', mid: 0.30  },
+  ];
+
+  const LS_KEY = 'halison_cx_rates_v1';
+
+  // ── STATE ──────────────────────────────────────────────────────────────────
+  let rates = loadRates();
+  let currentTab = 'learn';
+
+  // ── HELPERS ───────────────────────────────────────────────────────────────
+  function fmt(n, decimals) {
+    if (isNaN(n) || n === null) return '–';
+    return n.toLocaleString('en-NO', {
+      minimumFractionDigits: decimals ?? 2,
+      maximumFractionDigits: decimals ?? 2,
+    });
+  }
+
+  function fmtKr(n, decimals) {
+    return fmt(n, decimals ?? 2) + ' kr';
+  }
+
+  function spreadVal() {
+    return parseFloat(document.getElementById('spread-slider').value) / 100;
+  }
+
+  function fixedFee() {
+    return Math.max(0, parseFloat(document.getElementById('fixed-fee').value) || 0);
+  }
+
+  function commissionPct() {
+    return Math.max(0, parseFloat(document.getElementById('commission-pct').value) || 0) / 100;
+  }
+
+  function sellRate(mid) { return mid * (1 + spreadVal()); }
+  function buyRate(mid)  { return mid * (1 - spreadVal()); }
+
+  function totalFee(amountKr) {
+    return fixedFee() + amountKr * commissionPct();
+  }
+
+  // ── LOCALSTORAGE ──────────────────────────────────────────────────────────
+  function loadRates() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(LS_KEY));
+      if (saved && Array.isArray(saved) && saved.length === DEFAULT_RATES.length) {
+        return DEFAULT_RATES.map((d, i) => ({ ...d, mid: saved[i] }));
+      }
+    } catch (e) { /* ignore */ }
+    return DEFAULT_RATES.map(d => ({ ...d }));
+  }
+
+  function saveRates() {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(rates.map(r => r.mid)));
+    } catch (e) { /* ignore */ }
+  }
+
+  // ── TAB SWITCHING ─────────────────────────────────────────────────────────
+  window.switchTab = function (tab) {
+    currentTab = tab;
+    document.getElementById('tab-learn-panel').classList.toggle('hidden', tab !== 'learn');
+    document.getElementById('tab-practice-panel').classList.toggle('hidden', tab !== 'practice');
+    document.getElementById('tab-learn').classList.toggle('active', tab === 'learn');
+    document.getElementById('tab-practice').classList.toggle('active', tab === 'practice');
+    if (tab === 'practice') onControlChange();
+  };
+
+  // ── ACCORDION ─────────────────────────────────────────────────────────────
+  document.querySelectorAll('.accordion-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.target);
+      const arrow = btn.querySelector('.accordion-arrow');
+      const open = target.classList.toggle('open');
+      arrow.style.transform = open ? 'rotate(180deg)' : '';
+    });
+  });
+
+  // ── RATE TABLE ────────────────────────────────────────────────────────────
+  function buildRateTable() {
+    const tbody = document.getElementById('rate-table-body');
+    tbody.innerHTML = '';
+    const sp = spreadVal();
+    rates.forEach((r, i) => {
+      const sell = r.mid * (1 + sp);
+      const buy  = r.mid * (1 - sp);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="py-2 pr-2">
+          <span class="flag">${r.flag}</span>
+          <span class="font-medium text-slate-700">${r.code}</span>
+          <span class="text-slate-400 text-xs hidden sm:inline ml-1">${r.name}</span>
+        </td>
+        <td class="py-2 text-right">
+          <input class="rate-cell num" type="number" min="0.01" step="0.01"
+            value="${r.mid.toFixed(4)}" data-idx="${i}"
+            style="width:80px"/>
+        </td>
+        <td class="py-2 text-right font-semibold text-amber-700 num">${fmt(sell, 4)}</td>
+        <td class="py-2 text-right font-semibold text-sky-700 num">${fmt(buy, 4)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Wire up mid rate edits
+    tbody.querySelectorAll('.rate-cell').forEach(input => {
+      input.addEventListener('input', () => {
+        const idx = parseInt(input.dataset.idx);
+        const val = parseFloat(input.value);
+        if (!isNaN(val) && val > 0) {
+          rates[idx].mid = val;
+          saveRates();
+          onControlChange();
+        }
+      });
+    });
+  }
+
+  // ── CURRENCY SELECTS ──────────────────────────────────────────────────────
+  function buildSelects() {
+    ['conv-currency', 'rt-currency'].forEach(id => {
+      const sel = document.getElementById(id);
+      const prev = sel.value;
+      sel.innerHTML = rates.map(r =>
+        `<option value="${r.code}">${r.flag} ${r.code} – ${r.name}</option>`
+      ).join('');
+      if (prev) sel.value = prev;
+    });
+  }
+
+  // ── RESET RATES ───────────────────────────────────────────────────────────
+  document.getElementById('reset-rates-btn').addEventListener('click', () => {
+    rates = DEFAULT_RATES.map(d => ({ ...d }));
+    saveRates();
+    onControlChange();
+  });
+
+  // ── CONVERSION PANEL ──────────────────────────────────────────────────────
+  function updateConversion() {
+    const code = document.getElementById('conv-currency').value;
+    const dir  = document.getElementById('conv-direction').value;
+    const amtRaw = parseFloat(document.getElementById('conv-amount').value);
+    const r    = rates.find(x => x.code === code);
+    if (!r || isNaN(amtRaw) || amtRaw <= 0) return;
+
+    const label = document.getElementById('conv-amount-label');
+    if (dir === 'kr-to-foreign') {
+      label.textContent = 'Amount (kr)';
+      const amtKr = amtRaw;
+      const fee = totalFee(amtKr);
+      const netKr = amtKr - fee;
+      const foreignBureau = netKr / sellRate(r.mid);
+      const foreignMid    = amtKr / r.mid;
+      const diff = foreignBureau - foreignMid; // negative = loss
+
+      document.getElementById('conv-result-bureau').textContent = fmt(foreignBureau) + ' ' + r.code;
+      document.getElementById('conv-result-mid').textContent    = fmt(foreignMid) + ' ' + r.code;
+      document.getElementById('conv-result-diff').textContent   =
+        (diff >= 0 ? '+' : '') + fmt(diff) + ' ' + r.code;
+      document.getElementById('conv-result-diff').className =
+        'font-bold num ' + (diff < 0 ? 'text-rose-600' : 'text-green-600');
+
+      const spreadCost = foreignMid - (netKr / sellRate(r.mid));
+      const breakdownEl = document.getElementById('conv-breakdown');
+      breakdownEl.children[0].textContent =
+        `Spread cost ≈ ${fmt(spreadCost)} ${r.code}`;
+      breakdownEl.children[1].textContent =
+        `Fees = ${fmtKr(fee)} (${fmt(fee / amtKr * 100, 1)}%)`;
+
+    } else {
+      label.textContent = 'Amount (' + r.code + ')';
+      const amtForeign = amtRaw;
+      const grossKr = amtForeign * buyRate(r.mid);
+      const fee = totalFee(grossKr);
+      const netKr = grossKr - fee;
+      const midKr = amtForeign * r.mid;
+      const diff = netKr - midKr;
+
+      document.getElementById('conv-result-bureau').textContent = fmtKr(netKr);
+      document.getElementById('conv-result-mid').textContent    = fmtKr(midKr);
+      document.getElementById('conv-result-diff').textContent   =
+        (diff >= 0 ? '+' : '') + fmtKr(diff);
+      document.getElementById('conv-result-diff').className =
+        'font-bold num ' + (diff < 0 ? 'text-rose-600' : 'text-green-600');
+
+      const spreadCostKr = midKr - grossKr;
+      const breakdownEl = document.getElementById('conv-breakdown');
+      breakdownEl.children[0].textContent = `Spread cost ≈ ${fmtKr(spreadCostKr)}`;
+      breakdownEl.children[1].textContent = `Fees = ${fmtKr(fee)} (${fmt(fee / midKr * 100, 1)}%)`;
+    }
+  }
+
+  // ── ROUND-TRIP PANEL ──────────────────────────────────────────────────────
+  function updateRoundTrip() {
+    const code   = document.getElementById('rt-currency').value;
+    const startKr = parseFloat(document.getElementById('rt-amount').value);
+    const r      = rates.find(x => x.code === code);
+    if (!r || isNaN(startKr) || startKr <= 0) return;
+
+    const sp = spreadVal();
+    const ff = fixedFee();
+    const cp = commissionPct();
+
+    const sell = r.mid * (1 + sp);
+    const buy  = r.mid * (1 - sp);
+
+    // Step 1: buy foreign
+    const fee1Kr = ff + startKr * cp;
+    const netKr1 = startKr - fee1Kr;
+    const foreignAmt = netKr1 / sell;
+
+    // Step 2: sell foreign back
+    const grossKr2 = foreignAmt * buy;
+    const fee2Kr = ff + grossKr2 * cp;
+    const endKr = grossKr2 - fee2Kr;
+
+    const lossKr  = startKr - endKr;
+    const lossPct = (lossKr / startKr) * 100;
+
+    // Steps display
+    const stepsEl = document.getElementById('rt-steps');
+    stepsEl.innerHTML = `
+      <div class="flex justify-between bg-slate-50 rounded-lg p-2.5">
+        <span class="text-slate-600">Start with</span>
+        <span class="font-bold num">${fmtKr(startKr)}</span>
+      </div>
+      <div class="flex justify-between bg-amber-50 border border-amber-100 rounded-lg p-2.5">
+        <span class="text-amber-700">
+          → Buy ${r.code} at sell rate ${fmt(sell, 4)}<br/>
+          <span class="text-xs text-amber-500">fee: ${fmtKr(fee1Kr, 2)}</span>
+        </span>
+        <span class="font-bold text-amber-700 num">${fmt(foreignAmt, 2)} ${code}</span>
+      </div>
+      <div class="flex justify-between bg-sky-50 border border-sky-100 rounded-lg p-2.5">
+        <span class="text-sky-700">
+          → Sell ${r.code} back at buy rate ${fmt(buy, 4)}<br/>
+          <span class="text-xs text-sky-500">fee: ${fmtKr(fee2Kr, 2)}</span>
+        </span>
+        <span class="font-bold text-sky-700 num">${fmtKr(grossKr2)}</span>
+      </div>
+      <div class="flex justify-between bg-rose-50 border border-rose-200 rounded-lg p-2.5 font-bold">
+        <span class="text-rose-700">After fees</span>
+        <span class="text-rose-700 num">${fmtKr(endKr)}</span>
+      </div>
+    `;
+
+    // Bar chart
+    const pct = Math.max(0, Math.min(100, (endKr / startKr) * 100));
+    document.getElementById('bar-mid-label').textContent    = fmtKr(startKr);
+    document.getElementById('bar-actual-label').textContent = fmtKr(endKr);
+    document.getElementById('bar-actual-fill').style.width  = pct.toFixed(1) + '%';
+
+    // Summary
+    document.getElementById('rt-loss-kr').textContent  = '−' + fmtKr(lossKr);
+    document.getElementById('rt-loss-pct').textContent = '(' + fmt(lossPct, 1) + '% of ' + fmtKr(startKr) + ')';
+
+    // Update present mode
+    updatePresentMode(r, lossKr, lossPct);
+  }
+
+  // ── PRESENT MODE ──────────────────────────────────────────────────────────
+  function updatePresentMode(r, lossKr, lossPct) {
+    if (!r) return;
+    const sp = spreadVal();
+    document.getElementById('p-flag').textContent  = r.flag;
+    document.getElementById('p-pair').textContent  = 'NOK / ' + r.code;
+    document.getElementById('p-mid').textContent   = fmt(r.mid, 4) + ' kr';
+    document.getElementById('p-sell').textContent  = fmt(r.mid * (1 + sp), 4) + ' kr';
+    document.getElementById('p-buy').textContent   = fmt(r.mid * (1 - sp), 4) + ' kr';
+    document.getElementById('p-spread').textContent = '±' + fmt(sp * 100, 1) + '%';
+    document.getElementById('p-loss').textContent   = '−' + fmtKr(lossKr);
+    document.getElementById('p-loss-pct').textContent = fmt(lossPct, 1) + '% gone';
+  }
+
+  document.getElementById('enter-present-btn').addEventListener('click', () => {
+    document.getElementById('present-overlay').classList.add('active');
+    onControlChange();
+  });
+  document.getElementById('exit-present-btn').addEventListener('click', () => {
+    document.getElementById('present-overlay').classList.remove('active');
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.getElementById('present-overlay').classList.remove('active');
+    }
+  });
+
+  // ── SPREAD DISPLAY ────────────────────────────────────────────────────────
+  function updateSpreadDisplay() {
+    const pct = parseFloat(document.getElementById('spread-slider').value);
+    document.getElementById('spread-display').textContent = fmt(pct, 1) + '%';
+  }
+
+  // ── MASTER UPDATE ─────────────────────────────────────────────────────────
+  window.onControlChange = function () {
+    updateSpreadDisplay();
+    buildRateTable();
+    buildSelects();
+    updateConversion();
+    updateRoundTrip();
+  };
+
+  // ── INIT ──────────────────────────────────────────────────────────────────
+  buildSelects();
+  buildRateTable();
+  updateSpreadDisplay();
+  updateConversion();
+  updateRoundTrip();
+
+})();
+</script>
+</body>
+</html>

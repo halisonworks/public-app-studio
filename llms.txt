@@ -120,6 +120,10 @@ If the request fits one of these, adopt its conventions:
   content defined inline.
 - **Prototype / mockup** — build the key screens and make the main flow actually
   work with mock data; fake the backend; no dead primary actions.
+- **DIY / hobby** — a practical maker's calculator or planner (knitting, cooking,
+  gardening, carpentry, renovation); lead with the quantity/count/date/cost the
+  maker needs, metric units, sensible presets, round quantities up, and a short
+  "these are estimates" note.
 
 ---
 

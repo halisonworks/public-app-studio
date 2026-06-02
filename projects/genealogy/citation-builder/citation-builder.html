@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<!--
+  Source Citation Builder — Halison App Studio example
+
+  Build a tidy, consistent source citation for common genealogy record types — census, vital records, parish registers, gravestones, newspapers, and online databases.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Source Citation Builder</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; }
+    .fade-in { animation: fadeIn 0.35s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .type-btn.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+    .type-btn.active svg { color: #fff; }
+    .copied-flash { background: #d1fae5 !important; color: #065f46 !important; border-color: #6ee7b7 !important; }
+    .cite-out { white-space: pre-wrap; word-break: break-word; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m-6 4h6m-6 4h4M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-gray-900 leading-tight">Source Citation Builder</h1>
+        <p class="text-xs text-gray-500">Consistent, layered citations for genealogy sources</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 py-8 space-y-6">
+
+    <!-- Record type selector -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Record type</h2>
+      <div id="typeGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+    </section>
+
+    <!-- Fields -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+          Details — <span id="typeLabel" class="text-indigo-600 normal-case tracking-normal font-semibold">Census</span>
+        </h2>
+        <button id="clearBtn" class="text-xs font-medium text-gray-500 hover:text-red-600 border border-gray-300 rounded-md px-3 py-1.5 hover:border-red-300 transition">Clear fields</button>
+      </div>
+      <div id="fieldGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+    </section>
+
+    <!-- Outputs -->
+    <section class="space-y-4 fade-in">
+
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-3 gap-2">
+          <div>
+            <h3 class="text-sm font-semibold text-gray-800">Full / First Reference Note</h3>
+            <p class="text-xs text-gray-400">Footnote style — layered: what, where, when, repository, access</p>
+          </div>
+          <button data-copy="outFull" class="copy-btn text-xs font-medium text-indigo-600 border border-indigo-200 rounded-md px-3 py-1.5 hover:bg-indigo-50 transition flex-shrink-0">Copy</button>
+        </div>
+        <div id="outFull" class="cite-out text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 leading-relaxed min-h-[3rem]"></div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-3 gap-2">
+          <div>
+            <h3 class="text-sm font-semibold text-gray-800">Short / Subsequent Note</h3>
+            <p class="text-xs text-gray-400">Abbreviated form for repeat citations</p>
+          </div>
+          <button data-copy="outShort" class="copy-btn text-xs font-medium text-indigo-600 border border-indigo-200 rounded-md px-3 py-1.5 hover:bg-indigo-50 transition flex-shrink-0">Copy</button>
+        </div>
+        <div id="outShort" class="cite-out text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 leading-relaxed min-h-[3rem]"></div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-3 gap-2">
+          <div>
+            <h3 class="text-sm font-semibold text-gray-800">Source List / Bibliography Entry</h3>
+            <p class="text-xs text-gray-400">Reordered, author/jurisdiction-first, period-terminated</p>
+          </div>
+          <button data-copy="outBib" class="copy-btn text-xs font-medium text-indigo-600 border border-indigo-200 rounded-md px-3 py-1.5 hover:bg-indigo-50 transition flex-shrink-0">Copy</button>
+        </div>
+        <div id="outBib" class="cite-out text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 leading-relaxed min-h-[3rem]"></div>
+      </div>
+
+      <div class="flex justify-end">
+        <button id="saveBtn" class="bg-indigo-600 text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-indigo-700 transition shadow-sm flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Save to source log
+        </button>
+      </div>
+    </section>
+
+    <!-- Saved citations -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Saved citations <span id="savedCount" class="text-gray-400"></span></h2>
+      <div id="savedEmpty" class="text-sm text-gray-400 italic">No saved citations yet. Build a citation above and click "Save to source log".</div>
+      <ul id="savedList" class="space-y-3"></ul>
+    </section>
+
+    <!-- About -->
+    <section class="bg-gray-50 rounded-xl border border-gray-200 px-5 py-4 text-xs text-gray-500 leading-relaxed">
+      <strong class="text-gray-700">About these formats:</strong> The three outputs are <em>simplified</em> citation forms inspired by the layered "Evidence Explained" style developed by Elizabeth Shown Mills — a full reference note that moves from the specific item to its container, repository, and how it was accessed; a short note for repeat use; and a reordered source-list entry. House styles vary between societies, journals, and software, so treat these as a clean starting point and adapt punctuation and ordering to whatever standard your project follows. Empty fields are skipped automatically so you never get doubled commas or semicolons.
+    </section>
+
+  </main>
+
+  <footer class="max-w-4xl mx-auto px-4 py-6 text-center text-xs text-gray-400">
+    Source Citation Builder &mdash; <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-indigo-500" target="_blank" rel="noopener">Halison App Studio</a>
+  </footer>
+
+<script>
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+// Join non-empty parts with a separator (filters out empty/whitespace).
+function join(parts, sep) {
+  return parts.map(p => (p == null ? '' : String(p).trim())).filter(p => p.length > 0).join(sep);
+}
+
+// Ensure a string ends with a period (and not a doubled one).
+function period(s) {
+  s = (s || '').trim();
+  if (!s) return '';
+  return /[.!?]$/.test(s) ? s : s + '.';
+}
+
+// Quote a value if present.
+function quote(s) {
+  s = (s || '').trim();
+  return s ? '"' + s + '"' : '';
+}
+
+// Wrap with a prefix label if value present, e.g. lbl('p.', '42') -> 'p. 42'
+function lbl(prefix, v) {
+  v = (v || '').trim();
+  return v ? prefix + ' ' + v : '';
+}
+
+// Parenthesize if present.
+function paren(s) {
+  s = (s || '').trim();
+  return s ? '(' + s + ')' : '';
+}
+
+// "accessed DATE" clause
+function accessed(d) {
+  d = (d || '').trim();
+  return d ? 'accessed ' + d : '';
+}
+
+// ─── Record type definitions ────────────────────────────────────────────────
+// Each type defines its fields and three builder functions.
+
+const ICONS = {
+  census: 'M3 7h18M3 12h18M3 17h18',
+  vital: 'M9 12l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z',
+  parish: 'M12 3l8 5v2H4V8l8-5zM5 12h14v7H5v-7z',
+  grave: 'M12 3a4 4 0 014 4v8H8V7a4 4 0 014-4zM6 19h12v2H6z',
+  newspaper: 'M4 5h16v14H4zM8 9h8M8 13h8M8 17h4',
+  book: 'M5 4h11a2 2 0 012 2v14H7a2 2 0 01-2-2V4zM5 4v14',
+  database: 'M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zm0 0v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6',
+  letter: 'M4 6h16v12H4zM4 7l8 6 8-6'
+};
+
+function field(id, label, placeholder, opts) {
+  return Object.assign({ id, label, placeholder: placeholder || '', type: 'text' }, opts || {});
+}
+
+const TYPES = [
+  // ── Census ───────────────────────────────────────────────────────────────
+  {
+    key: 'census', name: 'Census', icon: ICONS.census,
+    fields: [
+      field('jurisdiction', 'Country / jurisdiction', 'e.g. United States'),
+      field('year', 'Census year', 'e.g. 1900'),
+      field('place', 'Place (state / county / town)', 'e.g. Cook County, Illinois'),
+      field('locator', 'Enumeration district / piece / folio / page', 'e.g. ED 42, folio 17, p. 8B'),
+      field('household', 'Household / line', 'e.g. dwelling 112, family 118'),
+      field('person', 'Person of interest', 'e.g. John A. Smith'),
+      field('repository', 'Archive / repository', 'e.g. NARA, Washington, D.C.'),
+      field('accessVia', 'Accessed via', 'e.g. Ancestry.com'),
+      field('url', 'URL', 'https://...'),
+      field('dateAccessed', 'Date accessed', 'e.g. 14 May 2026')
+    ],
+    full: f => period(join([
+      join([f.year, f.jurisdiction, 'census'], ' '),
+      f.place,
+      f.locator,
+      f.household,
+      f.person ? join([f.person, '(household)'], ' ') : '',
+      f.repository,
+      f.accessVia ? join([join([f.accessVia, paren(f.url)], ' '), accessed(f.dateAccessed)], ', ') : accessed(f.dateAccessed)
+    ], ', ')),
+    short: f => period(join([
+      join([f.year, f.jurisdiction, 'census'], ' '),
+      f.place,
+      f.person,
+      f.locator
+    ], ', ')),
+    bib: f => period(join([
+      period(join([f.jurisdiction, f.place], '. ')),
+      join([f.year, 'Census'], ' '),
+      f.accessVia ? join([f.accessVia, paren(join([f.url, accessed(f.dateAccessed)], ' : '))], ' ') : ''
+    ], ' '))
+  },
+  // ── Vital record ───────────────────────────────────────────────────────────
+  {
+    key: 'vital', name: 'Vital record', icon: ICONS.vital,
+    fields: [
+      field('kind', 'Type (birth / marriage / death)', 'e.g. death certificate'),
+      field('names', 'Name(s)', 'e.g. Mary E. (Smith) Johnson'),
+      field('eventDate', 'Event date', 'e.g. 3 March 1921'),
+      field('place', 'Place', 'e.g. Boston, Suffolk, Massachusetts'),
+      field('number', 'Registration / certificate no.', 'e.g. no. 1921-04412'),
+      field('authority', 'Issuing authority', 'e.g. Massachusetts Registry of Vital Records'),
+      field('repository', 'Repository', 'e.g. Massachusetts State Archives'),
+      field('dateAccessed', 'Date accessed', 'e.g. 14 May 2026')
+    ],
+    full: f => period(join([
+      join([f.place, f.kind], ', '),
+      f.number,
+      f.names ? join([f.names, paren(f.eventDate)], ' ') : f.eventDate,
+      f.authority,
+      f.repository ? join([f.repository, accessed(f.dateAccessed)], '; ') : accessed(f.dateAccessed)
+    ], ', ')),
+    short: f => period(join([
+      f.place,
+      f.kind,
+      f.names,
+      f.number
+    ], ', ')),
+    bib: f => period(join([
+      period(f.place || f.authority),
+      join([f.kind, paren('records')], ' '),
+      f.repository
+    ], ' '))
+  },
+  // ── Church / Parish register ────────────────────────────────────────────────
+  {
+    key: 'parish', name: 'Parish register', icon: ICONS.parish,
+    fields: [
+      field('denomination', 'Denomination', 'e.g. Church of England'),
+      field('parish', 'Parish', 'e.g. St Mary, Whitechapel'),
+      field('place', 'Place', 'e.g. London, England'),
+      field('registerType', 'Register type', 'e.g. baptisms'),
+      field('entryDate', 'Entry date', 'e.g. 12 April 1834'),
+      field('names', 'Name(s)', 'e.g. Thomas, son of William Hall'),
+      field('volPage', 'Volume / page', 'e.g. vol. 4, p. 211, entry 1683'),
+      field('repository', 'Repository', 'e.g. London Metropolitan Archives'),
+      field('url', 'URL', 'https://...'),
+      field('dateAccessed', 'Date accessed', 'e.g. 14 May 2026')
+    ],
+    full: f => period(join([
+      join([f.parish, paren(f.denomination)], ' '),
+      f.place,
+      join([f.registerType, paren(f.entryDate)], ' '),
+      f.names,
+      f.volPage,
+      f.repository,
+      f.url ? join([paren(f.url), accessed(f.dateAccessed)], ' ') : accessed(f.dateAccessed)
+    ], ', ')),
+    short: f => period(join([
+      f.parish,
+      f.registerType,
+      f.names,
+      f.entryDate
+    ], ', ')),
+    bib: f => period(join([
+      period(join([f.parish, paren(f.denomination)], ' ')),
+      period(f.place),
+      join(['Parish registers', f.repository ? join(['—', f.repository], ' ') : ''], ' ')
+    ], ' '))
+  },
+  // ── Gravestone / Cemetery ───────────────────────────────────────────────────
+  {
+    key: 'grave', name: 'Gravestone', icon: ICONS.grave,
+    fields: [
+      field('name', 'Name', 'e.g. Eliza Hart (1842–1910)'),
+      field('cemetery', 'Cemetery', 'e.g. Mount Auburn Cemetery'),
+      field('place', 'Town / place', 'e.g. Cambridge, Massachusetts'),
+      field('plot', 'Plot / section', 'e.g. Section 7, Lot 214'),
+      field('readingDate', 'Reading / inscription date', 'e.g. read 2 June 2026'),
+      field('recordedBy', 'Recorded by', 'e.g. personal visit'),
+      field('photoSource', 'Photo source', 'e.g. Find A Grave memorial no. 1234567'),
+      field('url', 'URL', 'https://...'),
+      field('dateAccessed', 'Date accessed', 'e.g. 14 May 2026')
+    ],
+    full: f => period(join([
+      f.name ? join([f.name, 'gravestone'], ', ') : 'gravestone',
+      f.cemetery,
+      f.place,
+      f.plot,
+      f.recordedBy,
+      f.readingDate,
+      f.photoSource ? join([f.photoSource, paren(f.url), accessed(f.dateAccessed)], ' ') : ''
+    ], ', ')),
+    short: f => period(join([
+      f.name,
+      f.cemetery,
+      f.place,
+      f.plot
+    ], ', ')),
+    bib: f => period(join([
+      period(f.cemetery),
+      period(f.place),
+      join(['Gravestone inscriptions', f.photoSource ? join(['—', f.photoSource], ' ') : ''], ' ')
+    ], ' '))
+  },
+  // ── Newspaper ───────────────────────────────────────────────────────────────
+  {
+    key: 'newspaper', name: 'Newspaper', icon: ICONS.newspaper,
+    fields: [
+      field('title', 'Article title', 'e.g. "Local Man Honored"'),
+      field('paper', 'Newspaper name', 'e.g. The Boston Globe'),
+      field('place', 'Place', 'e.g. Boston, Massachusetts'),
+      field('issueDate', 'Issue date', 'e.g. 14 July 1899'),
+      field('pageCol', 'Page / column', 'e.g. p. 3, col. 2'),
+      field('archive', 'Archive / database', 'e.g. Newspapers.com'),
+      field('url', 'URL', 'https://...'),
+      field('dateAccessed', 'Date accessed', 'e.g. 14 May 2026')
+    ],
+    full: f => period(join([
+      quote(f.title.replace(/^"|"$/g, '')),
+      f.paper ? join([f.paper, paren(f.place)], ' ') : '',
+      f.issueDate,
+      f.pageCol,
+      f.archive ? join([f.archive, paren(f.url), accessed(f.dateAccessed)], ' ') : ''
+    ], ', ')),
+    short: f => period(join([
+      f.paper,
+      f.issueDate,
+      f.pageCol
+    ], ', ')),
+    bib: f => period(join([
+      period(f.paper ? join([f.paper, paren(f.place)], ' ') : ''),
+      f.archive ? join([f.archive, paren(f.url)], ' ') : ''
+    ], ' '))
+  },
+  // ── Book ────────────────────────────────────────────────────────────────────
+  {
+    key: 'book', name: 'Book', icon: ICONS.book,
+    fields: [
+      field('author', 'Author', 'e.g. Jane R. Holloway'),
+      field('title', 'Title', 'e.g. The Holloways of Devon'),
+      field('place', 'Place of publication', 'e.g. Exeter'),
+      field('publisher', 'Publisher', 'e.g. Westcountry Press'),
+      field('year', 'Year', 'e.g. 1987'),
+      field('pages', 'Page(s)', 'e.g. 142–145'),
+      field('repoUrl', 'Repository or URL', 'e.g. FamilySearch Library; https://...')
+    ],
+    full: f => period(join([
+      f.author,
+      f.title,
+      paren(join([join([f.place, f.publisher], ': '), f.year], ', ')),
+      lbl('p.', f.pages),
+      f.repoUrl
+    ], ', ')),
+    short: f => period(join([
+      f.author ? f.author.split(',')[0].split(' ').slice(-1)[0] : '',
+      f.title,
+      lbl('p.', f.pages)
+    ], ', ')),
+    bib: f => period(join([
+      period(f.author),
+      period(f.title),
+      paren(join([join([f.place, f.publisher], ': '), f.year], ', '))
+    ], ' '))
+  },
+  // ── Online database / website ───────────────────────────────────────────────
+  {
+    key: 'database', name: 'Online database', icon: ICONS.database,
+    fields: [
+      field('dbTitle', 'Database title', 'e.g. "England & Wales, Civil Registration Index"'),
+      field('publisher', 'Website / publisher', 'e.g. Ancestry.com'),
+      field('url', 'URL', 'https://...'),
+      field('item', 'Item / record description', 'e.g. entry for Thomas Hall, 1834'),
+      field('dateAccessed', 'Date accessed', 'e.g. 14 May 2026'),
+      field('original', 'Original source cited', 'e.g. citing GRO indexes, vol. 5b')
+    ],
+    full: f => period(join([
+      quote(f.dbTitle.replace(/^"|"$/g, '')),
+      f.publisher,
+      f.url ? paren(join([f.url, accessed(f.dateAccessed)], ' : ')) : accessed(f.dateAccessed),
+      f.item ? join(['entry for', f.item.replace(/^entry for /i, '')], ' ') : '',
+      f.original
+    ], ', ')),
+    short: f => period(join([
+      f.dbTitle.replace(/^"|"$/g, ''),
+      f.publisher,
+      f.item
+    ], ', ')),
+    bib: f => period(join([
+      period(f.publisher),
+      quote(f.dbTitle.replace(/^"|"$/g, '')),
+      f.url ? join(['Database.', f.publisher, paren(f.url)], ' ') : 'Database.'
+    ], ' '))
+  },
+  // ── Letter / Manuscript ─────────────────────────────────────────────────────
+  {
+    key: 'letter', name: 'Letter / MS', icon: ICONS.letter,
+    fields: [
+      field('author', 'Author', 'e.g. Henry Field'),
+      field('recipient', 'Recipient', 'e.g. to Sarah Field'),
+      field('date', 'Date', 'e.g. 9 November 1862'),
+      field('description', 'Description', 'e.g. autograph letter, 2 pp.'),
+      field('collection', 'Collection / repository', 'e.g. Field Family Papers, MS 214'),
+      field('location', 'Location', 'e.g. Yale University Library, New Haven')
+    ],
+    full: f => period(join([
+      f.author,
+      f.recipient ? (/^to /i.test(f.recipient.trim()) ? f.recipient : 'to ' + f.recipient) : '',
+      f.date,
+      f.description,
+      f.collection,
+      f.location
+    ], ', ')),
+    short: f => period(join([
+      f.author,
+      f.recipient ? (/^to /i.test(f.recipient.trim()) ? f.recipient : 'to ' + f.recipient) : '',
+      f.date
+    ], ', ')),
+    bib: f => period(join([
+      period(f.author),
+      period(f.description || 'Correspondence'),
+      f.collection ? join([f.collection + '.', f.location], ' ') : f.location
+    ], ' '))
+  }
+];
+
+// ─── State ──────────────────────────────────────────────────────────────────
+
+const STORE_KEY = 'citationBuilder.state.v1';
+const SAVED_KEY = 'citationBuilder.saved.v1';
+
+let currentType = TYPES[0].key;
+let values = {}; // values[typeKey][fieldId] = string
+
+function typeDef(key) { return TYPES.find(t => t.key === key); }
+
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE_KEY));
+    if (s && typeof s === 'object') {
+      if (s.currentType && typeDef(s.currentType)) currentType = s.currentType;
+      if (s.values && typeof s.values === 'object') values = s.values;
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify({ currentType, values }));
+  } catch (e) { /* ignore */ }
+}
+
+function loadSaved() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SAVED_KEY));
+    return Array.isArray(s) ? s : [];
+  } catch (e) { return []; }
+}
+
+function storeSaved(list) {
+  try { localStorage.setItem(SAVED_KEY, JSON.stringify(list)); } catch (e) { /* ignore */ }
+}
+
+function curValues() {
+  return values[currentType] || (values[currentType] = {});
+}
+
+// ─── Rendering ──────────────────────────────────────────────────────────────
+
+function renderTypeButtons() {
+  const grid = document.getElementById('typeGrid');
+  grid.innerHTML = '';
+  TYPES.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'type-btn flex flex-col items-center justify-center gap-1.5 border-2 border-gray-200 rounded-xl px-2 py-3 text-xs font-medium text-gray-600 hover:border-indigo-300 transition' + (t.key === currentType ? ' active' : '');
+    btn.innerHTML =
+      '<svg class="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">' +
+      '<path stroke-linecap="round" stroke-linejoin="round" d="' + t.icon + '"/></svg>' +
+      '<span class="text-center leading-tight">' + t.name + '</span>';
+    btn.addEventListener('click', () => {
+      currentType = t.key;
+      saveState();
+      renderTypeButtons();
+      renderFields();
+      updateOutputs();
+    });
+    grid.appendChild(btn);
+  });
+}
+
+function renderFields() {
+  const def = typeDef(currentType);
+  document.getElementById('typeLabel').textContent = def.name;
+  const grid = document.getElementById('fieldGrid');
+  grid.innerHTML = '';
+  const v = curValues();
+  def.fields.forEach(fld => {
+    const wrap = document.createElement('div');
+    const wide = /title|description|item|locator|original|repoUrl|household|volPage|photoSource/.test(fld.id);
+    if (wide) wrap.className = 'sm:col-span-2';
+    const label = document.createElement('label');
+    label.className = 'block text-xs font-medium text-gray-500 mb-1';
+    label.textContent = fld.label;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = v[fld.id] || '';
+    input.placeholder = fld.placeholder;
+    input.className = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent';
+    input.addEventListener('input', () => {
+      curValues()[fld.id] = input.value;
+      saveState();
+      updateOutputs();
+    });
+    wrap.appendChild(label);
+    wrap.appendChild(input);
+    grid.appendChild(wrap);
+  });
+}
+
+function buildCitations() {
+  const def = typeDef(currentType);
+  const v = curValues();
+  // Normalize: ensure all field ids exist as strings.
+  const f = {};
+  def.fields.forEach(fld => { f[fld.id] = (v[fld.id] || '').toString(); });
+  let full = '', short = '', bib = '';
+  try { full = def.full(f) || ''; } catch (e) { full = ''; }
+  try { short = def.short(f) || ''; } catch (e) { short = ''; }
+  try { bib = def.bib(f) || ''; } catch (e) { bib = ''; }
+  // Clean up any stray double punctuation / spaces.
+  const tidy = s => s
+    .replace(/\s+,/g, ',')
+    .replace(/,\s*,/g, ',')
+    .replace(/;\s*;/g, ';')
+    .replace(/\(\s*\)/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([.,;])/g, '$1')
+    .replace(/,\s*\(/g, ' (')
+    .replace(/\.{2,}/g, '.')
+    .trim();
+  return { full: tidy(full), short: tidy(short), bib: tidy(bib) };
+}
+
+function updateOutputs() {
+  const c = buildCitations();
+  const placeholder = '<span class="text-gray-400 italic">Fill in the fields above…</span>';
+  document.getElementById('outFull').innerHTML = c.full ? escapeHtml(c.full) : placeholder;
+  document.getElementById('outShort').innerHTML = c.short ? escapeHtml(c.short) : placeholder;
+  document.getElementById('outBib').innerHTML = c.bib ? escapeHtml(c.bib) : placeholder;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ─── Copy ───────────────────────────────────────────────────────────────────
+
+function copyText(text, btn) {
+  const flash = () => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied-flash');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied-flash'); }, 1200);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(flash).catch(() => fallbackCopy(text, flash));
+  } else {
+    fallbackCopy(text, flash);
+  }
+}
+
+function fallbackCopy(text, cb) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try { document.execCommand('copy'); cb && cb(); } catch (e) { /* ignore */ }
+  document.body.removeChild(ta);
+}
+
+document.querySelectorAll('.copy-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const id = btn.getAttribute('data-copy');
+    const el = document.getElementById(id);
+    const text = el.textContent.trim();
+    if (text && !/Fill in the fields/.test(text)) copyText(text, btn);
+  });
+});
+
+// ─── Saved citations ────────────────────────────────────────────────────────
+
+function renderSaved() {
+  const list = loadSaved();
+  const ul = document.getElementById('savedList');
+  const empty = document.getElementById('savedEmpty');
+  const count = document.getElementById('savedCount');
+  ul.innerHTML = '';
+  count.textContent = list.length ? '(' + list.length + ')' : '';
+  empty.style.display = list.length ? 'none' : 'block';
+  list.forEach((item, idx) => {
+    const li = document.createElement('li');
+    li.className = 'border border-gray-200 rounded-lg px-4 py-3 flex items-start gap-3';
+    const body = document.createElement('div');
+    body.className = 'flex-1 min-w-0';
+    const meta = document.createElement('div');
+    meta.className = 'text-[11px] uppercase tracking-wide font-semibold text-indigo-500 mb-1';
+    meta.textContent = item.typeName || 'Citation';
+    const txt = document.createElement('div');
+    txt.className = 'cite-out text-sm text-gray-800 leading-relaxed';
+    txt.textContent = item.text;
+    body.appendChild(meta);
+    body.appendChild(txt);
+    const actions = document.createElement('div');
+    actions.className = 'flex flex-col gap-1 flex-shrink-0';
+    const copyB = document.createElement('button');
+    copyB.className = 'copy-btn text-xs font-medium text-indigo-600 border border-indigo-200 rounded-md px-2 py-1 hover:bg-indigo-50 transition';
+    copyB.textContent = 'Copy';
+    copyB.addEventListener('click', () => copyText(item.text, copyB));
+    const rmB = document.createElement('button');
+    rmB.className = 'text-xs font-medium text-gray-400 border border-gray-200 rounded-md px-2 py-1 hover:text-red-600 hover:border-red-300 transition';
+    rmB.textContent = 'Remove';
+    rmB.addEventListener('click', () => {
+      const cur = loadSaved();
+      cur.splice(idx, 1);
+      storeSaved(cur);
+      renderSaved();
+    });
+    actions.appendChild(copyB);
+    actions.appendChild(rmB);
+    li.appendChild(body);
+    li.appendChild(actions);
+    ul.appendChild(li);
+  });
+}
+
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const c = buildCitations();
+  if (!c.full) return;
+  const list = loadSaved();
+  list.unshift({ typeName: typeDef(currentType).name, text: c.full, ts: Date.now() });
+  storeSaved(list);
+  renderSaved();
+  const btn = document.getElementById('saveBtn');
+  const orig = btn.innerHTML;
+  btn.innerHTML = 'Saved ✓';
+  setTimeout(() => { btn.innerHTML = orig; }, 1100);
+});
+
+// ─── Clear ──────────────────────────────────────────────────────────────────
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  values[currentType] = {};
+  saveState();
+  renderFields();
+  updateOutputs();
+});
+
+// ─── Init ───────────────────────────────────────────────────────────────────
+
+loadState();
+renderTypeButtons();
+renderFields();
+updateOutputs();
+renderSaved();
+</script>
+</body>
+</html>

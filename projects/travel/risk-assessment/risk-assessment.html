@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<!--
+  Risk Assessment — Halison App Studio example
+
+  An HMS-style risk-matrix builder for the Sales, Service and Tourism classroom:
+  rate each hazard by likelihood and consequence, see it land on a colour-coded
+  5x5 matrix, add measures, and watch the residual risk drop. Saves to your
+  browser.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Risk Assessment</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: #f8fafc;
+      margin: 0; padding: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ---- Risk zone colours ---- */
+    .zone-low    { background: #22c55e; }
+    .zone-medium { background: #eab308; }
+    .zone-high   { background: #ef4444; }
+    .zone-low-text    { color: #15803d; }
+    .zone-medium-text { color: #854d0e; }
+    .zone-high-text   { color: #991b1b; }
+    .zone-low-bg    { background: #dcfce7; border-color: #86efac; }
+    .zone-medium-bg { background: #fef9c3; border-color: #fde047; }
+    .zone-high-bg   { background: #fee2e2; border-color: #fca5a5; }
+
+    /* ---- Matrix grid ---- */
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: 2.5rem repeat(5, 1fr);
+      grid-template-rows: repeat(5, 1fr) 2rem;
+      gap: 2px;
+      aspect-ratio: 1;
+      max-width: 420px;
+      width: 100%;
+    }
+    .matrix-cell {
+      border-radius: 4px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      transition: transform 0.1s;
+    }
+    .matrix-cell:hover { transform: scale(1.05); z-index: 10; }
+    .matrix-axis-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #64748b;
+      text-align: center;
+      line-height: 1.1;
+    }
+    .matrix-axis-label.row-label { writing-mode: initial; }
+    .matrix-corner { background: transparent; }
+
+    /* hazard dot */
+    .h-dot {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.8);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.6rem; font-weight: 700; color: #fff;
+      cursor: pointer;
+      position: absolute;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+      transition: transform 0.15s;
+      z-index: 5;
+    }
+    .h-dot:hover { transform: scale(1.25); z-index: 20; }
+    .h-dot-multi {
+      font-size: 0.55rem;
+      width: 26px; height: 26px;
+    }
+
+    /* ---- Tabs ---- */
+    .tab-btn {
+      padding: 8px 20px;
+      border-radius: 8px 8px 0 0;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: #64748b;
+      transition: background 0.15s, color 0.15s;
+    }
+    .tab-btn.active {
+      background: #fff;
+      color: #1e293b;
+      box-shadow: 0 -2px 0 0 #6366f1 inset;
+    }
+    .tab-btn:hover:not(.active) { background: #e2e8f0; color: #334155; }
+
+    /* ---- Cards ---- */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      padding: 1.25rem;
+    }
+
+    /* ---- Form inputs ---- */
+    input[type="text"], input[type="number"], select, textarea {
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.875rem;
+      width: 100%;
+      outline: none;
+      background: #fff;
+      transition: border-color 0.15s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #6366f1; }
+
+    /* ---- Slider ---- */
+    input[type="range"] {
+      -webkit-appearance: none;
+      height: 6px;
+      border-radius: 9999px;
+      background: #e2e8f0;
+      outline: none;
+      width: 100%;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: #6366f1;
+      cursor: pointer;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 2px #6366f1;
+    }
+
+    /* ---- Badge ---- */
+    .risk-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 10px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border: 1.5px solid transparent;
+    }
+
+    /* ---- Hazard card ---- */
+    .hazard-card {
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      background: #fff;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .hazard-card:hover { border-color: #a5b4fc; box-shadow: 0 2px 8px rgba(99,102,241,0.08); }
+
+    /* ---- Present mode ---- */
+    #present-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #0f172a;
+      z-index: 100;
+      overflow: auto;
+    }
+    #present-overlay.active { display: flex; flex-direction: column; }
+
+    /* ---- Arrow (initial → residual) ---- */
+    .arrow-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* ---- Learn accordions ---- */
+    .learn-section summary {
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #1e293b;
+      border-radius: 8px;
+      background: #f8fafc;
+      transition: background 0.15s;
+    }
+    .learn-section summary:hover { background: #f1f5f9; }
+    .learn-section summary::after {
+      content: '▾';
+      font-size: 1rem;
+      color: #94a3b8;
+      transition: transform 0.2s;
+    }
+    .learn-section[open] summary::after { transform: rotate(180deg); }
+    .learn-section summary::-webkit-details-marker { display: none; }
+    .learn-section .learn-body {
+      padding: 14px 16px;
+      font-size: 0.875rem;
+      color: #334155;
+      line-height: 1.7;
+    }
+
+    /* ---- Hierarchy ---- */
+    .hierarchy-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .hierarchy-item:last-child { border-bottom: none; }
+    .hierarchy-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: #6366f1;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* ---- Tooltip on matrix cell ---- */
+    .cell-tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 4px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e293b;
+      color: #fff;
+      font-size: 0.7rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+      z-index: 50;
+      pointer-events: none;
+    }
+    .h-dot:hover .cell-tooltip { display: block; }
+
+    /* ---- Modal ---- */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,0.6);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+
+    /* scrollbar thin */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+
+    /* ---- Empty state ---- */
+    .empty-state { text-align: center; padding: 48px 24px; color: #94a3b8; }
+    .empty-state svg { margin: 0 auto 12px; display: block; }
+
+    /* ---- Measure chip ---- */
+    .measure-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #ede9fe; color: #5b21b6;
+      border-radius: 9999px;
+      padding: 2px 10px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    /* ---- Responsive present matrix ---- */
+    .present-matrix-grid {
+      display: grid;
+      grid-template-columns: 2rem repeat(5, 1fr);
+      grid-template-rows: repeat(5, 1fr) 2rem;
+      gap: 3px;
+      width: min(480px, 90vw);
+      height: min(480px, 90vw);
+    }
+
+    /* present cell */
+    .present-cell {
+      border-radius: 4px;
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    @media (max-width: 640px) {
+      .matrix-grid { max-width: 100%; }
+      .tab-btn { padding: 8px 12px; font-size: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== PRESENT OVERLAY ===== -->
+<div id="present-overlay" role="dialog" aria-modal="true" aria-label="Present mode">
+  <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl font-bold text-white">Risk Assessment</span>
+      <span class="text-slate-400 text-sm font-medium">Present Mode</span>
+    </div>
+    <button onclick="closePresent()" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
+      <span>ESC to exit</span>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="flex flex-col lg:flex-row gap-8 p-6 flex-1 overflow-auto items-start justify-center">
+    <!-- Matrix -->
+    <div>
+      <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">5×5 Risk Matrix</p>
+      <div id="present-matrix-container"></div>
+      <div class="flex gap-4 mt-3">
+        <span class="flex items-center gap-1 text-slate-300 text-xs"><span class="w-3 h-3 rounded zone-low inline-block"></span> Low (1–4)</span>
+        <span class="flex items-center gap-1 text-slate-300 text-xs"><span class="w-3 h-3 rounded zone-medium inline-block"></span> Medium (5–12)</span>
+        <span class="flex items-center gap-1 text-slate-300 text-xs"><span class="w-3 h-3 rounded zone-high inline-block"></span> High (15–25)</span>
+      </div>
+    </div>
+    <!-- Top risks -->
+    <div class="flex-1 min-w-0" style="max-width:420px">
+      <p class="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">Top Risks (sorted by initial score)</p>
+      <div id="present-risk-list" class="space-y-2"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RESET MODAL ===== -->
+<div id="reset-modal" class="modal-overlay">
+  <div class="card max-w-sm w-full mx-4" style="border-radius:16px;">
+    <div class="flex items-center gap-3 mb-3">
+      <span class="text-2xl">⚠️</span>
+      <h3 class="font-bold text-lg text-slate-800">Reset all hazards?</h3>
+    </div>
+    <p class="text-slate-500 text-sm mb-5">This will permanently delete all hazards and measures and restore the three seeded examples. This cannot be undone.</p>
+    <div class="flex gap-3 justify-end">
+      <button onclick="closeResetModal()" class="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors">Cancel</button>
+      <button onclick="confirmReset()" class="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition-colors">Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== HAZARD EDIT MODAL ===== -->
+<div id="edit-modal" class="modal-overlay">
+  <div class="card w-full mx-4 overflow-y-auto" style="max-width:560px; max-height:90vh; border-radius:16px;">
+    <div class="flex items-center justify-between mb-4">
+      <h3 id="edit-modal-title" class="font-bold text-lg text-slate-800">Edit Hazard</h3>
+      <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-700">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <form id="edit-form" onsubmit="saveHazard(event)">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Hazard / risk description *</label>
+          <input type="text" id="ef-name" placeholder="e.g. Slippery hotel lobby floor" required maxlength="100" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Area / location</label>
+          <input type="text" id="ef-area" placeholder="e.g. Hotel lobby, Reception, Tour bus" maxlength="60" />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-2">
+              Likelihood: <span id="ef-l-val" class="text-indigo-600">—</span>
+            </label>
+            <input type="range" id="ef-likelihood" min="1" max="5" value="2"
+              oninput="updateSliderLabels()" />
+            <div class="flex justify-between text-xs text-slate-400 mt-1">
+              <span>1 Very unlikely</span><span>5 Almost certain</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-2">
+              Consequence: <span id="ef-c-val" class="text-indigo-600">—</span>
+            </label>
+            <input type="range" id="ef-consequence" min="1" max="5" value="2"
+              oninput="updateSliderLabels()" />
+            <div class="flex justify-between text-xs text-slate-400 mt-1">
+              <span>1 Negligible</span><span>5 Catastrophic</span>
+            </div>
+          </div>
+        </div>
+        <!-- Preview score -->
+        <div id="ef-score-preview" class="p-3 rounded-lg border text-sm font-semibold text-center transition-all"></div>
+        <!-- Measures -->
+        <div class="border-t pt-4">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Measures (one per line)</label>
+          <textarea id="ef-measures" rows="3" placeholder="e.g. Anti-slip mats installed&#10;Wet floor signs used&#10;Staff briefing on spill protocol" style="resize:vertical;"></textarea>
+          <p class="text-xs text-slate-400 mt-1">Describe what controls are in place or planned.</p>
+        </div>
+        <!-- Residual -->
+        <div id="residual-section" class="space-y-3">
+          <p class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Residual risk after measures</p>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-2">
+                Residual likelihood: <span id="ef-rl-val" class="text-purple-600">—</span>
+              </label>
+              <input type="range" id="ef-r-likelihood" min="1" max="5" value="2"
+                oninput="updateSliderLabels()" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-2">
+                Residual consequence: <span id="ef-rc-val" class="text-purple-600">—</span>
+              </label>
+              <input type="range" id="ef-r-consequence" min="1" max="5" value="2"
+                oninput="updateSliderLabels()" />
+            </div>
+          </div>
+          <div id="ef-residual-preview" class="p-3 rounded-lg border text-sm font-semibold text-center transition-all"></div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 mt-6">
+        <button type="button" onclick="closeEditModal()" class="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors">Cancel</button>
+        <button type="submit" class="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors">Save hazard</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div class="min-h-screen flex flex-col">
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between flex-wrap gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="font-bold text-slate-800 text-base leading-tight">Risk Assessment</h1>
+        <p class="text-xs text-slate-500">Sales, Service &amp; Tourism · HMS</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="openPresent()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        Present
+      </button>
+      <button onclick="openResetModal()" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 text-xs font-semibold hover:bg-slate-50 transition-colors">Reset</button>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="bg-slate-100 border-b border-slate-200 px-4 sm:px-6 pt-3 flex gap-1">
+    <button class="tab-btn active" id="tab-learn" onclick="switchTab('learn')">Learn</button>
+    <button class="tab-btn" id="tab-practice" onclick="switchTab('practice')">Practice</button>
+  </div>
+
+  <!-- Tab panels -->
+  <div class="flex-1 overflow-auto">
+
+    <!-- ============= LEARN TAB ============= -->
+    <div id="panel-learn" class="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-4">
+
+      <!-- Hero -->
+      <div class="card">
+        <div class="flex items-start gap-4">
+          <div class="text-4xl flex-shrink-0">🛡️</div>
+          <div>
+            <h2 class="font-bold text-xl text-slate-800 mb-1">What is Risk Assessment?</h2>
+            <p class="text-slate-600 text-sm leading-relaxed">
+              In <strong>Health, Safety and Environment (HMS)</strong> work, a risk assessment helps you identify hazards, understand how dangerous they are, and decide what to do about them. The classic formula is:
+            </p>
+            <div class="mt-3 inline-flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-2">
+              <span class="text-indigo-700 font-mono font-bold text-base">Risk = Likelihood × Consequence</span>
+            </div>
+            <p class="text-slate-600 text-sm mt-3 leading-relaxed">
+              A rare event with a <em>catastrophic</em> outcome can still carry <em>high</em> risk — the matrix makes this visible.
+              After you add control measures, you re-score the hazard to get the <strong>residual risk</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scales -->
+      <details class="learn-section card p-0 overflow-hidden" open>
+        <summary>The 1–5 Scales: Likelihood and Consequence</summary>
+        <div class="learn-body">
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <p class="font-semibold text-slate-700 mb-2">Likelihood (probability)</p>
+              <div class="space-y-1.5">
+                <div class="flex items-center gap-2"><span class="w-6 h-6 rounded bg-green-100 text-green-700 flex items-center justify-center text-xs font-bold flex-shrink-0">1</span><span class="text-sm"><strong>Very unlikely</strong> — Could happen but rarely does (e.g. once every few years)</span></div>
+                <div class="flex items-center gap-2"><span class="w-6 h-6 rounded bg-lime-100 text-lime-700 flex items-center justify-center text-xs font-bold flex-shrink-0">2</span><span class="text-sm"><strong>Unlikely</strong> — Known to happen occasionally</span></div>
+                <div class="flex items-center gap-2"><span class="w-6 h-6 rounded bg-yellow-100 text-yellow-700 flex items-center justify-center text-xs font-bold flex-shrink-0">3</span><span class="text-sm"><strong>Possible</strong> — Could happen; similar events are known</span></div>
+                <div class="flex items-center gap-2"><span class="w-6 h-6 rounded bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold flex-shrink-0">4</span><span class="text-sm"><strong>Likely</strong> — Will probably happen; has happened before</span></div>
+                <div class="flex items-center gap-2"><span class="w-6 h-6 rounded bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold flex-shrink-0">5</span><span class="text-sm"><strong>Almost certain</strong> — Expected to happen repeatedly</span></div>
+              </div>
+            </div>
+            <div>
+              <p class="font-semibold text-slate-700 mb-2">Consequence (severity)</p>
+              <div class="space-y-1.5">
+                <div class="flex items-center gap-2"><span class="w-6 h-6 rounded bg-green-100 text-green-700 flex items-center justify-center text-xs font-bold flex-shrink-0">1</span><span class="text-sm"><strong>Negligible</strong> — No injury; minor inconvenience</span></div>
+                <div class="flex items-center gap-2"><span class="w-6 h-6 rounded bg-lime-100 text-lime-700 flex items-center justify-center text-xs font-bold flex-shrink-0">2</span><span class="text-sm"><strong>Minor</strong> — First-aid treatment; slight disruption</span></div>
+                <div class="flex items-center gap-2"><span class="w-6 h-6 rounded bg-yellow-100 text-yellow-700 flex items-center justify-center text-xs font-bold flex-shrink-0">3</span><span class="text-sm"><strong>Moderate</strong> — Medical treatment; temporary harm</span></div>
+                <div class="flex items-center gap-2"><span class="w-6 h-6 rounded bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold flex-shrink-0">4</span><span class="text-sm"><strong>Serious</strong> — Hospitalisation; lasting injury</span></div>
+                <div class="flex items-center gap-2"><span class="w-6 h-6 rounded bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold flex-shrink-0">5</span><span class="text-sm"><strong>Catastrophic</strong> — Death or permanent severe disability</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Matrix explanation -->
+      <details class="learn-section card p-0 overflow-hidden" open>
+        <summary>The 5×5 Matrix &amp; Risk Zones</summary>
+        <div class="learn-body">
+          <p class="mb-3">Multiply Likelihood × Consequence to get the risk <strong>score</strong> (1–25). The score falls into one of three zones:</p>
+          <div class="flex flex-col sm:flex-row gap-3 mb-4">
+            <div class="flex-1 zone-low-bg border rounded-lg p-3 text-center">
+              <div class="font-bold zone-low-text text-base">Low</div>
+              <div class="zone-low-text text-xs font-semibold">Score 1–4</div>
+              <div class="text-slate-600 text-xs mt-1">Acceptable. Monitor and maintain controls.</div>
+            </div>
+            <div class="flex-1 zone-medium-bg border rounded-lg p-3 text-center">
+              <div class="font-bold zone-medium-text text-base">Medium</div>
+              <div class="zone-medium-text text-xs font-semibold">Score 5–12</div>
+              <div class="text-slate-600 text-xs mt-1">Act to reduce risk. Assign responsibility &amp; deadline.</div>
+            </div>
+            <div class="flex-1 zone-high-bg border rounded-lg p-3 text-center">
+              <div class="font-bold zone-high-text text-base">High</div>
+              <div class="zone-high-text text-xs font-semibold">Score 15–25</div>
+              <div class="text-slate-600 text-xs mt-1">Immediate action required or stop the activity.</div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500">Note: score 13 and 14 don't exist in this scale (4×4=16, so products jump from 12 to 15). The banding is: 1–4 = Low, 5–12 = Medium, 15–25 = High.</p>
+        </div>
+      </details>
+
+      <!-- Hierarchy -->
+      <details class="learn-section card p-0 overflow-hidden">
+        <summary>Hierarchy of Measures</summary>
+        <div class="learn-body">
+          <p class="mb-3">When you choose controls to reduce risk, always try the most effective options first. Work down this hierarchy:</p>
+          <div>
+            <div class="hierarchy-item">
+              <div class="hierarchy-num">1</div>
+              <div><strong class="text-slate-800">Eliminate</strong> — Remove the hazard entirely. Can you stop doing the task, or change the process so the hazard no longer exists?</div>
+            </div>
+            <div class="hierarchy-item">
+              <div class="hierarchy-num" style="background:#8b5cf6">2</div>
+              <div><strong class="text-slate-800">Substitute</strong> — Replace the hazard with something less dangerous (e.g. swap a chemical cleaner for a safer product).</div>
+            </div>
+            <div class="hierarchy-item">
+              <div class="hierarchy-num" style="background:#0891b2">3</div>
+              <div><strong class="text-slate-800">Technical / Engineering</strong> — Add physical barriers, guards, improved drainage, ventilation or other engineered controls.</div>
+            </div>
+            <div class="hierarchy-item">
+              <div class="hierarchy-num" style="background:#d97706">4</div>
+              <div><strong class="text-slate-800">Administrative / Procedures</strong> — Safe work instructions, training, supervision, signage, shift limits, lone-worker check-ins.</div>
+            </div>
+            <div class="hierarchy-item">
+              <div class="hierarchy-num" style="background:#64748b">5</div>
+              <div><strong class="text-slate-800">PPE</strong> — Personal Protective Equipment (gloves, hi-vis, hard hat). Always the <em>last resort</em> — it doesn't remove the hazard.</div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 mt-3">Measures reduce <em>likelihood</em> (e.g. training, barriers) and/or <em>consequence</em> (e.g. PPE, emergency procedures). After measures, re-score to find the <strong>residual risk</strong>.</p>
+        </div>
+      </details>
+
+      <!-- Worked examples -->
+      <details class="learn-section card p-0 overflow-hidden">
+        <summary>Worked Examples from Travel &amp; Service</summary>
+        <div class="learn-body space-y-4">
+
+          <div class="border rounded-lg p-4 bg-slate-50">
+            <p class="font-semibold text-slate-800 mb-2">🏨 Slippery hotel lobby floor</p>
+            <div class="grid sm:grid-cols-3 gap-2 text-sm">
+              <div><span class="text-xs font-semibold text-slate-500 block">Initial risk</span>Likelihood 4 × Consequence 3 = <strong class="zone-medium-text">12 Medium</strong></div>
+              <div><span class="text-xs font-semibold text-slate-500 block">Measures</span>Anti-slip matting (technical), wet floor signs (admin), staff spill-response procedure (admin)</div>
+              <div><span class="text-xs font-semibold text-slate-500 block">Residual risk</span>Likelihood 2 × Consequence 3 = <strong class="zone-low-text">6 Medium → 2×2=4 Low after further improvement</strong></div>
+            </div>
+          </div>
+
+          <div class="border rounded-lg p-4 bg-slate-50">
+            <p class="font-semibold text-slate-800 mb-2">🌙 Lone worker at reception overnight</p>
+            <div class="grid sm:grid-cols-3 gap-2 text-sm">
+              <div><span class="text-xs font-semibold text-slate-500 block">Initial risk</span>Likelihood 2 × Consequence 4 = <strong class="zone-medium-text">8 Medium</strong></div>
+              <div><span class="text-xs font-semibold text-slate-500 block">Measures</span>Regular check-in procedure (admin), panic button / duress alarm (technical), CCTV (technical)</div>
+              <div><span class="text-xs font-semibold text-slate-500 block">Residual risk</span>Likelihood 2 × Consequence 2 = <strong class="zone-low-text">4 Low</strong></div>
+            </div>
+          </div>
+
+          <div class="border rounded-lg p-4 bg-slate-50">
+            <p class="font-semibold text-slate-800 mb-2">🌿 Guest allergic reaction on a tour</p>
+            <div class="grid sm:grid-cols-3 gap-2 text-sm">
+              <div><span class="text-xs font-semibold text-slate-500 block">Initial risk</span>Likelihood 2 × Consequence 5 = <strong class="zone-high-text">10 Medium (close to High)</strong></div>
+              <div><span class="text-xs font-semibold text-slate-500 block">Measures</span>Pre-tour allergy questionnaire (admin), guide carries EpiPen (PPE/admin), first-aid trained guide (admin)</div>
+              <div><span class="text-xs font-semibold text-slate-500 block">Residual risk</span>Likelihood 1 × Consequence 4 = <strong class="zone-medium-text">4 Low</strong></div>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <div class="text-center pb-4">
+        <button onclick="switchTab('practice')" class="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors">
+          Go to Practice →
+        </button>
+      </div>
+    </div>
+
+    <!-- ============= PRACTICE TAB ============= -->
+    <div id="panel-practice" class="hidden">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+        <div class="flex flex-col xl:flex-row gap-6">
+
+          <!-- LEFT: Matrix + register -->
+          <div class="flex-1 min-w-0 space-y-5">
+
+            <!-- Matrix card -->
+            <div class="card">
+              <div class="flex items-center justify-between mb-3">
+                <h2 class="font-bold text-slate-800">Risk Matrix</h2>
+                <div class="flex gap-3 text-xs text-slate-500">
+                  <span class="flex items-center gap-1"><span class="w-3 h-3 rounded zone-low inline-block"></span>Low</span>
+                  <span class="flex items-center gap-1"><span class="w-3 h-3 rounded zone-medium inline-block"></span>Medium</span>
+                  <span class="flex items-center gap-1"><span class="w-3 h-3 rounded zone-high inline-block"></span>High</span>
+                </div>
+              </div>
+              <!-- Legend helper -->
+              <div class="flex gap-4 mb-3">
+                <span class="flex items-center gap-1.5 text-xs text-slate-500">
+                  <span class="w-4 h-4 rounded-full bg-indigo-500 border-2 border-white inline-block" style="box-shadow:0 0 0 2px #6366f1"></span>Initial risk
+                </span>
+                <span class="flex items-center gap-1.5 text-xs text-slate-500">
+                  <span class="w-4 h-4 rounded-full bg-purple-400 border-2 border-white inline-block opacity-80" style="box-shadow:0 0 0 2px #a855f7"></span>Residual risk
+                </span>
+              </div>
+              <div id="matrix-container" class="flex justify-center">
+                <!-- matrix rendered by JS -->
+              </div>
+            </div>
+
+            <!-- Hazard register -->
+            <div class="card">
+              <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <h2 class="font-bold text-slate-800">Hazard Register</h2>
+                <span class="text-xs text-slate-400">Sorted highest risk first</span>
+              </div>
+              <div id="hazard-register"></div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Add hazard panel -->
+          <div class="xl:w-80 flex-shrink-0">
+            <div class="card sticky top-4">
+              <h2 class="font-bold text-slate-800 mb-4">Add Hazard</h2>
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">Hazard / risk *</label>
+                  <input type="text" id="add-name" placeholder="e.g. Wet tour bus steps" maxlength="100" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">Area / location</label>
+                  <input type="text" id="add-area" placeholder="e.g. Bus entrance" maxlength="60" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 mb-2">
+                    Likelihood: <span id="add-l-val" class="text-indigo-600 font-bold">—</span>
+                  </label>
+                  <input type="range" id="add-likelihood" min="1" max="5" value="2" oninput="updateAddSliders()" />
+                  <div class="flex justify-between text-xs text-slate-400 mt-0.5">
+                    <span>1 Very unlikely</span><span>5 Almost certain</span>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 mb-2">
+                    Consequence: <span id="add-c-val" class="text-indigo-600 font-bold">—</span>
+                  </label>
+                  <input type="range" id="add-consequence" min="1" max="5" value="2" oninput="updateAddSliders()" />
+                  <div class="flex justify-between text-xs text-slate-400 mt-0.5">
+                    <span>1 Negligible</span><span>5 Catastrophic</span>
+                  </div>
+                </div>
+                <div id="add-score-preview" class="p-3 rounded-lg border text-sm font-semibold text-center transition-all"></div>
+                <button onclick="addHazard()" class="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors">
+                  + Add to register
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end tab panels -->
+</div><!-- end main app -->
+
+<script>
+// ============================================================
+// DATA MODEL
+// ============================================================
+const STORAGE_KEY = 'halisonRiskAssessment_v1';
+
+const SEED_HAZARDS = [
+  {
+    id: 'seed-1',
+    name: 'Slippery hotel lobby floor',
+    area: 'Hotel lobby',
+    likelihood: 4,
+    consequence: 3,
+    measures: 'Anti-slip matting installed at entrance\nWet floor signs deployed during cleaning\nStaff spill-response procedure in place',
+    rLikelihood: 2,
+    rConsequence: 3
+  },
+  {
+    id: 'seed-2',
+    name: 'Lone worker at reception overnight',
+    area: 'Reception desk',
+    likelihood: 2,
+    consequence: 4,
+    measures: 'Regular 2-hour check-in with duty manager\nPanic button / duress alarm installed\nCCTV coverage of all entrances',
+    rLikelihood: 2,
+    rConsequence: 2
+  },
+  {
+    id: 'seed-3',
+    name: 'Guest allergic reaction on guided tour',
+    area: 'Tour (outdoor)',
+    likelihood: 2,
+    consequence: 5,
+    measures: 'Pre-tour allergy questionnaire for all guests\nTour guide carries EpiPen and first-aid kit\nGuide holds current first-aid certificate',
+    rLikelihood: 1,
+    rConsequence: 4
+  }
+];
+
+function loadHazards() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch(e) {}
+  return JSON.parse(JSON.stringify(SEED_HAZARDS));
+}
+
+function saveHazards() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(hazards));
+}
+
+let hazards = loadHazards();
+
+// ============================================================
+// SCORING
+// ============================================================
+function score(l, c) { return l * c; }
+
+function zone(s) {
+  if (s <= 4) return 'low';
+  if (s <= 12) return 'medium';
+  return 'high';
+}
+
+function zoneLabel(s) {
+  const z = zone(s);
+  return z.charAt(0).toUpperCase() + z.slice(1);
+}
+
+function zoneBadgeClass(s) {
+  const z = zone(s);
+  if (z === 'low') return 'zone-low-bg zone-low-text';
+  if (z === 'medium') return 'zone-medium-bg zone-medium-text';
+  return 'zone-high-bg zone-high-text';
+}
+
+function zoneDotBg(s) {
+  const z = zone(s);
+  if (z === 'low') return '#22c55e';
+  if (z === 'medium') return '#eab308';
+  return '#ef4444';
+}
+
+const LIKELIHOOD_LABELS = ['', 'Very unlikely', 'Unlikely', 'Possible', 'Likely', 'Almost certain'];
+const CONSEQUENCE_LABELS = ['', 'Negligible', 'Minor', 'Moderate', 'Serious', 'Catastrophic'];
+
+// ============================================================
+// MATRIX CELL COLOURS
+// ============================================================
+function cellZone(l, c) {
+  // l = likelihood row (1=bottom), c = consequence col (1=left)
+  return zone(l * c);
+}
+
+function cellBg(l, c) {
+  const z = cellZone(l, c);
+  if (z === 'low') return '#bbf7d0';
+  if (z === 'medium') return '#fef08a';
+  return '#fecaca';
+}
+
+// ============================================================
+// RENDER MATRIX
+// ============================================================
+function buildMatrix(containerId, small) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  // Build grid: rows=likelihood 5→1 (top=5), cols=consequence 1→5
+  let html = '';
+  const clsGrid = small ? 'present-matrix-grid' : 'matrix-grid';
+  html += `<div class="${clsGrid}">`;
+
+  // Rows: likelihood 5 down to 1
+  for (let l = 5; l >= 1; l--) {
+    // Row label
+    html += `<div class="matrix-axis-label row-label" style="font-size:0.6rem;line-height:1;text-align:right;padding-right:3px;color:${small?'#94a3b8':'#64748b'}">${l}<br><span style="font-size:0.5rem">${LIKELIHOOD_LABELS[l].split(' ')[0]}</span></div>`;
+    // Cells: consequence 1→5
+    for (let c = 1; c <= 5; c++) {
+      const s = l * c;
+      const bg = cellBg(l, c);
+      const cellId = small ? '' : `id="cell-${l}-${c}"`;
+      const cellCls = small ? 'present-cell' : 'matrix-cell';
+      html += `<div ${cellId} class="${cellCls}" style="background:${bg};" data-l="${l}" data-c="${c}">`;
+      // Score label (small)
+      if (!small) {
+        html += `<span style="font-size:0.6rem;color:rgba(0,0,0,0.25);font-weight:700;pointer-events:none;user-select:none">${s}</span>`;
+      }
+      // Hazard dots inserted by JS
+      html += `</div>`;
+    }
+  }
+
+  // Bottom row: consequence labels
+  html += `<div class="matrix-axis-label" style="font-size:0.55rem;color:${small?'#94a3b8':'#64748b'}">Con↓<br>Like→</div>`;
+  for (let c = 1; c <= 5; c++) {
+    html += `<div class="matrix-axis-label" style="font-size:0.6rem;color:${small?'#94a3b8':'#64748b'};line-height:1">${c}<br><span style="font-size:0.5rem">${CONSEQUENCE_LABELS[c].split(' ')[0]}</span></div>`;
+  }
+
+  html += `</div>`;
+
+  // Axis titles
+  if (!small) {
+    html = `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;width:100%">
+        <div style="writing-mode:vertical-lr;transform:rotate(180deg);font-size:0.65rem;font-weight:700;color:#64748b;letter-spacing:0.05em;margin-bottom:4px;align-self:flex-start;margin-left:0">LIKELIHOOD →</div>
+        <div style="display:flex;align-items:flex-end;gap:2px;width:100%">
+          ${html}
+        </div>
+        <div style="font-size:0.65rem;font-weight:700;color:#64748b;letter-spacing:0.05em;margin-top:2px">CONSEQUENCE →</div>
+      </div>`;
+  }
+
+  container.innerHTML = html;
+  plotDots(containerId, small);
+}
+
+function plotDots(containerId, small) {
+  // Clear existing dots
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.querySelectorAll('.h-dot').forEach(el => el.remove());
+
+  if (small) {
+    // For present mode: find cells by position
+    plotDotsPresent(containerId);
+    return;
+  }
+
+  // Group hazards by initial cell
+  const cellMap = {};
+  hazards.forEach(h => {
+    const key = `${h.likelihood}-${h.consequence}`;
+    if (!cellMap[key]) cellMap[key] = [];
+    cellMap[key].push(h);
+  });
+
+  Object.entries(cellMap).forEach(([key, hs]) => {
+    const [l, c] = key.split('-').map(Number);
+    const cellEl = document.getElementById(`cell-${l}-${c}`);
+    if (!cellEl) return;
+
+    const count = hs.length;
+    hs.forEach((h, idx) => {
+      const initScore = score(h.likelihood, h.consequence);
+      const dot = document.createElement('div');
+      dot.className = 'h-dot' + (count > 1 ? ' h-dot-multi' : '');
+      dot.style.background = '#6366f1';
+      dot.style.border = '2px solid rgba(255,255,255,0.85)';
+      // Offset multiple dots
+      if (count > 1) {
+        const angle = (idx / count) * 2 * Math.PI;
+        const r = 8;
+        dot.style.transform = `translate(${Math.cos(angle)*r}px, ${Math.sin(angle)*r}px)`;
+      }
+      dot.title = h.name;
+      dot.innerHTML = `<span class="cell-tooltip">${h.name}</span>${count > 1 ? count : ''}`;
+      dot.onclick = (e) => { e.stopPropagation(); openEditModal(h.id); };
+      cellEl.appendChild(dot);
+
+      // Residual dot (if measures exist and residual ≠ initial)
+      const rL = h.rLikelihood || h.likelihood;
+      const rC = h.rConsequence || h.consequence;
+      if (rL !== h.likelihood || rC !== h.consequence) {
+        const rScore = score(rL, rC);
+        const rCellEl = document.getElementById(`cell-${rL}-${rC}`);
+        if (rCellEl) {
+          const rDot = document.createElement('div');
+          rDot.className = 'h-dot';
+          rDot.style.background = '#a855f7';
+          rDot.style.border = '2px solid rgba(255,255,255,0.85)';
+          rDot.style.opacity = '0.75';
+          rDot.style.width = '16px';
+          rDot.style.height = '16px';
+          rDot.innerHTML = `<span class="cell-tooltip">${h.name} (residual)</span>`;
+          rDot.onclick = (e) => { e.stopPropagation(); openEditModal(h.id); };
+          rCellEl.appendChild(rDot);
+        }
+      }
+    });
+  });
+}
+
+function plotDotsPresent(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const grid = container.querySelector('.present-matrix-grid');
+  if (!grid) return;
+
+  // cells: grid children; layout: col0=labels, col1-5=consequence 1-5; row0-4=likelihood 5-1, row5=labels
+  hazards.forEach(h => {
+    const l = h.likelihood;
+    const c = h.consequence;
+    // row index: l=5 → row 0, l=1 → row 4
+    const rowIdx = 5 - l;
+    // col index: c=1 → col 1
+    const colIdx = c;
+    // grid is 6 cols × 6 rows
+    const cellIdx = rowIdx * 6 + colIdx;
+    const cells = grid.querySelectorAll('.present-cell');
+    // cells array maps only to present-cells (not axis divs), rebuild mapping
+    const allChildren = Array.from(grid.children);
+    // row rowIdx, col colIdx (0-indexed in 6-col grid)
+    const linearIdx = rowIdx * 6 + colIdx;
+    const cellEl = allChildren[linearIdx];
+    if (!cellEl) return;
+
+    const dot = document.createElement('div');
+    dot.style.cssText = 'width:14px;height:14px;border-radius:50%;background:#6366f1;border:2px solid rgba(255,255,255,0.9);position:absolute;z-index:5;';
+    dot.title = h.name;
+    cellEl.style.position = 'relative';
+    cellEl.appendChild(dot);
+  });
+}
+
+// ============================================================
+// RENDER HAZARD REGISTER
+// ============================================================
+function renderRegister() {
+  const el = document.getElementById('hazard-register');
+  if (!el) return;
+
+  if (hazards.length === 0) {
+    el.innerHTML = `
+      <div class="empty-state">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <p class="font-semibold text-slate-400 mt-2">No hazards yet</p>
+        <p class="text-sm text-slate-300 mt-1">Use the panel on the right to add your first hazard.</p>
+      </div>`;
+    return;
+  }
+
+  const sorted = [...hazards].sort((a, b) => score(b.likelihood, b.consequence) - score(a.likelihood, a.consequence));
+
+  el.innerHTML = sorted.map(h => {
+    const iScore = score(h.likelihood, h.consequence);
+    const rL = h.rLikelihood || h.likelihood;
+    const rC = h.rConsequence || h.consequence;
+    const rScore = score(rL, rC);
+    const hasMeasures = h.measures && h.measures.trim().length > 0;
+    const measureList = hasMeasures ? h.measures.split('\n').filter(m => m.trim()) : [];
+    const residualChanged = rL !== h.likelihood || rC !== h.consequence;
+
+    return `
+    <div class="hazard-card mb-3">
+      <div class="p-3">
+        <div class="flex items-start gap-3">
+          <!-- Risk score circle -->
+          <div class="flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center font-bold text-white text-base" style="background:${zoneDotBg(iScore)}">
+            ${iScore}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-2 flex-wrap">
+              <div>
+                <p class="font-semibold text-slate-800 text-sm leading-tight">${escHtml(h.name)}</p>
+                ${h.area ? `<p class="text-xs text-slate-400 mt-0.5">${escHtml(h.area)}</p>` : ''}
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <button onclick="openEditModal('${h.id}')" class="text-slate-400 hover:text-indigo-600 transition-colors" title="Edit">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                </button>
+                <button onclick="deleteHazard('${h.id}')" class="text-slate-400 hover:text-red-500 transition-colors" title="Delete">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </div>
+            </div>
+            <!-- Scores row -->
+            <div class="flex items-center gap-2 mt-2 flex-wrap">
+              <span class="risk-badge ${zoneBadgeClass(iScore)}">
+                L${h.likelihood}×C${h.consequence} = ${iScore} ${zoneLabel(iScore)}
+              </span>
+              ${residualChanged ? `
+                <span class="text-slate-400 text-xs">→</span>
+                <span class="risk-badge ${zoneBadgeClass(rScore)} opacity-90">
+                  Residual L${rL}×C${rC} = ${rScore} ${zoneLabel(rScore)}
+                </span>
+              ` : ''}
+            </div>
+            ${measureList.length > 0 ? `
+              <div class="mt-2 flex flex-wrap gap-1">
+                ${measureList.map(m => `<span class="measure-chip">${escHtml(m)}</span>`).join('')}
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// RENDER PRESENT MODE
+// ============================================================
+function renderPresent() {
+  buildMatrix('present-matrix-container', true);
+
+  const listEl = document.getElementById('present-risk-list');
+  if (!listEl) return;
+
+  const sorted = [...hazards].sort((a, b) => score(b.likelihood, b.consequence) - score(a.likelihood, a.consequence));
+
+  if (sorted.length === 0) {
+    listEl.innerHTML = '<p class="text-slate-500 text-sm">No hazards added yet.</p>';
+    return;
+  }
+
+  listEl.innerHTML = sorted.map((h, idx) => {
+    const iScore = score(h.likelihood, h.consequence);
+    const rL = h.rLikelihood || h.likelihood;
+    const rC = h.rConsequence || h.consequence;
+    const rScore = score(rL, rC);
+    const residualChanged = rL !== h.likelihood || rC !== h.consequence;
+    const zBg = zoneDotBg(iScore);
+
+    return `
+    <div style="background:#1e293b;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:12px;">
+      <div style="width:36px;height:36px;border-radius:50%;background:${zBg};display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:0.9rem;flex-shrink:0">${iScore}</div>
+      <div style="flex:1;min-width:0">
+        <p style="font-weight:600;color:#f1f5f9;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(h.name)}</p>
+        <p style="color:#94a3b8;font-size:0.72rem;margin-top:1px">${escHtml(h.area || '')}${h.area ? ' · ' : ''}L${h.likelihood} × C${h.consequence}${residualChanged ? ` → Residual ${rScore}` : ''}</p>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// FULL RENDER
+// ============================================================
+function render() {
+  buildMatrix('matrix-container', false);
+  renderRegister();
+  updateAddSliders();
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(tab) {
+  document.getElementById('panel-learn').classList.toggle('hidden', tab !== 'learn');
+  document.getElementById('panel-practice').classList.toggle('hidden', tab !== 'practice');
+  document.getElementById('tab-learn').classList.toggle('active', tab === 'learn');
+  document.getElementById('tab-practice').classList.toggle('active', tab === 'practice');
+  if (tab === 'practice') render();
+}
+
+// ============================================================
+// ADD HAZARD (quick panel)
+// ============================================================
+function updateAddSliders() {
+  const l = parseInt(document.getElementById('add-likelihood').value);
+  const c = parseInt(document.getElementById('add-consequence').value);
+  document.getElementById('add-l-val').textContent = `${l} – ${LIKELIHOOD_LABELS[l]}`;
+  document.getElementById('add-c-val').textContent = `${c} – ${CONSEQUENCE_LABELS[c]}`;
+  const s = score(l, c);
+  const preview = document.getElementById('add-score-preview');
+  preview.className = `p-3 rounded-lg border text-sm font-semibold text-center transition-all ${zoneBadgeClass(s)}`;
+  preview.textContent = `Score: ${s} — ${zoneLabel(s)} risk`;
+}
+
+function addHazard() {
+  const name = document.getElementById('add-name').value.trim();
+  if (!name) { document.getElementById('add-name').focus(); return; }
+  const l = parseInt(document.getElementById('add-likelihood').value);
+  const c = parseInt(document.getElementById('add-consequence').value);
+  const h = {
+    id: 'h-' + Date.now() + '-' + Math.random().toString(36).slice(2,6),
+    name,
+    area: document.getElementById('add-area').value.trim(),
+    likelihood: l,
+    consequence: c,
+    measures: '',
+    rLikelihood: l,
+    rConsequence: c
+  };
+  hazards.push(h);
+  saveHazards();
+  document.getElementById('add-name').value = '';
+  document.getElementById('add-area').value = '';
+  render();
+}
+
+// ============================================================
+// EDIT MODAL
+// ============================================================
+let editingId = null;
+
+function openEditModal(id) {
+  editingId = id;
+  const h = hazards.find(x => x.id === id);
+  if (!h) return;
+  document.getElementById('edit-modal-title').textContent = 'Edit Hazard';
+  document.getElementById('ef-name').value = h.name;
+  document.getElementById('ef-area').value = h.area || '';
+  document.getElementById('ef-likelihood').value = h.likelihood;
+  document.getElementById('ef-consequence').value = h.consequence;
+  document.getElementById('ef-measures').value = h.measures || '';
+  document.getElementById('ef-r-likelihood').value = h.rLikelihood || h.likelihood;
+  document.getElementById('ef-r-consequence').value = h.rConsequence || h.consequence;
+  updateSliderLabels();
+  document.getElementById('edit-modal').classList.add('open');
+  document.getElementById('ef-name').focus();
+}
+
+function closeEditModal() {
+  editingId = null;
+  document.getElementById('edit-modal').classList.remove('open');
+}
+
+function saveHazard(e) {
+  e.preventDefault();
+  const name = document.getElementById('ef-name').value.trim();
+  if (!name) return;
+  if (editingId) {
+    const idx = hazards.findIndex(x => x.id === editingId);
+    if (idx >= 0) {
+      hazards[idx] = {
+        ...hazards[idx],
+        name,
+        area: document.getElementById('ef-area').value.trim(),
+        likelihood: parseInt(document.getElementById('ef-likelihood').value),
+        consequence: parseInt(document.getElementById('ef-consequence').value),
+        measures: document.getElementById('ef-measures').value.trim(),
+        rLikelihood: parseInt(document.getElementById('ef-r-likelihood').value),
+        rConsequence: parseInt(document.getElementById('ef-r-consequence').value)
+      };
+    }
+  }
+  saveHazards();
+  closeEditModal();
+  render();
+}
+
+function updateSliderLabels() {
+  const l = parseInt(document.getElementById('ef-likelihood').value);
+  const c = parseInt(document.getElementById('ef-consequence').value);
+  const rl = parseInt(document.getElementById('ef-r-likelihood').value);
+  const rc = parseInt(document.getElementById('ef-r-consequence').value);
+  document.getElementById('ef-l-val').textContent = `${l} – ${LIKELIHOOD_LABELS[l]}`;
+  document.getElementById('ef-c-val').textContent = `${c} – ${CONSEQUENCE_LABELS[c]}`;
+  document.getElementById('ef-rl-val').textContent = `${rl} – ${LIKELIHOOD_LABELS[rl]}`;
+  document.getElementById('ef-rc-val').textContent = `${rc} – ${CONSEQUENCE_LABELS[rc]}`;
+
+  const s = score(l, c);
+  const rs = score(rl, rc);
+  const preview = document.getElementById('ef-score-preview');
+  preview.className = `p-3 rounded-lg border text-sm font-semibold text-center transition-all ${zoneBadgeClass(s)}`;
+  preview.textContent = `Initial score: ${s} — ${zoneLabel(s)} risk`;
+
+  const rPreview = document.getElementById('ef-residual-preview');
+  rPreview.className = `p-3 rounded-lg border text-sm font-semibold text-center transition-all ${zoneBadgeClass(rs)}`;
+  rPreview.textContent = `Residual score: ${rs} — ${zoneLabel(rs)} risk`;
+}
+
+// ============================================================
+// DELETE
+// ============================================================
+function deleteHazard(id) {
+  hazards = hazards.filter(h => h.id !== id);
+  saveHazards();
+  render();
+}
+
+// ============================================================
+// RESET
+// ============================================================
+function openResetModal() {
+  document.getElementById('reset-modal').classList.add('open');
+}
+function closeResetModal() {
+  document.getElementById('reset-modal').classList.remove('open');
+}
+function confirmReset() {
+  hazards = JSON.parse(JSON.stringify(SEED_HAZARDS));
+  saveHazards();
+  closeResetModal();
+  render();
+}
+
+// ============================================================
+// PRESENT MODE
+// ============================================================
+function openPresent() {
+  renderPresent();
+  document.getElementById('present-overlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closePresent() {
+  document.getElementById('present-overlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePresent();
+});
+
+// ============================================================
+// UTILS
+// ============================================================
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  updateAddSliders();
+  updateSliderLabels();
+  // Practice tab renders lazily; Learn is default
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<!--
+  Time Zones & Flight — Halison App Studio example
+
+  A world clock plus a flight-arrival calculator: enter a departure time and a
+  flight duration and see the local arrival time across time zones, layovers
+  included. Saved cities persist in your browser.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Time Zones &amp; Flight — App Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+
+    /* Clock ticks */
+    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.2} }
+    .blink { animation: pulse-dot 1s ease-in-out infinite; }
+
+    /* Tab styling */
+    .tab-btn { transition: background 0.15s, color 0.15s; }
+    .tab-btn.active { background: #1e3a5f; color: #fff; }
+    .tab-btn:not(.active) { background: #e2e8f0; color: #334155; }
+
+    /* Clock card */
+    .city-card { transition: box-shadow 0.15s; }
+    .city-card:hover { box-shadow: 0 4px 18px rgba(30,58,95,0.15); }
+
+    /* Pill tags */
+    .tz-pill {
+      font-size: 0.72rem; padding: 2px 7px;
+      border-radius: 999px; font-weight: 600; letter-spacing: 0.02em;
+    }
+
+    /* Flight result highlight */
+    .result-highlight { background: linear-gradient(135deg,#0f2944 0%,#1e4976 100%); }
+
+    /* Inputs */
+    select, input[type="date"], input[type="time"], input[type="number"] {
+      appearance: none; -webkit-appearance: none;
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
+
+    /* Scrollable city picker */
+    #city-picker-list { max-height: 280px; overflow-y: auto; }
+
+    /* Info banner */
+    .dst-note { font-size: 0.75rem; }
+
+    @media (max-width: 640px) {
+      .clock-time { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col">
+
+<!-- ===== HEADER ===== -->
+<header class="bg-[#0f2944] text-white shadow-lg">
+  <div class="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
+    <div class="text-3xl select-none">🌍</div>
+    <div>
+      <h1 class="text-xl sm:text-2xl font-bold leading-tight">Time Zones &amp; Flight</h1>
+      <p class="text-blue-300 text-sm">World clock + flight-arrival calculator</p>
+    </div>
+    <div class="ml-auto text-right hidden sm:block">
+      <div id="utc-clock" class="text-lg font-mono font-bold text-blue-200"></div>
+      <div class="text-xs text-blue-400">UTC</div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== TABS ===== -->
+<div class="bg-[#162e4d] border-b border-[#1e3a5f]">
+  <div class="max-w-5xl mx-auto px-4 flex gap-1 pt-2 pb-0">
+    <button id="tab-clock" onclick="switchTab('clock')" class="tab-btn active rounded-t-lg px-5 py-2 text-sm font-semibold">
+      🕐 World Clock
+    </button>
+    <button id="tab-flight" onclick="switchTab('flight')" class="tab-btn rounded-t-lg px-5 py-2 text-sm font-semibold">
+      ✈️ Flight Calculator
+    </button>
+  </div>
+</div>
+
+<!-- ===== DST NOTE ===== -->
+<div class="bg-amber-50 border-b border-amber-200">
+  <div class="max-w-5xl mx-auto px-4 py-1.5 dst-note text-amber-800">
+    ⚠️ Fixed UTC offsets are used — daylight saving time is <strong>not</strong> applied. Times are approximate.
+  </div>
+</div>
+
+<!-- ===== MAIN ===== -->
+<main class="max-w-5xl mx-auto px-4 py-6 flex-1 w-full">
+
+  <!-- ======= CLOCK TAB ======= -->
+  <section id="pane-clock">
+
+    <!-- Top bar -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <h2 class="text-lg font-bold text-slate-800">Your Cities</h2>
+      <button onclick="openCityPicker()" class="bg-[#1e3a5f] hover:bg-[#265080] text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition">
+        <span class="text-base">+</span> Add / Remove Cities
+      </button>
+    </div>
+
+    <!-- City clock cards -->
+    <div id="clock-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+    <!-- Empty state -->
+    <div id="clock-empty" class="hidden text-center py-16 text-slate-400">
+      <div class="text-5xl mb-3">🌐</div>
+      <p class="text-lg font-medium">No cities selected.</p>
+      <p class="text-sm mt-1">Click <strong>Add / Remove Cities</strong> to get started.</p>
+    </div>
+
+  </section>
+
+  <!-- ======= FLIGHT TAB ======= -->
+  <section id="pane-flight" class="hidden">
+
+    <div class="grid lg:grid-cols-2 gap-6">
+
+      <!-- INPUTS -->
+      <div class="bg-white rounded-xl shadow p-5 border border-slate-200 space-y-5">
+        <h2 class="text-lg font-bold text-[#0f2944]">Flight Details</h2>
+
+        <!-- Departure -->
+        <fieldset class="space-y-2">
+          <legend class="font-semibold text-slate-700 text-sm uppercase tracking-wide mb-1">Departure</legend>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-xs text-slate-500 block mb-1">City</label>
+              <select id="dep-city" onchange="calcFlight()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-400 outline-none"></select>
+            </div>
+            <div>
+              <label class="text-xs text-slate-500 block mb-1">Date</label>
+              <input id="dep-date" type="date" onchange="calcFlight()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none" />
+            </div>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500 block mb-1">Local departure time</label>
+            <input id="dep-time" type="time" onchange="calcFlight()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none" />
+          </div>
+        </fieldset>
+
+        <!-- Flight duration -->
+        <fieldset class="space-y-2">
+          <legend class="font-semibold text-slate-700 text-sm uppercase tracking-wide mb-1">Flight Duration</legend>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-xs text-slate-500 block mb-1">Hours</label>
+              <input id="dur-h" type="number" min="0" max="24" value="10" onchange="calcFlight()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none" />
+            </div>
+            <div>
+              <label class="text-xs text-slate-500 block mb-1">Minutes</label>
+              <input id="dur-m" type="number" min="0" max="59" value="30" onchange="calcFlight()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none" />
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Layover -->
+        <fieldset class="space-y-2">
+          <legend class="font-semibold text-slate-700 text-sm uppercase tracking-wide mb-1">Layover (optional)</legend>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-xs text-slate-500 block mb-1">Hours</label>
+              <input id="lay-h" type="number" min="0" max="48" value="1" onchange="calcFlight()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none" />
+            </div>
+            <div>
+              <label class="text-xs text-slate-500 block mb-1">Minutes</label>
+              <input id="lay-m" type="number" min="0" max="59" value="30" onchange="calcFlight()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none" />
+            </div>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500 block mb-1">Layover city (label only)</label>
+            <select id="lay-city" onchange="calcFlight()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-400 outline-none"></select>
+          </div>
+        </fieldset>
+
+        <!-- Arrival city -->
+        <fieldset class="space-y-2">
+          <legend class="font-semibold text-slate-700 text-sm uppercase tracking-wide mb-1">Arrival</legend>
+          <div>
+            <label class="text-xs text-slate-500 block mb-1">City</label>
+            <select id="arr-city" onchange="calcFlight()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-blue-400 outline-none"></select>
+          </div>
+        </fieldset>
+
+      </div>
+
+      <!-- RESULTS -->
+      <div class="space-y-4">
+
+        <!-- Main result card -->
+        <div id="result-card" class="result-highlight rounded-xl shadow-lg p-6 text-white">
+          <div class="text-blue-300 text-sm font-semibold uppercase tracking-wide mb-3">Arrival</div>
+          <div id="res-arrival-time" class="text-4xl sm:text-5xl font-bold font-mono mb-1">—</div>
+          <div id="res-arrival-date" class="text-blue-200 text-base mb-4">—</div>
+          <div id="res-day-diff" class="text-sm font-medium mb-4"></div>
+          <div id="res-plain" class="bg-white/10 rounded-lg p-3 text-sm leading-relaxed text-blue-100 italic"></div>
+        </div>
+
+        <!-- Breakdown table -->
+        <div class="bg-white rounded-xl shadow p-5 border border-slate-200">
+          <h3 class="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">Time Zone Breakdown</h3>
+          <table class="w-full text-sm">
+            <tbody id="tz-breakdown" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+
+        <!-- Travel time summary -->
+        <div id="travel-summary" class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-600 space-y-1"></div>
+
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+<!-- ===== CITY PICKER MODAL ===== -->
+<div id="modal-overlay" onclick="closeCityPicker()" class="hidden fixed inset-0 bg-black/50 z-40 flex items-center justify-center p-4">
+  <div onclick="event.stopPropagation()" class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col z-50">
+    <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+      <h2 class="text-lg font-bold text-slate-800">Select Cities</h2>
+      <button onclick="closeCityPicker()" class="text-slate-400 hover:text-slate-700 text-2xl leading-none">&times;</button>
+    </div>
+    <div class="px-4 py-2">
+      <input id="city-search" oninput="filterCities()" placeholder="Search city…" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none" />
+    </div>
+    <div id="city-picker-list" class="flex-1 overflow-y-auto px-3 pb-3 space-y-1"></div>
+    <div class="px-5 py-3 border-t border-slate-100 flex justify-end">
+      <button onclick="closeCityPicker()" class="bg-[#1e3a5f] hover:bg-[#265080] text-white px-5 py-2 rounded-lg text-sm font-semibold transition">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCRIPT ===== -->
+<script>
+'use strict';
+
+/* -------------------------------------------------------
+   CITY TABLE — fixed UTC offsets (DST not applied)
+   ------------------------------------------------------- */
+const CITIES = [
+  { name: 'Oslo',         country: 'Norway',      offset: 1,    flag: '🇳🇴' },
+  { name: 'London',       country: 'UK',           offset: 0,    flag: '🇬🇧' },
+  { name: 'Reykjavik',    country: 'Iceland',      offset: 0,    flag: '🇮🇸' },
+  { name: 'Lisbon',       country: 'Portugal',     offset: 0,    flag: '🇵🇹' },
+  { name: 'Paris',        country: 'France',       offset: 1,    flag: '🇫🇷' },
+  { name: 'Berlin',       country: 'Germany',      offset: 1,    flag: '🇩🇪' },
+  { name: 'Rome',         country: 'Italy',        offset: 1,    flag: '🇮🇹' },
+  { name: 'Cairo',        country: 'Egypt',        offset: 2,    flag: '🇪🇬' },
+  { name: 'Cape Town',    country: 'South Africa', offset: 2,    flag: '🇿🇦' },
+  { name: 'Istanbul',     country: 'Turkey',       offset: 3,    flag: '🇹🇷' },
+  { name: 'Nairobi',      country: 'Kenya',        offset: 3,    flag: '🇰🇪' },
+  { name: 'Dubai',        country: 'UAE',          offset: 4,    flag: '🇦🇪' },
+  { name: 'Mumbai',       country: 'India',        offset: 5.5,  flag: '🇮🇳' },
+  { name: 'Dhaka',        country: 'Bangladesh',   offset: 6,    flag: '🇧🇩' },
+  { name: 'Bangkok',      country: 'Thailand',     offset: 7,    flag: '🇹🇭' },
+  { name: 'Singapore',    country: 'Singapore',    offset: 8,    flag: '🇸🇬' },
+  { name: 'Kuala Lumpur', country: 'Malaysia',     offset: 8,    flag: '🇲🇾' },
+  { name: 'Beijing',      country: 'China',        offset: 8,    flag: '🇨🇳' },
+  { name: 'Tokyo',        country: 'Japan',        offset: 9,    flag: '🇯🇵' },
+  { name: 'Sydney',       country: 'Australia',    offset: 10,   flag: '🇦🇺' },
+  { name: 'Auckland',     country: 'New Zealand',  offset: 12,   flag: '🇳🇿' },
+  { name: 'São Paulo',    country: 'Brazil',       offset: -3,   flag: '🇧🇷' },
+  { name: 'New York',     country: 'USA',          offset: -5,   flag: '🇺🇸' },
+  { name: 'Chicago',      country: 'USA',          offset: -6,   flag: '🇺🇸' },
+  { name: 'Denver',       country: 'USA',          offset: -7,   flag: '🇺🇸' },
+  { name: 'Los Angeles',  country: 'USA',          offset: -8,   flag: '🇺🇸' },
+  { name: 'Anchorage',    country: 'USA',          offset: -9,   flag: '🇺🇸' },
+  { name: 'Honolulu',     country: 'USA',          offset: -10,  flag: '🇺🇸' },
+];
+
+/* Default selected cities */
+const DEFAULT_SELECTED = ['Oslo', 'London', 'New York', 'Dubai', 'Bangkok', 'Tokyo'];
+const LS_KEY = 'tz_selected_cities';
+
+/* -------------------------------------------------------
+   STATE
+   ------------------------------------------------------- */
+let selectedCities = loadSelected();
+let clockInterval = null;
+
+/* -------------------------------------------------------
+   PERSISTENCE
+   ------------------------------------------------------- */
+function loadSelected() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr) && arr.length > 0) return arr;
+    }
+  } catch (e) {}
+  return [...DEFAULT_SELECTED];
+}
+
+function saveSelected() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(selectedCities)); } catch (e) {}
+}
+
+/* -------------------------------------------------------
+   HELPERS
+   ------------------------------------------------------- */
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+function offsetLabel(off) {
+  const sign = off >= 0 ? '+' : '−';
+  const abs = Math.abs(off);
+  const h = Math.floor(abs);
+  const m = Math.round((abs - h) * 60);
+  return `UTC${sign}${pad2(h)}${m > 0 ? ':' + pad2(m) : ''}`;
+}
+
+function cityByName(name) {
+  return CITIES.find(c => c.name === name);
+}
+
+/** Return local Date object for a city given its UTC offset */
+function cityLocalDate(city) {
+  const now = new Date();
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  return new Date(utcMs + city.offset * 3600000);
+}
+
+/** HH:MM:SS string for a Date */
+function timeStr(d) {
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+}
+
+/** Short day name for a Date */
+function dayStr(d) {
+  return d.toLocaleDateString('en-US', { weekday: 'short' });
+}
+
+/** Date string like "Mon 2 Jun" */
+function dateLong(d) {
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+/** Day difference label vs user's local date */
+function dayDiffLabel(cityDate) {
+  const localNow = new Date();
+  const localDay = new Date(localNow.getFullYear(), localNow.getMonth(), localNow.getDate()).getTime();
+  const cityDay  = new Date(cityDate.getFullYear(), cityDate.getMonth(), cityDate.getDate()).getTime();
+  const diff = Math.round((cityDay - localDay) / 86400000);
+  if (diff === 0) return null;
+  if (diff === 1) return '+1 day';
+  if (diff === -1) return '−1 day';
+  return `${diff > 0 ? '+' : ''}${diff} days`;
+}
+
+/* -------------------------------------------------------
+   TABS
+   ------------------------------------------------------- */
+function switchTab(tab) {
+  document.getElementById('pane-clock').classList.toggle('hidden', tab !== 'clock');
+  document.getElementById('pane-flight').classList.toggle('hidden', tab !== 'flight');
+  document.getElementById('tab-clock').classList.toggle('active', tab === 'clock');
+  document.getElementById('tab-flight').classList.toggle('active', tab === 'flight');
+}
+
+/* -------------------------------------------------------
+   CLOCK TAB
+   ------------------------------------------------------- */
+function renderClockCards() {
+  const container = document.getElementById('clock-cards');
+  const empty = document.getElementById('clock-empty');
+  container.innerHTML = '';
+
+  if (selectedCities.length === 0) {
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  selectedCities.forEach(name => {
+    const city = cityByName(name);
+    if (!city) return;
+    const d = cityLocalDate(city);
+
+    const offLabel = offsetLabel(city.offset);
+    const dayDiff = dayDiffLabel(d);
+
+    const card = document.createElement('div');
+    card.className = 'city-card bg-white rounded-xl shadow border border-slate-200 p-4 flex flex-col gap-2';
+    card.innerHTML = `
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">${city.flag}</span>
+          <div>
+            <div class="font-bold text-slate-800 leading-tight">${city.name}</div>
+            <div class="text-xs text-slate-400">${city.country}</div>
+          </div>
+        </div>
+        <button onclick="removeCity('${city.name}')" title="Remove" class="text-slate-300 hover:text-red-400 transition text-lg leading-none">&times;</button>
+      </div>
+      <div class="flex items-end justify-between">
+        <div class="clock-time font-mono font-bold text-2xl text-[#0f2944]" id="clock-${city.name.replace(/\s/g,'_')}">${timeStr(d)}</div>
+        <div class="text-right">
+          <span class="tz-pill bg-blue-100 text-blue-700">${offLabel}</span>
+          ${dayDiff ? `<span class="tz-pill bg-amber-100 text-amber-700 ml-1">${dayDiff}</span>` : ''}
+        </div>
+      </div>
+      <div class="text-xs text-slate-500">${dateLong(d)}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function tickClocks() {
+  selectedCities.forEach(name => {
+    const city = cityByName(name);
+    if (!city) return;
+    const el = document.getElementById('clock-' + city.name.replace(/\s/g,'_'));
+    if (el) el.textContent = timeStr(cityLocalDate(city));
+  });
+
+  // UTC clock in header
+  const now = new Date();
+  document.getElementById('utc-clock').textContent =
+    `${pad2(now.getUTCHours())}:${pad2(now.getUTCMinutes())}:${pad2(now.getUTCSeconds())}`;
+}
+
+function removeCity(name) {
+  selectedCities = selectedCities.filter(n => n !== name);
+  saveSelected();
+  renderClockCards();
+  updatePickerList();
+}
+
+/* -------------------------------------------------------
+   CITY PICKER MODAL
+   ------------------------------------------------------- */
+function openCityPicker() {
+  document.getElementById('city-search').value = '';
+  updatePickerList();
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+
+function closeCityPicker() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+}
+
+function filterCities() {
+  updatePickerList(document.getElementById('city-search').value.toLowerCase());
+}
+
+function updatePickerList(filter = '') {
+  const list = document.getElementById('city-picker-list');
+  list.innerHTML = '';
+  CITIES.filter(c => !filter || c.name.toLowerCase().includes(filter) || c.country.toLowerCase().includes(filter))
+    .forEach(c => {
+      const checked = selectedCities.includes(c.name);
+      const row = document.createElement('label');
+      row.className = 'flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 cursor-pointer text-sm select-none';
+      row.innerHTML = `
+        <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleCity('${c.name}', this.checked)"
+          class="w-4 h-4 rounded text-blue-600 cursor-pointer" />
+        <span class="text-lg">${c.flag}</span>
+        <span class="flex-1 font-medium text-slate-700">${c.name}</span>
+        <span class="text-xs text-slate-400">${c.country}</span>
+        <span class="tz-pill bg-slate-100 text-slate-500">${offsetLabel(c.offset)}</span>
+      `;
+      list.appendChild(row);
+    });
+}
+
+function toggleCity(name, checked) {
+  if (checked && !selectedCities.includes(name)) {
+    selectedCities.push(name);
+  } else if (!checked) {
+    selectedCities = selectedCities.filter(n => n !== name);
+  }
+  saveSelected();
+  renderClockCards();
+}
+
+/* -------------------------------------------------------
+   FLIGHT CALCULATOR
+   ------------------------------------------------------- */
+function populateCityDropdowns() {
+  const selects = ['dep-city', 'arr-city', 'lay-city'];
+  selects.forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '';
+    CITIES.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.name;
+      opt.textContent = `${c.flag} ${c.name} (${offsetLabel(c.offset)})`;
+      sel.appendChild(opt);
+    });
+  });
+
+  // Defaults: Oslo → Bangkok, layover at Dubai
+  document.getElementById('dep-city').value = 'Oslo';
+  document.getElementById('arr-city').value = 'Bangkok';
+  document.getElementById('lay-city').value = 'Dubai';
+
+  // Default date = today, time = 07:15
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = pad2(today.getMonth() + 1);
+  const dd = pad2(today.getDate());
+  document.getElementById('dep-date').value = `${yyyy}-${mm}-${dd}`;
+  document.getElementById('dep-time').value = '07:15';
+}
+
+function getNum(id) {
+  return Math.max(0, parseInt(document.getElementById(id).value) || 0);
+}
+
+function calcFlight() {
+  const depCityName = document.getElementById('dep-city').value;
+  const arrCityName = document.getElementById('arr-city').value;
+  const layCityName = document.getElementById('lay-city').value;
+  const depDateStr  = document.getElementById('dep-date').value;
+  const depTimeStr  = document.getElementById('dep-time').value;
+  const durH = getNum('dur-h');
+  const durM = getNum('dur-m');
+  const layH = getNum('lay-h');
+  const layM = getNum('lay-m');
+
+  const depCity = cityByName(depCityName);
+  const arrCity = cityByName(arrCityName);
+  const layCity = cityByName(layCityName);
+
+  if (!depCity || !arrCity || !depDateStr || !depTimeStr) return;
+
+  // Parse departure local time → UTC
+  // dep local = depDate + depTime in depCity's offset zone
+  const [yyyy, mon, day] = depDateStr.split('-').map(Number);
+  const [hh, mmm] = depTimeStr.split(':').map(Number);
+
+  // Departure as a UTC epoch:
+  // UTC = local - offset
+  const depLocalMinutes = hh * 60 + mmm;
+  const depOffsetMinutes = depCity.offset * 60;
+  const flightMinutes = durH * 60 + durM;
+  const layoverMinutes = layH * 60 + layM;
+  const totalAirMinutes = flightMinutes + layoverMinutes;
+
+  // Build departure UTC date
+  const depUTC = new Date(Date.UTC(yyyy, mon - 1, day, hh, mmm, 0));
+  depUTC.setUTCMinutes(depUTC.getUTCMinutes() - depOffsetMinutes);
+
+  // Arrival UTC
+  const arrUTC = new Date(depUTC.getTime() + totalAirMinutes * 60000);
+
+  // Arrival local in arrival city
+  const arrOffsetMinutes = arrCity.offset * 60;
+  const arrLocal = new Date(arrUTC.getTime() + arrOffsetMinutes * 60000);
+
+  // Day difference in local calendar days
+  const depLocalDate = new Date(Date.UTC(yyyy, mon - 1, day));
+  const arrLocalDate = new Date(Date.UTC(
+    arrLocal.getUTCFullYear(), arrLocal.getUTCMonth(), arrLocal.getUTCDate()
+  ));
+  const dayDiff = Math.round((arrLocalDate - depLocalDate) / 86400000);
+
+  // Departure local date object (for display)
+  const depLocalDisplay = new Date(depUTC.getTime() + depOffsetMinutes * 60000);
+
+  // ---- Render result card ----
+  const arrTimeStr = `${pad2(arrLocal.getUTCHours())}:${pad2(arrLocal.getUTCMinutes())}`;
+  const arrDateStr = arrLocal.toLocaleDateString('en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    timeZone: 'UTC'
+  });
+
+  document.getElementById('res-arrival-time').textContent = arrTimeStr;
+  document.getElementById('res-arrival-date').textContent = arrDateStr;
+
+  // Day difference badge
+  const dayDiffEl = document.getElementById('res-day-diff');
+  if (dayDiff === 0) {
+    dayDiffEl.innerHTML = '<span class="bg-green-500/30 text-green-200 rounded-full px-3 py-0.5 text-xs font-semibold">Same calendar day as departure</span>';
+  } else if (dayDiff === 1) {
+    dayDiffEl.innerHTML = '<span class="bg-amber-500/30 text-amber-200 rounded-full px-3 py-0.5 text-xs font-semibold">+1 day — you land the next day</span>';
+  } else if (dayDiff > 1) {
+    dayDiffEl.innerHTML = `<span class="bg-amber-500/30 text-amber-200 rounded-full px-3 py-0.5 text-xs font-semibold">+${dayDiff} days</span>`;
+  } else if (dayDiff < 0) {
+    dayDiffEl.innerHTML = `<span class="bg-purple-500/30 text-purple-200 rounded-full px-3 py-0.5 text-xs font-semibold">${dayDiff} day${Math.abs(dayDiff)>1?'s':''} — local clock appears to go back!</span>`;
+  }
+
+  // Plain-language description
+  const arrHour = arrLocal.getUTCHours();
+  const timeOfDayStr = arrHour < 6 ? 'in the early hours of' :
+                       arrHour < 12 ? 'in the morning on' :
+                       arrHour < 17 ? 'in the afternoon on' :
+                       arrHour < 21 ? 'in the evening on' : 'late at night on';
+  const totalH = Math.floor(totalAirMinutes / 60);
+  const totalM = totalAirMinutes % 60;
+  const durationStr = `${totalH}h${totalM > 0 ? ' ' + totalM + 'm' : ''}`;
+  const hasLayover = (layH + layM) > 0;
+
+  let plain = `You land at ${arrTimeStr} ${timeOfDayStr} ${arrDateStr} in ${arrCityName}`;
+  if (dayDiff !== 0) {
+    plain += ` — ${Math.abs(dayDiff)} calendar day${Math.abs(dayDiff)>1?'s':''} ${dayDiff>0?'after':'before'} you depart from ${depCityName}`;
+  }
+  plain += `. Total journey: ${durationStr}${hasLayover ? ` (including ${layH}h${layM>0?' '+layM+'m':''} layover in ${layCityName})` : ''}.`;
+
+  // Crossing-midnight / clock curiosity note
+  const depOffset = depCity.offset;
+  const arrOffset = arrCity.offset;
+  const offsetDiff = arrOffset - depOffset;
+  if (dayDiff < 0) {
+    plain += ` Because ${arrCityName} is ${Math.abs(offsetDiff)}h behind ${depCityName}, the local clock shows an earlier time even though real time passed.`;
+  } else if (dayDiff > 0 && flightMinutes < 600) {
+    plain += ` The date change is mainly due to crossing time zones, not just a very long flight.`;
+  }
+
+  document.getElementById('res-plain').textContent = plain;
+
+  // ---- Breakdown table ----
+  const depUTCStr = `${pad2(depUTC.getUTCHours())}:${pad2(depUTC.getUTCMinutes())} UTC, ${depUTC.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'})}`;
+  const arrUTCStr = `${pad2(arrUTC.getUTCHours())}:${pad2(arrUTC.getUTCMinutes())} UTC, ${arrUTC.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'})}`;
+
+  const depLocalStr = `${pad2(depLocalDisplay.getUTCHours())}:${pad2(depLocalDisplay.getUTCMinutes())} (${depCityName})`;
+
+  const rows = [
+    ['Departure (local)', depLocalStr, depCity.flag],
+    ['Departure offset',  offsetLabel(depCity.offset), '🌐'],
+    ['Departure (UTC)',   depUTCStr, '⏱️'],
+    ['Flight time',       `${durH}h ${pad2(durM)}m`, '✈️'],
+    hasLayover ? ['Layover', `${layH}h ${pad2(layM)}m in ${layCityName} ${layCity.flag}`, '🔁'] : null,
+    ['Total air time',    `${totalH}h ${pad2(totalAirMinutes % 60)}m`, '⏳'],
+    ['Arrival (UTC)',     arrUTCStr, '⏱️'],
+    ['Arrival offset',    offsetLabel(arrCity.offset), '🌐'],
+    ['Arrival (local)',   `${arrTimeStr} (${arrCityName})`, arrCity.flag],
+  ].filter(Boolean);
+
+  document.getElementById('tz-breakdown').innerHTML = rows.map(([label, value, icon]) => `
+    <tr class="text-sm">
+      <td class="py-1.5 text-slate-500 pr-2">${icon} ${label}</td>
+      <td class="py-1.5 font-mono font-semibold text-slate-800 text-right">${value}</td>
+    </tr>
+  `).join('');
+
+  // Travel summary
+  document.getElementById('travel-summary').innerHTML = `
+    <div class="flex gap-2 flex-wrap">
+      <span class="inline-flex items-center gap-1 bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-xs font-semibold">✈️ Flight: ${durH}h ${pad2(durM)}m</span>
+      ${hasLayover ? `<span class="inline-flex items-center gap-1 bg-amber-100 text-amber-800 rounded-full px-3 py-1 text-xs font-semibold">🔁 Layover: ${layH}h ${pad2(layM)}m</span>` : ''}
+      <span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 rounded-full px-3 py-1 text-xs font-semibold">⏳ Total: ${totalH}h ${pad2(totalAirMinutes % 60)}m</span>
+      <span class="inline-flex items-center gap-1 bg-purple-100 text-purple-800 rounded-full px-3 py-1 text-xs font-semibold">🌐 TZ shift: ${offsetDiff >= 0 ? '+' : ''}${offsetDiff}h</span>
+    </div>
+  `;
+}
+
+/* -------------------------------------------------------
+   INIT
+   ------------------------------------------------------- */
+function init() {
+  populateCityDropdowns();
+  renderClockCards();
+  calcFlight();
+
+  // Tick every second
+  function tick() {
+    tickClocks();
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

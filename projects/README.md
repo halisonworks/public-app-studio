@@ -10,14 +10,23 @@ into **category folders** — open one to browse just those, or see
 - [`business/`](./business/) — cap-table-simulator, runway-forecaster, loan-amortization, quote-builder, commission-calculator, ab-test-calculator, gantt-chart, invoice-generator, pricing-page, ux-retention-simulator
 - [`data/`](./data/) — sales-dashboard (React + recharts), chart-maker
 - [`personal/`](./personal/) — habit-tracker, pomodoro-timer, tip-calculator
+- [`travel/`](./travel/) — trip-budget, trip-split, timezones-flight, itinerary
+  (personal), and currency-exchange, complaint-handling, risk-assessment
+  (teaching tools for *Sales, Service and Tourism* / reiseliv)
 - [`creative/`](./creative/) — color-palette, infographic-stats, link-in-bio
 - [`game/`](./game/) — quiz-game
 - [`prototype/`](./prototype/) — saas-prototype
 - [`math/`](./math/) — interactive maths learning tools for the Norwegian
   curriculum (LK20), by level: [`NO-2P`](./math/NO-2P/) and [`NO-1P`](./math/NO-1P/)
+- [`genealogy/`](./genealogy/) — family-history tools: relationship-calculator,
+  ancestor-birth-date, soundex-coder, shared-cm-predictor, citation-builder,
+  ahnentafel-numbering, old-style-date-converter
+- [`diy-hobby/`](./diy-hobby/) — practical maker's calculators (English + `i18n/nb/`):
+  knitting-calculator, recipe-scaler, planting-calendar, material-calculator
 
 `price-calculator` and `persona-developer` also include a Norwegian (`i18n/nb/`)
-version; the `math/` tools are Norwegian throughout.
+version; every `diy-hobby/` project ships English + Norwegian, and the `math/`
+tools are Norwegian throughout.
 
 ## What a project looks like
 

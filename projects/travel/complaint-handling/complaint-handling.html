@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<!--
+  Complaint & Conflict Handling — Halison App Studio example
+
+  A service-recovery trainer for the Sales, Service and Tourism classroom: learn
+  a de-escalation model, then practise on branching customer-complaint scenarios
+  where your choices change the outcome. Fully offline — no AI, scripted
+  branches.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Complaint &amp; Conflict Handling</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+    /* Mood meter fill animation */
+    .mood-bar-fill { transition: width 0.5s ease, background-color 0.5s ease; }
+
+    /* Tab underline animation */
+    .tab-btn { position: relative; }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px; left: 0; right: 0; height: 3px;
+      border-radius: 2px;
+      background: #2563eb;
+    }
+
+    /* Card hover */
+    .option-card {
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      cursor: pointer;
+    }
+    .option-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+    .option-card:active { transform: translateY(0); }
+
+    /* Present mode */
+    #present-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: #0f172a;
+      z-index: 100;
+      overflow-y: auto;
+    }
+    #present-overlay.active { display: flex; flex-direction: column; }
+
+    /* Fade-in for nodes */
+    .node-enter { animation: fadeSlide 0.3s ease forwards; }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Score badge pulse */
+    @keyframes pop { 0%,100%{transform:scale(1)} 50%{transform:scale(1.25)} }
+    .score-pop { animation: pop 0.35s ease; }
+
+    /* Accordion */
+    .accordion-body { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+    .accordion-body.open { max-height: 800px; }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+    /* Prevent horizontal overflow */
+    html, body { overflow-x: hidden; max-width: 100vw; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800">
+
+<!-- ===================== MAIN SHELL ===================== -->
+<div id="app" class="flex flex-col min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl select-none">🛎️</span>
+      <div>
+        <h1 class="text-base font-bold text-slate-900 leading-tight">Complaint &amp; Conflict Handling</h1>
+        <p class="text-xs text-slate-500">Sales, Service &amp; Tourism · Service Recovery Trainer</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <span id="score-badge" class="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">Best: —</span>
+      <button id="present-btn" class="text-xs bg-slate-800 text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-colors">Present</button>
+    </div>
+  </header>
+
+  <!-- Tab bar -->
+  <nav class="bg-white border-b border-slate-200 px-4 flex gap-1">
+    <button class="tab-btn active text-sm font-medium py-3 px-4 text-blue-700" data-tab="learn">Learn</button>
+    <button class="tab-btn text-sm font-medium py-3 px-4 text-slate-500 hover:text-slate-700" data-tab="practice">Practice</button>
+    <button class="tab-btn text-sm font-medium py-3 px-4 text-slate-500 hover:text-slate-700" data-tab="present-setup">Present</button>
+  </nav>
+
+  <!-- Tab content -->
+  <main class="flex-1 overflow-y-auto">
+
+    <!-- ==================== LEARN TAB ==================== -->
+    <div id="tab-learn" class="tab-panel max-w-3xl mx-auto px-4 py-6 space-y-6">
+
+      <!-- Intro card -->
+      <div class="bg-blue-700 rounded-2xl p-6 text-white">
+        <p class="text-xs font-semibold uppercase tracking-widest opacity-75 mb-1">Why it matters</p>
+        <h2 class="text-xl font-bold mb-2">Complaints are opportunities</h2>
+        <p class="text-sm opacity-90 leading-relaxed">Studies show that a customer whose complaint is handled <em>well</em> can become more loyal than a customer who never had a problem at all. This is called the <strong>service recovery paradox</strong>. Your response in the first 30 seconds often determines the outcome.</p>
+      </div>
+
+      <!-- LAST Model -->
+      <section>
+        <h2 class="text-lg font-bold mb-3 text-slate-900">The LAST Model</h2>
+        <p class="text-sm text-slate-600 mb-4">A four-step de-escalation framework used in hospitality worldwide.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="bg-white rounded-xl border border-slate-200 p-4 flex gap-3 items-start">
+            <span class="text-2xl font-black text-blue-600 leading-none mt-0.5">L</span>
+            <div>
+              <p class="font-semibold text-slate-800">Listen</p>
+              <p class="text-sm text-slate-600 mt-0.5">Give the customer your full attention. Let them finish without interrupting. Nod. Use their name. Your body language signals that you take them seriously.</p>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 p-4 flex gap-3 items-start">
+            <span class="text-2xl font-black text-amber-500 leading-none mt-0.5">A</span>
+            <div>
+              <p class="font-semibold text-slate-800">Acknowledge &amp; Apologise</p>
+              <p class="text-sm text-slate-600 mt-0.5">Validate their feelings first, then apologise for the inconvenience — even if it was not directly your fault. "I completely understand how frustrating this must be."</p>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 p-4 flex gap-3 items-start">
+            <span class="text-2xl font-black text-green-600 leading-none mt-0.5">S</span>
+            <div>
+              <p class="font-semibold text-slate-800">Solve</p>
+              <p class="text-sm text-slate-600 mt-0.5">Offer a concrete remedy. Where possible, give the customer a choice between two or more options — this restores their sense of control. Commit to a timeline.</p>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 p-4 flex gap-3 items-start">
+            <span class="text-2xl font-black text-purple-600 leading-none mt-0.5">T</span>
+            <div>
+              <p class="font-semibold text-slate-800">Thank</p>
+              <p class="text-sm text-slate-600 mt-0.5">Thank the customer for bringing it to your attention. This reinforces that feedback is welcome and turns a negative ending into a positive one.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- De-escalation principles (accordion) -->
+      <section>
+        <h2 class="text-lg font-bold mb-3 text-slate-900">De-escalation Principles</h2>
+        <div class="space-y-2" id="deesc-accordion">
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <button class="accordion-trigger w-full text-left px-4 py-3 flex justify-between items-center font-medium text-sm text-slate-800 hover:bg-slate-50">
+              <span>🧘 Stay calm — even when the customer is not</span>
+              <span class="accordion-icon text-slate-400 text-xs">▼</span>
+            </button>
+            <div class="accordion-body px-4 pb-4 text-sm text-slate-600 space-y-1">
+              <p>Your tone sets the ceiling for the conversation. Speak slowly and softly. If you feel defensive, breathe before answering. A calm voice is contagious — most customers will mirror it within a minute.</p>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <button class="accordion-trigger w-full text-left px-4 py-3 flex justify-between items-center font-medium text-sm text-slate-800 hover:bg-slate-50">
+              <span>🚫 Don't get defensive or make excuses</span>
+              <span class="accordion-icon text-slate-400 text-xs">▼</span>
+            </button>
+            <div class="accordion-body px-4 pb-4 text-sm text-slate-600 space-y-1">
+              <p>"That's not our policy" or "It's not my fault" are de-escalation killers. Even if the customer is wrong, defending the institution first makes them feel dismissed. Acknowledge first, explain later — and only briefly.</p>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <button class="accordion-trigger w-full text-left px-4 py-3 flex justify-between items-center font-medium text-sm text-slate-800 hover:bg-slate-50">
+              <span>💛 Acknowledge feelings before facts</span>
+              <span class="accordion-icon text-slate-400 text-xs">▼</span>
+            </button>
+            <div class="accordion-body px-4 pb-4 text-sm text-slate-600 space-y-1">
+              <p>Emotions must be addressed before logic can land. "I hear how frustrated you are" opens a door; "Actually, the booking clearly states…" slams it. Acknowledge first, then move to facts and solutions.</p>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <button class="accordion-trigger w-full text-left px-4 py-3 flex justify-between items-center font-medium text-sm text-slate-800 hover:bg-slate-50">
+              <span>🤝 Take personal ownership</span>
+              <span class="accordion-icon text-slate-400 text-xs">▼</span>
+            </button>
+            <div class="accordion-body px-4 pb-4 text-sm text-slate-600 space-y-1">
+              <p>Say "I will sort this out" rather than "Someone will call you back." Taking personal responsibility — even for systemic issues — signals to the customer that a real person cares. If you need to escalate, stay the point of contact.</p>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <button class="accordion-trigger w-full text-left px-4 py-3 flex justify-between items-center font-medium text-sm text-slate-800 hover:bg-slate-50">
+              <span>🔁 Follow up</span>
+              <span class="accordion-icon text-slate-400 text-xs">▼</span>
+            </button>
+            <div class="accordion-body px-4 pb-4 text-sm text-slate-600 space-y-1">
+              <p>A follow-up — even a brief one — transforms "resolved" into "impressed." Check back within the agreed timeframe, confirm the fix worked, and ask if anything else is needed. This is often what converts a complainer into a loyal regular.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Prevention -->
+      <section>
+        <h2 class="text-lg font-bold mb-3 text-slate-900">Conflict Prevention</h2>
+        <div class="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+          <p class="text-sm text-slate-600">Most complaints stem from unmet expectations — not bad service. Prevention is better than cure.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+            <div class="bg-slate-50 rounded-lg p-3">
+              <p class="font-semibold text-slate-800 mb-1">Set clear expectations</p>
+              <p class="text-slate-600 text-xs">Tell guests what's included, what's not, check-in times, cancellation terms — proactively, at booking, and at arrival.</p>
+            </div>
+            <div class="bg-slate-50 rounded-lg p-3">
+              <p class="font-semibold text-slate-800 mb-1">Communicate early</p>
+              <p class="text-slate-600 text-xs">If something will go wrong (delay, shortage, change) — call/message before the customer finds out on their own. Control the narrative.</p>
+            </div>
+            <div class="bg-slate-50 rounded-lg p-3">
+              <p class="font-semibold text-slate-800 mb-1">Invite feedback</p>
+              <p class="text-slate-600 text-xs">Guests who feel heard are less likely to escalate. A simple "Is everything to your satisfaction?" at mid-stay catches problems while they're still fixable.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Service Recovery Paradox -->
+      <section>
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <p class="text-sm font-bold text-amber-900 mb-1">The Service Recovery Paradox</p>
+          <p class="text-sm text-amber-800 leading-relaxed">Research (Hart, Heskett &amp; Sasser, 1990) found that customers who experience a service failure but receive an <em>excellent</em> recovery often report <strong>higher satisfaction and loyalty</strong> than customers who never had a problem. A complaint handled brilliantly is free marketing.</p>
+        </div>
+      </section>
+
+      <!-- Escalation guide -->
+      <section>
+        <h2 class="text-lg font-bold mb-3 text-slate-900">When to Escalate</h2>
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="text-left px-4 py-2 text-slate-700 font-semibold">Situation</th>
+                <th class="text-left px-4 py-2 text-slate-700 font-semibold">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr><td class="px-4 py-2 text-slate-700">Minor complaint, within your authority to fix</td><td class="px-4 py-2 text-slate-600">Handle yourself — don't pass it on unnecessarily</td></tr>
+              <tr><td class="px-4 py-2 text-slate-700">Compensation or refund above your limit</td><td class="px-4 py-2 text-slate-600">Involve a supervisor; stay present and introduce them</td></tr>
+              <tr><td class="px-4 py-2 text-slate-700">Customer is verbally abusive or threatening</td><td class="px-4 py-2 text-slate-600">Calmly involve security/manager; safety first</td></tr>
+              <tr><td class="px-4 py-2 text-slate-700">Situation involves legal liability or press risk</td><td class="px-4 py-2 text-slate-600">Escalate immediately; don't speculate or promise</td></tr>
+              <tr><td class="px-4 py-2 text-slate-700">Emergency (medical, fire, safety)</td><td class="px-4 py-2 text-slate-600">Follow emergency protocol; call services first, service second</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- CTA to Practice -->
+      <div class="text-center py-4">
+        <button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl transition-colors" onclick="switchTab('practice')">Try the Scenarios →</button>
+      </div>
+    </div><!-- /tab-learn -->
+
+
+    <!-- ==================== PRACTICE TAB ==================== -->
+    <div id="tab-practice" class="tab-panel hidden max-w-3xl mx-auto px-4 py-6">
+
+      <!-- Scenario selection screen -->
+      <div id="scenario-select">
+        <h2 class="text-lg font-bold mb-1 text-slate-900">Choose a Scenario</h2>
+        <p class="text-sm text-slate-500 mb-4">Each scenario is 3–4 decision points. Your choices affect the customer's mood and your score.</p>
+        <div class="grid gap-4" id="scenario-cards"></div>
+      </div>
+
+      <!-- Active scenario screen -->
+      <div id="scenario-active" class="hidden">
+
+        <!-- Scenario header -->
+        <div class="flex items-center justify-between mb-4">
+          <button id="back-to-select" class="text-sm text-blue-600 hover:underline flex items-center gap-1">← Scenarios</button>
+          <span id="scenario-label" class="text-xs font-semibold text-slate-500 uppercase tracking-widest"></span>
+          <div class="text-sm font-semibold text-slate-700">Score: <span id="live-score">0</span></div>
+        </div>
+
+        <!-- Mood meter -->
+        <div class="bg-white rounded-xl border border-slate-200 p-3 mb-4">
+          <div class="flex justify-between items-center mb-1.5">
+            <span class="text-xs text-slate-500">Customer Mood</span>
+            <span id="mood-label" class="text-sm font-semibold">😤 Upset</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-3">
+            <div id="mood-bar" class="mood-bar-fill h-3 rounded-full bg-red-400" style="width:30%"></div>
+          </div>
+        </div>
+
+        <!-- Node content -->
+        <div id="node-content" class="node-enter"></div>
+
+      </div><!-- /scenario-active -->
+
+    </div><!-- /tab-practice -->
+
+
+    <!-- ==================== PRESENT SETUP TAB ==================== -->
+    <div id="tab-present-setup" class="tab-panel hidden max-w-3xl mx-auto px-4 py-6">
+      <h2 class="text-lg font-bold mb-1">Present Mode</h2>
+      <p class="text-sm text-slate-500 mb-5">Project a scenario for class discussion — big text, one decision at a time. Press <kbd class="bg-slate-200 px-1.5 py-0.5 rounded text-xs font-mono">ESC</kbd> or the Exit button to return.</p>
+      <div class="grid gap-4" id="present-scenario-cards"></div>
+    </div>
+
+  </main><!-- /main -->
+</div><!-- /app -->
+
+
+<!-- ==================== PRESENT OVERLAY ==================== -->
+<div id="present-overlay">
+  <div class="flex-1 flex flex-col p-6 sm:p-10 max-w-4xl mx-auto w-full">
+
+    <!-- Present header -->
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <p id="p-scenario-name" class="text-blue-400 text-sm font-semibold uppercase tracking-widest"></p>
+        <h2 class="text-white text-xl font-bold mt-0.5">Customer Complaint Scenario</h2>
+      </div>
+      <div class="flex items-center gap-3">
+        <!-- Mood in present mode -->
+        <div class="flex items-center gap-2 bg-slate-800 rounded-xl px-4 py-2">
+          <span class="text-xs text-slate-400">Mood:</span>
+          <span id="p-mood-label" class="text-white font-semibold text-sm">😤</span>
+          <div class="w-24 bg-slate-700 rounded-full h-2">
+            <div id="p-mood-bar" class="mood-bar-fill h-2 rounded-full bg-red-400" style="width:30%"></div>
+          </div>
+        </div>
+        <button id="exit-present" class="text-slate-400 hover:text-white text-sm border border-slate-600 px-3 py-1.5 rounded-lg transition-colors">Exit (ESC)</button>
+      </div>
+    </div>
+
+    <!-- Present node content -->
+    <div id="p-node-content" class="flex-1"></div>
+
+  </div>
+</div><!-- /present-overlay -->
+
+
+<script>
+/* ============================================================
+   DATA — Branching scenario trees
+   mood: 0–100 (100 = delighted, 0 = furious)
+   Each option: { text, feedback, scoreΔ, moodΔ, next }
+   Terminal nodes have outcomes array instead of options.
+============================================================ */
+const SCENARIOS = [
+  {
+    id: 'hotel-overbook',
+    emoji: '🏨',
+    title: 'Hotel Overbooking',
+    subtitle: 'A guest arrives at 11 PM with a confirmed booking. There are no rooms.',
+    difficulty: 'Intermediate',
+    diffColor: 'amber',
+    startMood: 30,
+    startNode: 'n1',
+    nodes: {
+      n1: {
+        situation: "It's 11 PM. Mr. Hansen walks up to the front desk, visibly tired after a long flight. He has a printed confirmation for a double room. You pull up his booking — and your heart sinks. The hotel is fully booked; his room was accidentally double-assigned and the other guest has already checked in.",
+        customer: "\"I have a confirmed reservation. Right here. I flew six hours and I just need a room.\"",
+        options: [
+          {
+            text: "Apologise sincerely and take immediate ownership: \"Mr. Hansen, I'm so sorry — this is entirely our mistake and I'm going to fix it for you right now.\"",
+            quality: 'good',
+            feedback: "Excellent. Taking ownership without defensiveness immediately reduces tension. Mr. Hansen can see you're on his side. This is the LAST model's Acknowledge step in action.",
+            scoreΔ: 3, moodΔ: 25, next: 'n2a'
+          },
+          {
+            text: "Explain the situation factually: \"Our system shows an overbooking error. I'll need to check what options are available.\"",
+            quality: 'neutral',
+            feedback: "Factual, but it feels cold and bureaucratic at 11 PM. No acknowledgment of his feelings. He hears 'system error' and thinks 'not my problem, fix it.' You get points for accuracy, not warmth.",
+            scoreΔ: 1, moodΔ: 0, next: 'n2b'
+          },
+          {
+            text: "Tell him there must be a misunderstanding and ask him to double-check his booking dates.",
+            quality: 'bad',
+            feedback: "Shifting blame to the guest is a serious error. He has a printed confirmation. Implying he made a mistake will immediately escalate the conflict and destroy trust.",
+            scoreΔ: -2, moodΔ: -20, next: 'n2c'
+          }
+        ]
+      },
+      n2a: {
+        situation: "Mr. Hansen nods, visibly relieved that you're not arguing. Now he wants to know what you're going to do.",
+        customer: "\"Okay. So what happens now? I need somewhere to sleep tonight.\"",
+        options: [
+          {
+            text: "\"I've already called the Radisson two blocks away — they have a room. We'll cover your first night there, arrange a taxi, and upgrade you to a suite here tomorrow at no charge.\"",
+            quality: 'good',
+            feedback: "This is textbook service recovery. You've solved the immediate problem, absorbed the cost, and added a sweetener. Mr. Hansen now has a story to tell friends — about how well you handled it.",
+            scoreΔ: 4, moodΔ: 30, next: 'n3a'
+          },
+          {
+            text: "\"I'll call around some nearby hotels and find you a room. It may take a few minutes.\"",
+            quality: 'neutral',
+            feedback: "Reasonable, but vague. 'A few minutes' at 11 PM is stressful. Offer a seat, a drink, a concrete timeline. Taking initiative beats asking him to wait in uncertainty.",
+            scoreΔ: 1, moodΔ: 5, next: 'n3b'
+          },
+          {
+            text: "\"I'm afraid all nearby hotels are probably full too. I'll note your complaint and the manager will call you tomorrow.\"",
+            quality: 'bad',
+            feedback: "Completely inadequate. 'Probably' is speculation, and pushing the problem to tomorrow abandons a guest at 11 PM. This guarantees a scathing online review.",
+            scoreΔ: -3, moodΔ: -25, next: 'n3c'
+          }
+        ]
+      },
+      n2b: {
+        situation: "Mr. Hansen is getting visibly frustrated by the clinical tone. He raises his voice slightly.",
+        customer: "\"I don't care about your system. I just need a room. What are you actually going to DO?\"",
+        options: [
+          {
+            text: "Step up emotionally: \"You're absolutely right, Mr. Hansen — I apologise for how I phrased that. Let me find you a solution right now.\"",
+            quality: 'good',
+            feedback: "Good recovery! You recognised the emotional gap and corrected course. Acknowledging the misstep shows self-awareness and earns back some goodwill.",
+            scoreΔ: 2, moodΔ: 15, next: 'n3b'
+          },
+          {
+            text: "\"I'm finding the options now. Please bear with me.\"",
+            quality: 'neutral',
+            feedback: "Functional, but still emotionally flat. He needs to feel helped, not processed. At least you're moving forward.",
+            scoreΔ: 1, moodΔ: 0, next: 'n3b'
+          },
+          {
+            text: "\"Sir, I need you to calm down so I can help you.\"",
+            quality: 'bad',
+            feedback: "Never tell a frustrated guest to 'calm down' — it always backfires. It invalidates their (justified) feelings and sounds condescending. This will escalate the situation significantly.",
+            scoreΔ: -3, moodΔ: -20, next: 'n3c'
+          }
+        ]
+      },
+      n2c: {
+        situation: "Mr. Hansen is now clearly angry. He slaps the confirmation print-out on the desk.",
+        customer: "\"It says right here: tonight's date. I am NOT leaving this lobby.\"",
+        options: [
+          {
+            text: "Immediately change tack: \"You're completely right, Mr. Hansen — I sincerely apologise. The error is entirely on our side. Let me make this right immediately.\"",
+            quality: 'good',
+            feedback: "A full reversal and genuine apology can still recover the situation, but you've already dug a hole. The guest's trust is damaged but repairable if you now deliver a concrete solution.",
+            scoreΔ: 2, moodΔ: 10, next: 'n3b'
+          },
+          {
+            text: "Call your manager over without saying anything more.",
+            quality: 'neutral',
+            feedback: "Escalating after a misstep is appropriate, but abandoning the interaction silently feels dismissive. Introduce your manager, stay present, and brief them before the guest has to repeat everything.",
+            scoreΔ: 0, moodΔ: -5, next: 'n3c'
+          },
+          {
+            text: "\"I understand you're upset, but there's no need to raise your voice.\"",
+            quality: 'bad',
+            feedback: "Moralising about his tone after you implied he was wrong compounds the error. He hasn't been rude — he's justifiably angry. This prioritises your comfort over his problem.",
+            scoreΔ: -2, moodΔ: -15, next: 'n3c'
+          }
+        ]
+      },
+      n3a: {
+        situation: "Mr. Hansen seems genuinely impressed by the quick, concrete offer. He pauses, then nods.",
+        customer: "\"Alright. I appreciate that. And the upgrade tomorrow — can I check in early?\"",
+        options: [
+          {
+            text: "\"Absolutely — I'll flag your reservation for an early 10 AM check-in and leave a welcome note with a breakfast voucher. Here's my direct number if anything else comes up.\"",
+            quality: 'good',
+            feedback: "Perfect close. Early check-in, a tangible perk, and personal contact details complete the service recovery arc. This is the LAST model's Thank step — and then some.",
+            scoreΔ: 3, moodΔ: 15, next: 'outcome-great'
+          },
+          {
+            text: "\"I can't promise early check-in, but I'll add a note to try. The taxi should be here in 10 minutes.\"",
+            quality: 'neutral',
+            feedback: "Honest, but 'I'll try' after all the assurances sounds slightly deflating. A small gift (breakfast voucher, room upgrade to superior rather than just standard suite) would have sealed it better.",
+            scoreΔ: 1, moodΔ: 5, next: 'outcome-good'
+          },
+          {
+            text: "\"Check-in is normally 3 PM but I'll pass the message along.\"",
+            quality: 'bad',
+            feedback: "After everything, quoting standard policy feels tone-deaf. He's had a terrible night because of your hotel's error. A bit of discretion and generosity here would cost very little.",
+            scoreΔ: -1, moodΔ: -10, next: 'outcome-ok'
+          }
+        ]
+      },
+      n3b: {
+        situation: "You've located a nearby hotel with an available room, but it's a 3-star and Mr. Hansen booked a 4-star here.",
+        customer: "\"A 3-star? I booked a 4-star. This isn't acceptable.\"",
+        options: [
+          {
+            text: "\"You're right — this isn't the standard you booked. We'll cover your night there, give you a full refund for tonight, and I'd like to offer you a complimentary night on your next stay here.\"",
+            quality: 'good',
+            feedback: "Acknowledging the downgrade, absorbing the cost, and adding a future incentive is the right move. The customer's legitimate expectation is validated.",
+            scoreΔ: 3, moodΔ: 20, next: 'outcome-good'
+          },
+          {
+            text: "\"It's the best available at this hour. We'll cover the difference in price.\"",
+            quality: 'neutral',
+            feedback: "Fair and financially correct, but impersonal. Covering the difference is the bare minimum — at least you're doing it, but there's no gesture of goodwill for the inconvenience.",
+            scoreΔ: 1, moodΔ: 5, next: 'outcome-ok'
+          },
+          {
+            text: "\"At this hour your options are limited. I suggest you take it.\"",
+            quality: 'bad',
+            feedback: "This response oozes impatience. It's dismissive and practically tells the guest to be grateful for a lesser product. Almost certain to produce a 1-star review.",
+            scoreΔ: -2, moodΔ: -20, next: 'outcome-poor'
+          }
+        ]
+      },
+      n3c: {
+        situation: "Mr. Hansen has had enough. He's filming the interaction on his phone and threatening to call the tourism board.",
+        customer: "\"I want the manager. NOW. And I'm posting this online.\"",
+        options: [
+          {
+            text: "\"Of course. I'll get the manager immediately. I want to apologise again — you have every right to be upset and we should have handled this better from the start.\"",
+            quality: 'good',
+            feedback: "Humble, non-defensive, and prompt escalation. You can't fully undo the damage, but you're ending on a professional note. The manager now has a fighting chance.",
+            scoreΔ: 1, moodΔ: 5, next: 'outcome-poor'
+          },
+          {
+            text: "Get the manager without comment.",
+            quality: 'neutral',
+            feedback: "At least you're not making it worse. Silent escalation is better than continued damage, but offers no bridge to the guest.",
+            scoreΔ: 0, moodΔ: 0, next: 'outcome-poor'
+          },
+          {
+            text: "\"Recording staff without consent may not be legal, sir.\"",
+            quality: 'bad',
+            feedback: "Threatening legal action against a justified, upset guest is catastrophic. This will guarantee a viral post and potential legal involvement. Never do this.",
+            scoreΔ: -4, moodΔ: -20, next: 'outcome-terrible'
+          }
+        ]
+      },
+      'outcome-great': {
+        outcome: true,
+        emoji: '🌟',
+        title: 'Excellent Recovery!',
+        color: 'green',
+        description: "Mr. Hansen checks into the alternative hotel, returns the next morning to a suite, and later leaves a glowing review mentioning you by name. He books again within three months.",
+        debrief: "You applied the full LAST model: you Listened, Acknowledged his frustration without defensiveness, Solved the problem proactively with concrete options, and Thanked him — going beyond what was required. This is the service recovery paradox in action."
+      },
+      'outcome-good': {
+        outcome: true,
+        emoji: '😊',
+        title: 'Good Recovery',
+        color: 'blue',
+        description: "Mr. Hansen is not delighted, but he's no longer angry. He accepts the solution and checks out without incident. He leaves a 3-star review: 'Problem occurred but staff handled it reasonably.'",
+        debrief: "You mostly followed the LAST model but missed opportunities to add warmth and a goodwill gesture. The Solve step was adequate; the Acknowledge and Thank steps were incomplete. A small extra — early check-in, voucher — would have converted this to an excellent outcome."
+      },
+      'outcome-ok': {
+        outcome: true,
+        emoji: '😐',
+        title: 'Resolved — Barely',
+        color: 'amber',
+        description: "Mr. Hansen leaves with a working solution but is visibly unimpressed. He doesn't leave a review, but he doesn't return either.",
+        debrief: "The problem was technically solved, but the emotional journey was poor. You applied Solve but skipped meaningful Acknowledge and Thank moments. Competent isn't memorable — and in hospitality, memorable (either way) drives decisions."
+      },
+      'outcome-poor': {
+        outcome: true,
+        emoji: '😠',
+        title: 'Escalated',
+        color: 'red',
+        description: "The manager had to step in. Mr. Hansen accepts the final solution grudgingly. He posts a 2-star review: 'Overbooking disaster — staff were unhelpful, manager eventually sorted it.'",
+        debrief: "Several missteps compounded each other. Defensiveness, failure to acknowledge, or dismissive language pushed the customer past the point where front-line recovery was possible. Review where the LAST model's Listen and Acknowledge steps were skipped."
+      },
+      'outcome-terrible': {
+        outcome: true,
+        emoji: '💥',
+        title: 'Crisis',
+        color: 'red',
+        description: "The clip goes viral on social media. The hotel's reputation takes a serious hit. This is used as a training case for what NOT to do.",
+        debrief: "Threatening a guest or telling them to 'calm down' during a justified complaint are the two biggest escalation triggers in hospitality. Safety, dignity, and humility must come first — always."
+      }
+    }
+  },
+
+  {
+    id: 'cancelled-tour',
+    emoji: '⛵',
+    title: 'Cancelled Excursion',
+    subtitle: 'A boat tour is cancelled due to weather. Guests have been waiting on the pier for 90 minutes.',
+    difficulty: 'Beginner',
+    diffColor: 'green',
+    startMood: 35,
+    startNode: 'n1',
+    nodes: {
+      n1: {
+        situation: "It's 9:30 AM. A group of 12 guests has been standing on the pier since 8:00 AM, waiting for their booked sunset — err, morning — fjord cruise. You've just received the captain's call: strong winds make sailing unsafe, and the trip is cancelled. The guests see you approaching and their mood is already tipping.",
+        customer: "\"Finally! What's going on? We've been standing here for ninety minutes in the cold. Is this thing happening or not?\"",
+        options: [
+          {
+            text: "Walk up, make eye contact with the group, and say clearly: \"I have an update from the captain — for your safety, today's trip has been cancelled. I'm genuinely sorry you've been waiting so long without information. Let me explain everything and sort out next steps for you.\"",
+            quality: 'good',
+            feedback: "Direct, empathetic, and takes responsibility for the communication failure (they waited 90 mins with no info). Naming the reason (safety) and the authority (captain) legitimises the decision without sounding bureaucratic.",
+            scoreΔ: 3, moodΔ: 20, next: 'n2a'
+          },
+          {
+            text: "\"I'm sorry, the trip is cancelled — bad weather. You'll get a full refund.\"",
+            quality: 'neutral',
+            feedback: "Technically sufficient, but the delivery is abrupt. After 90 minutes in the cold, guests need to feel acknowledged before they receive information. Lead with empathy, then facts.",
+            scoreΔ: 1, moodΔ: 5, next: 'n2b'
+          },
+          {
+            text: "\"The captain says it's too windy. There's really nothing we can do — it's weather.\"",
+            quality: 'bad',
+            feedback: "'Nothing we can do' is a red flag phrase. Weather is not in your control, but the response absolutely is. This sounds like you're washing your hands of responsibility. Guests will feel abandoned.",
+            scoreΔ: -2, moodΔ: -15, next: 'n2c'
+          }
+        ]
+      },
+      n2a: {
+        situation: "The guests are disappointed but listening. One of them, a woman named Mrs. Sørensen, steps forward as spokesperson.",
+        customer: "\"Thank you for telling us. But we leave tomorrow — this was our only chance for the fjord. Can you do anything about that?\"",
+        options: [
+          {
+            text: "\"I completely understand — this was likely the highlight of your trip and I'm so sorry it didn't work out. Here are your options: a full refund, or I can try to book you on tomorrow morning's first departure before your flight — what time do you leave?\"",
+            quality: 'good',
+            feedback: "Validating the emotional weight (\"highlight of your trip\"), then offering a choice. The follow-up question shows genuine interest rather than a scripted response. This is the Solve step done with care.",
+            scoreΔ: 4, moodΔ: 25, next: 'n3a'
+          },
+          {
+            text: "\"We can refund you or rebook you on the next available date.\"",
+            quality: 'neutral',
+            feedback: "Functional, but robotic. You haven't acknowledged the significance of the loss for her. The next available date may be useless if they leave tomorrow — probe before offering it.",
+            scoreΔ: 1, moodΔ: 5, next: 'n3b'
+          },
+          {
+            text: "\"Unfortunately we can't control the weather. A refund will be processed within 5–7 business days.\"",
+            quality: 'bad',
+            feedback: "Hiding behind weather and quoting a refund timeline is dismissive. She's not asking for a refund — she wants the experience. You didn't even try to solve the real problem.",
+            scoreΔ: -2, moodΔ: -20, next: 'n3c'
+          }
+        ]
+      },
+      n2b: {
+        situation: "The group is quiet but clearly deflated. A man at the back calls out:",
+        customer: "\"Just a refund? We've been standing here for ninety minutes! Is that it?\"",
+        options: [
+          {
+            text: "\"You're right — the lack of communication was our failure and I apologise for that specifically. Let me see what I can do beyond the refund to make this right.\"",
+            quality: 'good',
+            feedback: "Distinguishing between the weather (not your fault) and the 90-minute communication failure (your fault) shows honest accountability. Offering to go beyond a refund changes the dynamic.",
+            scoreΔ: 3, moodΔ: 20, next: 'n3a'
+          },
+          {
+            text: "\"I understand the frustration. Let me also check if there are any alternative activities available today.\"",
+            quality: 'neutral',
+            feedback: "A reasonable recovery move. You're not taking full ownership of the communication failure, but you are trying to create value. Better than nothing.",
+            scoreΔ: 1, moodΔ: 10, next: 'n3b'
+          },
+          {
+            text: "\"Weather cancellations are covered in the booking terms. Your refund will come automatically.\"",
+            quality: 'bad',
+            feedback: "Quoting booking terms to an upset guest is almost always counterproductive. Even if you're right, it sounds like you're hiding behind fine print. Feelings before facts.",
+            scoreΔ: -2, moodΔ: -20, next: 'n3c'
+          }
+        ]
+      },
+      n2c: {
+        situation: "Several guests are openly frustrated. One of them starts scrolling a review site on his phone.",
+        customer: "\"This is unprofessional. We've been ignored for 90 minutes and now you say there's 'nothing you can do'?\"",
+        options: [
+          {
+            text: "\"He's right — the way this was communicated was unacceptable and that's on us. I want to personally apologise and find you a solution.\"",
+            quality: 'good',
+            feedback: "A full acknowledgment of the communication failure redirects the energy productively. Third-person ('he's right') shows you're listening, not just defending.",
+            scoreΔ: 2, moodΔ: 15, next: 'n3b'
+          },
+          {
+            text: "\"I can hear how frustrated you are. Let me focus on what I CAN do for you — a refund and options for rebooking.\"",
+            quality: 'neutral',
+            feedback: "Pivoting to solutions is good, but not acknowledging the communication failure first feels like you're glossing over a legitimate grievance.",
+            scoreΔ: 1, moodΔ: 5, next: 'n3c'
+          },
+          {
+            text: "\"We notified everyone by SMS this morning.\"",
+            quality: 'bad',
+            feedback: "If they're standing on the pier, the SMS clearly didn't reach everyone — or came too late. Saying this makes you look out of touch and dismissive of what they're experiencing right in front of you.",
+            scoreΔ: -3, moodΔ: -20, next: 'n3c'
+          }
+        ]
+      },
+      n3a: {
+        situation: "Mrs. Sørensen checks her itinerary. Their ferry leaves at 11 AM tomorrow — there's a 7 AM departure that could work.",
+        customer: "\"7 AM could work. But will the weather be better?\"",
+        options: [
+          {
+            text: "\"I've just spoken with the captain — tomorrow's forecast looks calm. I'll book you on the 7 AM, waive the rebooking fee, and send you a confirmation now. If it's cancelled again you'll get a full refund, no questions.\"",
+            quality: 'good',
+            feedback: "Checking with the captain first, waiving fees, and giving a clear safety net transforms a disappointment into anticipation. The group has something to look forward to.",
+            scoreΔ: 4, moodΔ: 20, next: 'outcome-great'
+          },
+          {
+            text: "\"I can't promise weather, but the forecast looks better. I'll book you provisionally.\"",
+            quality: 'neutral',
+            feedback: "Honest about uncertainty, but 'provisionally' sounds uncommitted. Clarify the cancellation terms so they know they're protected if it happens again.",
+            scoreΔ: 1, moodΔ: 5, next: 'outcome-good'
+          },
+          {
+            text: "\"Forecasts aren't reliable. I'd suggest the refund to be safe.\"",
+            quality: 'bad',
+            feedback: "Discouraging a rebooking when the guest specifically wants the experience misses the point entirely. You're solving for your convenience, not theirs.",
+            scoreΔ: -1, moodΔ: -10, next: 'outcome-ok'
+          }
+        ]
+      },
+      n3b: {
+        situation: "You offer a refund plus a 20% voucher for a future trip. Most guests accept, but Mrs. Sørensen shakes her head.",
+        customer: "\"A voucher is useless if we're not coming back. Can you find us something to do in town today instead?\"",
+        options: [
+          {
+            text: "\"Absolutely — let me call ahead to the kayak centre and the coastal walk guide. I'll try to get you a group slot this afternoon and sort out a transfer.\"",
+            quality: 'good',
+            feedback: "Taking active ownership of finding an alternative — rather than listing options and leaving it to her — is the difference between service and service recovery.",
+            scoreΔ: 3, moodΔ: 20, next: 'outcome-good'
+          },
+          {
+            text: "\"There's a coastal walking trail and a kayak hire nearby — I can give you the contact details.\"",
+            quality: 'neutral',
+            feedback: "Helpful but passive. You're giving her homework. Taking one more step — calling ahead, confirming availability — shows you're invested.",
+            scoreΔ: 1, moodΔ: 5, next: 'outcome-ok'
+          },
+          {
+            text: "\"I'm afraid alternative activities aren't really our area — we're a boat tour operator.\"",
+            quality: 'bad',
+            feedback: "Guests don't care about your operational remit. 'Not our area' sounds like a refusal to help. In service, your area is whatever the guest needs right now.",
+            scoreΔ: -2, moodΔ: -15, next: 'outcome-poor'
+          }
+        ]
+      },
+      n3c: {
+        situation: "Three guests are now posting reviews in real time. One asks to speak to a manager.",
+        customer: "\"I want a full refund AND compensation for our time. This is completely unprofessional.\"",
+        options: [
+          {
+            text: "\"A full refund is absolutely the right outcome here. I'll also arrange a 30% discount on a future booking and log the communication failure formally so it doesn't happen to the next group.\"",
+            quality: 'good',
+            feedback: "Conceding the refund quickly, adding a future discount, and promising systemic improvement shows you take the feedback seriously. The systemic fix comment addresses the 'nothing you can do' impression.",
+            scoreΔ: 2, moodΔ: 10, next: 'outcome-poor'
+          },
+          {
+            text: "\"I'll process a full refund immediately. I'm sorry this happened.\"",
+            quality: 'neutral',
+            feedback: "Bare minimum but at least you're not escalating further. The damage is done; at least you're ending cleanly.",
+            scoreΔ: 0, moodΔ: 0, next: 'outcome-poor'
+          },
+          {
+            text: "\"Compensation for time isn't something we offer — the refund is the standard procedure.\"",
+            quality: 'bad',
+            feedback: "At this point, hiding behind procedure will make the reviews far more negative. Some goodwill gesture — even small — would have been a better business decision than being technically correct.",
+            scoreΔ: -2, moodΔ: -15, next: 'outcome-terrible'
+          }
+        ]
+      },
+      'outcome-great': {
+        outcome: true,
+        emoji: '⭐',
+        title: 'Turned Around',
+        color: 'green',
+        description: "The group does the 7 AM cruise the next morning in perfect weather. Mrs. Sørensen posts a photo and writes: 'Cancellation turned into the best morning of the trip — staff were brilliant.'",
+        debrief: "You acknowledged the failure, solved the real problem (the experience, not just the refund), and followed up with concrete action. The service recovery paradox delivered exactly what it promised."
+      },
+      'outcome-good': {
+        outcome: true,
+        emoji: '😊',
+        title: 'Mostly Recovered',
+        color: 'blue',
+        description: "Most guests leave satisfied with the alternatives or rebooking. A few write neutral reviews. No viral complaints.",
+        debrief: "Good recovery with room to improve. You solved the practical problem but missed some opportunities to validate feelings and take extra initiative. Practice the Acknowledge step more deliberately."
+      },
+      'outcome-ok': {
+        outcome: true,
+        emoji: '😐',
+        title: 'Acceptable',
+        color: 'amber',
+        description: "Guests leave with refunds. Some are fine, a few are disappointed. One 2-star review mentions 'poor communication on the day.'",
+        debrief: "You handled the logistics but not the emotional journey. The 90-minute wait without communication was never properly acknowledged. Prevention tip: a quick SMS and a visible staff member on the pier from the start would have prevented most of this."
+      },
+      'outcome-poor': {
+        outcome: true,
+        emoji: '😠',
+        title: 'Damaged',
+        color: 'red',
+        description: "Several 2-star reviews are posted. The company's booking rate dips for two weeks.",
+        debrief: "The communication failure at the pier was the real complaint — not the weather. When guests feel ignored and then given boilerplate responses, they react with public criticism. The LAST model's Listen and Acknowledge steps were skipped or done poorly here."
+      },
+      'outcome-terrible': {
+        outcome: true,
+        emoji: '💥',
+        title: 'Reputation Damage',
+        color: 'red',
+        description: "A 1-star post with photos goes viral locally. The tourism board contacts the company for a comment.",
+        debrief: "When guests film and post on location, hiding behind policy is the worst possible response. Humility and a genuine goodwill gesture — even a small one — would have changed the outcome at almost zero cost."
+      }
+    }
+  },
+
+  {
+    id: 'billing-dispute',
+    emoji: '💳',
+    title: 'Billing Dispute',
+    subtitle: 'An angry returning customer insists she was overcharged. The charge appears correct in the system.',
+    difficulty: 'Advanced',
+    diffColor: 'red',
+    startMood: 20,
+    startNode: 'n1',
+    nodes: {
+      n1: {
+        situation: "Ms. Lindqvist, a loyal customer who has stayed three times before, storms up to the reception desk of your boutique hotel. She holds up her phone showing her bank app. The charge on her account is NOK 1,840 more than she expected. You check the system: the charge reflects the agreed rate plus a city tax that was listed in the booking confirmation but not prominently displayed.",
+        customer: "\"I want to know why you charged me NOK 1,840 more than agreed. I've stayed here THREE times. Do you think I don't know what I booked?\"",
+        options: [
+          {
+            text: "\"Ms. Lindqvist, thank you for coming to me directly. I can see why this is alarming. Let me pull up your full booking right now and walk through it with you together.\"",
+            quality: 'good',
+            feedback: "Thanking her for coming to you (not complaining online), staying calm, and proposing a joint review invites collaboration rather than confrontation. You're not defending or conceding — you're investigating together.",
+            scoreΔ: 3, moodΔ: 20, next: 'n2a'
+          },
+          {
+            text: "\"I'm sorry you feel that way. The charge is based on your booking. Let me print the breakdown.\"",
+            quality: 'neutral',
+            feedback: "'I'm sorry you feel that way' is a passive-aggressive non-apology that experienced guests recognise immediately. It implies the problem is her perception, not a real issue. Ditch that phrase entirely.",
+            scoreΔ: 0, moodΔ: -10, next: 'n2b'
+          },
+          {
+            text: "\"Our records show the charge is correct. The city tax is stated in the confirmation email.\"",
+            quality: 'bad',
+            feedback: "Immediately telling a loyal customer she's wrong — especially before investigating — is defensive and dismissive. Even if you're right, this approach will escalate the situation.",
+            scoreΔ: -2, moodΔ: -20, next: 'n2c'
+          }
+        ]
+      },
+      n2a: {
+        situation: "You open the booking together. The NOK 1,840 is the city tax for 4 nights — it was in the confirmation email, but buried in a table at the bottom. Ms. Lindqvist had not noticed it.",
+        customer: "\"Well... it's there. But it's completely hidden. I've never paid this before — or maybe I just never noticed. I feel foolish now.\"",
+        options: [
+          {
+            text: "\"Please don't feel foolish — we should have made that much clearer. The tax came into effect last year and we haven't updated how prominently it's displayed. I'll flag that to our team. The charge itself is correct, but I want to thank you for raising it — this will help future guests.\"",
+            quality: 'good',
+            feedback: "Validating her feelings ('don't feel foolish'), taking institutional responsibility for the poor presentation, confirming the charge honestly, and turning it into a constructive outcome is masterful. She leaves with dignity intact.",
+            scoreΔ: 4, moodΔ: 30, next: 'n3a'
+          },
+          {
+            text: "\"The charge is correct as you can see. I hope that clarifies it.\"",
+            quality: 'neutral',
+            feedback: "Technically correct but cold. She just admitted she felt foolish — a moment of warmth and some acknowledgment of the poor formatting would have sealed a positive outcome. You left her with nothing.",
+            scoreΔ: 1, moodΔ: -5, next: 'n3b'
+          },
+          {
+            text: "\"Yes — it's right there in the email. You should have read it more carefully.\"",
+            quality: 'bad',
+            feedback: "Telling a loyal customer she 'should have read it more carefully' is condescending and will destroy the relationship. Even if she missed it, the presentation was clearly insufficient.",
+            scoreΔ: -4, moodΔ: -30, next: 'n3c'
+          }
+        ]
+      },
+      n2b: {
+        situation: "Ms. Lindqvist is not mollified. She points at specific line items on the printout.",
+        customer: "\"This tax — I never paid this before. Either you overcharged me or someone changed the rate without telling me.\"",
+        options: [
+          {
+            text: "\"That's a fair question. This city tax was introduced last year — it wasn't charged on your earlier stays. I should have made that clearer. Let me show you the booking email where it appears.\"",
+            quality: 'good',
+            feedback: "Explaining the timeline proactively (it's new, not a mistake) removes the suspicion of error or fraud. Being transparent about when and why it changed keeps trust intact.",
+            scoreΔ: 3, moodΔ: 20, next: 'n3a'
+          },
+          {
+            text: "\"The rates can change year to year. Your current confirmation shows the correct amount.\"",
+            quality: 'neutral',
+            feedback: "True, but vague. 'Rates can change' without explaining WHY or WHEN sounds evasive. More specific information would prevent the next question.",
+            scoreΔ: 1, moodΔ: 0, next: 'n3b'
+          },
+          {
+            text: "\"I assure you everything is correct. Our billing system is very reliable.\"",
+            quality: 'bad',
+            feedback: "Telling a guest to trust your system rather than engaging with her specific concern is dismissive. She's not questioning the system — she's questioning the transparency of the communication.",
+            scoreΔ: -2, moodΔ: -15, next: 'n3c'
+          }
+        ]
+      },
+      n2c: {
+        situation: "Ms. Lindqvist's anger is now fully activated. She crosses her arms.",
+        customer: "\"So you're saying I'm wrong? I've spent over NOK 20,000 here in the last two years. Is this how you treat loyal customers?\"",
+        options: [
+          {
+            text: "\"That's not what I meant at all — and you're right to call that out. You ARE a valued guest and I handled that badly. Let me start over: can we look at this together?\"",
+            quality: 'good',
+            feedback: "A genuine reset and apology for YOUR communication style, separate from the billing question. This shows emotional intelligence and keeps the conversation productive.",
+            scoreΔ: 2, moodΔ: 15, next: 'n3a'
+          },
+          {
+            text: "\"I appreciate your loyalty. Let me review the charge in more detail.\"",
+            quality: 'neutral',
+            feedback: "An acknowledgment without a genuine apology for being dismissive. Better than nothing, but she needed to feel heard — not processed.",
+            scoreΔ: 1, moodΔ: 5, next: 'n3b'
+          },
+          {
+            text: "\"Loyalty doesn't change what the booking says. Let me print the confirmation for you.\"",
+            quality: 'bad',
+            feedback: "Using loyalty as a transactional card she can't play is patronising. This escalates from a billing query to a relationship rupture.",
+            scoreΔ: -3, moodΔ: -20, next: 'n3c'
+          }
+        ]
+      },
+      n3a: {
+        situation: "Ms. Lindqvist is calmer and agrees the charge seems correct, but she's disappointed the tax wasn't communicated clearly when she booked.",
+        customer: "\"Fine. I accept it. But I would have liked to know upfront. I nearly cancelled my next booking over this.\"",
+        options: [
+          {
+            text: "\"That would have been a real shame — and a wake-up call we needed. I'm going to personally note this in your profile so at your next booking we proactively remind you of all charges. And thank you, sincerely — this conversation will make us better.\"",
+            quality: 'good',
+            feedback: "Personalising the remedy (a note in her profile), expressing genuine gratitude, and treating her feedback as a gift completes the LAST model perfectly. She leaves feeling like a VIP, not a complainant.",
+            scoreΔ: 4, moodΔ: 20, next: 'outcome-great'
+          },
+          {
+            text: "\"I'll pass the feedback on about making the tax more visible. Thank you for letting us know.\"",
+            quality: 'neutral',
+            feedback: "A reasonable close, but impersonal. The promise is vague ('pass it on') and she's not given any concrete reason to return. Good enough, but not memorable.",
+            scoreΔ: 1, moodΔ: 5, next: 'outcome-good'
+          },
+          {
+            text: "\"We'll look into how it's displayed. Have a good stay.\"",
+            quality: 'bad',
+            feedback: "This non-commit after a tense exchange lands badly. 'We'll look into it' without any specifics, followed by a cheerful send-off, feels insincere.",
+            scoreΔ: -1, moodΔ: -5, next: 'outcome-ok'
+          }
+        ]
+      },
+      n3b: {
+        situation: "Ms. Lindqvist accepts that the charge is correct but is still cool. She asks whether any goodwill is offered given her loyalty.",
+        customer: "\"I've never questioned a bill here before. Is there anything you can do to acknowledge that this could have been communicated better?\"",
+        options: [
+          {
+            text: "\"Absolutely. I'd like to offer you a complimentary upgrade on your next stay and a welcome drink tonight. You deserve better transparency from us and I want to show that.\"",
+            quality: 'good',
+            feedback: "A concrete, personalised goodwill gesture paired with an honest admission. The upgrade costs little but communicates: 'you matter here.' This is relationship-repair done well.",
+            scoreΔ: 3, moodΔ: 20, next: 'outcome-good'
+          },
+          {
+            text: "\"I can offer you a loyalty discount on your next stay.\"",
+            quality: 'neutral',
+            feedback: "A discount is something — but it feels formulaic. It doesn't address the personal relationship or the specific communication failure she flagged.",
+            scoreΔ: 1, moodΔ: 5, next: 'outcome-ok'
+          },
+          {
+            text: "\"I'm afraid we can't offer compensation when the billing was correct.\"",
+            quality: 'bad',
+            feedback: "She's not claiming an error — she's asking for recognition of a poor experience with a loyal customer. Refusing on a technicality ends the loyalty relationship.",
+            scoreΔ: -2, moodΔ: -15, next: 'outcome-poor'
+          }
+        ]
+      },
+      n3c: {
+        situation: "Ms. Lindqvist announces she is cancelling her future booking and will not return. She takes a photo of the charges.",
+        customer: "\"I've been a loyal customer for two years. I'll find somewhere that actually values that.\"",
+        options: [
+          {
+            text: "\"I understand — and I'm genuinely sorry we got to this point. If you'd give me one moment, I'd like to involve our manager to see if we can do something meaningful to keep your trust.\"",
+            quality: 'good',
+            feedback: "Even at this late stage, a genuine apology and an escalation with intent (not just reflex) can sometimes save a relationship. You're at least ending with humility.",
+            scoreΔ: 1, moodΔ: 5, next: 'outcome-poor'
+          },
+          {
+            text: "\"I'm sorry to hear that. I hope you'll reconsider.\"",
+            quality: 'neutral',
+            feedback: "Too passive. 'I hope you'll reconsider' without any action makes it sound like you want the problem to go away, not the customer to stay.",
+            scoreΔ: 0, moodΔ: 0, next: 'outcome-poor'
+          },
+          {
+            text: "\"That's your right. The charges were all correct.\"",
+            quality: 'bad',
+            feedback: "Ending with 'the charges were correct' as she walks away is the worst possible send-off. You're right about the billing and wrong about everything else.",
+            scoreΔ: -3, moodΔ: -15, next: 'outcome-terrible'
+          }
+        ]
+      },
+      'outcome-great': {
+        outcome: true,
+        emoji: '🌟',
+        title: 'Loyalty Strengthened',
+        color: 'green',
+        description: "Ms. Lindqvist books her fourth stay the same week and mentions in her review: 'A misunderstanding about billing was handled with such care that I trust this hotel completely.'",
+        debrief: "You never got defensive, you investigated together, you took responsibility for the presentation failure (not the billing), and you ended with a personal touch. This is the service recovery paradox at its most powerful — a near-crisis became a loyalty moment."
+      },
+      'outcome-good': {
+        outcome: true,
+        emoji: '😊',
+        title: 'Trust Maintained',
+        color: 'blue',
+        description: "Ms. Lindqvist accepts the explanation and the gesture. She keeps her future booking. She doesn't leave a review.",
+        debrief: "Good recovery. You handled the billing question correctly and offered something concrete. Missing piece: the emotional acknowledgment of the unclear tax communication. Mentioning proactive improvement (updating the display) would have been the final touch."
+      },
+      'outcome-ok': {
+        outcome: true,
+        emoji: '😐',
+        title: 'Survived',
+        color: 'amber',
+        description: "Ms. Lindqvist accepts the explanation grudgingly. She is not warm at check-out. You're not sure she'll return.",
+        debrief: "The charge was correct and she accepts it, but the emotional journey was unsatisfying. The LAST model's Acknowledge step was weak throughout. A loyal customer who feels patronised will quietly defect — there's no public complaint, just silence."
+      },
+      'outcome-poor': {
+        outcome: true,
+        emoji: '😠',
+        title: 'Loyalty Lost',
+        color: 'red',
+        description: "Ms. Lindqvist cancels her future booking. The hotel loses a NOK 20,000+ relationship.",
+        debrief: "This outcome shows that even when you're technically right, how you deliver that information determines the outcome. A loyal customer who feels dismissed will leave quietly. The billing was correct; the relationship management was not."
+      },
+      'outcome-terrible': {
+        outcome: true,
+        emoji: '💥',
+        title: 'Relationship Ruptured',
+        color: 'red',
+        description: "Ms. Lindqvist posts a detailed 1-star review specifically about the attitude at the front desk. Several potential guests cite it as a reason for choosing a competitor.",
+        debrief: "Being correct about billing while being dismissive about feelings is a losing combination. A loyal customer who storms out with a photo of the charges is a reputational risk. The LAST model exists precisely to prevent this."
+      }
+    }
+  }
+];
+
+/* ============================================================
+   STATE
+============================================================ */
+const state = {
+  tab: 'learn',
+  scenario: null,
+  nodeId: null,
+  mood: 50,
+  score: 0,
+  maxScore: 0,
+  history: [],           // array of {nodeId, choiceIdx, quality}
+  presentScenario: null,
+  presentNodeId: null,
+  presentMood: 50,
+  bestScores: JSON.parse(localStorage.getItem('complaint_best_scores') || '{}')
+};
+
+/* ============================================================
+   MOOD HELPERS
+============================================================ */
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function moodMeta(mood) {
+  if (mood >= 80) return { emoji: '😄', label: 'Delighted', color: '#22c55e' };
+  if (mood >= 60) return { emoji: '🙂', label: 'Satisfied', color: '#84cc16' };
+  if (mood >= 45) return { emoji: '😐', label: 'Neutral', color: '#eab308' };
+  if (mood >= 30) return { emoji: '😟', label: 'Upset', color: '#f97316' };
+  if (mood >= 15) return { emoji: '😠', label: 'Angry', color: '#ef4444' };
+  return { emoji: '🤬', label: 'Furious', color: '#991b1b' };
+}
+
+function updateMoodUI(mood, barId, labelId) {
+  const m = moodMeta(mood);
+  const bar = document.getElementById(barId);
+  const lbl = document.getElementById(labelId);
+  if (bar) { bar.style.width = mood + '%'; bar.style.backgroundColor = m.color; }
+  if (lbl) lbl.textContent = m.emoji + ' ' + m.label;
+}
+
+/* ============================================================
+   SCORE HELPERS
+============================================================ */
+function saveBestScore(scenarioId, score) {
+  if (!state.bestScores[scenarioId] || score > state.bestScores[scenarioId]) {
+    state.bestScores[scenarioId] = score;
+    localStorage.setItem('complaint_best_scores', JSON.stringify(state.bestScores));
+  }
+  updateGlobalBadge();
+}
+
+function updateGlobalBadge() {
+  const vals = Object.values(state.bestScores);
+  if (vals.length === 0) return;
+  const total = vals.reduce((a, b) => a + b, 0);
+  const badge = document.getElementById('score-badge');
+  if (badge) badge.textContent = 'Best: ' + total + ' pts';
+}
+
+/* ============================================================
+   TAB SWITCHING
+============================================================ */
+function switchTab(tab) {
+  state.tab = tab;
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+  document.getElementById('tab-' + tab).classList.remove('hidden');
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    const isActive = b.dataset.tab === tab;
+    b.classList.toggle('active', isActive);
+    b.classList.toggle('text-blue-700', isActive);
+    b.classList.toggle('text-slate-500', !isActive);
+  });
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+window.switchTab = switchTab;
+
+/* ============================================================
+   ACCORDION
+============================================================ */
+document.querySelectorAll('.accordion-trigger').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const body = btn.nextElementSibling;
+    const icon = btn.querySelector('.accordion-icon');
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    if (icon) icon.textContent = isOpen ? '▼' : '▲';
+  });
+});
+
+/* ============================================================
+   SCENARIO SELECTION — build cards
+============================================================ */
+function buildScenarioCards(containerId, onSelect) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  SCENARIOS.forEach(sc => {
+    const best = state.bestScores[sc.id];
+    const diffColors = { green: 'bg-green-100 text-green-800', amber: 'bg-amber-100 text-amber-800', red: 'bg-red-100 text-red-800' };
+    const dc = diffColors[sc.diffColor] || 'bg-slate-100 text-slate-800';
+    const card = document.createElement('div');
+    card.className = 'bg-white rounded-xl border border-slate-200 p-4 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all flex gap-4 items-start';
+    card.innerHTML = `
+      <span class="text-3xl">${sc.emoji}</span>
+      <div class="flex-1 min-w-0">
+        <div class="flex flex-wrap items-center gap-2 mb-1">
+          <h3 class="font-bold text-slate-800">${sc.title}</h3>
+          <span class="text-xs px-2 py-0.5 rounded-full font-medium ${dc}">${sc.difficulty}</span>
+          ${best !== undefined ? `<span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-medium">Best: ${best} pts</span>` : ''}
+        </div>
+        <p class="text-sm text-slate-600">${sc.subtitle}</p>
+      </div>
+      <span class="text-slate-400 text-xl self-center">›</span>
+    `;
+    card.addEventListener('click', () => onSelect(sc));
+    container.appendChild(card);
+  });
+}
+
+buildScenarioCards('scenario-cards', startScenario);
+buildScenarioCards('present-scenario-cards', startPresent);
+
+/* ============================================================
+   PRACTICE — start / render
+============================================================ */
+function startScenario(sc) {
+  state.scenario = sc;
+  state.nodeId = sc.startNode;
+  state.mood = sc.startMood;
+  state.score = 0;
+  state.history = [];
+
+  document.getElementById('scenario-select').classList.add('hidden');
+  document.getElementById('scenario-active').classList.remove('hidden');
+  document.getElementById('scenario-label').textContent = sc.title;
+  document.getElementById('live-score').textContent = '0';
+
+  updateMoodUI(state.mood, 'mood-bar', 'mood-label');
+  renderNode();
+}
+
+function renderNode() {
+  const sc = state.scenario;
+  const node = sc.nodes[state.nodeId];
+  const container = document.getElementById('node-content');
+  container.innerHTML = '';
+  container.className = 'node-enter';
+  // Re-trigger animation
+  void container.offsetWidth;
+
+  if (node.outcome) {
+    renderOutcome(node, container);
+  } else {
+    renderDecision(node, container);
+  }
+}
+
+function renderDecision(node, container) {
+  const html = `
+    <div class="bg-slate-800 rounded-xl p-4 mb-4 text-white text-sm leading-relaxed">
+      <p class="text-xs text-slate-400 uppercase tracking-widest font-semibold mb-2">Situation</p>
+      <p>${escHtml(node.situation)}</p>
+    </div>
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+      <p class="text-xs text-blue-600 uppercase tracking-widest font-semibold mb-1">Customer says:</p>
+      <p class="text-sm text-blue-900 italic">${escHtml(node.customer)}</p>
+    </div>
+    <p class="text-xs text-slate-500 font-semibold uppercase tracking-widest mb-3">How do you respond?</p>
+    <div class="space-y-3" id="options-list"></div>
+  `;
+  container.innerHTML = html;
+
+  const optList = document.getElementById('options-list');
+  node.options.forEach((opt, idx) => {
+    const card = document.createElement('div');
+    card.className = 'option-card bg-white rounded-xl border border-slate-200 p-4 text-sm';
+    card.innerHTML = `
+      <span class="inline-block text-xs font-bold text-slate-400 mb-1">Option ${idx + 1}</span>
+      <p class="text-slate-800">${escHtml(opt.text)}</p>
+    `;
+    card.addEventListener('click', () => chooseOption(idx));
+    optList.appendChild(card);
+  });
+}
+
+function chooseOption(idx) {
+  const sc = state.scenario;
+  const node = sc.nodes[state.nodeId];
+  const opt = node.options[idx];
+
+  state.mood = clamp(state.mood + opt.moodΔ, 0, 100);
+  state.score += opt.scoreΔ;
+  state.history.push({ nodeId: state.nodeId, choiceIdx: idx, quality: opt.quality });
+
+  updateMoodUI(state.mood, 'mood-bar', 'mood-label');
+  document.getElementById('live-score').textContent = state.score;
+
+  // Show feedback overlay
+  showFeedback(opt, () => {
+    state.nodeId = opt.next;
+    renderNode();
+  });
+}
+
+function showFeedback(opt, onContinue) {
+  const qColors = { good: 'border-green-400 bg-green-50', neutral: 'border-amber-400 bg-amber-50', bad: 'border-red-400 bg-red-50' };
+  const qLabels = { good: '✓ Good choice', neutral: '→ Neutral', bad: '✗ Escalates conflict' };
+  const qLabel = { good: 'text-green-800', neutral: 'text-amber-800', bad: 'text-red-800' };
+  const col = qColors[opt.quality] || 'border-slate-300 bg-slate-50';
+  const lbl = qLabels[opt.quality] || '';
+  const lblCol = qLabel[opt.quality] || 'text-slate-800';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4';
+  overlay.innerHTML = `
+    <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl border-2 ${col} overflow-hidden">
+      <div class="p-5">
+        <p class="text-xs font-bold uppercase tracking-widest ${lblCol} mb-2">${lbl}</p>
+        <p class="text-sm text-slate-700 leading-relaxed">${escHtml(opt.feedback)}</p>
+      </div>
+      <div class="border-t border-slate-100 p-4">
+        <button class="w-full bg-slate-800 text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-slate-700 transition-colors" id="feedback-continue">Continue →</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  document.getElementById('feedback-continue').addEventListener('click', () => {
+    document.body.removeChild(overlay);
+    onContinue();
+  });
+}
+
+function renderOutcome(node, container) {
+  const sc = state.scenario;
+  saveBestScore(sc.id, state.score);
+
+  const colMap = {
+    green: { bg: 'bg-green-50', border: 'border-green-300', title: 'text-green-800', text: 'text-green-700' },
+    blue:  { bg: 'bg-blue-50',  border: 'border-blue-300',  title: 'text-blue-800',  text: 'text-blue-700'  },
+    amber: { bg: 'bg-amber-50', border: 'border-amber-300', title: 'text-amber-800', text: 'text-amber-700' },
+    red:   { bg: 'bg-red-50',   border: 'border-red-300',   title: 'text-red-800',   text: 'text-red-700'   }
+  };
+  const c = colMap[node.color] || colMap.blue;
+
+  // Build quality summary
+  const good  = state.history.filter(h => h.quality === 'good').length;
+  const neut  = state.history.filter(h => h.quality === 'neutral').length;
+  const bad   = state.history.filter(h => h.quality === 'bad').length;
+
+  container.innerHTML = `
+    <div class="${c.bg} border ${c.border} rounded-2xl p-5 mb-4">
+      <div class="flex items-center gap-3 mb-3">
+        <span class="text-4xl">${node.emoji}</span>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-widest ${c.title} opacity-70">Outcome</p>
+          <h3 class="text-xl font-bold ${c.title}">${escHtml(node.title)}</h3>
+        </div>
+      </div>
+      <p class="text-sm ${c.text} leading-relaxed mb-3">${escHtml(node.description)}</p>
+      <div class="flex gap-3 text-xs font-semibold">
+        <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full">✓ ${good} good</span>
+        <span class="bg-amber-100 text-amber-800 px-2 py-1 rounded-full">→ ${neut} neutral</span>
+        <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full">✗ ${bad} poor</span>
+        <span class="bg-slate-100 text-slate-800 px-2 py-1 rounded-full">Score: ${state.score}</span>
+      </div>
+    </div>
+    <div class="bg-slate-800 rounded-xl p-4 mb-5 text-white text-sm leading-relaxed">
+      <p class="text-xs text-slate-400 uppercase tracking-widest font-semibold mb-2">LAST Model Debrief</p>
+      <p>${escHtml(node.debrief)}</p>
+    </div>
+    <div class="flex flex-wrap gap-3">
+      <button id="retry-btn" class="flex-1 min-w-0 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors">↩ Try Again</button>
+      <button id="other-btn" class="flex-1 min-w-0 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors">Other Scenarios</button>
+    </div>
+  `;
+
+  document.getElementById('retry-btn').addEventListener('click', () => startScenario(sc));
+  document.getElementById('other-btn').addEventListener('click', () => {
+    document.getElementById('scenario-active').classList.add('hidden');
+    document.getElementById('scenario-select').classList.remove('hidden');
+    buildScenarioCards('scenario-cards', startScenario);
+  });
+}
+
+document.getElementById('back-to-select').addEventListener('click', () => {
+  document.getElementById('scenario-active').classList.add('hidden');
+  document.getElementById('scenario-select').classList.remove('hidden');
+  buildScenarioCards('scenario-cards', startScenario);
+});
+
+/* ============================================================
+   PRESENT MODE
+============================================================ */
+function startPresent(sc) {
+  state.presentScenario = sc;
+  state.presentNodeId = sc.startNode;
+  state.presentMood = sc.startMood;
+
+  document.getElementById('p-scenario-name').textContent = sc.title;
+  updateMoodUI(state.presentMood, 'p-mood-bar', 'p-mood-label');
+
+  renderPresentNode();
+
+  const overlay = document.getElementById('present-overlay');
+  overlay.classList.add('active');
+}
+
+function renderPresentNode() {
+  const sc = state.presentScenario;
+  const node = sc.nodes[state.presentNodeId];
+  const container = document.getElementById('p-node-content');
+  container.innerHTML = '';
+
+  if (node.outcome) {
+    renderPresentOutcome(node, container);
+    return;
+  }
+
+  const optionLabels = ['A', 'B', 'C'];
+  const html = `
+    <div class="bg-slate-700 rounded-2xl p-5 mb-5">
+      <p class="text-xs text-slate-400 uppercase tracking-widest font-semibold mb-3">Situation</p>
+      <p class="text-slate-100 text-base leading-relaxed">${escHtml(node.situation)}</p>
+    </div>
+    <div class="bg-blue-900 border border-blue-700 rounded-2xl p-4 mb-5">
+      <p class="text-xs text-blue-400 uppercase tracking-widest font-semibold mb-1">Customer says:</p>
+      <p class="text-blue-100 text-base italic">${escHtml(node.customer)}</p>
+    </div>
+    <p class="text-sm text-slate-400 font-semibold uppercase tracking-widest mb-4">What do you do?</p>
+    <div class="space-y-3" id="p-options-list"></div>
+    <div id="p-reveal-area" class="mt-4"></div>
+  `;
+  container.innerHTML = html;
+
+  const optList = document.getElementById('p-options-list');
+  node.options.forEach((opt, idx) => {
+    const card = document.createElement('div');
+    card.className = 'bg-slate-700 border border-slate-600 rounded-xl p-4 cursor-pointer hover:border-blue-400 transition-colors';
+    card.setAttribute('data-opt-idx', idx);
+    card.innerHTML = `
+      <div class="flex gap-3 items-start">
+        <span class="text-blue-400 font-black text-lg leading-none mt-0.5">${optionLabels[idx]}</span>
+        <p class="text-slate-100 text-sm leading-relaxed">${escHtml(opt.text)}</p>
+      </div>
+    `;
+    card.addEventListener('click', () => revealPresentFeedback(idx, node));
+    optList.appendChild(card);
+  });
+}
+
+function revealPresentFeedback(idx, node) {
+  const opt = node.options[idx];
+  state.presentMood = clamp(state.presentMood + opt.moodΔ, 0, 100);
+  updateMoodUI(state.presentMood, 'p-mood-bar', 'p-mood-label');
+
+  const qColors = { good: 'border-green-500 bg-green-900', neutral: 'border-amber-500 bg-amber-900', bad: 'border-red-500 bg-red-900' };
+  const qLabels = { good: '✓ Good choice', neutral: '→ Neutral', bad: '✗ Escalates conflict' };
+  const col = qColors[opt.quality] || 'border-slate-500 bg-slate-800';
+  const lbl = qLabels[opt.quality] || '';
+
+  // Highlight selected option
+  document.querySelectorAll('#p-options-list > div').forEach((el, i) => {
+    if (i === idx) {
+      el.classList.add('border-blue-400', 'ring-2', 'ring-blue-400');
+    } else {
+      el.classList.add('opacity-40');
+    }
+  });
+
+  const revealArea = document.getElementById('p-reveal-area');
+  revealArea.innerHTML = `
+    <div class="rounded-xl border-2 ${col} p-4 mb-4">
+      <p class="text-xs font-bold uppercase tracking-widest text-white opacity-80 mb-1">${lbl}</p>
+      <p class="text-white text-sm leading-relaxed">${escHtml(opt.feedback)}</p>
+    </div>
+    <button id="p-continue-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm transition-colors">Next →</button>
+  `;
+  document.getElementById('p-continue-btn').addEventListener('click', () => {
+    state.presentNodeId = opt.next;
+    renderPresentNode();
+  });
+}
+
+function renderPresentOutcome(node, container) {
+  const colMap = {
+    green: 'border-green-500 bg-green-900',
+    blue:  'border-blue-500 bg-blue-900',
+    amber: 'border-amber-500 bg-amber-900',
+    red:   'border-red-500 bg-red-900'
+  };
+  const c = colMap[node.color] || colMap.blue;
+  container.innerHTML = `
+    <div class="border-2 ${c} rounded-2xl p-6 mb-5">
+      <div class="flex items-center gap-3 mb-3">
+        <span class="text-5xl">${node.emoji}</span>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-widest text-white opacity-70">Outcome</p>
+          <h3 class="text-2xl font-bold text-white">${escHtml(node.title)}</h3>
+        </div>
+      </div>
+      <p class="text-slate-200 leading-relaxed mb-4">${escHtml(node.description)}</p>
+      <div class="bg-black/20 rounded-xl p-4">
+        <p class="text-xs text-slate-400 uppercase tracking-widest font-semibold mb-2">LAST Model Debrief</p>
+        <p class="text-slate-200 text-sm leading-relaxed">${escHtml(node.debrief)}</p>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-3">
+      <button id="p-restart-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl text-sm transition-colors">↩ Restart Scenario</button>
+      <button id="p-exit-btn" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-3 rounded-xl text-sm transition-colors">Exit Present Mode</button>
+    </div>
+  `;
+  document.getElementById('p-restart-btn').addEventListener('click', () => {
+    state.presentNodeId = state.presentScenario.startNode;
+    state.presentMood = state.presentScenario.startMood;
+    updateMoodUI(state.presentMood, 'p-mood-bar', 'p-mood-label');
+    renderPresentNode();
+  });
+  document.getElementById('p-exit-btn').addEventListener('click', exitPresent);
+}
+
+function exitPresent() {
+  document.getElementById('present-overlay').classList.remove('active');
+}
+
+document.getElementById('exit-present').addEventListener('click', exitPresent);
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const overlay = document.getElementById('present-overlay');
+    if (overlay.classList.contains('active')) exitPresent();
+  }
+});
+
+// Present button from header — goes to present-setup tab
+document.getElementById('present-btn').addEventListener('click', () => switchTab('present-setup'));
+
+/* ============================================================
+   HTML ESCAPE HELPER
+============================================================ */
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+updateGlobalBadge();
+</script>
+</body>
+</html>

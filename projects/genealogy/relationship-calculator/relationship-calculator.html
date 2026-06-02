@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<!--
+  Relationship Calculator — Halison App Studio example
+
+  Work out how two relatives are related (e.g. "second cousins once removed") from how many generations each is below their common ancestor.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relationship Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+    .fade-in { animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .tooltip { position: relative; }
+    .tooltip:hover .tooltip-text { display: block; }
+    .tooltip-text { display: none; position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%);
+      background: #1e293b; color: #f8fafc; font-size: 11px; padding: 5px 9px; border-radius: 5px;
+      width: max-content; max-width: 220px; white-space: normal; z-index: 50; pointer-events: none;
+      font-weight: 400; line-height: 1.35; text-align: center; }
+    .tooltip-text::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+      border: 5px solid transparent; border-top-color: #1e293b; }
+    .ladder-node { transition: all 0.3s ease; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="5" r="2.2" />
+          <circle cx="6" cy="18" r="2.2" />
+          <circle cx="18" cy="18" r="2.2" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.2v3.3M12 10.5L6 15.8M12 10.5l6 5.3" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-gray-900 leading-tight">Relationship Calculator</h1>
+        <p class="text-xs text-gray-500">Name the family tie between two relatives from their common ancestor</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 py-8 space-y-6">
+
+    <!-- Input Section -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Describe the two people</h2>
+      <p class="text-sm text-gray-500 mb-5">
+        First find the <strong class="text-gray-700">Most Recent Common Ancestor (MRCA)</strong> the two people share.
+        Then count how many generations each person is <em>below</em> that ancestor.
+      </p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Person 1 -->
+        <div class="rounded-xl border-2 border-blue-200 p-5 space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">1</span>
+            <span class="font-semibold text-gray-800">Person 1</span>
+          </div>
+          <label class="block text-xs font-medium text-gray-500 leading-snug">
+            Generations from the common ancestor down to Person&nbsp;1
+            <span class="block text-[11px] text-gray-400 mt-0.5">0 = Person 1 <em>is</em> the common ancestor · 1 = child · 2 = grandchild · …</span>
+          </label>
+          <div class="flex items-center gap-2">
+            <button type="button" data-step="g1" data-dir="-1" class="stepper w-9 h-9 rounded-lg border border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 select-none">−</button>
+            <input id="g1" type="number" min="0" max="15" step="1" value="2"
+              class="w-full text-center border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent" />
+            <button type="button" data-step="g1" data-dir="1" class="stepper w-9 h-9 rounded-lg border border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 select-none">+</button>
+          </div>
+          <div id="g1Label" class="text-xs text-blue-600 font-medium"></div>
+        </div>
+
+        <!-- Person 2 -->
+        <div class="rounded-xl border-2 border-indigo-200 p-5 space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">2</span>
+            <span class="font-semibold text-gray-800">Person 2</span>
+          </div>
+          <label class="block text-xs font-medium text-gray-500 leading-snug">
+            Generations from the common ancestor down to Person&nbsp;2
+            <span class="block text-[11px] text-gray-400 mt-0.5">0 = Person 2 <em>is</em> the common ancestor · 1 = child · 2 = grandchild · …</span>
+          </label>
+          <div class="flex items-center gap-2">
+            <button type="button" data-step="g2" data-dir="-1" class="stepper w-9 h-9 rounded-lg border border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 select-none">−</button>
+            <input id="g2" type="number" min="0" max="15" step="1" value="2"
+              class="w-full text-center border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent" />
+            <button type="button" data-step="g2" data-dir="1" class="stepper w-9 h-9 rounded-lg border border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 select-none">+</button>
+          </div>
+          <div id="g2Label" class="text-xs text-indigo-600 font-medium"></div>
+        </div>
+
+      </div>
+
+      <!-- Presets -->
+      <div class="mt-6">
+        <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Quick presets</div>
+        <div id="presets" class="flex flex-wrap gap-2"></div>
+      </div>
+    </section>
+
+    <!-- Results Section -->
+    <div id="resultsSection" class="space-y-5 fade-in">
+
+      <!-- Verdict Card -->
+      <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Relationship</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="rounded-xl bg-blue-50 border border-blue-100 px-5 py-4">
+            <div class="text-xs text-blue-600 font-medium mb-1">Person 2 is Person 1's</div>
+            <div id="forwardText" class="text-2xl font-bold text-blue-800 leading-tight">—</div>
+          </div>
+          <div class="rounded-xl bg-indigo-50 border border-indigo-100 px-5 py-4">
+            <div class="text-xs text-indigo-600 font-medium mb-1">Person 1 is Person 2's</div>
+            <div id="reverseText" class="text-2xl font-bold text-indigo-800 leading-tight">—</div>
+          </div>
+        </div>
+        <p id="explainText" class="text-sm text-gray-600 mt-4 leading-relaxed"></p>
+      </section>
+
+      <!-- Degree of Kinship -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div class="text-xs text-gray-500 font-medium mb-1 tooltip">
+            Civil degree of kinship
+            <span class="tooltip-text">Civil (Roman) law: g1 + g2 — count every step up to the common ancestor and back down.</span>
+          </div>
+          <div id="civilDegree" class="text-2xl font-bold text-gray-800">—</div>
+          <div class="text-xs text-gray-400 mt-0.5">g1 + g2 (steps up then down)</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div class="text-xs text-gray-500 font-medium mb-1 tooltip">
+            Canon-law degree
+            <span class="tooltip-text">Canon (Church) law: max(g1, g2) — the longer of the two lines down from the common ancestor.</span>
+          </div>
+          <div id="canonDegree" class="text-2xl font-bold text-gray-800">—</div>
+          <div class="text-xs text-gray-400 mt-0.5">max(g1, g2) (longer line)</div>
+        </div>
+        <p class="sm:col-span-2 text-xs text-gray-500 leading-relaxed">
+          Two legal traditions count kinship differently. <strong class="text-gray-600">Civil law</strong> adds both lines together;
+          <strong class="text-gray-600">canon law</strong> takes only the longer line. Both are measured from the most recent common ancestor.
+        </p>
+      </section>
+
+      <!-- Descent Ladder Visual -->
+      <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-5">Descent from the common ancestor</h2>
+        <div id="ladder" class="flex flex-col items-center"></div>
+      </section>
+
+    </div>
+
+    <!-- About / How it works -->
+    <section class="bg-gray-50 rounded-xl border border-gray-200 px-5 py-4 text-xs text-gray-500 leading-relaxed space-y-2">
+      <p><strong class="text-gray-700">About / How it works.</strong>
+        Every blood relationship can be described by a single shared ancestor — the
+        <strong class="text-gray-600">Most Recent Common Ancestor (MRCA)</strong>. To use this tool, first identify that ancestor,
+        then count how many generations each person sits below them.</p>
+      <p>From those two counts the relationship follows a simple rule. If one count is 0, the people are in a
+        direct line (parent/child, grandparent/grandchild, …). If both are 1, they are siblings. Otherwise the
+        smaller count sets the <em>cousin degree</em> (first, second, …) and the difference between the counts is
+        how many times they are <em>removed</em>. When the smaller count is 1 you get aunt/uncle and niece/nephew ties.</p>
+      <p>The "degree of kinship" is shown two ways: the <strong class="text-gray-600">civil (Roman) degree</strong> counts every
+        step up to the ancestor and back down (g1 + g2), while the <strong class="text-gray-600">canon (Church) degree</strong>
+        counts only the longer line (max of g1, g2).</p>
+    </section>
+
+  </main>
+
+  <footer class="max-w-4xl mx-auto px-4 py-6 text-center text-xs text-gray-400">
+    Relationship Calculator &mdash; <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-indigo-500" target="_blank" rel="noopener">Halison App Studio</a>
+  </footer>
+
+<script>
+// ─── Relationship algorithm (transcribed exactly) ───────────────────────────
+
+function ordinal(n){ // 1->first, 2->second, ...
+  const names=['zeroth','first','second','third','fourth','fifth','sixth','seventh','eighth','ninth','tenth','eleventh','twelfth','thirteenth','fourteenth','fifteenth'];
+  return names[n] || (n+'th');
+}
+function timesRemoved(r){ // r>=0
+  if(r===0) return '';
+  if(r===1) return 'once removed';
+  if(r===2) return 'twice removed';
+  if(r===3) return 'three times removed';
+  return r+' times removed';
+}
+// prefix for "grand"/"great-grand" chains. levels: 0 -> '', 1 -> 'grand', 2 -> 'great-grand', n -> ('great-'*(n-1))+'grand'
+function grandPrefix(levels){
+  if(levels<=0) return '';
+  if(levels===1) return 'grand';
+  return 'great-'.repeat(levels-1)+'grand';
+}
+
+// Returns {forward, reverse, explain} for person2 relative to person1 (forward) and person1 relative to person2 (reverse).
+function relationship(g1, g2){
+  if(g1===0 && g2===0) return {forward:'the same person', reverse:'the same person', explain:'Both are the common ancestor.'};
+  // Direct line: one of them IS the common ancestor
+  if(g1===0 || g2===0){
+    const d = Math.max(g1,g2);           // generations apart
+    // ancestor side vs descendant side
+    const ancFirst = (g1===0);           // is Person 1 the ancestor?
+    // ancestor term: d=1 parent, d=2 grandparent, d>=3 great-...-grandparent
+    const ancTerm = (d===1?'parent':(grandPrefix(d-1)+'parent'));
+    const descTerm = (d===1?'child':(grandPrefix(d-1)+'child'));
+    return {
+      forward: ancFirst ? descTerm : ancTerm,   // Person 2 relative to Person 1
+      reverse: ancFirst ? ancTerm : descTerm,
+      explain: 'One is a direct ancestor of the other, '+d+' generation(s) apart.'
+    };
+  }
+  const minG=Math.min(g1,g2), removed=Math.abs(g1-g2);
+  if(minG===1){
+    if(removed===0) return {forward:'sibling', reverse:'sibling', explain:'They share both/one parent — full or half siblings.'};
+    // avuncular. The person CLOSER to the ancestor (smaller g) is the aunt/uncle; the farther one is niece/nephew.
+    // grand level = removed-1: removed=1 -> aunt/uncle ; removed=2 -> grand-aunt/uncle ; removed=3 -> great-grand-aunt/uncle
+    const pre = grandPrefix(removed-1);
+    const auntUncle = (pre?pre+'-':'')+'aunt/uncle';
+    const nieceNephew = (pre?pre+'-':'')+'niece/nephew';
+    const p1IsCloser = g1<g2;
+    return {
+      forward: p1IsCloser ? nieceNephew : auntUncle,  // person2 relative to person1
+      reverse: p1IsCloser ? auntUncle : nieceNephew,
+      explain: 'One is a sibling of the other’s ancestor.'
+    };
+  }
+  // Cousins
+  const degree=minG-1; // 1=first cousin
+  const tr=timesRemoved(removed);
+  const base=ordinal(degree)+' cousin'+(removed>0?' '+tr:'');
+  return {forward:base, reverse:base, explain:'They share a common ancestor through cousin lines.'};
+}
+
+// ─── Helpers for plain-English ancestor description ─────────────────────────
+
+// A person g generations below the ancestor: how the ancestor relates to that person.
+// g=1 -> "parent", g=2 -> "grandparent", g=3 -> "great-grandparent", ...
+function ancestorTermFor(g){
+  if(g===0) return 'self';
+  if(g===1) return 'parent';
+  return grandPrefix(g-1)+'parent';
+}
+
+// Capitalise first letter
+function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
+
+// ─── DOM refs ───────────────────────────────────────────────────────────────
+
+const g1Input = document.getElementById('g1');
+const g2Input = document.getElementById('g2');
+const out = id => document.getElementById(id);
+
+const STORAGE_KEY = 'relcalc';
+
+const PRESETS = [
+  { name: 'Siblings', g1: 1, g2: 1 },
+  { name: 'First cousins', g1: 2, g2: 2 },
+  { name: 'Second cousins', g1: 3, g2: 3 },
+  { name: 'Parent & child', g1: 0, g2: 1 },
+  { name: 'Grandparent & grandchild', g1: 0, g2: 2 },
+  { name: 'Aunt/uncle & niece/nephew', g1: 1, g2: 2 },
+  { name: 'First cousins once removed', g1: 2, g2: 3 },
+  { name: 'Great-grandparent', g1: 0, g2: 3 },
+];
+
+// ─── Render presets ─────────────────────────────────────────────────────────
+
+(function buildPresets(){
+  const wrap = document.getElementById('presets');
+  PRESETS.forEach(p => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'preset-btn text-xs font-medium px-3 py-1.5 rounded-full border border-gray-300 text-gray-600 bg-white hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 transition';
+    btn.textContent = p.name;
+    btn.addEventListener('click', () => {
+      g1Input.value = p.g1;
+      g2Input.value = p.g2;
+      calculate();
+    });
+    wrap.appendChild(btn);
+  });
+})();
+
+// ─── Steppers ───────────────────────────────────────────────────────────────
+
+document.querySelectorAll('.stepper').forEach(b => {
+  b.addEventListener('click', () => {
+    const input = document.getElementById(b.dataset.step);
+    const dir = parseInt(b.dataset.dir, 10);
+    let v = clampG(parseInt(input.value, 10));
+    v = clampG(v + dir);
+    input.value = v;
+    calculate();
+  });
+});
+
+function clampG(v){
+  if(isNaN(v)) v = 0;
+  if(v < 0) v = 0;
+  if(v > 15) v = 15;
+  return v;
+}
+
+// ─── Per-person label (e.g. "grandchild of the common ancestor") ────────────
+
+function personDescription(g){
+  if(g===0) return 'is the common ancestor';
+  if(g===1) return 'is a child of the common ancestor';
+  if(g===2) return 'is a grandchild of the common ancestor';
+  return 'is a ' + grandPrefix(g-1) + 'child of the common ancestor';
+}
+
+// ─── Descent ladder visual ──────────────────────────────────────────────────
+
+function descentLabel(g){
+  if(g===0) return 'is the ancestor';
+  if(g===1) return 'child';
+  if(g===2) return 'grandchild';
+  return grandPrefix(g-1)+'child';
+}
+
+function buildLadder(g1, g2){
+  const ladder = document.getElementById('ladder');
+  ladder.innerHTML = '';
+
+  // Shared common-ancestor node
+  const anc = document.createElement('div');
+  anc.className = 'ladder-node mb-2 px-4 py-2 rounded-xl bg-gray-800 text-white text-sm font-semibold shadow-sm';
+  anc.textContent = 'Common ancestor';
+  ladder.appendChild(anc);
+
+  // Connector down to the split
+  const connector = document.createElement('div');
+  connector.className = 'w-px h-4 bg-gray-300';
+  ladder.appendChild(connector);
+
+  // Two columns
+  const cols = document.createElement('div');
+  cols.className = 'grid grid-cols-2 gap-8 sm:gap-16 w-full max-w-md';
+
+  cols.appendChild(buildColumn(1, g1, 'blue'));
+  cols.appendChild(buildColumn(2, g2, 'indigo'));
+
+  ladder.appendChild(cols);
+}
+
+function buildColumn(personNum, g, color){
+  const col = document.createElement('div');
+  col.className = 'flex flex-col items-center gap-1';
+
+  const accentBg = color === 'blue' ? 'bg-blue-100' : 'bg-indigo-100';
+  const accentText = color === 'blue' ? 'text-blue-700' : 'text-indigo-700';
+  const accentBorder = color === 'blue' ? 'border-blue-300' : 'border-indigo-300';
+  const finalBg = color === 'blue' ? 'bg-blue-600' : 'bg-indigo-600';
+  const rungColor = 'bg-gray-300';
+
+  if(g === 0){
+    // Person IS the common ancestor
+    const node = document.createElement('div');
+    node.className = 'ladder-node px-3 py-2 rounded-lg ' + finalBg + ' text-white text-xs font-bold text-center shadow-sm';
+    node.textContent = 'Person ' + personNum + ' (the ancestor)';
+    col.appendChild(node);
+    return col;
+  }
+
+  // g rungs of descent, last node = the person
+  for(let i = 1; i <= g; i++){
+    // rung connector
+    const rung = document.createElement('div');
+    rung.className = 'w-px h-4 ' + rungColor;
+    col.appendChild(rung);
+
+    const isPerson = (i === g);
+    const node = document.createElement('div');
+    if(isPerson){
+      node.className = 'ladder-node px-3 py-2 rounded-lg ' + finalBg + ' text-white text-xs font-bold text-center shadow-sm';
+      node.textContent = 'Person ' + personNum;
+    } else {
+      node.className = 'ladder-node px-3 py-1.5 rounded-lg ' + accentBg + ' ' + accentText + ' border ' + accentBorder + ' text-[11px] font-medium text-center';
+      node.textContent = ordinalGenLabel(i);
+    }
+    col.appendChild(node);
+  }
+
+  // caption
+  const cap = document.createElement('div');
+  cap.className = 'mt-1 text-[11px] ' + accentText + ' font-medium text-center';
+  cap.textContent = g + ' gen · ' + descentLabel(g);
+  col.appendChild(cap);
+
+  return col;
+}
+
+function ordinalGenLabel(i){
+  if(i===1) return 'child';
+  if(i===2) return 'grandchild';
+  return grandPrefix(i-1)+'child';
+}
+
+// ─── Main calculation ────────────────────────────────────────────────────────
+
+function calculate(){
+  const g1 = clampG(parseInt(g1Input.value, 10));
+  const g2 = clampG(parseInt(g2Input.value, 10));
+  // normalise the visible inputs to the clamped values
+  if(String(g1) !== g1Input.value) g1Input.value = g1;
+  if(String(g2) !== g2Input.value) g2Input.value = g2;
+
+  out('g1Label').textContent = 'Person 1 ' + personDescription(g1) + '.';
+  out('g2Label').textContent = 'Person 2 ' + personDescription(g2) + '.';
+
+  const rel = relationship(g1, g2);
+
+  out('forwardText').textContent = cap(rel.forward);
+  out('reverseText').textContent = cap(rel.reverse);
+
+  // Plain-English explanation referencing the shared ancestor.
+  let explain = rel.explain;
+  if(!(g1===0 && g2===0)){
+    const t1 = ancestorTermFor(g1);
+    const t2 = ancestorTermFor(g2);
+    if(g1 > 0 && g2 > 0){
+      explain += ' The common ancestor is Person 1’s ' + t1 + ' and Person 2’s ' + t2 + '.';
+    } else if(g1 === 0 && g2 > 0){
+      explain += ' Person 1 is Person 2’s ' + t2 + '.';
+    } else if(g2 === 0 && g1 > 0){
+      explain += ' Person 2 is Person 1’s ' + t1 + '.';
+    }
+  }
+  out('explainText').textContent = explain;
+
+  // Degrees of kinship
+  out('civilDegree').textContent = (g1 + g2);
+  out('canonDegree').textContent = Math.max(g1, g2);
+
+  // Visual ladder
+  buildLadder(g1, g2);
+
+  // Persist
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ g1, g2 }));
+  } catch(e) { /* ignore */ }
+}
+
+// ─── Event listeners ─────────────────────────────────────────────────────────
+
+[g1Input, g2Input].forEach(el => {
+  el.addEventListener('input', calculate);
+  el.addEventListener('change', calculate);
+});
+
+// ─── Load from localStorage ───────────────────────────────────────────────────
+
+(function restoreOrInit(){
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(saved && typeof saved.g1 !== 'undefined' && typeof saved.g2 !== 'undefined'){
+      g1Input.value = clampG(parseInt(saved.g1, 10));
+      g2Input.value = clampG(parseInt(saved.g2, 10));
+    }
+  } catch(e) { /* ignore */ }
+  calculate();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<!--
+  Trip Split — Halison App Studio example
+
+  Split shared trip costs between travellers and see the simplest set of
+  "who owes whom" payments to settle up. Saves to your browser.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trip Split</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; overflow: hidden; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; }
+
+    /* Scrollable panels */
+    .panel-scroll { overflow-y: auto; }
+    .panel-scroll::-webkit-scrollbar { width: 5px; }
+    .panel-scroll::-webkit-scrollbar-track { background: transparent; }
+    .panel-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+    /* Card */
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; }
+
+    /* Input */
+    input[type="text"], input[type="number"], select {
+      background: #0f172a; border: 1px solid #475569; color: #e2e8f0;
+      border-radius: 8px; padding: 8px 12px; width: 100%;
+      font-size: 0.875rem; outline: none; transition: border-color 0.15s;
+    }
+    input[type="text"]:focus, input[type="number"]:focus, select:focus {
+      border-color: #6366f1;
+    }
+    input[type="number"] { -moz-appearance: textfield; }
+    input[type="number"]::-webkit-inner-spin-button { display: none; }
+    select option { background: #1e293b; }
+
+    /* Checkbox */
+    input[type="checkbox"] {
+      accent-color: #6366f1; width: 15px; height: 15px; cursor: pointer;
+    }
+
+    /* Btn */
+    .btn { border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.15s; border: none; font-size: 0.875rem; padding: 8px 16px; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-primary { background: #6366f1; color: white; }
+    .btn-primary:hover { background: #4f46e5; }
+    .btn-danger { background: #dc2626; color: white; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-ghost { background: transparent; color: #94a3b8; border: 1px solid #334155; }
+    .btn-ghost:hover { background: #334155; color: #e2e8f0; }
+    .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Tag/chip */
+    .chip { display: inline-flex; align-items: center; gap: 4px; background: #334155; border-radius: 99px; padding: 3px 10px; font-size: 0.75rem; color: #cbd5e1; }
+
+    /* Modal overlay */
+    .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 50; display: flex; align-items: center; justify-content: center; }
+
+    /* Tabs */
+    .tab { cursor: pointer; padding: 8px 18px; border-radius: 8px; font-size: 0.875rem; font-weight: 500; transition: all 0.15s; color: #64748b; }
+    .tab.active { background: #6366f1; color: white; }
+    .tab:not(.active):hover { background: #1e293b; color: #e2e8f0; }
+
+    /* Amount input */
+    .amount-wrapper { position: relative; }
+    .amount-prefix { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; pointer-events: none; font-size: 0.875rem; }
+    .amount-wrapper input { padding-left: 32px; }
+
+    /* Badge */
+    .badge { display: inline-block; border-radius: 6px; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; }
+    .badge-green { background: #14532d; color: #4ade80; }
+    .badge-red { background: #450a0a; color: #f87171; }
+    .badge-neutral { background: #1e3a5f; color: #93c5fd; }
+
+    /* Settle arrow */
+    .settle-arrow { color: #6366f1; font-size: 1rem; }
+
+    /* Empty state */
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 48px 24px; color: #475569; }
+    .empty-state svg { opacity: 0.4; }
+
+    /* Layout */
+    #app { display: grid; height: 100vh; grid-template-rows: auto 1fr; }
+    #main { display: grid; grid-template-columns: 320px 1fr; gap: 0; overflow: hidden; }
+    @media (max-width: 768px) {
+      #main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+      #sidebar { display: none; }
+      #sidebar.mobile-visible { display: flex; }
+    }
+
+    /* Expense list item hover */
+    .expense-item { transition: background 0.1s; }
+    .expense-item:hover { background: #263348; }
+
+    /* Balance bar */
+    .balance-bar-track { background: #1e293b; border-radius: 99px; height: 6px; overflow: hidden; }
+    .balance-bar-fill { height: 100%; border-radius: 99px; transition: width 0.3s; }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <!-- HEADER -->
+  <header class="flex items-center justify-between px-5 py-3 border-b border-slate-700/60" style="background:#1e293b;">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">TS</div>
+      <div>
+        <h1 class="font-semibold text-white text-sm leading-tight">Trip Split</h1>
+        <p id="trip-subtitle" class="text-xs text-slate-400"></p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-slate-500 hidden sm:block">Currency symbol:</span>
+      <input type="text" id="currency-input" value="kr" style="width:50px;text-align:center;padding:5px 8px;" title="Currency symbol" />
+      <button class="btn btn-ghost btn-sm" onclick="openAddExpense()">+ Expense</button>
+      <button class="btn btn-ghost btn-sm" onclick="showResetConfirm()">Reset</button>
+    </div>
+  </header>
+
+  <div id="main">
+    <!-- SIDEBAR -->
+    <div id="sidebar" class="flex flex-col border-r border-slate-700/60 overflow-hidden" style="background:#16213a;">
+      <!-- People section -->
+      <div class="p-4 border-b border-slate-700/60">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Travellers</span>
+          <button class="btn btn-primary btn-sm" onclick="openAddPerson()">+ Add</button>
+        </div>
+        <div id="people-list" class="flex flex-col gap-1"></div>
+      </div>
+
+      <!-- Summary section -->
+      <div class="p-4 border-b border-slate-700/60">
+        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Trip Summary</div>
+        <div class="flex flex-col gap-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-slate-400">Total spent</span>
+            <span id="summary-total" class="font-semibold text-white">—</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Fair share each</span>
+            <span id="summary-share" class="font-semibold text-white">—</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Expenses</span>
+            <span id="summary-count" class="font-semibold text-white">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Balances -->
+      <div class="p-4 flex-1 panel-scroll">
+        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Balances</div>
+        <div id="balances-list" class="flex flex-col gap-2"></div>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="flex flex-col overflow-hidden">
+      <!-- Tabs -->
+      <div class="flex items-center gap-1 p-3 border-b border-slate-700/60" style="background:#16213a;">
+        <div class="tab active" onclick="switchTab('expenses')" id="tab-expenses">Expenses</div>
+        <div class="tab" onclick="switchTab('settle')" id="tab-settle">Settle Up</div>
+      </div>
+
+      <!-- Expenses tab -->
+      <div id="pane-expenses" class="flex-1 panel-scroll p-4">
+        <div id="expenses-list"></div>
+      </div>
+
+      <!-- Settle tab -->
+      <div id="pane-settle" class="flex-1 panel-scroll p-4 hidden">
+        <div id="settle-content"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ MODALS -->
+
+<!-- Add/Edit Expense Modal -->
+<div id="modal-expense" class="modal-bg hidden">
+  <div class="card p-6 w-full max-w-md mx-4" style="max-height:90vh;overflow-y:auto;">
+    <h2 id="modal-expense-title" class="text-lg font-semibold text-white mb-5">Add Expense</h2>
+    <div class="flex flex-col gap-4">
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Label</label>
+        <input type="text" id="exp-label" placeholder="e.g. Hotel, Dinner…" />
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Amount</label>
+        <div class="amount-wrapper">
+          <span class="amount-prefix" id="exp-currency-prefix">kr</span>
+          <input type="number" id="exp-amount" placeholder="0" min="0" step="any" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">Paid by</label>
+        <select id="exp-paidby"></select>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-2">Split between</label>
+        <div id="exp-split-checkboxes" class="flex flex-col gap-2 pl-1"></div>
+        <div class="flex gap-2 mt-2">
+          <button class="btn btn-ghost btn-sm" onclick="selectAllSplit()">All</button>
+          <button class="btn btn-ghost btn-sm" onclick="selectNoneSplit()">None</button>
+        </div>
+        <p id="split-warning" class="text-xs text-red-400 mt-1 hidden">Select at least one person.</p>
+      </div>
+    </div>
+    <div class="flex gap-3 mt-6">
+      <button class="btn btn-primary flex-1" onclick="saveExpense()">Save</button>
+      <button class="btn btn-ghost flex-1" onclick="closeExpenseModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Person Modal -->
+<div id="modal-person" class="modal-bg hidden">
+  <div class="card p-6 w-full max-w-xs mx-4">
+    <h2 class="text-lg font-semibold text-white mb-4">Add Traveller</h2>
+    <input type="text" id="person-name-input" placeholder="Name" onkeydown="if(event.key==='Enter')savePerson()" />
+    <p id="person-error" class="text-xs text-red-400 mt-1 hidden"></p>
+    <div class="flex gap-3 mt-5">
+      <button class="btn btn-primary flex-1" onclick="savePerson()">Add</button>
+      <button class="btn btn-ghost flex-1" onclick="closePersonModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Confirm Modal -->
+<div id="modal-reset" class="modal-bg hidden">
+  <div class="card p-6 w-full max-w-xs mx-4 text-center">
+    <div class="text-4xl mb-3">🗑️</div>
+    <h2 class="text-lg font-semibold text-white mb-2">Reset everything?</h2>
+    <p class="text-sm text-slate-400 mb-5">This will delete all travellers and expenses. Cannot be undone.</p>
+    <div class="flex gap-3">
+      <button class="btn btn-danger flex-1" onclick="doReset()">Reset</button>
+      <button class="btn btn-ghost flex-1" onclick="closeResetModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Expense Confirm -->
+<div id="modal-del-expense" class="modal-bg hidden">
+  <div class="card p-6 w-full max-w-xs mx-4 text-center">
+    <h2 class="text-lg font-semibold text-white mb-2">Delete expense?</h2>
+    <p id="del-expense-label" class="text-sm text-slate-400 mb-5"></p>
+    <div class="flex gap-3">
+      <button class="btn btn-danger flex-1" onclick="confirmDeleteExpense()">Delete</button>
+      <button class="btn btn-ghost flex-1" onclick="document.getElementById('modal-del-expense').classList.add('hidden')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Person Confirm -->
+<div id="modal-del-person" class="modal-bg hidden">
+  <div class="card p-6 w-full max-w-xs mx-4 text-center">
+    <h2 class="text-lg font-semibold text-white mb-2">Remove traveller?</h2>
+    <p id="del-person-label" class="text-sm text-slate-400 mb-2"></p>
+    <p class="text-xs text-amber-400 mb-5">Expenses paid by or including this person will also be removed.</p>
+    <div class="flex gap-3">
+      <button class="btn btn-danger flex-1" onclick="confirmDeletePerson()">Remove</button>
+      <button class="btn btn-ghost flex-1" onclick="document.getElementById('modal-del-person').classList.add('hidden')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'trip-split-v1';
+let state = { people: [], expenses: [], currency: 'kr' };
+let editingExpenseId = null;
+let pendingDeleteExpenseId = null;
+let pendingDeletePersonId = null;
+let activeTab = 'expenses';
+
+// ─── PERSISTENCE ──────────────────────────────────────────────────────────────
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) state = JSON.parse(raw);
+  } catch(e) {}
+}
+
+// ─── DEFAULTS ─────────────────────────────────────────────────────────────────
+function seedDefaults() {
+  const ids = [uid(), uid(), uid()];
+  state.people = [
+    { id: ids[0], name: 'Anna' },
+    { id: ids[1], name: 'Ben' },
+    { id: ids[2], name: 'Cara' },
+  ];
+  state.expenses = [
+    { id: uid(), label: 'Hotel', amount: 4200, paidBy: ids[0], splitBetween: [...ids] },
+    { id: uid(), label: 'Rental car', amount: 1800, paidBy: ids[1], splitBetween: [...ids] },
+    { id: uid(), label: 'Dinner', amount: 950, paidBy: ids[2], splitBetween: [...ids] },
+  ];
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+function fmt(n) {
+  const c = state.currency || 'kr';
+  const abs = Math.abs(n);
+  const s = Number.isInteger(abs) ? abs.toLocaleString() : abs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n < 0 ? `−${s} ${c}` : `${s} ${c}`;
+}
+function fmtAbs(n) {
+  const c = state.currency || 'kr';
+  const abs = Math.abs(n);
+  const s = Number.isInteger(abs) ? abs.toLocaleString() : abs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `${s} ${c}`;
+}
+function personName(id) {
+  const p = state.people.find(p => p.id === id);
+  return p ? p.name : '?';
+}
+function round2(n) { return Math.round(n * 100) / 100; }
+
+// ─── COMPUTATIONS ─────────────────────────────────────────────────────────────
+function computeBalances() {
+  const bal = {};
+  for (const p of state.people) bal[p.id] = 0;
+  for (const e of state.expenses) {
+    if (!bal.hasOwnProperty(e.paidBy)) continue;
+    const splitMembers = e.splitBetween.filter(id => bal.hasOwnProperty(id));
+    if (splitMembers.length === 0) continue;
+    const share = round2(e.amount / splitMembers.length);
+    // Paid by gets +amount, then subtracts their share
+    bal[e.paidBy] = round2(bal[e.paidBy] + e.amount);
+    for (const id of splitMembers) {
+      bal[id] = round2(bal[id] - share);
+    }
+  }
+  return bal;
+}
+
+function computeSettleUp(balances) {
+  // Greedy debt simplification
+  const entries = Object.entries(balances).map(([id, bal]) => ({ id, bal: round2(bal) }));
+  const payments = [];
+  const eps = 0.01;
+  let iters = 0;
+  while (iters++ < 1000) {
+    // Biggest debtor (most negative) and biggest creditor (most positive)
+    let debtor = null, creditor = null;
+    for (const e of entries) {
+      if (e.bal < -eps) {
+        if (!debtor || e.bal < debtor.bal) debtor = e;
+      }
+      if (e.bal > eps) {
+        if (!creditor || e.bal > creditor.bal) creditor = e;
+      }
+    }
+    if (!debtor || !creditor) break;
+    const amount = round2(Math.min(-debtor.bal, creditor.bal));
+    payments.push({ from: debtor.id, to: creditor.id, amount });
+    debtor.bal = round2(debtor.bal + amount);
+    creditor.bal = round2(creditor.bal - amount);
+  }
+  return payments;
+}
+
+function tripTotal() {
+  return state.expenses.reduce((s, e) => s + e.amount, 0);
+}
+
+function fairShare() {
+  if (state.people.length === 0) return 0;
+  return round2(tripTotal() / state.people.length);
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  renderHeader();
+  renderPeople();
+  renderSummary();
+  renderBalances();
+  if (activeTab === 'expenses') renderExpenses();
+  else renderSettle();
+}
+
+function renderHeader() {
+  const n = state.people.length;
+  document.getElementById('trip-subtitle').textContent =
+    n === 0 ? 'No travellers yet' :
+    n === 1 ? '1 traveller' :
+    `${n} travellers · ${state.expenses.length} expense${state.expenses.length !== 1 ? 's' : ''}`;
+  document.getElementById('currency-input').value = state.currency || 'kr';
+}
+
+function renderPeople() {
+  const el = document.getElementById('people-list');
+  if (state.people.length === 0) {
+    el.innerHTML = '<p class="text-xs text-slate-500">No travellers yet.</p>';
+    return;
+  }
+  el.innerHTML = state.people.map(p => `
+    <div class="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-slate-700/40 transition-colors group">
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style="background:${avatarColor(p.id)}">
+          ${p.name[0].toUpperCase()}
+        </div>
+        <span class="text-sm text-slate-200">${escHtml(p.name)}</span>
+      </div>
+      <button class="btn btn-ghost btn-sm opacity-0 group-hover:opacity-100 transition-opacity" style="padding:3px 7px;color:#f87171;" onclick="openDeletePerson('${p.id}')">✕</button>
+    </div>
+  `).join('');
+}
+
+function renderSummary() {
+  const total = tripTotal();
+  document.getElementById('summary-total').textContent = total > 0 ? fmtAbs(total) : '—';
+  document.getElementById('summary-share').textContent = state.people.length > 0 && total > 0 ? fmtAbs(fairShare()) : '—';
+  document.getElementById('summary-count').textContent = state.expenses.length;
+}
+
+function renderBalances() {
+  const el = document.getElementById('balances-list');
+  if (state.people.length === 0 || state.expenses.length === 0) {
+    el.innerHTML = '<p class="text-xs text-slate-500">Add expenses to see balances.</p>';
+    return;
+  }
+  const bal = computeBalances();
+  const maxAbs = Math.max(1, ...Object.values(bal).map(v => Math.abs(v)));
+  el.innerHTML = state.people.map(p => {
+    const b = bal[p.id] || 0;
+    const pct = Math.min(100, Math.round(Math.abs(b) / maxAbs * 100));
+    const isPos = b > 0.005;
+    const isNeg = b < -0.005;
+    const color = isPos ? '#4ade80' : isNeg ? '#f87171' : '#94a3b8';
+    const barColor = isPos ? '#166534' : isNeg ? '#7f1d1d' : '#334155';
+    const label = isPos ? `gets back ${fmtAbs(b)}` : isNeg ? `owes ${fmtAbs(b)}` : 'settled';
+    return `
+      <div class="rounded-lg p-3" style="background:#1e293b;">
+        <div class="flex items-center justify-between mb-1">
+          <div class="flex items-center gap-2">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white" style="background:${avatarColor(p.id)}">
+              ${p.name[0].toUpperCase()}
+            </div>
+            <span class="text-xs font-medium text-slate-200">${escHtml(p.name)}</span>
+          </div>
+          <span class="text-xs font-semibold" style="color:${color}">${b > 0.005 ? '+' : ''}${b < -0.005 ? '' : ''}${fmtAbs(b)}</span>
+        </div>
+        <div class="balance-bar-track">
+          <div class="balance-bar-fill" style="width:${pct}%;background:${barColor};"></div>
+        </div>
+        <div class="text-xs mt-1" style="color:#64748b">${label}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderExpenses() {
+  const el = document.getElementById('expenses-list');
+  if (state.expenses.length === 0) {
+    el.innerHTML = `
+      <div class="empty-state">
+        <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        <div class="text-center">
+          <p class="font-medium text-slate-300">No expenses yet</p>
+          <p class="text-sm mt-1">Click <strong>+ Expense</strong> to add the first one.</p>
+        </div>
+      </div>`;
+    return;
+  }
+  el.innerHTML = state.expenses.map(e => {
+    const payer = personName(e.paidBy);
+    const splitNames = e.splitBetween.map(personName);
+    const perPerson = e.splitBetween.length > 0 ? round2(e.amount / e.splitBetween.length) : 0;
+    const isAll = e.splitBetween.length === state.people.length;
+    return `
+      <div class="expense-item card mb-2 px-4 py-3 flex items-start justify-between gap-3 cursor-default rounded-xl">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="font-medium text-white truncate">${escHtml(e.label)}</span>
+            <span class="chip">${escHtml(payer)}</span>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xs text-slate-400">Split: ${isAll ? 'everyone' : splitNames.map(escHtml).join(', ')}</span>
+            ${perPerson > 0 ? `<span class="text-xs text-slate-500">· ${fmtAbs(perPerson)} each</span>` : ''}
+          </div>
+        </div>
+        <div class="flex flex-col items-end gap-2 shrink-0">
+          <span class="font-semibold text-white">${fmtAbs(e.amount)}</span>
+          <div class="flex gap-1">
+            <button class="btn btn-ghost btn-sm" onclick="openEditExpense('${e.id}')">Edit</button>
+            <button class="btn btn-ghost btn-sm" style="color:#f87171;" onclick="openDeleteExpense('${e.id}')">Del</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderSettle() {
+  const el = document.getElementById('settle-content');
+  if (state.people.length < 2 || state.expenses.length === 0) {
+    el.innerHTML = `
+      <div class="empty-state">
+        <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        <div class="text-center">
+          <p class="font-medium text-slate-300">Nothing to settle yet</p>
+          <p class="text-sm mt-1">Add at least 2 travellers and some expenses first.</p>
+        </div>
+      </div>`;
+    return;
+  }
+  const bal = computeBalances();
+  const payments = computeSettleUp(bal);
+  if (payments.length === 0) {
+    el.innerHTML = `
+      <div class="empty-state">
+        <div style="font-size:3rem">🎉</div>
+        <div class="text-center">
+          <p class="font-semibold text-green-400 text-lg">All settled up!</p>
+          <p class="text-sm mt-1">Everyone's balance is already zero.</p>
+        </div>
+      </div>`;
+    return;
+  }
+  const c = state.currency || 'kr';
+  el.innerHTML = `
+    <div class="mb-4">
+      <h3 class="text-sm font-semibold text-slate-300 mb-1">Minimal payments to settle all debts</h3>
+      <p class="text-xs text-slate-500">${payments.length} payment${payments.length !== 1 ? 's' : ''} needed</p>
+    </div>
+    <div class="flex flex-col gap-3">
+      ${payments.map(p => {
+        const amount = Number.isInteger(p.amount)
+          ? p.amount.toLocaleString()
+          : p.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        return `
+          <div class="card p-4 rounded-xl flex items-center gap-4">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style="background:${avatarColor(p.from)}">
+                ${personName(p.from)[0].toUpperCase()}
+              </div>
+              <span class="font-medium text-white">${escHtml(personName(p.from))}</span>
+            </div>
+            <div class="flex flex-col items-center flex-1">
+              <span class="text-xs text-slate-500 mb-1">pays</span>
+              <span class="font-bold text-indigo-400 text-base">${amount} ${c}</span>
+              <div class="flex items-center gap-1 mt-1">
+                <div class="h-px flex-1 bg-indigo-800" style="width:40px;"></div>
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#6366f1" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="font-medium text-white">${escHtml(personName(p.to))}</span>
+              <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style="background:${avatarColor(p.to)}">
+                ${personName(p.to)[0].toUpperCase()}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    <div class="mt-5 p-4 rounded-xl border border-slate-700/60 text-sm text-slate-400" style="background:#1e293b;">
+      After these payments, all balances will be zero.
+    </div>
+  `;
+}
+
+// ─── AVATAR COLORS ────────────────────────────────────────────────────────────
+const AVATAR_COLORS = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6','#ef4444','#14b8a6'];
+const colorCache = {};
+function avatarColor(id) {
+  if (!colorCache[id]) {
+    let h = 0;
+    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+    colorCache[id] = AVATAR_COLORS[h % AVATAR_COLORS.length];
+  }
+  return colorCache[id];
+}
+
+// ─── TAB SWITCHING ────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tab-expenses').classList.toggle('active', tab === 'expenses');
+  document.getElementById('tab-settle').classList.toggle('active', tab === 'settle');
+  document.getElementById('pane-expenses').classList.toggle('hidden', tab !== 'expenses');
+  document.getElementById('pane-settle').classList.toggle('hidden', tab !== 'settle');
+  if (tab === 'settle') renderSettle();
+  else renderExpenses();
+}
+
+// ─── EXPENSE MODAL ────────────────────────────────────────────────────────────
+function openAddExpense() {
+  editingExpenseId = null;
+  document.getElementById('modal-expense-title').textContent = 'Add Expense';
+  document.getElementById('exp-label').value = '';
+  document.getElementById('exp-amount').value = '';
+  populatePaidBySelect(null);
+  populateSplitCheckboxes([]);
+  document.getElementById('split-warning').classList.add('hidden');
+  document.getElementById('exp-currency-prefix').textContent = state.currency || 'kr';
+  document.getElementById('modal-expense').classList.remove('hidden');
+  setTimeout(() => document.getElementById('exp-label').focus(), 50);
+}
+
+function openEditExpense(id) {
+  const e = state.expenses.find(x => x.id === id);
+  if (!e) return;
+  editingExpenseId = id;
+  document.getElementById('modal-expense-title').textContent = 'Edit Expense';
+  document.getElementById('exp-label').value = e.label;
+  document.getElementById('exp-amount').value = e.amount;
+  populatePaidBySelect(e.paidBy);
+  populateSplitCheckboxes(e.splitBetween);
+  document.getElementById('split-warning').classList.add('hidden');
+  document.getElementById('exp-currency-prefix').textContent = state.currency || 'kr';
+  document.getElementById('modal-expense').classList.remove('hidden');
+}
+
+function populatePaidBySelect(selectedId) {
+  const sel = document.getElementById('exp-paidby');
+  sel.innerHTML = state.people.map(p =>
+    `<option value="${p.id}" ${p.id === selectedId ? 'selected' : ''}>${escHtml(p.name)}</option>`
+  ).join('');
+}
+
+function populateSplitCheckboxes(selectedIds) {
+  const wrap = document.getElementById('exp-split-checkboxes');
+  const allSelected = selectedIds.length === 0; // default: select all
+  wrap.innerHTML = state.people.map(p => {
+    const checked = selectedIds.length === 0 ? true : selectedIds.includes(p.id);
+    return `
+      <label class="flex items-center gap-2 cursor-pointer select-none">
+        <input type="checkbox" class="split-cb" value="${p.id}" ${checked ? 'checked' : ''} />
+        <div class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white" style="background:${avatarColor(p.id)}">${p.name[0].toUpperCase()}</div>
+        <span class="text-sm text-slate-200">${escHtml(p.name)}</span>
+      </label>
+    `;
+  }).join('');
+}
+
+function selectAllSplit() {
+  document.querySelectorAll('.split-cb').forEach(cb => cb.checked = true);
+}
+function selectNoneSplit() {
+  document.querySelectorAll('.split-cb').forEach(cb => cb.checked = false);
+}
+
+function saveExpense() {
+  const label = document.getElementById('exp-label').value.trim();
+  const amount = parseFloat(document.getElementById('exp-amount').value);
+  const paidBy = document.getElementById('exp-paidby').value;
+  const splitBetween = Array.from(document.querySelectorAll('.split-cb:checked')).map(cb => cb.value);
+
+  if (!label || isNaN(amount) || amount <= 0 || !paidBy) return;
+  if (splitBetween.length === 0) {
+    document.getElementById('split-warning').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('split-warning').classList.add('hidden');
+
+  if (editingExpenseId) {
+    const idx = state.expenses.findIndex(e => e.id === editingExpenseId);
+    if (idx >= 0) state.expenses[idx] = { ...state.expenses[idx], label, amount: round2(amount), paidBy, splitBetween };
+  } else {
+    state.expenses.push({ id: uid(), label, amount: round2(amount), paidBy, splitBetween });
+  }
+  save();
+  closeExpenseModal();
+  render();
+}
+
+function closeExpenseModal() {
+  document.getElementById('modal-expense').classList.add('hidden');
+  editingExpenseId = null;
+}
+
+// ─── DELETE EXPENSE ───────────────────────────────────────────────────────────
+function openDeleteExpense(id) {
+  pendingDeleteExpenseId = id;
+  const e = state.expenses.find(x => x.id === id);
+  document.getElementById('del-expense-label').textContent = e ? `"${e.label}" (${fmtAbs(e.amount)})` : '';
+  document.getElementById('modal-del-expense').classList.remove('hidden');
+}
+function confirmDeleteExpense() {
+  if (pendingDeleteExpenseId) {
+    state.expenses = state.expenses.filter(e => e.id !== pendingDeleteExpenseId);
+    pendingDeleteExpenseId = null;
+    save();
+    render();
+  }
+  document.getElementById('modal-del-expense').classList.add('hidden');
+}
+
+// ─── PERSON MODAL ─────────────────────────────────────────────────────────────
+function openAddPerson() {
+  document.getElementById('person-name-input').value = '';
+  document.getElementById('person-error').classList.add('hidden');
+  document.getElementById('modal-person').classList.remove('hidden');
+  setTimeout(() => document.getElementById('person-name-input').focus(), 50);
+}
+function closePersonModal() {
+  document.getElementById('modal-person').classList.add('hidden');
+}
+function savePerson() {
+  const name = document.getElementById('person-name-input').value.trim();
+  const errEl = document.getElementById('person-error');
+  if (!name) { errEl.textContent = 'Please enter a name.'; errEl.classList.remove('hidden'); return; }
+  if (state.people.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+    errEl.textContent = 'That name is already in the list.'; errEl.classList.remove('hidden'); return;
+  }
+  state.people.push({ id: uid(), name });
+  save();
+  closePersonModal();
+  render();
+}
+
+// ─── DELETE PERSON ────────────────────────────────────────────────────────────
+function openDeletePerson(id) {
+  pendingDeletePersonId = id;
+  const p = state.people.find(x => x.id === id);
+  document.getElementById('del-person-label').textContent = p ? `Remove "${p.name}" from the trip?` : '';
+  document.getElementById('modal-del-person').classList.remove('hidden');
+}
+function confirmDeletePerson() {
+  if (pendingDeletePersonId) {
+    state.expenses = state.expenses.filter(e =>
+      e.paidBy !== pendingDeletePersonId &&
+      e.splitBetween.includes(pendingDeletePersonId)
+        ? (e.splitBetween = e.splitBetween.filter(id => id !== pendingDeletePersonId), e.splitBetween.length > 0)
+        : true
+    );
+    // Re-filter: remove expenses whose payer was this person
+    state.expenses = state.expenses.filter(e => e.paidBy !== pendingDeletePersonId);
+    // Also clean up splitBetween
+    for (const e of state.expenses) {
+      e.splitBetween = e.splitBetween.filter(id => id !== pendingDeletePersonId);
+      if (e.splitBetween.length === 0) {
+        // remove this expense too
+      }
+    }
+    state.expenses = state.expenses.filter(e => e.splitBetween.length > 0);
+    state.people = state.people.filter(p => p.id !== pendingDeletePersonId);
+    pendingDeletePersonId = null;
+    save();
+    render();
+  }
+  document.getElementById('modal-del-person').classList.add('hidden');
+}
+
+// ─── RESET ────────────────────────────────────────────────────────────────────
+function showResetConfirm() { document.getElementById('modal-reset').classList.remove('hidden'); }
+function closeResetModal() { document.getElementById('modal-reset').classList.add('hidden'); }
+function doReset() {
+  state = { people: [], expenses: [], currency: state.currency || 'kr' };
+  save();
+  closeResetModal();
+  render();
+}
+
+// ─── CURRENCY ─────────────────────────────────────────────────────────────────
+document.getElementById('currency-input').addEventListener('input', function() {
+  state.currency = this.value.trim() || 'kr';
+  save();
+  render();
+});
+
+// ─── CLOSE MODALS ON BACKDROP CLICK ──────────────────────────────────────────
+['modal-expense','modal-person','modal-reset','modal-del-expense','modal-del-person'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) this.classList.add('hidden');
+  });
+});
+
+// ─── ESCAPE KEY ───────────────────────────────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    ['modal-expense','modal-person','modal-reset','modal-del-expense','modal-del-person'].forEach(id => {
+      document.getElementById(id).classList.add('hidden');
+    });
+  }
+});
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+load();
+if (state.people.length === 0 && state.expenses.length === 0) {
+  seedDefaults();
+  save();
+}
+render();
+</script>
+</body>
+</html>

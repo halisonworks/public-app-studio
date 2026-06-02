@@ -64,6 +64,17 @@ and anyone who wants to make a quick prototype of an app idea.
 | [citation-builder](projects/genealogy/citation-builder/) | Genealogy | HTML | EN | — |
 | [ahnentafel-numbering](projects/genealogy/ahnentafel-numbering/) | Genealogy | HTML | EN | — |
 | [old-style-date-converter](projects/genealogy/old-style-date-converter/) | Genealogy | HTML | EN | — |
+| [trip-budget](projects/travel/trip-budget/) | Travel / personal | HTML | EN | [starter](prompts/context/travel.md) |
+| [trip-split](projects/travel/trip-split/) | Travel / personal | HTML | EN | [starter](prompts/context/travel.md) |
+| [timezones-flight](projects/travel/timezones-flight/) | Travel / personal | HTML | EN | [starter](prompts/context/travel.md) |
+| [itinerary](projects/travel/itinerary/) | Travel / personal | HTML | EN | [starter](prompts/context/travel.md) |
+| [currency-exchange](projects/travel/currency-exchange/) | Travel · Educational | HTML | EN | [starter](prompts/context/travel.md) |
+| [complaint-handling](projects/travel/complaint-handling/) | Travel · Educational | HTML | EN | [starter](prompts/context/travel.md) |
+| [risk-assessment](projects/travel/risk-assessment/) | Travel · Educational | HTML | EN | [starter](prompts/context/travel.md) |
+| [knitting-calculator](projects/diy-hobby/knitting-calculator/) | DIY / hobby | React | EN, NB | [starter](prompts/context/diy-hobby.md) |
+| [recipe-scaler](projects/diy-hobby/recipe-scaler/) | DIY / hobby | React | EN, NB | [starter](prompts/context/diy-hobby.md) |
+| [planting-calendar](projects/diy-hobby/planting-calendar/) | DIY / hobby | React | EN, NB | [starter](prompts/context/diy-hobby.md) |
+| [material-calculator](projects/diy-hobby/material-calculator/) | DIY / hobby | React | EN, NB | [starter](prompts/context/diy-hobby.md) |
 
 ## Genealogy (family history)
 
@@ -81,6 +92,33 @@ calendar conversions. All run fully offline. See
 | [Source Citation Builder](projects/genealogy/citation-builder/) | Full note / short note / bibliography citations for 8 record types |
 | [Ahnentafel Number Tool](projects/genealogy/ahnentafel-numbering/) | Sosa-Stradonitz number ↔ ancestral path, plus a numbered chart |
 | [Old Style / New Style Date Converter](projects/genealogy/old-style-date-converter/) | Julian ↔ Gregorian, day of the week, double dating |
+
+## Travel (personal & *Sales, Service and Tourism*)
+
+Trip planners for a personal traveller, plus Learn / Practice / Present teaching
+tools for the Norwegian *salg, service og reiseliv* (sales, service and tourism)
+classroom — built around the things that are hard to grasp from a definition
+alone. See [`projects/travel/`](projects/travel/).
+
+| | | |
+|---|---|---|
+| [![trip-budget](projects/travel/trip-budget/screenshot.png)](projects/travel/trip-budget/) **Trip Budget** | [![trip-split](projects/travel/trip-split/screenshot.png)](projects/travel/trip-split/) **Trip Split** | [![timezones-flight](projects/travel/timezones-flight/screenshot.png)](projects/travel/timezones-flight/) **Time Zones & Flight** |
+| [![itinerary](projects/travel/itinerary/screenshot.png)](projects/travel/itinerary/) **Itinerary** | [![currency-exchange](projects/travel/currency-exchange/screenshot.png)](projects/travel/currency-exchange/) **Currency Exchange & the Spread** | [![complaint-handling](projects/travel/complaint-handling/screenshot.png)](projects/travel/complaint-handling/) **Complaint & Conflict Handling** |
+| [![risk-assessment](projects/travel/risk-assessment/screenshot.png)](projects/travel/risk-assessment/) **Risk Assessment** | | |
+
+## DIY / hobby
+
+Practical calculators and planners for everyday making and home projects —
+knitting, cooking, gardening, carpentry, renovation. Each ships in **English**
+and **Norwegian Bokmål** (`i18n/nb/`). See
+[`projects/diy-hobby/`](projects/diy-hobby/).
+
+| Tool | What it does |
+|------|--------------|
+| [Knitting Calculator](projects/diy-hobby/knitting-calculator/) | Gauge conversion, cast-on stitch / row counts, and a yarn estimate |
+| [Recipe Scaler](projects/diy-hobby/recipe-scaler/) | Scale by servings and convert kitchen units via ingredient densities |
+| [Planting Calendar](projects/diy-hobby/planting-calendar/) | Sow / plant-out / harvest timeline, climate offset, and bed spacing |
+| [Material Calculator](projects/diy-hobby/material-calculator/) | Paint, flooring / tiles, and lumber — quantity and cost |
 
 ## Math (Norwegian curriculum · LK20)
 
@@ -140,6 +178,8 @@ then write a short prompt. See [`prompts/context/`](prompts/context/).
 | `creative` | marketers, designers, influencers, infographic makers |
 | `game-quiz` | teachers, marketers, presenters |
 | `prototype` | founders, PMs, designers prototyping app ideas |
+| `travel` | travellers, and the *Sales, Service and Tourism* (reiseliv) classroom |
+| `diy-hobby` | practical maker's calculators — knitting, cooking, gardening, carpentry, renovation |
 | `math` | interactive maths learning tools (Norwegian 1P / 2P) |
 
 ## Validating

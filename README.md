@@ -80,13 +80,25 @@ place. See the license below.
 
 Projects span use-case categories, each with a [context add-on](prompts/context/)
 you can hand your AI: **educational**, **business**, **personal**,
-**data / dashboard**, **creative**, **game / quiz**, and **prototype** — covering
-founders, investors, managers, sales, marketers, teachers, presenters, finance,
-infographic makers, influencers, and app prototypers.
+**data / dashboard**, **creative**, **game / quiz**, **prototype**, and
+**travel** — covering founders, investors, managers, sales, marketers, teachers,
+presenters, finance, infographic makers, influencers, travellers, and app
+prototypers.
 
 There's also a **[math](projects/math/)** category: interactive learning tools
 for the Norwegian curriculum (LK20), organized by level (1P and 2P) and written
 in Norwegian.
+
+And a **[genealogy](projects/genealogy/)** category: offline family-history tools
+— a relationship/cousin calculator, gravestone age-to-birth-date math, Soundex
+surname codes, DNA shared-cM relationship predictions, a source-citation builder,
+ahnentafel numbering, and Old Style / New Style date conversion.
+
+Plus a **[DIY / hobby](projects/diy-hobby/)** category: practical maker's
+calculators for knitting, cooking, gardening, carpentry, and renovation — a yarn
+& gauge calculator, a recipe scaler, a sow / plant / harvest planting calendar,
+and a paint / flooring / lumber material calculator. Each ships in English and
+Norwegian.
 
 Want to contribute a project, prompt, or category? See [CONTRIBUTING.md](CONTRIBUTING.md).
 

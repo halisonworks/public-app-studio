@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<!--
+  Trip Budget — Halison App Studio example
+
+  Plan a trip's total cost and see it per person and per day, broken down by
+  category. Saves to your browser so it persists across sessions.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trip Budget</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+    .toggle-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px 3px 6px;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+      border: 1.5px solid transparent;
+    }
+    .toggle-pill .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.5;
+      transition: opacity 0.15s;
+    }
+    .toggle-pill.active .dot { opacity: 1; }
+
+    .pill-person { color: #6366f1; border-color: #c7d2fe; background: #eef2ff; }
+    .pill-person.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+    .pill-day { color: #0891b2; border-color: #a5f3fc; background: #ecfeff; }
+    .pill-day.active { background: #0891b2; color: #fff; border-color: #0891b2; }
+
+    .cat-badge {
+      display: inline-block;
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      margin-right: 5px;
+    }
+
+    .bar-segment { transition: width 0.4s ease; }
+
+    input[type="text"], input[type="number"] {
+      outline: none;
+    }
+    input[type="text"]:focus, input[type="number"]:focus {
+      box-shadow: 0 0 0 2px #6366f1;
+    }
+
+    .expense-row { transition: background 0.1s; }
+    .expense-row:hover { background: #f8fafc; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn 0.2s ease both; }
+
+    select:focus { outline: 2px solid #6366f1; outline-offset: 0; }
+
+    /* Scrollable expense area on small screens */
+    @media (max-height: 700px) {
+      #expense-scroll { max-height: 40vh; overflow-y: auto; }
+    }
+
+    .modal-backdrop {
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(2px);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+<!-- ───────── RESET MODAL ───────── -->
+<div id="resetModal" class="fixed inset-0 z-50 flex items-center justify-center modal-backdrop hidden">
+  <div class="bg-white rounded-2xl shadow-2xl p-6 w-80 max-w-full mx-4">
+    <h2 class="text-lg font-semibold text-slate-800 mb-1">Reset everything?</h2>
+    <p class="text-sm text-slate-500 mb-5">All expenses will be deleted and settings restored to defaults. This cannot be undone.</p>
+    <div class="flex gap-3 justify-end">
+      <button onclick="closeResetModal()" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">Cancel</button>
+      <button onclick="confirmReset()" class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition">Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- ───────── MAIN LAYOUT ───────── -->
+<div class="max-w-5xl mx-auto px-3 py-6 space-y-4">
+
+  <!-- HEADER -->
+  <div class="flex items-center justify-between gap-3 flex-wrap">
+    <div class="flex items-center gap-2 min-w-0">
+      <span class="text-2xl select-none">✈️</span>
+      <input id="tripName" type="text"
+        class="text-2xl font-bold text-slate-800 bg-transparent border-b-2 border-transparent hover:border-slate-300 focus:border-indigo-500 rounded px-1 min-w-0 w-56 transition"
+        maxlength="60" placeholder="Trip name…" />
+    </div>
+    <button onclick="openResetModal()"
+      class="text-xs text-slate-400 hover:text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg transition font-medium">
+      Reset
+    </button>
+  </div>
+
+  <!-- TRIP SETTINGS -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 px-5 py-4">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Travellers</label>
+        <input id="settingTravellers" type="number" min="1" max="999"
+          class="w-full border border-slate-200 rounded-lg px-3 py-2 text-slate-800 font-semibold text-sm transition" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Days</label>
+        <input id="settingDays" type="number" min="1" max="999"
+          class="w-full border border-slate-200 rounded-lg px-3 py-2 text-slate-800 font-semibold text-sm transition" />
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Currency</label>
+        <input id="settingCurrency" type="text" maxlength="5"
+          class="w-full border border-slate-200 rounded-lg px-3 py-2 text-slate-800 font-semibold text-sm transition" />
+      </div>
+
+      <div class="sm:col-span-1 flex items-end">
+        <div class="text-xs text-slate-400 leading-relaxed">
+          Mark each expense as<br>
+          <span class="text-indigo-500 font-semibold">per person</span> and/or <span class="text-cyan-600 font-semibold">per day</span><br>
+          to multiply automatically.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SUMMARY + CATEGORY BREAKDOWN (side by side on larger screens) -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+    <!-- Summary Panel -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 px-5 py-4">
+      <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Summary</h2>
+      <div class="grid grid-cols-2 gap-y-3 gap-x-4">
+        <div>
+          <div class="text-xs text-slate-400 mb-0.5">Grand total</div>
+          <div id="sumTotal" class="text-2xl font-bold text-slate-800">—</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-400 mb-0.5">Per person</div>
+          <div id="sumPerPerson" class="text-2xl font-bold text-indigo-600">—</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-400 mb-0.5">Per day</div>
+          <div id="sumPerDay" class="text-xl font-semibold text-cyan-600">—</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-400 mb-0.5">Per person / day</div>
+          <div id="sumPerPersonDay" class="text-xl font-semibold text-slate-600">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Breakdown -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 px-5 py-4">
+      <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">By category</h2>
+      <div id="categoryBreakdown" class="space-y-2">
+        <div class="text-sm text-slate-400 italic">No expenses yet.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- EXPENSES -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100">
+
+    <!-- Expense list header -->
+    <div class="px-5 pt-4 pb-2 flex items-center justify-between">
+      <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Expenses</h2>
+      <button onclick="addExpense()"
+        class="flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Add expense
+      </button>
+    </div>
+
+    <!-- Column labels -->
+    <div class="hidden sm:grid grid-cols-[1fr_140px_120px_90px_36px] gap-2 px-5 pb-1 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+      <div>Label</div>
+      <div>Category</div>
+      <div>Amount</div>
+      <div>Multipliers</div>
+      <div></div>
+    </div>
+
+    <!-- Scrollable expense area -->
+    <div id="expense-scroll">
+      <div id="expenseList" class="divide-y divide-slate-100 px-2 pb-2">
+        <!-- rows injected here -->
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="emptyState" class="hidden flex-col items-center justify-center py-12 text-center px-6">
+      <div class="text-4xl mb-3 select-none">🗺️</div>
+      <p class="text-slate-500 font-medium mb-1">No expenses yet</p>
+      <p class="text-slate-400 text-sm mb-4">Add your first expense to start planning your trip budget.</p>
+      <button onclick="addExpense()"
+        class="inline-flex items-center gap-2 text-sm font-semibold text-white bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded-lg transition">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Add expense
+      </button>
+    </div>
+
+  </div>
+
+</div><!-- /max-w-5xl -->
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'tripBudget_v1';
+
+const CATEGORIES = [
+  { id: 'flights',       label: 'Flights',         color: '#6366f1' },
+  { id: 'accommodation', label: 'Accommodation',   color: '#f59e0b' },
+  { id: 'food',          label: 'Food',             color: '#10b981' },
+  { id: 'transport',     label: 'Local transport',  color: '#3b82f6' },
+  { id: 'activities',    label: 'Activities',       color: '#ec4899' },
+  { id: 'other',         label: 'Other',            color: '#94a3b8' },
+];
+
+const CAT_MAP = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
+
+const DEFAULT_SETTINGS = {
+  tripName:   'Summer in Europe',
+  travellers: 2,
+  days:       10,
+  currency:   'kr',
+};
+
+const DEFAULT_EXPENSES = [
+  { id: uid(), label: 'Flights',               category: 'flights',       amount: 3200, perPerson: true,  perDay: false },
+  { id: uid(), label: 'Hotel',                 category: 'accommodation', amount: 1400, perPerson: false, perDay: true  },
+  { id: uid(), label: 'Meals',                 category: 'food',          amount: 350,  perPerson: true,  perDay: true  },
+  { id: uid(), label: 'Metro / bus pass',      category: 'transport',     amount: 80,   perPerson: true,  perDay: false },
+  { id: uid(), label: 'Museum & entry fees',   category: 'activities',    amount: 120,  perPerson: true,  perDay: false },
+  { id: uid(), label: 'Travel insurance',      category: 'other',         amount: 250,  perPerson: true,  perDay: false },
+  { id: uid(), label: 'Day trips & tours',     category: 'activities',    amount: 90,   perPerson: true,  perDay: true  },
+  { id: uid(), label: 'Snacks & coffee',       category: 'food',          amount: 40,   perPerson: true,  perDay: true  },
+];
+
+// ─────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────
+let settings = { ...DEFAULT_SETTINGS };
+let expenses  = [];
+
+// ─────────────────────────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────────────────────────
+function uid() {
+  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+}
+
+function fmt(n, cur) {
+  const abs = Math.abs(n);
+  let s;
+  if (abs >= 1000000)      s = (n/1000000).toFixed(1) + 'M';
+  else if (abs >= 10000)   s = (n/1000).toFixed(1) + 'k';
+  else if (abs === 0)      s = '0';
+  else                     s = n.toLocaleString('en', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return (cur || settings.currency) + ' ' + s;
+}
+
+function effectiveTotal(exp) {
+  const t = (exp.perPerson ? settings.travellers : 1)
+          * (exp.perDay    ? settings.days       : 1)
+          * (exp.amount    || 0);
+  return t;
+}
+
+function grandTotal() {
+  return expenses.reduce((s, e) => s + effectiveTotal(e), 0);
+}
+
+function catColor(catId) {
+  return (CAT_MAP[catId] || CATEGORIES[5]).color;
+}
+function catLabel(catId) {
+  return (CAT_MAP[catId] || CATEGORIES[5]).label;
+}
+
+// ─────────────────────────────────────────────────────────────
+// PERSISTENCE
+// ─────────────────────────────────────────────────────────────
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ settings, expenses }));
+  } catch(e) {}
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (data.settings) settings = { ...DEFAULT_SETTINGS, ...data.settings };
+    if (Array.isArray(data.expenses)) expenses = data.expenses;
+    return true;
+  } catch(e) { return false; }
+}
+
+// ─────────────────────────────────────────────────────────────
+// SETTINGS BINDING
+// ─────────────────────────────────────────────────────────────
+function bindSettings() {
+  const tripNameEl    = document.getElementById('tripName');
+  const travellersEl  = document.getElementById('settingTravellers');
+  const daysEl        = document.getElementById('settingDays');
+  const currencyEl    = document.getElementById('settingCurrency');
+
+  tripNameEl.value   = settings.tripName;
+  travellersEl.value = settings.travellers;
+  daysEl.value       = settings.days;
+  currencyEl.value   = settings.currency;
+
+  function onSettingChange() {
+    settings.tripName   = tripNameEl.value.trim() || 'My Trip';
+    settings.travellers = Math.max(1, parseInt(travellersEl.value) || 1);
+    settings.days       = Math.max(1, parseInt(daysEl.value) || 1);
+    settings.currency   = currencyEl.value.trim() || 'kr';
+    // sync clamped values back
+    travellersEl.value = settings.travellers;
+    daysEl.value       = settings.days;
+    save();
+    renderAll();
+  }
+
+  tripNameEl.addEventListener('input',   onSettingChange);
+  travellersEl.addEventListener('input', onSettingChange);
+  daysEl.addEventListener('input',       onSettingChange);
+  currencyEl.addEventListener('input',   onSettingChange);
+}
+
+// ─────────────────────────────────────────────────────────────
+// EXPENSE CRUD
+// ─────────────────────────────────────────────────────────────
+function addExpense() {
+  const newExp = {
+    id:        uid(),
+    label:     '',
+    category:  'other',
+    amount:    0,
+    perPerson: false,
+    perDay:    false,
+  };
+  expenses.push(newExp);
+  save();
+  renderExpenses();
+  updateSummary();
+  // focus the new row's label input
+  const lastRow = document.querySelector('#expenseList .expense-row:last-child');
+  if (lastRow) {
+    const inp = lastRow.querySelector('input[data-field="label"]');
+    if (inp) { inp.focus(); inp.select(); }
+  }
+}
+
+function deleteExpense(id) {
+  expenses = expenses.filter(e => e.id !== id);
+  save();
+  renderExpenses();
+  updateSummary();
+}
+
+function updateExpenseField(id, field, value) {
+  const exp = expenses.find(e => e.id === id);
+  if (!exp) return;
+  exp[field] = value;
+  save();
+  // re-render the line total for this row only
+  const row = document.querySelector('[data-expense-id="' + id + '"]');
+  if (row) {
+    const lineEl = row.querySelector('.line-total');
+    if (lineEl) {
+      const tot = effectiveTotal(exp);
+      lineEl.textContent = tot > 0 ? fmt(tot) : '—';
+    }
+    // update pill states
+    const ppPill = row.querySelector('.pill-person');
+    const pdPill = row.querySelector('.pill-day');
+    if (ppPill) ppPill.classList.toggle('active', exp.perPerson);
+    if (pdPill) pdPill.classList.toggle('active', exp.perDay);
+  }
+  updateSummary();
+}
+
+// ─────────────────────────────────────────────────────────────
+// BUILD CATEGORY SELECT OPTIONS
+// ─────────────────────────────────────────────────────────────
+function buildCatOptions(selectedId) {
+  return CATEGORIES.map(c =>
+    `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${c.label}</option>`
+  ).join('');
+}
+
+// ─────────────────────────────────────────────────────────────
+// RENDER EXPENSES
+// ─────────────────────────────────────────────────────────────
+function renderExpenses() {
+  const list      = document.getElementById('expenseList');
+  const emptyEl   = document.getElementById('emptyState');
+
+  if (expenses.length === 0) {
+    list.innerHTML = '';
+    emptyEl.classList.remove('hidden');
+    emptyEl.classList.add('flex');
+    return;
+  }
+
+  emptyEl.classList.add('hidden');
+  emptyEl.classList.remove('flex');
+
+  list.innerHTML = expenses.map(exp => {
+    const tot     = effectiveTotal(exp);
+    const totStr  = tot > 0 ? fmt(tot) : '—';
+    const color   = catColor(exp.category);
+    return `
+    <div class="expense-row grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_140px_110px_auto_36px] items-center gap-2 px-3 py-2.5 rounded-xl fade-in"
+         data-expense-id="${exp.id}">
+
+      <!-- Label -->
+      <input type="text" data-field="label" maxlength="80"
+        value="${exp.label.replace(/"/g, '&quot;')}"
+        placeholder="Expense name…"
+        class="border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 w-full min-w-0 transition" />
+
+      <!-- Category -->
+      <select data-field="category"
+        class="border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-700 w-full transition"
+        style="border-left: 3px solid ${color};">
+        ${buildCatOptions(exp.category)}
+      </select>
+
+      <!-- Amount + line total -->
+      <div class="flex items-center gap-1.5">
+        <span class="text-xs text-slate-400 font-medium shrink-0">${settings.currency}</span>
+        <input type="number" data-field="amount" min="0" step="0.01"
+          value="${exp.amount}"
+          placeholder="0"
+          class="border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-800 w-0 flex-1 min-w-0 transition" />
+      </div>
+
+      <!-- Multiplier pills -->
+      <div class="flex gap-1 flex-wrap items-center">
+        <button type="button" class="toggle-pill pill-person ${exp.perPerson ? 'active' : ''}"
+          title="Per person (×${settings.travellers} travellers)">
+          <span class="dot"></span>×Person
+        </button>
+        <button type="button" class="toggle-pill pill-day ${exp.perDay ? 'active' : ''}"
+          title="Per day (×${settings.days} days)">
+          <span class="dot"></span>×Day
+        </button>
+        <span class="line-total text-xs font-bold text-slate-600 ml-1 whitespace-nowrap">${totStr}</span>
+      </div>
+
+      <!-- Delete -->
+      <button type="button" class="delete-btn flex items-center justify-center w-8 h-8 rounded-lg text-slate-300 hover:text-red-400 hover:bg-red-50 transition shrink-0"
+        title="Delete expense">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M2 3.5h10M5.5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M6 6.5v3.5M8 6.5v3.5M3 3.5l.7 7.2A.8.8 0 003.5 12h7a.8.8 0 00.8-.7L12 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+    </div>`;
+  }).join('');
+
+  // Attach event listeners
+  list.querySelectorAll('.expense-row').forEach(row => {
+    const id = row.dataset.expenseId;
+
+    row.querySelector('input[data-field="label"]').addEventListener('input', e => {
+      updateExpenseField(id, 'label', e.target.value);
+    });
+
+    row.querySelector('select[data-field="category"]').addEventListener('change', e => {
+      const color2 = catColor(e.target.value);
+      e.target.style.borderLeft = '3px solid ' + color2;
+      updateExpenseField(id, 'category', e.target.value);
+    });
+
+    row.querySelector('input[data-field="amount"]').addEventListener('input', e => {
+      const v = parseFloat(e.target.value);
+      updateExpenseField(id, 'amount', isNaN(v) ? 0 : v);
+    });
+
+    row.querySelector('.pill-person').addEventListener('click', () => {
+      const exp = expenses.find(e => e.id === id);
+      if (exp) updateExpenseField(id, 'perPerson', !exp.perPerson);
+    });
+
+    row.querySelector('.pill-day').addEventListener('click', () => {
+      const exp = expenses.find(e => e.id === id);
+      if (exp) updateExpenseField(id, 'perDay', !exp.perDay);
+    });
+
+    row.querySelector('.delete-btn').addEventListener('click', () => {
+      deleteExpense(id);
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// UPDATE SUMMARY + BREAKDOWN
+// ─────────────────────────────────────────────────────────────
+function updateSummary() {
+  const total = grandTotal();
+  const pax   = settings.travellers;
+  const days  = settings.days;
+  const cur   = settings.currency;
+
+  document.getElementById('sumTotal').textContent        = expenses.length ? fmt(total, cur) : '—';
+  document.getElementById('sumPerPerson').textContent    = expenses.length ? fmt(total / pax, cur) : '—';
+  document.getElementById('sumPerDay').textContent       = expenses.length ? fmt(total / days, cur) : '—';
+  document.getElementById('sumPerPersonDay').textContent = expenses.length ? fmt(total / pax / days, cur) : '—';
+
+  renderCategoryBreakdown(total, cur);
+}
+
+function renderCategoryBreakdown(total, cur) {
+  const bd = document.getElementById('categoryBreakdown');
+
+  if (!expenses.length || total === 0) {
+    bd.innerHTML = '<div class="text-sm text-slate-400 italic">No expenses yet.</div>';
+    return;
+  }
+
+  // Accumulate per category
+  const catTotals = {};
+  CATEGORIES.forEach(c => { catTotals[c.id] = 0; });
+  expenses.forEach(e => {
+    catTotals[e.category] = (catTotals[e.category] || 0) + effectiveTotal(e);
+  });
+
+  // Sort by amount descending, skip empty
+  const rows = CATEGORIES
+    .filter(c => catTotals[c.id] > 0)
+    .sort((a, b) => catTotals[b.id] - catTotals[a.id]);
+
+  bd.innerHTML = rows.map(c => {
+    const amt  = catTotals[c.id];
+    const pct  = total > 0 ? (amt / total * 100) : 0;
+    const w    = Math.max(pct, 2).toFixed(1);
+    return `
+    <div class="space-y-0.5">
+      <div class="flex items-center justify-between text-xs">
+        <span class="flex items-center font-medium text-slate-700">
+          <span class="cat-badge" style="background:${c.color}"></span>
+          ${c.label}
+        </span>
+        <span class="text-slate-500 font-medium tabular-nums">${fmt(amt, cur)} <span class="text-slate-400">(${pct.toFixed(0)}%)</span></span>
+      </div>
+      <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div class="h-full rounded-full bar-segment" style="width:${w}%; background:${c.color};"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────
+// FULL RENDER
+// ─────────────────────────────────────────────────────────────
+function renderAll() {
+  renderExpenses();
+  updateSummary();
+}
+
+// ─────────────────────────────────────────────────────────────
+// RESET MODAL
+// ─────────────────────────────────────────────────────────────
+function openResetModal() {
+  document.getElementById('resetModal').classList.remove('hidden');
+}
+
+function closeResetModal() {
+  document.getElementById('resetModal').classList.add('hidden');
+}
+
+function confirmReset() {
+  settings = { ...DEFAULT_SETTINGS };
+  expenses = DEFAULT_EXPENSES.map(e => ({ ...e, id: uid() }));
+  save();
+  closeResetModal();
+  // Re-bind settings fields
+  document.getElementById('tripName').value          = settings.tripName;
+  document.getElementById('settingTravellers').value = settings.travellers;
+  document.getElementById('settingDays').value       = settings.days;
+  document.getElementById('settingCurrency').value   = settings.currency;
+  renderAll();
+}
+
+// Close modal on backdrop click
+document.getElementById('resetModal').addEventListener('click', function(e) {
+  if (e.target === this) closeResetModal();
+});
+
+// ─────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────
+(function init() {
+  const hadData = load();
+  if (!hadData) {
+    expenses = DEFAULT_EXPENSES.map(e => ({ ...e, id: uid() }));
+    save();
+  }
+  bindSettings();
+  renderAll();
+})();
+</script>
+</body>
+</html>
