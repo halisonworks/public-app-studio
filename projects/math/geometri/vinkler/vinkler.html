@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<!--
+  Vinkler — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for geometri (matematikk 1P/2P, LK20): vinkeltyper,
+  vinkelsum i mangekanter, og vinkelpar (nabovinkler, toppvinkler).
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vinkler – Interaktivt læremiddel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .tab-btn { transition: background 0.15s, color 0.15s, border-color 0.15s; }
+    .tab-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    svg text { user-select: none; }
+    input[type=range] { accent-color: #2563eb; }
+    .vinkel-label { font-size: 1.1rem; font-weight: 700; }
+    .angle-arc { fill: none; stroke-width: 2; }
+    .draggable-ray { cursor: grab; }
+    .draggable-ray:active { cursor: grabbing; }
+    .info-box { border-left: 4px solid #2563eb; background: #eff6ff; }
+    .triangle-input { width: 70px; }
+    @media (max-width: 640px) {
+      .triangle-input { width: 56px; }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-blue-700 text-white shadow-md">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
+      <svg width="36" height="36" viewBox="0 0 36 36" class="flex-shrink-0">
+        <polygon points="4,32 18,4 32,32" fill="none" stroke="white" stroke-width="2.5"/>
+        <path d="M4,32 Q10,22 18,4" fill="none" stroke="#93c5fd" stroke-width="1.5"/>
+        <circle cx="4" cy="32" r="2.5" fill="#fbbf24"/>
+      </svg>
+      <div>
+        <h1 class="text-xl font-bold leading-tight">Vinkler</h1>
+        <p class="text-blue-200 text-sm">Matematikk 1P/2P – LK20</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- Tab bar -->
+  <nav class="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 flex gap-1 py-2 overflow-x-auto">
+      <button class="tab-btn active px-4 py-2 rounded-lg border border-gray-200 text-sm font-semibold whitespace-nowrap" data-tab="vinkeltyper">
+        1. Vinkeltyper
+      </button>
+      <button class="tab-btn px-4 py-2 rounded-lg border border-gray-200 text-sm font-semibold whitespace-nowrap" data-tab="vinkelsum">
+        2. Vinkelsum
+      </button>
+      <button class="tab-btn px-4 py-2 rounded-lg border border-gray-200 text-sm font-semibold whitespace-nowrap" data-tab="vinkelpar">
+        3. Vinkelpar
+      </button>
+    </div>
+  </nav>
+
+  <main class="max-w-4xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- ============================================================
+         TAB 1: Vinkeltyper
+    ============================================================ -->
+    <section id="tab-vinkeltyper" class="tab-panel active space-y-6">
+
+      <div class="bg-white rounded-2xl shadow p-5">
+        <h2 class="text-lg font-bold text-gray-800 mb-1">Interaktiv vinkel</h2>
+        <p class="text-gray-500 text-sm mb-4">
+          Dra strålen eller bruk glidebryteren for å endre vinkelen. Se hva slags vinkel det er!
+        </p>
+
+        <!-- SVG canvas for draggable angle -->
+        <div class="flex flex-col items-center gap-4">
+          <svg id="angleSvg" width="300" height="300" viewBox="0 0 300 300"
+               class="rounded-xl border border-gray-100 bg-blue-50 touch-none select-none"
+               style="max-width:100%">
+
+            <!-- Fixed ray: along positive x-axis -->
+            <line id="fixedRay" x1="150" y1="150" x2="280" y2="150"
+                  stroke="#64748b" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- Arrowhead for fixed ray -->
+            <polygon id="fixedArrow" points="280,150 271,145 271,155"
+                     fill="#64748b"/>
+
+            <!-- Moving ray (draggable) -->
+            <line id="movingRay" x1="150" y1="150" x2="280" y2="150"
+                  stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"
+                  class="draggable-ray"/>
+            <!-- Arrowhead for moving ray -->
+            <polygon id="movingArrow" points="280,150 271,145 271,155"
+                     fill="#2563eb"/>
+
+            <!-- Arc showing the angle -->
+            <path id="angleArc" d="" class="angle-arc" stroke="#f59e0b" stroke-width="2.5"/>
+            <!-- Filled arc area -->
+            <path id="angleArcFill" d="" fill="rgba(251,191,36,0.15)"/>
+
+            <!-- Vertex dot -->
+            <circle cx="150" cy="150" r="5" fill="#1e40af"/>
+
+            <!-- Angle label -->
+            <text id="angleText" x="150" y="150" text-anchor="middle"
+                  class="vinkel-label" fill="#1e40af" font-size="18"></text>
+
+            <!-- Drag hint -->
+            <text x="150" y="288" text-anchor="middle" fill="#94a3b8" font-size="11">
+              Dra den blå strålen
+            </text>
+          </svg>
+
+          <!-- Slider -->
+          <div class="w-full max-w-xs flex items-center gap-3">
+            <span class="text-xs text-gray-400 w-6">0°</span>
+            <input type="range" id="angleSlider" min="0" max="360" value="45"
+                   class="flex-1 h-2 rounded-full"/>
+            <span class="text-xs text-gray-400 w-8 text-right">360°</span>
+          </div>
+
+          <!-- Classification badge -->
+          <div id="classificationBox"
+               class="w-full max-w-xs rounded-xl px-5 py-3 text-center bg-yellow-50 border border-yellow-200">
+            <div id="classificationName" class="text-lg font-bold text-blue-700"></div>
+            <div id="classificationDesc" class="text-sm text-gray-600 mt-1"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reference card -->
+      <div class="bg-white rounded-2xl shadow p-5">
+        <h2 class="text-lg font-bold text-gray-800 mb-3">Oversikt over vinkeltyper</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          <!-- Spiss vinkel -->
+          <div class="rounded-xl border border-gray-100 p-4 flex gap-3 items-start">
+            <svg width="64" height="64" viewBox="0 0 64 64" class="flex-shrink-0">
+              <line x1="8" y1="56" x2="56" y2="56" stroke="#64748b" stroke-width="2"/>
+              <line x1="8" y1="56" x2="44" y2="16" stroke="#2563eb" stroke-width="2"/>
+              <path d="M22,56 A14,14 0 0,0 17.2,43.6" fill="rgba(251,191,36,0.25)" stroke="#f59e0b" stroke-width="1.5"/>
+              <text x="26" y="54" fill="#1e40af" font-size="11" font-weight="bold">~45°</text>
+            </svg>
+            <div>
+              <div class="font-bold text-gray-800">Spiss vinkel</div>
+              <div class="text-sm text-gray-500">Større enn 0° og <strong>mindre enn 90°</strong></div>
+            </div>
+          </div>
+
+          <!-- Rett vinkel -->
+          <div class="rounded-xl border border-gray-100 p-4 flex gap-3 items-start">
+            <svg width="64" height="64" viewBox="0 0 64 64" class="flex-shrink-0">
+              <line x1="8" y1="56" x2="56" y2="56" stroke="#64748b" stroke-width="2"/>
+              <line x1="8" y1="56" x2="8" y2="8" stroke="#2563eb" stroke-width="2"/>
+              <rect x="8" y="44" width="12" height="12" fill="rgba(251,191,36,0.25)" stroke="#f59e0b" stroke-width="1.5"/>
+            </svg>
+            <div>
+              <div class="font-bold text-gray-800">Rett vinkel</div>
+              <div class="text-sm text-gray-500">Nøyaktig <strong>90°</strong></div>
+            </div>
+          </div>
+
+          <!-- Stump vinkel -->
+          <div class="rounded-xl border border-gray-100 p-4 flex gap-3 items-start">
+            <svg width="64" height="64" viewBox="0 0 64 64" class="flex-shrink-0">
+              <line x1="8" y1="40" x2="56" y2="40" stroke="#64748b" stroke-width="2"/>
+              <line x1="8" y1="40" x2="42" y2="10" stroke="#2563eb" stroke-width="2"/>
+              <path d="M26,40 A18,18 0 0,0 16.5,26.5" fill="rgba(251,191,36,0.25)" stroke="#f59e0b" stroke-width="1.5"/>
+              <text x="28" y="38" fill="#1e40af" font-size="11" font-weight="bold">~130°</text>
+            </svg>
+            <div>
+              <div class="font-bold text-gray-800">Stump vinkel</div>
+              <div class="text-sm text-gray-500">Større enn 90° og <strong>mindre enn 180°</strong></div>
+            </div>
+          </div>
+
+          <!-- Rettlinjet vinkel -->
+          <div class="rounded-xl border border-gray-100 p-4 flex gap-3 items-start">
+            <svg width="64" height="64" viewBox="0 0 64 64" class="flex-shrink-0">
+              <line x1="4" y1="40" x2="60" y2="40" stroke="#64748b" stroke-width="2"/>
+              <line x1="32" y1="40" x2="32" y2="8" stroke="#2563eb" stroke-width="2" stroke-dasharray="3,2"/>
+              <path d="M44,40 A12,12 0 0,0 20,40" fill="rgba(251,191,36,0.25)" stroke="#f59e0b" stroke-width="1.5"/>
+              <text x="32" y="28" fill="#1e40af" font-size="11" font-weight="bold" text-anchor="middle">180°</text>
+            </svg>
+            <div>
+              <div class="font-bold text-gray-800">Rettlinjet vinkel</div>
+              <div class="text-sm text-gray-500">Nøyaktig <strong>180°</strong> — en rett linje</div>
+            </div>
+          </div>
+
+          <!-- Refleksvinkel -->
+          <div class="rounded-xl border border-gray-100 p-4 flex gap-3 items-start sm:col-span-2">
+            <svg width="64" height="64" viewBox="0 0 64 64" class="flex-shrink-0">
+              <line x1="32" y1="32" x2="58" y2="32" stroke="#64748b" stroke-width="2"/>
+              <line x1="32" y1="32" x2="58" y2="42" stroke="#2563eb" stroke-width="2"/>
+              <path d="M50,32 A18,18 0 1,1 50.3,42.6" fill="rgba(251,191,36,0.15)" stroke="#f59e0b" stroke-width="1.5"/>
+              <text x="18" y="22" fill="#1e40af" font-size="10" font-weight="bold">~270°</text>
+            </svg>
+            <div>
+              <div class="font-bold text-gray-800">Refleksvinkel</div>
+              <div class="text-sm text-gray-500">Større enn 180° og <strong>mindre enn 360°</strong></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         TAB 2: Vinkelsum
+    ============================================================ -->
+    <section id="tab-vinkelsum" class="tab-panel space-y-6">
+
+      <!-- Triangle interactive -->
+      <div class="bg-white rounded-2xl shadow p-5">
+        <h2 class="text-lg font-bold text-gray-800 mb-1">Vinkelsum i trekant = 180°</h2>
+        <p class="text-gray-500 text-sm mb-4">
+          Skriv inn to av vinklene i trekanten. Den tredje regnes ut automatisk.
+        </p>
+        <div class="flex flex-wrap gap-3 items-end mb-4">
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Vinkel A</label>
+            <div class="flex items-center gap-1">
+              <input type="number" id="triA" min="1" max="178" value="60"
+                     class="triangle-input border border-gray-300 rounded-lg px-2 py-2 text-center text-base font-bold focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+              <span class="text-gray-500">°</span>
+            </div>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Vinkel B</label>
+            <div class="flex items-center gap-1">
+              <input type="number" id="triB" min="1" max="178" value="60"
+                     class="triangle-input border border-gray-300 rounded-lg px-2 py-2 text-center text-base font-bold focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+              <span class="text-gray-500">°</span>
+            </div>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Vinkel C</label>
+            <div class="flex items-center gap-1">
+              <div id="triC"
+                   class="triangle-input border-2 border-blue-400 bg-blue-50 rounded-lg px-2 py-2 text-center text-base font-bold text-blue-700">
+                60
+              </div>
+              <span class="text-gray-500">°</span>
+            </div>
+          </div>
+          <div id="triError" class="text-sm text-red-600 font-semibold hidden">
+            ⚠ Ugyldig (sum &gt; 180°)
+          </div>
+        </div>
+
+        <!-- Triangle SVG -->
+        <div class="flex justify-center">
+          <svg id="triangleSvg" width="300" height="220" viewBox="0 0 300 220"
+               class="rounded-xl bg-blue-50 border border-gray-100" style="max-width:100%">
+            <!-- triangle drawn by JS -->
+          </svg>
+        </div>
+
+        <div class="info-box rounded-lg px-4 py-3 mt-4 text-sm text-gray-700">
+          <strong>Regel:</strong> Summen av de tre indre vinklene i en trekant er alltid
+          <strong>180°</strong>: A + B + C = 180°.
+        </div>
+      </div>
+
+      <!-- Polygon angle sum -->
+      <div class="bg-white rounded-2xl shadow p-5">
+        <h2 class="text-lg font-bold text-gray-800 mb-1">Vinkelsum i mangekanter</h2>
+        <p class="text-gray-500 text-sm mb-4">
+          Velg antall sider (n) for å se vinkelsummen i mangekanten.
+        </p>
+
+        <div class="flex flex-wrap gap-4 items-center mb-4">
+          <div class="flex items-center gap-3">
+            <label class="text-sm font-semibold text-gray-600" for="polySlider">Antall sider (n):</label>
+            <input type="range" id="polySlider" min="3" max="12" value="4"
+                   class="w-36 h-2 rounded-full"/>
+            <span id="polyN" class="text-lg font-bold text-blue-700 w-6">4</span>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-5 items-center">
+          <svg id="polySvg" width="220" height="220" viewBox="0 0 220 220"
+               class="rounded-xl bg-blue-50 border border-gray-100 flex-shrink-0" style="max-width:220px;">
+          </svg>
+          <div class="flex-1 space-y-3">
+            <div class="rounded-xl bg-blue-50 border border-blue-200 px-4 py-3">
+              <div class="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">Formel</div>
+              <div class="text-base font-bold text-gray-800" id="polyFormula">(n − 2) · 180°</div>
+            </div>
+            <div class="rounded-xl bg-yellow-50 border border-yellow-200 px-4 py-3">
+              <div class="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">Utregning</div>
+              <div class="text-base font-bold text-gray-800" id="polyCalc"></div>
+            </div>
+            <div class="rounded-xl bg-green-50 border border-green-200 px-4 py-3">
+              <div class="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">Vinkelsum</div>
+              <div class="text-2xl font-extrabold text-green-700" id="polyResult"></div>
+            </div>
+            <div class="text-sm text-gray-500" id="polyName"></div>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="mt-5 overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-blue-700 text-white">
+                <th class="px-3 py-2 text-left rounded-tl-lg">Mangekant</th>
+                <th class="px-3 py-2 text-center">Sider (n)</th>
+                <th class="px-3 py-2 text-center">Formel</th>
+                <th class="px-3 py-2 text-right rounded-tr-lg">Vinkelsum</th>
+              </tr>
+            </thead>
+            <tbody id="polyTable">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         TAB 3: Vinkelpar
+    ============================================================ -->
+    <section id="tab-vinkelpar" class="tab-panel space-y-6">
+
+      <!-- Nabovinkel -->
+      <div class="bg-white rounded-2xl shadow p-5">
+        <h2 class="text-lg font-bold text-gray-800 mb-1">Nabovinkler (supplementære vinkler)</h2>
+        <p class="text-gray-500 text-sm mb-3">
+          To vinkler er <strong>nabovinkler</strong> når de ligger ved siden av hverandre og
+          tilsammen utgjør en rett linje (180°). De kalles også <em>supplementære vinkler</em>.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-5 items-center">
+          <svg id="naboSvg" width="240" height="160" viewBox="0 0 240 160"
+               class="rounded-xl bg-blue-50 border border-gray-100 flex-shrink-0" style="max-width:240px;">
+          </svg>
+          <div class="flex-1 space-y-3">
+            <div class="flex items-center gap-3">
+              <label class="text-sm font-semibold text-gray-600 w-24">Vinkel α:</label>
+              <input type="range" id="naboSlider" min="1" max="179" value="110"
+                     class="flex-1 h-2 rounded-full"/>
+              <span id="naboAlpha" class="w-12 text-right font-bold text-blue-700">110°</span>
+            </div>
+            <div class="rounded-xl bg-yellow-50 border border-yellow-200 px-4 py-3 text-sm">
+              <span class="font-semibold">β = 180° − α = </span>
+              <span id="naboBeta" class="font-bold text-blue-700">70°</span>
+            </div>
+            <div class="info-box rounded-lg px-4 py-2 text-sm text-gray-700">
+              <strong>Regel:</strong> α + β = 180°
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toppvinkler -->
+      <div class="bg-white rounded-2xl shadow p-5">
+        <h2 class="text-lg font-bold text-gray-800 mb-1">Toppvinkler</h2>
+        <p class="text-gray-500 text-sm mb-3">
+          Når to linjer krysser hverandre, dannes fire vinkler. De <strong>motstående</strong>
+          (toppvinkler) er alltid like store.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-5 items-center">
+          <svg id="toppSvg" width="240" height="240" viewBox="0 0 240 240"
+               class="rounded-xl bg-blue-50 border border-gray-100 flex-shrink-0" style="max-width:240px;">
+          </svg>
+          <div class="flex-1 space-y-3">
+            <div class="flex items-center gap-3">
+              <label class="text-sm font-semibold text-gray-600 w-28">Vinkel α:</label>
+              <input type="range" id="toppSlider" min="10" max="170" value="55"
+                     class="flex-1 h-2 rounded-full"/>
+              <span id="toppAlpha" class="w-12 text-right font-bold text-blue-700">55°</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <div class="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2">
+                <span class="font-semibold">α = </span>
+                <span id="toppA" class="font-bold text-blue-700">55°</span>
+                <div class="text-xs text-gray-500 mt-0.5">øverst/nedenfor</div>
+              </div>
+              <div class="rounded-lg bg-orange-50 border border-orange-200 px-3 py-2">
+                <span class="font-semibold">β = </span>
+                <span id="toppB" class="font-bold text-orange-600">125°</span>
+                <div class="text-xs text-gray-500 mt-0.5">til siden</div>
+              </div>
+            </div>
+            <div class="info-box rounded-lg px-4 py-2 text-sm text-gray-700">
+              <strong>Regel:</strong> Toppvinkler er like store. α = α, β = β, og α + β = 180°.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Samsvarende vinkler -->
+      <div class="bg-white rounded-2xl shadow p-5">
+        <h2 class="text-lg font-bold text-gray-800 mb-1">Samsvarende vinkler ved parallelle linjer</h2>
+        <p class="text-gray-500 text-sm mb-3">
+          Når en tverrlinje (transversal) krysser to parallelle linjer, er
+          <strong>samsvarende vinkler</strong> (F-vinkler) like store, og
+          <strong>kryss­vinkler</strong> (Z-vinkler) er like store.
+          <strong>Nabovinkler</strong> (medsidevinkler, U-vinkler) er supplementære (sum 180°).
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-5 items-center">
+          <svg id="parallelSvg" width="260" height="240" viewBox="0 0 260 240"
+               class="rounded-xl bg-blue-50 border border-gray-100 flex-shrink-0" style="max-width:260px;">
+          </svg>
+          <div class="flex-1 space-y-3">
+            <div class="flex items-center gap-3">
+              <label class="text-sm font-semibold text-gray-600 w-28">Tverrlinje-vinkel:</label>
+              <input type="range" id="parallelSlider" min="15" max="165" value="55"
+                     class="flex-1 h-2 rounded-full"/>
+              <span id="parallelAlpha" class="w-12 text-right font-bold text-blue-700">55°</span>
+            </div>
+            <div class="space-y-2 text-sm">
+              <div class="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 flex justify-between">
+                <span>Samsvarende vinkler (F):</span>
+                <span id="pSamsvare" class="font-bold text-blue-700">55°</span>
+              </div>
+              <div class="rounded-lg bg-green-50 border border-green-200 px-3 py-2 flex justify-between">
+                <span>Kryssvinkler (Z):</span>
+                <span id="pKryss" class="font-bold text-green-700">55°</span>
+              </div>
+              <div class="rounded-lg bg-orange-50 border border-orange-200 px-3 py-2 flex justify-between">
+                <span>Medsidevinkler (U):</span>
+                <span id="pMedside" class="font-bold text-orange-600">125°</span>
+              </div>
+            </div>
+            <div class="info-box rounded-lg px-4 py-2 text-sm text-gray-700">
+              <strong>Regler:</strong> Samsvarende = like. Kryssvinkler = like.
+              Medsidevinkler = supplementære (sum 180°).
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer class="max-w-4xl mx-auto px-4 py-6 text-center text-xs text-gray-400 mt-4">
+    Halison App Studio · Offentlig bibliotek ·
+    <a href="https://github.com/halisonworks/public-app-studio"
+       class="underline hover:text-gray-600" target="_blank" rel="noopener">
+      github.com/halisonworks/public-app-studio
+    </a>
+  </footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ============================================================
+     UTILITIES
+  ============================================================ */
+  function deg2rad(d) { return d * Math.PI / 180; }
+  function rad2deg(r) { return r * 180 / Math.PI; }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  // Polar coords (angle measured counter-clockwise from positive x, but we
+  // want clockwise from positive x for standard mathematical display)
+  // SVG y-axis is flipped, so clockwise visually = negative angle in math.
+  function polarPoint(cx, cy, r, angleDeg) {
+    var rad = deg2rad(angleDeg);
+    return { x: cx + r * Math.cos(rad), y: cy - r * Math.sin(rad) };
+  }
+
+  /* ============================================================
+     TABS
+  ============================================================ */
+  var tabBtns = document.querySelectorAll('.tab-btn');
+  var tabPanels = document.querySelectorAll('.tab-panel');
+
+  tabBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      tabBtns.forEach(function (b) { b.classList.remove('active'); });
+      tabPanels.forEach(function (p) { p.classList.remove('active'); });
+      btn.classList.add('active');
+      var panelId = 'tab-' + btn.dataset.tab;
+      document.getElementById(panelId).classList.add('active');
+    });
+  });
+
+  /* ============================================================
+     TAB 1: VINKELTYPER — Interactive angle
+  ============================================================ */
+  var angleSvg = document.getElementById('angleSvg');
+  var movingRay = document.getElementById('movingRay');
+  var movingArrow = document.getElementById('movingArrow');
+  var angleArc = document.getElementById('angleArc');
+  var angleArcFill = document.getElementById('angleArcFill');
+  var angleText = document.getElementById('angleText');
+  var angleSlider = document.getElementById('angleSlider');
+  var classificationName = document.getElementById('classificationName');
+  var classificationDesc = document.getElementById('classificationDesc');
+  var classificationBox = document.getElementById('classificationBox');
+
+  var CX = 150, CY = 150, RAY_LEN = 120;
+
+  function classifyAngle(deg) {
+    if (deg === 0 || deg === 360) return { name: 'Nullvinkel', desc: 'Vinkelen er 0° – strålen peker i samme retning', color: 'gray' };
+    if (deg < 90) return { name: 'Spiss vinkel', desc: 'Mellom 0° og 90°', color: 'green' };
+    if (deg === 90) return { name: 'Rett vinkel', desc: 'Nøyaktig 90°', color: 'blue' };
+    if (deg < 180) return { name: 'Stump vinkel', desc: 'Mellom 90° og 180°', color: 'orange' };
+    if (deg === 180) return { name: 'Rettlinjet vinkel', desc: 'Nøyaktig 180° – en rett linje', color: 'purple' };
+    return { name: 'Refleksvinkel', desc: 'Mellom 180° og 360°', color: 'red' };
+  }
+
+  var colorMap = {
+    green:  { box: 'bg-green-50 border-green-200',  name: 'text-green-700' },
+    blue:   { box: 'bg-blue-50 border-blue-200',    name: 'text-blue-700' },
+    orange: { box: 'bg-orange-50 border-orange-200',name: 'text-orange-600' },
+    purple: { box: 'bg-purple-50 border-purple-200',name: 'text-purple-700' },
+    red:    { box: 'bg-red-50 border-red-200',      name: 'text-red-600' },
+    gray:   { box: 'bg-gray-50 border-gray-200',    name: 'text-gray-600' }
+  };
+
+  // Describe arc SVG path for angle 0..360 from fixedRay (pointing right, 0°)
+  // We draw counter-clockwise in SVG space (which is clockwise in standard math
+  // because SVG y-axis is inverted).
+  function arcPath(angleDeg, radius) {
+    // Start: fixed ray direction (0° = right = east)
+    var sx = CX + radius;
+    var sy = CY;
+    if (angleDeg <= 0) return '';
+    if (angleDeg >= 360) {
+      // full circle
+      return 'M ' + (CX + radius) + ' ' + CY +
+             ' A ' + radius + ' ' + radius + ' 0 1 0 ' + (CX + radius - 0.001) + ' ' + CY + ' Z';
+    }
+    var end = polarPoint(CX, CY, radius, angleDeg);
+    var largeArc = angleDeg > 180 ? 1 : 0;
+    // SVG arc sweep-flag=0 is counter-clockwise, but because y is flipped
+    // sweep=0 draws clockwise visually (which is what we want for standard angle display)
+    return 'M ' + sx + ' ' + sy +
+           ' A ' + radius + ' ' + radius + ' 0 ' + largeArc + ' 0 ' + end.x + ' ' + end.y;
+  }
+
+  function arcFillPath(angleDeg, radius) {
+    if (angleDeg <= 0) return '';
+    if (angleDeg >= 360) {
+      return 'M ' + (CX + radius) + ' ' + CY +
+             ' A ' + radius + ' ' + radius + ' 0 1 0 ' + (CX + radius - 0.001) + ' ' + CY + ' Z';
+    }
+    var sx = CX + radius;
+    var sy = CY;
+    var end = polarPoint(CX, CY, radius, angleDeg);
+    var largeArc = angleDeg > 180 ? 1 : 0;
+    return 'M ' + CX + ' ' + CY +
+           ' L ' + sx + ' ' + sy +
+           ' A ' + radius + ' ' + radius + ' 0 ' + largeArc + ' 0 ' + end.x + ' ' + end.y +
+           ' Z';
+  }
+
+  function updateAngle(deg) {
+    deg = clamp(deg, 0, 360);
+    angleSlider.value = deg;
+
+    var end = polarPoint(CX, CY, RAY_LEN, deg);
+    movingRay.setAttribute('x2', end.x);
+    movingRay.setAttribute('y2', end.y);
+
+    // Arrow head for moving ray (small triangle at tip)
+    var dir = deg2rad(deg);
+    var ax = end.x, ay = end.y;
+    var perp1 = { x: ax - 10 * Math.cos(dir) + 5 * Math.sin(dir), y: ay + 10 * Math.sin(dir) + 5 * Math.cos(dir) };
+    var perp2 = { x: ax - 10 * Math.cos(dir) - 5 * Math.sin(dir), y: ay + 10 * Math.sin(dir) - 5 * Math.cos(dir) };
+    movingArrow.setAttribute('points', ax + ',' + ay + ' ' + perp1.x + ',' + perp1.y + ' ' + perp2.x + ',' + perp2.y);
+
+    var arcR = deg > 180 ? 40 : 50;
+    angleArc.setAttribute('d', arcPath(deg, arcR));
+    angleArcFill.setAttribute('d', arcFillPath(deg, arcR));
+
+    // Label position: midpoint of arc
+    var labelR = arcR + 18;
+    var midDeg = deg / 2;
+    var lp = polarPoint(CX, CY, labelR, midDeg);
+    // For large reflex angles, push label further out
+    if (deg > 270) { lp = polarPoint(CX, CY, labelR + 10, midDeg); }
+    angleText.setAttribute('x', lp.x);
+    angleText.setAttribute('y', lp.y + 6);
+    angleText.textContent = deg + '°';
+
+    var cls = classifyAngle(deg);
+    classificationName.textContent = cls.name;
+    classificationDesc.textContent = cls.desc;
+    var cm = colorMap[cls.color];
+    classificationBox.className = 'w-full max-w-xs rounded-xl px-5 py-3 text-center border ' + cm.box;
+    classificationName.className = 'text-lg font-bold ' + cm.name;
+  }
+
+  // Drag on SVG
+  var isDragging = false;
+
+  function svgPos(e, svgEl) {
+    var rect = svgEl.getBoundingClientRect();
+    var scaleX = 300 / rect.width;
+    var scaleY = 300 / rect.height;
+    var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  }
+
+  function angleFromSvg(e) {
+    var p = svgPos(e, angleSvg);
+    var dx = p.x - CX, dy = -(p.y - CY); // flip y for standard math
+    var deg = rad2deg(Math.atan2(dy, dx));
+    if (deg < 0) deg += 360;
+    return Math.round(deg);
+  }
+
+  angleSvg.addEventListener('mousedown', function (e) {
+    isDragging = true;
+    updateAngle(angleFromSvg(e));
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', function (e) {
+    if (isDragging) updateAngle(angleFromSvg(e));
+  });
+  window.addEventListener('mouseup', function () { isDragging = false; });
+
+  angleSvg.addEventListener('touchstart', function (e) {
+    isDragging = true;
+    updateAngle(angleFromSvg(e));
+    e.preventDefault();
+  }, { passive: false });
+  window.addEventListener('touchmove', function (e) {
+    if (isDragging) updateAngle(angleFromSvg(e));
+  }, { passive: true });
+  window.addEventListener('touchend', function () { isDragging = false; });
+
+  angleSlider.addEventListener('input', function () {
+    updateAngle(parseInt(this.value));
+  });
+
+  updateAngle(45);
+
+  /* ============================================================
+     TAB 2: VINKELSUM — Triangle
+  ============================================================ */
+  var triA = document.getElementById('triA');
+  var triB = document.getElementById('triB');
+  var triCEl = document.getElementById('triC');
+  var triError = document.getElementById('triError');
+  var triangleSvg = document.getElementById('triangleSvg');
+
+  function drawTriangle(a, b, c) {
+    // Clear
+    while (triangleSvg.firstChild) triangleSvg.removeChild(triangleSvg.firstChild);
+
+    // Build triangle with bottom-left at fixed position
+    // Place vertex C bottom-left, vertex B bottom-right, vertex A at top
+    // We'll compute vertex positions from angles using law of sines.
+    // For display, fix bottom edge and compute top.
+    var svgW = 300, svgH = 220;
+    var margin = 30;
+    var baseLen = svgW - 2 * margin;
+    // Angle at bottom-left = C (we rename to match display: bottom-left=C, bottom-right=B, top=A)
+    // Actually let's just place: left=A, right=B, top=C
+    var Arad = deg2rad(a), Brad = deg2rad(b), Crad = deg2rad(c);
+    // Using law of sines: fix side c (opposite to C) = baseLen
+    // a/sin(A) = b/sin(B) = c/sin(C) = 2R
+    var sideC = baseLen; // bottom edge
+    var sideA = sideC * Math.sin(Arad) / Math.sin(Crad);
+    var sideB = sideC * Math.sin(Brad) / Math.sin(Crad);
+
+    var x1 = margin, y1 = svgH - margin;          // left vertex (angle A)
+    var x2 = margin + sideC, y2 = svgH - margin;  // right vertex (angle B)
+    // Top vertex (angle C): from left, travel sideB at angle A upward
+    var x3 = x1 + sideB * Math.cos(Arad);
+    var y3 = y1 - sideB * Math.sin(Arad);
+
+    // Center the triangle
+    var cx = (x1 + x2 + x3) / 3;
+    var cy = (y1 + y2 + y3) / 3;
+    var svgCx = svgW / 2, svgCy = svgH / 2;
+    var dx = svgCx - cx, dy = svgCy - cy;
+    x1 += dx; y1 += dy; x2 += dx; y2 += dy; x3 += dx; y3 += dy;
+
+    function el(tag, attrs, text) {
+      var e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+      if (text) e.textContent = text;
+      return e;
+    }
+
+    // Fill
+    triangleSvg.appendChild(el('polygon', {
+      points: x1+','+y1+' '+x2+','+y2+' '+x3+','+y3,
+      fill: 'rgba(37,99,235,0.08)', stroke: '#2563eb', 'stroke-width': '2', 'stroke-linejoin': 'round'
+    }));
+
+    // Angle arcs at each vertex
+    function angleArcAt(vx, vy, fromDeg, toDeg, arcR, color) {
+      var d = arcPath2(vx, vy, fromDeg, toDeg, arcR);
+      triangleSvg.appendChild(el('path', { d: d, fill: 'rgba(251,191,36,0.25)', stroke: color, 'stroke-width': '1.5' }));
+    }
+
+    // Angle at left vertex (A): directions to right vertex and top vertex
+    function dirDeg(fromX, fromY, toX, toY) {
+      return rad2deg(Math.atan2(-(toY - fromY), toX - fromX));
+    }
+
+    function arcPath2(vx, vy, fromDeg, toDeg, r) {
+      // Ensure we go counter-clockwise (positive direction)
+      var span = toDeg - fromDeg;
+      if (span < 0) span += 360;
+      var sp = polarPoint(vx, vy, r, fromDeg);
+      var ep = polarPoint(vx, vy, r, toDeg);
+      var large = span > 180 ? 1 : 0;
+      return 'M ' + vx + ' ' + vy + ' L ' + sp.x + ' ' + sp.y +
+             ' A ' + r + ' ' + r + ' 0 ' + large + ' 0 ' + ep.x + ' ' + ep.y + ' Z';
+    }
+
+    var d1 = dirDeg(x1, y1, x2, y2); // right
+    var d2 = dirDeg(x1, y1, x3, y3); // top
+    angleArcAt(x1, y1, d1, d2 < d1 ? d2 + 360 : d2, 22, '#f59e0b');
+
+    var d3 = dirDeg(x2, y2, x3, y3); // top
+    var d4 = dirDeg(x2, y2, x1, y1); // left
+    angleArcAt(x2, y2, d3, d4 < d3 ? d4 + 360 : d4, 22, '#10b981');
+
+    var d5 = dirDeg(x3, y3, x1, y1);
+    var d6 = dirDeg(x3, y3, x2, y2);
+    angleArcAt(x3, y3, d5, d6 < d5 ? d6 + 360 : d5 + (360 - (d5 - d6)), 22, '#8b5cf6');
+
+    // Labels
+    var offsets = [
+      { x: x1 - 18, y: y1 + 4 },
+      { x: x2 + 6,  y: y2 + 4 },
+      { x: x3,      y: y3 - 10 }
+    ];
+    var labels = [a + '°', b + '°', c + '°'];
+    var colors = ['#d97706', '#059669', '#7c3aed'];
+    labels.forEach(function (lbl, i) {
+      triangleSvg.appendChild(el('text', {
+        x: offsets[i].x, y: offsets[i].y,
+        fill: colors[i], 'font-size': '13', 'font-weight': 'bold', 'text-anchor': 'middle'
+      }, lbl));
+    });
+
+    // Sum display
+    triangleSvg.appendChild(el('text', {
+      x: svgW / 2, y: svgH - 6,
+      fill: '#64748b', 'font-size': '11', 'text-anchor': 'middle'
+    }, a + '° + ' + b + '° + ' + c + '° = 180°'));
+  }
+
+  function updateTriangle() {
+    var a = parseInt(triA.value) || 0;
+    var b = parseInt(triB.value) || 0;
+    if (a <= 0 || b <= 0 || a + b >= 180) {
+      triError.classList.remove('hidden');
+      triCEl.textContent = '–';
+      return;
+    }
+    triError.classList.add('hidden');
+    var c = 180 - a - b;
+    triCEl.textContent = c;
+    drawTriangle(a, b, c);
+  }
+
+  triA.addEventListener('input', updateTriangle);
+  triB.addEventListener('input', updateTriangle);
+  updateTriangle();
+
+  /* ============================================================
+     TAB 2: POLYGON angle sum
+  ============================================================ */
+  var polySlider = document.getElementById('polySlider');
+  var polyNEl = document.getElementById('polyN');
+  var polySvg = document.getElementById('polySvg');
+  var polyFormula = document.getElementById('polyFormula');
+  var polyCalc = document.getElementById('polyCalc');
+  var polyResult = document.getElementById('polyResult');
+  var polyName = document.getElementById('polyName');
+  var polyTable = document.getElementById('polyTable');
+
+  var polyNames = {
+    3: 'Trekant', 4: 'Firkant', 5: 'Femkant', 6: 'Sekskant',
+    7: 'Syvkant', 8: 'Åttekant', 9: 'Nikant', 10: 'Tikant',
+    11: 'Ellvekant', 12: 'Tolvkant'
+  };
+
+  function drawPolygon(n) {
+    while (polySvg.firstChild) polySvg.removeChild(polySvg.firstChild);
+    var cx = 110, cy = 110, r = 90;
+    var pts = [];
+    for (var i = 0; i < n; i++) {
+      var ang = deg2rad(90 + 360 * i / n); // start at top
+      pts.push({ x: cx + r * Math.cos(-ang), y: cy + r * Math.sin(-ang) });
+    }
+    function el(tag, attrs) {
+      var e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+      return e;
+    }
+    var pointsStr = pts.map(function (p) { return p.x + ',' + p.y; }).join(' ');
+    polySvg.appendChild(el('polygon', {
+      points: pointsStr, fill: 'rgba(37,99,235,0.1)', stroke: '#2563eb', 'stroke-width': '2', 'stroke-linejoin': 'round'
+    }));
+    // Vertex dots
+    pts.forEach(function (p) {
+      polySvg.appendChild(el('circle', { cx: p.x, cy: p.y, r: '4', fill: '#2563eb' }));
+    });
+  }
+
+  function fillPolyTable() {
+    polyTable.innerHTML = '';
+    for (var n = 3; n <= 10; n++) {
+      var sum = (n - 2) * 180;
+      var name = polyNames[n] || (n + '-kant');
+      var tr = document.createElement('tr');
+      tr.className = n % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+      tr.innerHTML =
+        '<td class="px-3 py-2 font-medium">' + name + '</td>' +
+        '<td class="px-3 py-2 text-center">' + n + '</td>' +
+        '<td class="px-3 py-2 text-center text-gray-500">(' + n + '−2)·180°</td>' +
+        '<td class="px-3 py-2 text-right font-bold text-blue-700">' + sum + '°</td>';
+      polyTable.appendChild(tr);
+    }
+  }
+
+  function updatePoly() {
+    var n = parseInt(polySlider.value);
+    polyNEl.textContent = n;
+    var sum = (n - 2) * 180;
+    var name = polyNames[n] || (n + '-kant');
+    polyName.textContent = name;
+    polyCalc.textContent = '(' + n + ' − 2) · 180° = ' + (n - 2) + ' · 180°';
+    polyResult.textContent = sum + '°';
+    drawPolygon(n);
+  }
+
+  polySlider.addEventListener('input', updatePoly);
+  fillPolyTable();
+  updatePoly();
+
+  /* ============================================================
+     TAB 3: NABOVINKLER
+  ============================================================ */
+  var naboSlider = document.getElementById('naboSlider');
+  var naboAlphaEl = document.getElementById('naboAlpha');
+  var naboBetaEl = document.getElementById('naboBeta');
+  var naboSvg = document.getElementById('naboSvg');
+
+  function drawNabo(alphaDeg) {
+    while (naboSvg.firstChild) naboSvg.removeChild(naboSvg.firstChild);
+    var beta = 180 - alphaDeg;
+    var cx = 120, cy = 110, lineLen = 100;
+
+    function el(tag, attrs, txt) {
+      var e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+      if (txt !== undefined) e.textContent = txt;
+      return e;
+    }
+
+    // Base line
+    naboSvg.appendChild(el('line', { x1: cx - lineLen, y1: cy, x2: cx + lineLen, y2: cy, stroke: '#64748b', 'stroke-width': '2.5', 'stroke-linecap': 'round' }));
+
+    // Moving ray upward (angle alpha from left direction = 180°)
+    var rayDeg = alphaDeg; // from positive x
+    var rp = polarPoint(cx, cy, lineLen, rayDeg);
+    naboSvg.appendChild(el('line', { x1: cx, y1: cy, x2: rp.x, y2: rp.y, stroke: '#2563eb', 'stroke-width': '2.5', 'stroke-linecap': 'round' }));
+
+    // Arc for alpha (right side: from 0° to alphaDeg)
+    var arcR = 38;
+    var ap = arcPath3(cx, cy, 0, alphaDeg, arcR);
+    naboSvg.appendChild(el('path', { d: ap, fill: 'rgba(37,99,235,0.15)', stroke: '#2563eb', 'stroke-width': '1.5' }));
+
+    // Arc for beta (left side: from alphaDeg to 180°)
+    var bp = arcPath3(cx, cy, alphaDeg, 180, arcR);
+    naboSvg.appendChild(el('path', { d: bp, fill: 'rgba(249,115,22,0.15)', stroke: '#f97316', 'stroke-width': '1.5' }));
+
+    // Labels
+    var alphaLabelR = arcR + 14;
+    var alphaLabel = polarPoint(cx, cy, alphaLabelR, alphaDeg / 2);
+    naboSvg.appendChild(el('text', { x: alphaLabel.x, y: alphaLabel.y + 4, fill: '#1d4ed8', 'font-size': '13', 'font-weight': 'bold', 'text-anchor': 'middle' }, 'α=' + alphaDeg + '°'));
+
+    var betaLabelR = arcR + 14;
+    var betaLabel = polarPoint(cx, cy, betaLabelR, alphaDeg + beta / 2);
+    naboSvg.appendChild(el('text', { x: betaLabel.x, y: betaLabel.y + 4, fill: '#ea580c', 'font-size': '13', 'font-weight': 'bold', 'text-anchor': 'middle' }, 'β=' + beta + '°'));
+  }
+
+  function arcPath3(vx, vy, fromDeg, toDeg, r) {
+    var sp = polarPoint(vx, vy, r, fromDeg);
+    var ep = polarPoint(vx, vy, r, toDeg);
+    var span = toDeg - fromDeg;
+    var large = span > 180 ? 1 : 0;
+    return 'M ' + vx + ' ' + vy + ' L ' + sp.x + ' ' + sp.y +
+           ' A ' + r + ' ' + r + ' 0 ' + large + ' 0 ' + ep.x + ' ' + ep.y + ' Z';
+  }
+
+  function updateNabo() {
+    var a = parseInt(naboSlider.value);
+    naboAlphaEl.textContent = a + '°';
+    naboBetaEl.textContent = (180 - a) + '°';
+    drawNabo(a);
+  }
+
+  naboSlider.addEventListener('input', updateNabo);
+  updateNabo();
+
+  /* ============================================================
+     TAB 3: TOPPVINKLER
+  ============================================================ */
+  var toppSlider = document.getElementById('toppSlider');
+  var toppAlphaEl = document.getElementById('toppAlpha');
+  var toppAEl = document.getElementById('toppA');
+  var toppBEl = document.getElementById('toppB');
+  var toppSvg = document.getElementById('toppSvg');
+
+  function drawTopp(alphaDeg) {
+    while (toppSvg.firstChild) toppSvg.removeChild(toppSvg.firstChild);
+    var cx = 120, cy = 120, lineLen = 105;
+    var beta = 180 - alphaDeg;
+
+    function el(tag, attrs, txt) {
+      var e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+      if (txt !== undefined) e.textContent = txt;
+      return e;
+    }
+
+    // Line 1: horizontal-ish (0° and 180°)
+    var p1a = polarPoint(cx, cy, lineLen, 0);
+    var p1b = polarPoint(cx, cy, lineLen, 180);
+    toppSvg.appendChild(el('line', { x1: p1a.x, y1: p1a.y, x2: p1b.x, y2: p1b.y, stroke: '#64748b', 'stroke-width': '2.5', 'stroke-linecap': 'round' }));
+
+    // Line 2: at alphaDeg and alphaDeg+180
+    var p2a = polarPoint(cx, cy, lineLen, alphaDeg);
+    var p2b = polarPoint(cx, cy, lineLen, alphaDeg + 180);
+    toppSvg.appendChild(el('line', { x1: p2a.x, y1: p2a.y, x2: p2b.x, y2: p2b.y, stroke: '#2563eb', 'stroke-width': '2.5', 'stroke-linecap': 'round' }));
+
+    // 4 angle arcs
+    var arcR = 32;
+    // Top-right: 0° to alphaDeg
+    toppSvg.appendChild(el('path', { d: arcPath3(cx, cy, 0, alphaDeg, arcR), fill: 'rgba(37,99,235,0.2)', stroke: '#2563eb', 'stroke-width': '1.5' }));
+    // Top-left: alphaDeg to 180°
+    toppSvg.appendChild(el('path', { d: arcPath3(cx, cy, alphaDeg, 180, arcR), fill: 'rgba(249,115,22,0.2)', stroke: '#f97316', 'stroke-width': '1.5' }));
+    // Bottom-left: 180° to alphaDeg+180
+    toppSvg.appendChild(el('path', { d: arcPath3(cx, cy, 180, alphaDeg + 180, arcR), fill: 'rgba(37,99,235,0.2)', stroke: '#2563eb', 'stroke-width': '1.5' }));
+    // Bottom-right: alphaDeg+180 to 360
+    toppSvg.appendChild(el('path', { d: arcPath3(cx, cy, alphaDeg + 180, 360, arcR), fill: 'rgba(249,115,22,0.2)', stroke: '#f97316', 'stroke-width': '1.5' }));
+
+    // Labels
+    var lr = arcR + 16;
+    function addLabel(midDeg, text, color) {
+      var lp = polarPoint(cx, cy, lr, midDeg);
+      toppSvg.appendChild(el('text', { x: lp.x, y: lp.y + 4, fill: color, 'font-size': '12', 'font-weight': 'bold', 'text-anchor': 'middle' }, text));
+    }
+
+    addLabel(alphaDeg / 2, 'α=' + alphaDeg + '°', '#1d4ed8');
+    addLabel(alphaDeg + beta / 2, 'β=' + beta + '°', '#c2410c');
+    addLabel(180 + alphaDeg / 2, 'α=' + alphaDeg + '°', '#1d4ed8');
+    addLabel(alphaDeg + 180 + beta / 2, 'β=' + beta + '°', '#c2410c');
+
+    // Vertex
+    toppSvg.appendChild(el('circle', { cx: cx, cy: cy, r: '4', fill: '#1e40af' }));
+  }
+
+  function updateTopp() {
+    var a = parseInt(toppSlider.value);
+    var b = 180 - a;
+    toppAlphaEl.textContent = a + '°';
+    toppAEl.textContent = a + '°';
+    toppBEl.textContent = b + '°';
+    drawTopp(a);
+  }
+
+  toppSlider.addEventListener('input', updateTopp);
+  updateTopp();
+
+  /* ============================================================
+     TAB 3: PARALLELLE LINJER
+  ============================================================ */
+  var parallelSlider = document.getElementById('parallelSlider');
+  var parallelAlphaEl = document.getElementById('parallelAlpha');
+  var pSamsvareEl = document.getElementById('pSamsvare');
+  var pKryssEl = document.getElementById('pKryss');
+  var pMedsideEl = document.getElementById('pMedside');
+  var parallelSvg = document.getElementById('parallelSvg');
+
+  function drawParallel(alphaDeg) {
+    while (parallelSvg.firstChild) parallelSvg.removeChild(parallelSvg.firstChild);
+    var svgW = 260, svgH = 240;
+    var lineY1 = 70, lineY2 = 170;
+    var lineX1 = 20, lineX2 = 240;
+    var beta = 180 - alphaDeg;
+
+    function el(tag, attrs, txt) {
+      var e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+      if (txt !== undefined) e.textContent = txt;
+      return e;
+    }
+
+    // Draw parallel lines with arrows
+    parallelSvg.appendChild(el('line', { x1: lineX1, y1: lineY1, x2: lineX2, y2: lineY1, stroke: '#64748b', 'stroke-width': '2.5', 'stroke-linecap': 'round' }));
+    parallelSvg.appendChild(el('line', { x1: lineX1, y1: lineY2, x2: lineX2, y2: lineY2, stroke: '#64748b', 'stroke-width': '2.5', 'stroke-linecap': 'round' }));
+
+    // Parallel arrows
+    parallelSvg.appendChild(el('polygon', { points: (lineX2)+','+(lineY1)+' '+(lineX2-8)+','+(lineY1-4)+' '+(lineX2-8)+','+(lineY1+4), fill: '#64748b' }));
+    parallelSvg.appendChild(el('polygon', { points: (lineX2)+','+(lineY2)+' '+(lineX2-8)+','+(lineY2-4)+' '+(lineX2-8)+','+(lineY2+4), fill: '#64748b' }));
+
+    // Labels for parallel lines
+    parallelSvg.appendChild(el('text', { x: lineX1 - 2, y: lineY1 - 8, fill: '#64748b', 'font-size': '11', 'font-weight': 'bold' }, 'l₁'));
+    parallelSvg.appendChild(el('text', { x: lineX1 - 2, y: lineY2 - 8, fill: '#64748b', 'font-size': '11', 'font-weight': 'bold' }, 'l₂'));
+
+    // Transversal: calculate x positions at each line
+    // Angle alphaDeg from horizontal
+    var halfH = (lineY2 - lineY1) / 2;
+    var dx = halfH / Math.tan(deg2rad(alphaDeg));
+    var midX = svgW / 2;
+    var tx1 = midX - dx; // x at line1
+    var tx2 = midX + dx; // x at line2
+    // Extend the transversal
+    var extFactor = 1.4;
+    var txTop = midX - dx * extFactor;
+    var txBot = midX + dx * extFactor;
+    var tyTop = lineY1 - (lineY2 - lineY1) * (extFactor - 1);
+    var tyBot = lineY2 + (lineY2 - lineY1) * (extFactor - 1);
+
+    parallelSvg.appendChild(el('line', { x1: txTop, y1: tyTop, x2: txBot, y2: tyBot, stroke: '#2563eb', 'stroke-width': '2.5', 'stroke-linecap': 'round' }));
+
+    // Intersection points
+    var ix1 = tx1, iy1 = lineY1;
+    var ix2 = tx2, iy2 = lineY2;
+
+    // Transversal direction angle (in SVG coords, measured from positive x)
+    // transversal goes from top-left to bottom-right at angle (180 - alphaDeg) from horizontal
+    var transAngle = -(180 - alphaDeg); // SVG angle (y flipped)
+    // Actually: transversal slope = dy/dx = (tyBot-tyTop)/(txBot-txTop)
+    var tAngleRad = Math.atan2(-(tyBot - tyTop), txBot - txTop);
+    var tAngleDeg = rad2deg(tAngleRad);
+    if (tAngleDeg < 0) tAngleDeg += 180;
+
+    // At intersection 1: 4 angles
+    // From right horizontal = 0°, transversal goes at tAngleDeg (going up-left = tAngleDeg+180)
+    var tRight = tAngleDeg; // direction toward bottom-right
+    var tLeft = tAngleDeg + 180; // direction toward top-left (mod 360)
+
+    var arcR = 24;
+
+    // At line 1 (top intersection ix1, iy1):
+    // Quadrant 1 (right of transversal, below line): angles from tRight to 0° (= right)
+    // Standard: angles from line-right (0°) to tRight going CCW = alphaDeg
+    // Let line go: left=180°, right=0°, transversal from top-left dir and bottom-right dir
+
+    // Upper-right at intersection 1 (between line going right and transversal going upper-right):
+    var trUpperRight1 = arcPath3(ix1, iy1, 0, tAngleDeg, arcR);
+    parallelSvg.appendChild(el('path', { d: trUpperRight1, fill: 'rgba(37,99,235,0.2)', stroke: '#2563eb', 'stroke-width': '1.5' }));
+
+    // Upper-left at intersection 1:
+    var trUpperLeft1 = arcPath3(ix1, iy1, tAngleDeg, 180, arcR);
+    parallelSvg.appendChild(el('path', { d: trUpperLeft1, fill: 'rgba(249,115,22,0.2)', stroke: '#f97316', 'stroke-width': '1.5' }));
+
+    // Lower-left at intersection 1 (toppvinkel of upper-right):
+    var trLowerLeft1 = arcPath3(ix1, iy1, 180, tAngleDeg + 180, arcR);
+    parallelSvg.appendChild(el('path', { d: trLowerLeft1, fill: 'rgba(37,99,235,0.2)', stroke: '#2563eb', 'stroke-width': '1.5' }));
+
+    // Lower-right at intersection 1:
+    var trLowerRight1 = arcPath3(ix1, iy1, tAngleDeg + 180, 360, arcR);
+    parallelSvg.appendChild(el('path', { d: trLowerRight1, fill: 'rgba(249,115,22,0.2)', stroke: '#f97316', 'stroke-width': '1.5' }));
+
+    // At intersection 2 (ix2, iy2) — same angles, samsvarende
+    var trUpperRight2 = arcPath3(ix2, iy2, 0, tAngleDeg, arcR);
+    parallelSvg.appendChild(el('path', { d: trUpperRight2, fill: 'rgba(16,185,129,0.2)', stroke: '#10b981', 'stroke-width': '1.5' }));
+
+    var trUpperLeft2 = arcPath3(ix2, iy2, tAngleDeg, 180, arcR);
+    parallelSvg.appendChild(el('path', { d: trUpperLeft2, fill: 'rgba(249,115,22,0.2)', stroke: '#f97316', 'stroke-width': '1.5' }));
+
+    var trLowerLeft2 = arcPath3(ix2, iy2, 180, tAngleDeg + 180, arcR);
+    parallelSvg.appendChild(el('path', { d: trLowerLeft2, fill: 'rgba(16,185,129,0.2)', stroke: '#10b981', 'stroke-width': '1.5' }));
+
+    var trLowerRight2 = arcPath3(ix2, iy2, tAngleDeg + 180, 360, arcR);
+    parallelSvg.appendChild(el('path', { d: trLowerRight2, fill: 'rgba(249,115,22,0.2)', stroke: '#f97316', 'stroke-width': '1.5' }));
+
+    // Dots at intersections
+    parallelSvg.appendChild(el('circle', { cx: ix1, cy: iy1, r: '4', fill: '#1e40af' }));
+    parallelSvg.appendChild(el('circle', { cx: ix2, cy: iy2, r: '4', fill: '#1e40af' }));
+
+    // Labels: alphaDeg for samsvarende (upper-right at both intersections)
+    var lr1 = arcR + 14;
+    function lp1(midDeg) { return polarPoint(ix1, iy1, lr1, midDeg); }
+    function lp2(midDeg) { return polarPoint(ix2, iy2, lr1, midDeg); }
+
+    var alphaText = alphaDeg + '°';
+    var betaText = beta + '°';
+
+    // Int1 upper-right
+    var p = lp1(tAngleDeg / 2);
+    parallelSvg.appendChild(el('text', { x: p.x, y: p.y + 4, fill: '#1d4ed8', 'font-size': '10', 'font-weight': 'bold', 'text-anchor': 'middle' }, alphaText));
+
+    // Int1 upper-left
+    p = lp1(tAngleDeg + beta / 2);
+    parallelSvg.appendChild(el('text', { x: p.x, y: p.y + 4, fill: '#c2410c', 'font-size': '10', 'font-weight': 'bold', 'text-anchor': 'middle' }, betaText));
+
+    // Int2 upper-right (samsvarende med Int1 upper-right)
+    p = lp2(tAngleDeg / 2);
+    parallelSvg.appendChild(el('text', { x: p.x, y: p.y + 4, fill: '#065f46', 'font-size': '10', 'font-weight': 'bold', 'text-anchor': 'middle' }, alphaText));
+
+    // Int2 upper-left
+    p = lp2(tAngleDeg + beta / 2);
+    parallelSvg.appendChild(el('text', { x: p.x, y: p.y + 4, fill: '#c2410c', 'font-size': '10', 'font-weight': 'bold', 'text-anchor': 'middle' }, betaText));
+  }
+
+  function updateParallel() {
+    var a = parseInt(parallelSlider.value);
+    var b = 180 - a;
+    parallelAlphaEl.textContent = a + '°';
+    pSamsvareEl.textContent = a + '°';
+    pKryssEl.textContent = a + '°';
+    pMedsideEl.textContent = b + '°';
+    drawParallel(a);
+  }
+
+  parallelSlider.addEventListener('input', updateParallel);
+  updateParallel();
+
+})();
+</script>
+</body>
+</html>

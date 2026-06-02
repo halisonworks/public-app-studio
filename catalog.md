@@ -79,6 +79,16 @@ Interactive maths learning tools in Norwegian, organized by level. See
 | [![forhold](projects/math/NO-1P/forhold-og-proporsjonalitet/screenshot.png)](projects/math/NO-1P/forhold-og-proporsjonalitet/) **Forhold og proporsjonalitet** | [![enheter](projects/math/NO-1P/enheter-og-maaling/screenshot.png)](projects/math/NO-1P/enheter-og-maaling/) **Enheter og måling** | [![lønn](projects/math/NO-1P/lonn-og-skatt/screenshot.png)](projects/math/NO-1P/lonn-og-skatt/) **Lønn og skatt** |
 | [![sannsynlighet](projects/math/NO-1P/sannsynlighet/screenshot.png)](projects/math/NO-1P/sannsynlighet/) **Sannsynlighet** | [![geometri1p](projects/math/NO-1P/geometri/screenshot.png)](projects/math/NO-1P/geometri/) **Geometri (1P)** | |
 
+### Geometri (fokuserte verktøy, 1P/2P)
+
+| | | |
+|---|---|---|
+| [![vinkler](projects/math/geometri/vinkler/screenshot.png)](projects/math/geometri/vinkler/) **Vinkler** | [![pytagoras](projects/math/geometri/pytagoras/screenshot.png)](projects/math/geometri/pytagoras/) **Pytagoras' setning** | [![sirkelen](projects/math/geometri/sirkelen/screenshot.png)](projects/math/geometri/sirkelen/) **Sirkelen** |
+| [![sammensatte](projects/math/geometri/sammensatte-figurer/screenshot.png)](projects/math/geometri/sammensatte-figurer/) **Sammensatte figurer** | [![volum](projects/math/geometri/volum-og-overflate/screenshot.png)](projects/math/geometri/volum-og-overflate/) **Volum og overflate** | [![maalestokk](projects/math/geometri/maalestokk/screenshot.png)](projects/math/geometri/maalestokk/) **Målestokk og kart** |
+| [![formlikhet](projects/math/geometri/formlikhet/screenshot.png)](projects/math/geometri/formlikhet/) **Formlikhet og kongruens** | [![koordinat](projects/math/geometri/koordinatgeometri/screenshot.png)](projects/math/geometri/koordinatgeometri/) **Koordinatgeometri** | |
+
+Plus the broader per-level overviews: [Geometri (1P)](projects/math/NO-1P/geometri/) and [Geometri (2P)](projects/math/NO-2P/geometri/).
+
 ## Categories (prompt add-ons)
 
 Upload one of these to your AI alongside [`prompts/authoring-guide.md`](prompts/authoring-guide.md),

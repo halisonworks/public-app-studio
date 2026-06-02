@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<!--
+  Koordinatgeometri — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for geometri (matematikk 1P/2P, LK20): avstand,
+  midtpunkt og stigningstall mellom to punkter i koordinatsystemet.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Koordinatgeometri – Matematikk 1P/2P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .point-handle { cursor: grab; }
+    .point-handle:active { cursor: grabbing; }
+    .axis-line { stroke: #374151; stroke-width: 1.5; }
+    .grid-line { stroke: #e5e7eb; stroke-width: 1; }
+    .grid-line-major { stroke: #d1d5db; stroke-width: 1; }
+    .segment-line { stroke: #3b82f6; stroke-width: 2.5; stroke-linecap: round; }
+    .triangle-leg { stroke: #f59e0b; stroke-width: 2; stroke-dasharray: 6 3; }
+    .midpoint-marker { fill: #10b981; stroke: white; stroke-width: 2; }
+    .point-a { fill: #ef4444; stroke: white; stroke-width: 2.5; }
+    .point-b { fill: #6366f1; stroke: white; stroke-width: 2.5; }
+    .label-text { font-size: 13px; font-weight: 600; font-family: 'Segoe UI', system-ui, sans-serif; }
+    .axis-label { font-size: 12px; fill: #374151; font-family: 'Segoe UI', system-ui, sans-serif; }
+    .dim-label { font-size: 11px; fill: #b45309; font-family: 'Segoe UI', system-ui, sans-serif; font-style: italic; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+    .calc-box { background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); }
+    .formula-highlight { background: #fef3c7; border-left: 3px solid #f59e0b; }
+    .result-highlight { background: #ecfdf5; border-left: 3px solid #10b981; }
+    .slope-highlight { background: #ede9fe; border-left: 3px solid #6366f1; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">K</div>
+        <div>
+          <h1 class="text-xl font-bold text-gray-900">Koordinatgeometri</h1>
+          <p class="text-sm text-gray-500">Matematikk 1P/2P · LK20 · Avstand, midtpunkt og stigningstall</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-6">
+
+    <!-- Point input controls -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 mb-6">
+      <h2 class="text-base font-semibold text-gray-700 mb-4">Sett koordinater for punktene</h2>
+      <div class="flex flex-wrap gap-6">
+        <!-- Point A -->
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">A</div>
+          <div class="flex items-center gap-2">
+            <label class="text-sm font-medium text-gray-600">x<sub>1</sub></label>
+            <input id="ax" type="number" step="0.5" value="-3"
+              class="w-20 border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-red-400" />
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-sm font-medium text-gray-600">y<sub>1</sub></label>
+            <input id="ay" type="number" step="0.5" value="1"
+              class="w-20 border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-red-400" />
+          </div>
+        </div>
+        <!-- Point B -->
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">B</div>
+          <div class="flex items-center gap-2">
+            <label class="text-sm font-medium text-gray-600">x<sub>2</sub></label>
+            <input id="bx" type="number" step="0.5" value="3"
+              class="w-20 border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-sm font-medium text-gray-600">y<sub>2</sub></label>
+            <input id="by" type="number" step="0.5" value="5"
+              class="w-20 border border-gray-300 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          </div>
+        </div>
+        <!-- Legend -->
+        <div class="flex items-center gap-4 ml-auto flex-wrap">
+          <div class="flex items-center gap-2 text-xs text-gray-500">
+            <div class="w-6 h-0.5 bg-blue-500"></div><span>Linjestykket AB</span>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-gray-500">
+            <div class="w-6 h-0.5 bg-amber-500" style="border-top: 2px dashed #f59e0b; background:none;"></div><span>Δx og Δy (Pytagoras)</span>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-gray-500">
+            <div class="w-3 h-3 bg-emerald-500 rounded-full"></div><span>Midtpunkt M</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main content: SVG + calculations -->
+    <div class="flex flex-col lg:flex-row gap-6">
+
+      <!-- SVG Coordinate System -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 flex-shrink-0">
+        <svg id="coordSvg" width="460" height="460" viewBox="0 0 460 460"
+             style="display:block; touch-action:none; user-select:none;">
+          <!-- Grid and axes rendered by JS -->
+          <g id="gridGroup"></g>
+          <g id="axesGroup"></g>
+          <g id="triangleGroup"></g>
+          <g id="segmentGroup"></g>
+          <g id="midpointGroup"></g>
+          <g id="pointsGroup"></g>
+          <g id="labelsGroup"></g>
+        </svg>
+      </div>
+
+      <!-- Calculations panel -->
+      <div class="flex-1 flex flex-col gap-4">
+
+        <!-- Avstand -->
+        <div class="calc-box rounded-2xl border border-gray-200 shadow-sm p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-7 h-7 bg-amber-400 rounded-lg flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 12h16M4 12l4-4M4 12l4 4"/></svg>
+            </div>
+            <h3 class="font-bold text-gray-800">Avstand mellom A og B</h3>
+          </div>
+          <div class="formula-highlight rounded-lg px-4 py-3 mb-3">
+            <p class="text-sm font-medium text-amber-800">Formel (Pytagoras):</p>
+            <p class="text-sm text-amber-900 mt-1">|AB| = √( (x₂ − x₁)² + (y₂ − y₁)² )</p>
+            <p class="text-xs text-amber-700 mt-1">Δx og Δy er katetene; |AB| er hypotenusen i rettvinklet trekant.</p>
+          </div>
+          <div id="distCalc" class="text-sm text-gray-700 space-y-1 leading-relaxed"></div>
+          <div id="distResult" class="result-highlight rounded-lg px-4 py-2 mt-3"></div>
+        </div>
+
+        <!-- Midtpunkt -->
+        <div class="calc-box rounded-2xl border border-gray-200 shadow-sm p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-7 h-7 bg-emerald-500 rounded-lg flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3" fill="white"/></svg>
+            </div>
+            <h3 class="font-bold text-gray-800">Midtpunkt M</h3>
+          </div>
+          <div class="formula-highlight rounded-lg px-4 py-3 mb-3" style="background:#d1fae5;border-left-color:#10b981;">
+            <p class="text-sm font-medium text-emerald-800">Formel:</p>
+            <p class="text-sm text-emerald-900 mt-1">M = ( (x₁ + x₂) / 2 , (y₁ + y₂) / 2 )</p>
+          </div>
+          <div id="midCalc" class="text-sm text-gray-700 space-y-1 leading-relaxed"></div>
+          <div id="midResult" class="result-highlight rounded-lg px-4 py-2 mt-3"></div>
+        </div>
+
+        <!-- Stigningstall -->
+        <div class="calc-box rounded-2xl border border-gray-200 shadow-sm p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-7 h-7 bg-indigo-500 rounded-lg flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 17l6-6 4 4 8-8"/></svg>
+            </div>
+            <h3 class="font-bold text-gray-800">Stigningstall</h3>
+          </div>
+          <div class="formula-highlight rounded-lg px-4 py-3 mb-3" style="background:#ede9fe;border-left-color:#6366f1;">
+            <p class="text-sm font-medium text-indigo-800">Formel:</p>
+            <p class="text-sm text-indigo-900 mt-1">a = (y₂ − y₁) / (x₂ − x₁) = Δy / Δx</p>
+            <p class="text-xs text-indigo-700 mt-1">Stigningstallet forteller hvor mye y øker per enhet x øker.</p>
+          </div>
+          <div id="slopeCalc" class="text-sm text-gray-700 space-y-1 leading-relaxed"></div>
+          <div id="slopeResult" class="slope-highlight rounded-lg px-4 py-2 mt-3"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Info footer -->
+    <div class="mt-6 bg-blue-50 border border-blue-100 rounded-xl px-5 py-4 text-sm text-blue-800">
+      <strong>Tips:</strong> Dra punktene A og B direkte i koordinatsystemet, eller skriv inn koordinater i feltene over. Formler og utregninger oppdateres automatisk.
+    </div>
+
+  </main>
+
+  <script>
+  (function() {
+    // ---- SVG setup ----
+    const SVG_W = 460, SVG_H = 460;
+    const PADDING = 40;
+    const GRID_RANGE = 8;  // -8 to 8
+    const TICK_STEP = 1;
+
+    // Math coords to SVG pixel coords
+    function toSvg(mx, my) {
+      const cx = SVG_W / 2;
+      const cy = SVG_H / 2;
+      const scale = (SVG_W - 2 * PADDING) / (2 * GRID_RANGE);
+      return {
+        x: cx + mx * scale,
+        y: cy - my * scale
+      };
+    }
+
+    // SVG pixel coords to math coords
+    function toMath(sx, sy) {
+      const cx = SVG_W / 2;
+      const cy = SVG_H / 2;
+      const scale = (SVG_W - 2 * PADDING) / (2 * GRID_RANGE);
+      return {
+        x: (sx - cx) / scale,
+        y: (cy - sy) / scale
+      };
+    }
+
+    function getScale() {
+      return (SVG_W - 2 * PADDING) / (2 * GRID_RANGE);
+    }
+
+    // ---- State ----
+    let ptA = { x: -3, y: 1 };
+    let ptB = { x: 3, y: 5 };
+
+    // ---- Build grid and axes (once) ----
+    function buildGridAndAxes() {
+      const gridGroup = document.getElementById('gridGroup');
+      const axesGroup = document.getElementById('axesGroup');
+      gridGroup.innerHTML = '';
+      axesGroup.innerHTML = '';
+
+      const ns = 'http://www.w3.org/2000/svg';
+
+      // Grid lines
+      for (let i = -GRID_RANGE; i <= GRID_RANGE; i++) {
+        if (i === 0) continue;
+        const isMajor = (i % 2 === 0);
+        // Vertical
+        const vx = toSvg(i, 0).x;
+        const vLine = document.createElementNS(ns, 'line');
+        vLine.setAttribute('x1', vx); vLine.setAttribute('y1', toSvg(0, GRID_RANGE).y);
+        vLine.setAttribute('x2', vx); vLine.setAttribute('y2', toSvg(0, -GRID_RANGE).y);
+        vLine.setAttribute('class', isMajor ? 'grid-line-major' : 'grid-line');
+        gridGroup.appendChild(vLine);
+        // Horizontal
+        const hy = toSvg(0, i).y;
+        const hLine = document.createElementNS(ns, 'line');
+        hLine.setAttribute('x1', toSvg(-GRID_RANGE, 0).x); hLine.setAttribute('y1', hy);
+        hLine.setAttribute('x2', toSvg(GRID_RANGE, 0).x);  hLine.setAttribute('y2', hy);
+        hLine.setAttribute('class', isMajor ? 'grid-line-major' : 'grid-line');
+        gridGroup.appendChild(hLine);
+      }
+
+      // Tick labels
+      for (let i = -GRID_RANGE; i <= GRID_RANGE; i++) {
+        if (i === 0) continue;
+        if (i % 2 !== 0) continue; // only even labels
+        // x-axis labels
+        const xPos = toSvg(i, 0);
+        const xt = document.createElementNS(ns, 'text');
+        xt.setAttribute('x', xPos.x);
+        xt.setAttribute('y', xPos.y + 16);
+        xt.setAttribute('text-anchor', 'middle');
+        xt.setAttribute('class', 'axis-label');
+        xt.textContent = i;
+        axesGroup.appendChild(xt);
+        // y-axis labels
+        const yPos = toSvg(0, i);
+        const yt = document.createElementNS(ns, 'text');
+        yt.setAttribute('x', yPos.x - 14);
+        yt.setAttribute('y', yPos.y + 4);
+        yt.setAttribute('text-anchor', 'end');
+        yt.setAttribute('class', 'axis-label');
+        yt.textContent = i;
+        axesGroup.appendChild(yt);
+      }
+
+      // Axes
+      const xAxis = document.createElementNS(ns, 'line');
+      xAxis.setAttribute('x1', toSvg(-GRID_RANGE - 0.5, 0).x);
+      xAxis.setAttribute('y1', toSvg(0, 0).y);
+      xAxis.setAttribute('x2', toSvg(GRID_RANGE + 0.5, 0).x);
+      xAxis.setAttribute('y2', toSvg(0, 0).y);
+      xAxis.setAttribute('class', 'axis-line');
+      axesGroup.appendChild(xAxis);
+
+      const yAxis = document.createElementNS(ns, 'line');
+      yAxis.setAttribute('x1', toSvg(0, 0).x);
+      yAxis.setAttribute('y1', toSvg(0, GRID_RANGE + 0.5).y);
+      yAxis.setAttribute('x2', toSvg(0, 0).x);
+      yAxis.setAttribute('y2', toSvg(0, -GRID_RANGE - 0.5).y);
+      yAxis.setAttribute('class', 'axis-line');
+      axesGroup.appendChild(yAxis);
+
+      // Axis arrows
+      function arrowHead(x1,y1,x2,y2) {
+        const angle = Math.atan2(y2-y1, x2-x1);
+        const s = 8;
+        const p1x = x2 - s*Math.cos(angle-0.4);
+        const p1y = y2 - s*Math.sin(angle-0.4);
+        const p2x = x2 - s*Math.cos(angle+0.4);
+        const p2y = y2 - s*Math.sin(angle+0.4);
+        const poly = document.createElementNS(ns, 'polygon');
+        poly.setAttribute('points', `${x2},${y2} ${p1x},${p1y} ${p2x},${p2y}`);
+        poly.setAttribute('fill', '#374151');
+        return poly;
+      }
+      axesGroup.appendChild(arrowHead(toSvg(-GRID_RANGE,0).x, toSvg(0,0).y, toSvg(GRID_RANGE+0.5,0).x, toSvg(0,0).y));
+      axesGroup.appendChild(arrowHead(toSvg(0,-GRID_RANGE).x, toSvg(0,-GRID_RANGE).y, toSvg(0,0).x, toSvg(0,GRID_RANGE+0.5).y));
+
+      // Axis labels
+      const xlbl = document.createElementNS(ns, 'text');
+      xlbl.setAttribute('x', toSvg(GRID_RANGE + 0.3, 0).x + 8);
+      xlbl.setAttribute('y', toSvg(0, 0).y + 5);
+      xlbl.setAttribute('class', 'label-text');
+      xlbl.setAttribute('fill', '#374151');
+      xlbl.textContent = 'x';
+      axesGroup.appendChild(xlbl);
+
+      const ylbl = document.createElementNS(ns, 'text');
+      ylbl.setAttribute('x', toSvg(0, 0).x + 6);
+      ylbl.setAttribute('y', toSvg(0, GRID_RANGE + 0.5).y - 4);
+      ylbl.setAttribute('class', 'label-text');
+      ylbl.setAttribute('fill', '#374151');
+      ylbl.textContent = 'y';
+      axesGroup.appendChild(ylbl);
+
+      // Origin label
+      const origin = document.createElementNS(ns, 'text');
+      origin.setAttribute('x', toSvg(0, 0).x - 14);
+      origin.setAttribute('y', toSvg(0, 0).y + 16);
+      origin.setAttribute('text-anchor', 'middle');
+      origin.setAttribute('class', 'axis-label');
+      origin.textContent = '0';
+      axesGroup.appendChild(origin);
+    }
+
+    // ---- Render dynamic elements ----
+    function render() {
+      const ns = 'http://www.w3.org/2000/svg';
+      const sA = toSvg(ptA.x, ptA.y);
+      const sB = toSvg(ptB.x, ptB.y);
+      const sC = toSvg(ptB.x, ptA.y); // right-angle corner
+
+      const mx = (ptA.x + ptB.x) / 2;
+      const my = (ptA.y + ptB.y) / 2;
+      const sM = toSvg(mx, my);
+
+      // --- Triangle group ---
+      const tg = document.getElementById('triangleGroup');
+      tg.innerHTML = '';
+
+      // Only draw if not same point
+      const dx = ptB.x - ptA.x;
+      const dy = ptB.y - ptA.y;
+
+      if (Math.abs(dx) > 0.01 && Math.abs(dy) > 0.01) {
+        // Δx leg (horizontal)
+        const leg1 = document.createElementNS(ns, 'line');
+        leg1.setAttribute('x1', sA.x); leg1.setAttribute('y1', sA.y);
+        leg1.setAttribute('x2', sC.x); leg1.setAttribute('y2', sC.y);
+        leg1.setAttribute('class', 'triangle-leg');
+        tg.appendChild(leg1);
+
+        // Δy leg (vertical)
+        const leg2 = document.createElementNS(ns, 'line');
+        leg2.setAttribute('x1', sC.x); leg2.setAttribute('y1', sC.y);
+        leg2.setAttribute('x2', sB.x); leg2.setAttribute('y2', sB.y);
+        leg2.setAttribute('class', 'triangle-leg');
+        tg.appendChild(leg2);
+
+        // Right angle marker
+        const sc = getScale();
+        const size = 10;
+        const signX = dx > 0 ? 1 : -1;
+        const signY = dy > 0 ? 1 : -1;
+        const rmPath = document.createElementNS(ns, 'path');
+        rmPath.setAttribute('d',
+          `M ${sC.x - signX * size} ${sC.y} L ${sC.x - signX * size} ${sC.y + signY * size} L ${sC.x} ${sC.y + signY * size}`
+        );
+        rmPath.setAttribute('fill', 'none');
+        rmPath.setAttribute('stroke', '#b45309');
+        rmPath.setAttribute('stroke-width', '1.5');
+        tg.appendChild(rmPath);
+
+        // Δx label
+        const dxLabel = document.createElementNS(ns, 'text');
+        dxLabel.setAttribute('x', (sA.x + sC.x) / 2);
+        dxLabel.setAttribute('y', sA.y + (dy > 0 ? 16 : -8));
+        dxLabel.setAttribute('text-anchor', 'middle');
+        dxLabel.setAttribute('class', 'dim-label');
+        dxLabel.textContent = 'Δx = ' + fmt(dx);
+        tg.appendChild(dxLabel);
+
+        // Δy label
+        const dyLabel = document.createElementNS(ns, 'text');
+        dyLabel.setAttribute('x', sC.x + (dx > 0 ? 5 : -5));
+        dyLabel.setAttribute('y', (sC.y + sB.y) / 2 + 4);
+        dyLabel.setAttribute('text-anchor', dx > 0 ? 'start' : 'end');
+        dyLabel.setAttribute('class', 'dim-label');
+        dyLabel.textContent = 'Δy = ' + fmt(dy);
+        tg.appendChild(dyLabel);
+      }
+
+      // --- Segment group ---
+      const sg = document.getElementById('segmentGroup');
+      sg.innerHTML = '';
+      const seg = document.createElementNS(ns, 'line');
+      seg.setAttribute('x1', sA.x); seg.setAttribute('y1', sA.y);
+      seg.setAttribute('x2', sB.x); seg.setAttribute('y2', sB.y);
+      seg.setAttribute('class', 'segment-line');
+      sg.appendChild(seg);
+
+      // --- Midpoint group ---
+      const mg = document.getElementById('midpointGroup');
+      mg.innerHTML = '';
+      const mCircle = document.createElementNS(ns, 'circle');
+      mCircle.setAttribute('cx', sM.x);
+      mCircle.setAttribute('cy', sM.y);
+      mCircle.setAttribute('r', 6);
+      mCircle.setAttribute('class', 'midpoint-marker');
+      mg.appendChild(mCircle);
+
+      const mLabel = document.createElementNS(ns, 'text');
+      mLabel.setAttribute('x', sM.x + 10);
+      mLabel.setAttribute('y', sM.y - 8);
+      mLabel.setAttribute('class', 'label-text');
+      mLabel.setAttribute('fill', '#059669');
+      mLabel.textContent = 'M';
+      mg.appendChild(mLabel);
+
+      // Midpoint coord label
+      const mCoordLabel = document.createElementNS(ns, 'text');
+      mCoordLabel.setAttribute('x', sM.x + 10);
+      mCoordLabel.setAttribute('y', sM.y + 6);
+      mCoordLabel.setAttribute('class', 'axis-label');
+      mCoordLabel.setAttribute('fill', '#059669');
+      mCoordLabel.textContent = '(' + fmt(mx) + ', ' + fmt(my) + ')';
+      mg.appendChild(mCoordLabel);
+
+      // --- Points group ---
+      const pg = document.getElementById('pointsGroup');
+      pg.innerHTML = '';
+
+      const circA = document.createElementNS(ns, 'circle');
+      circA.setAttribute('cx', sA.x); circA.setAttribute('cy', sA.y);
+      circA.setAttribute('r', 9); circA.setAttribute('class', 'point-a point-handle');
+      circA.dataset.point = 'A';
+      pg.appendChild(circA);
+
+      const circB = document.createElementNS(ns, 'circle');
+      circB.setAttribute('cx', sB.x); circB.setAttribute('cy', sB.y);
+      circB.setAttribute('r', 9); circB.setAttribute('class', 'point-b point-handle');
+      circB.dataset.point = 'B';
+      pg.appendChild(circB);
+
+      // --- Labels group ---
+      const lg = document.getElementById('labelsGroup');
+      lg.innerHTML = '';
+
+      function labelOffset(sx, sy) {
+        // offset label away from center
+        const cx = SVG_W / 2, cy = SVG_H / 2;
+        const ox = sx < cx ? -22 : 14;
+        const oy = sy < cy ? -14 : 18;
+        return { ox, oy };
+      }
+
+      const offA = labelOffset(sA.x, sA.y);
+      const labA = document.createElementNS(ns, 'text');
+      labA.setAttribute('x', sA.x + offA.ox);
+      labA.setAttribute('y', sA.y + offA.oy);
+      labA.setAttribute('class', 'label-text');
+      labA.setAttribute('fill', '#dc2626');
+      labA.textContent = `A(${fmt(ptA.x)}, ${fmt(ptA.y)})`;
+      lg.appendChild(labA);
+
+      const offB = labelOffset(sB.x, sB.y);
+      const labB = document.createElementNS(ns, 'text');
+      labB.setAttribute('x', sB.x + offB.ox);
+      labB.setAttribute('y', sB.y + offB.oy);
+      labB.setAttribute('class', 'label-text');
+      labB.setAttribute('fill', '#4f46e5');
+      labB.textContent = `B(${fmt(ptB.x)}, ${fmt(ptB.y)})`;
+      lg.appendChild(labB);
+
+      // ---- Update calculations ----
+      updateCalcs(dx, dy);
+    }
+
+    function fmt(v) {
+      // Round to 4 decimals, then trim trailing zeros
+      const r = Math.round(v * 10000) / 10000;
+      if (Number.isInteger(r)) return r.toString();
+      return r.toString();
+    }
+
+    function fmtFrac(num, den) {
+      // Returns a nice fraction string or decimal
+      if (den === 0) return 'udefinert';
+      const v = num / den;
+      // Try to show as fraction if small integers
+      const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+      const n = Math.round(num * 100), d = Math.round(den * 100);
+      if (Number.isInteger(num) && Number.isInteger(den)) {
+        const g = gcd(Math.abs(num), Math.abs(den));
+        const sn = num / g, sd = den / g;
+        if (sd === 1) return sn.toString();
+        return `${sn}/${sd}`;
+      }
+      return fmt(v);
+    }
+
+    function updateCalcs(dx, dy) {
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // ---- Avstand ----
+      const dxSq = dx * dx, dySq = dy * dy;
+      const dxFmt = fmt(dx), dyFmt = fmt(dy);
+      const dxSqFmt = fmt(dxSq), dySqFmt = fmt(dySq);
+      const sumSq = dxSq + dySq;
+
+      document.getElementById('distCalc').innerHTML =
+        `<p>Δx = x₂ − x₁ = ${fmt(ptB.x)} − (${fmt(ptA.x)}) = <strong>${dxFmt}</strong></p>
+         <p>Δy = y₂ − y₁ = ${fmt(ptB.y)} − (${fmt(ptA.y)}) = <strong>${dyFmt}</strong></p>
+         <p class="mt-1">|AB| = √( (${dxFmt})² + (${dyFmt})² )</p>
+         <p>     = √( ${dxSqFmt} + ${dySqFmt} )</p>
+         <p>     = √${fmt(sumSq)}</p>`;
+
+      document.getElementById('distResult').innerHTML =
+        `<span class="font-bold text-emerald-800">|AB| = √${fmt(sumSq)} ≈ ${fmt(Math.round(dist * 1000) / 1000)}</span>`;
+
+      // ---- Midtpunkt ----
+      const mx = (ptA.x + ptB.x) / 2;
+      const my = (ptA.y + ptB.y) / 2;
+
+      document.getElementById('midCalc').innerHTML =
+        `<p>x<sub>M</sub> = (x₁ + x₂) / 2 = (${fmt(ptA.x)} + ${fmt(ptB.x)}) / 2 = ${fmt(ptA.x + ptB.x)} / 2 = <strong>${fmt(mx)}</strong></p>
+         <p>y<sub>M</sub> = (y₁ + y₂) / 2 = (${fmt(ptA.y)} + ${fmt(ptB.y)}) / 2 = ${fmt(ptA.y + ptB.y)} / 2 = <strong>${fmt(my)}</strong></p>`;
+
+      document.getElementById('midResult').innerHTML =
+        `<span class="font-bold text-emerald-800">M = (${fmt(mx)}, ${fmt(my)})</span>`;
+
+      // ---- Stigningstall ----
+      const slopeDiv = document.getElementById('slopeCalc');
+      const slopeRes = document.getElementById('slopeResult');
+
+      if (Math.abs(dx) < 0.0001) {
+        slopeDiv.innerHTML =
+          `<p>Δx = ${fmt(dx)} ≈ 0 — linja er <strong>loddrett</strong></p>
+           <p>Stigningstallet er ikke definert for loddrette linjer.</p>`;
+        slopeRes.innerHTML = `<span class="font-bold text-indigo-800">a er udefinert (loddrett linje)</span>`;
+      } else {
+        const slope = dy / dx;
+        const slopeFmt = fmt(Math.round(slope * 10000) / 10000);
+        slopeDiv.innerHTML =
+          `<p>Δy = y₂ − y₁ = ${fmt(ptB.y)} − (${fmt(ptA.y)}) = <strong>${dyFmt}</strong></p>
+           <p>Δx = x₂ − x₁ = ${fmt(ptB.x)} − (${fmt(ptA.x)}) = <strong>${dxFmt}</strong></p>
+           <p class="mt-1">a = Δy / Δx = ${dyFmt} / ${dxFmt} = <strong>${slopeFmt}</strong></p>`;
+        let interp = '';
+        if (Math.abs(slope) < 0.0001) {
+          interp = 'Linja er horisontal (stigningstall = 0).';
+        } else if (slope > 0) {
+          interp = `Linja stiger med ${slopeFmt} enheter i y for hver enhet i x (positiv stigning).`;
+        } else {
+          interp = `Linja synker med ${fmt(Math.abs(slope))} enheter i y for hver enhet i x (negativ stigning).`;
+        }
+        slopeRes.innerHTML = `<span class="font-bold text-indigo-800">a = ${slopeFmt}</span><span class="text-indigo-700 text-xs ml-2">${interp}</span>`;
+      }
+    }
+
+    // ---- Drag handling ----
+    let dragging = null;
+    let dragOffX = 0, dragOffY = 0;
+
+    function getSvgPoint(e) {
+      const svg = document.getElementById('coordSvg');
+      const rect = svg.getBoundingClientRect();
+      let clientX, clientY;
+      if (e.touches) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+      const scaleX = SVG_W / rect.width;
+      const scaleY = SVG_H / rect.height;
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    }
+
+    function snapToHalf(v) {
+      return Math.round(v * 2) / 2;
+    }
+
+    function clamp(v, lo, hi) {
+      return Math.max(lo, Math.min(hi, v));
+    }
+
+    document.getElementById('coordSvg').addEventListener('pointerdown', function(e) {
+      const target = e.target.closest('.point-handle');
+      if (!target) return;
+      dragging = target.dataset.point;
+      e.target.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+
+    document.getElementById('coordSvg').addEventListener('pointermove', function(e) {
+      if (!dragging) return;
+      e.preventDefault();
+      const sp = getSvgPoint(e);
+      const mp = toMath(sp.x, sp.y);
+      const cx = clamp(snapToHalf(mp.x), -GRID_RANGE, GRID_RANGE);
+      const cy = clamp(snapToHalf(mp.y), -GRID_RANGE, GRID_RANGE);
+      if (dragging === 'A') {
+        ptA = { x: cx, y: cy };
+        document.getElementById('ax').value = cx;
+        document.getElementById('ay').value = cy;
+      } else {
+        ptB = { x: cx, y: cy };
+        document.getElementById('bx').value = cx;
+        document.getElementById('by').value = cy;
+      }
+      render();
+    });
+
+    document.getElementById('coordSvg').addEventListener('pointerup', function(e) {
+      dragging = null;
+    });
+
+    // ---- Number input handling ----
+    function parseInput(id, fallback) {
+      const v = parseFloat(document.getElementById(id).value);
+      return isNaN(v) ? fallback : clamp(v, -GRID_RANGE, GRID_RANGE);
+    }
+
+    function onInputChange() {
+      ptA = {
+        x: parseInput('ax', ptA.x),
+        y: parseInput('ay', ptA.y)
+      };
+      ptB = {
+        x: parseInput('bx', ptB.x),
+        y: parseInput('by', ptB.y)
+      };
+      // Sync inputs to clamped values
+      document.getElementById('ax').value = ptA.x;
+      document.getElementById('ay').value = ptA.y;
+      document.getElementById('bx').value = ptB.x;
+      document.getElementById('by').value = ptB.y;
+      render();
+    }
+
+    ['ax', 'ay', 'bx', 'by'].forEach(id => {
+      document.getElementById(id).addEventListener('input', onInputChange);
+      document.getElementById(id).addEventListener('change', onInputChange);
+    });
+
+    // ---- Init ----
+    buildGridAndAxes();
+    render();
+  })();
+  </script>
+
+</body>
+</html>

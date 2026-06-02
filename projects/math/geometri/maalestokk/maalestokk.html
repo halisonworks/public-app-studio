@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<!--
+  Målestokk og kart — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for geometri (matematikk 1P/2P, LK20): regn mellom
+  kartavstand og virkelig avstand, og hvordan areal skalerer med målestokken.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Målestokk og kart – matematikk 1P/2P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .tab-btn { transition: background 0.2s, color 0.2s; }
+    .tab-btn.active { background: #1d4ed8; color: #fff; }
+    .tab-btn:not(.active) { background: #e5e7eb; color: #374151; }
+    .result-box { background: #f0fdf4; border-left: 4px solid #16a34a; }
+    .formula-box { background: #eff6ff; border-left: 4px solid #2563eb; }
+    .warning-box { background: #fff7ed; border-left: 4px solid #ea580c; }
+    .step { counter-increment: step; }
+    .step::before { content: counter(step) ". "; font-weight: 700; color: #1d4ed8; }
+    ol.steps { counter-reset: step; list-style: none; padding-left: 0; }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
+    .scale-figure { transition: all 0.4s ease; }
+    .scalebar-tick { stroke: #374151; stroke-width: 1.5; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- HEADER -->
+<header class="bg-blue-700 text-white shadow-md">
+  <div class="max-w-4xl mx-auto px-4 py-5">
+    <h1 class="text-2xl font-bold tracking-tight">Målestokk og kart</h1>
+    <p class="text-blue-200 text-sm mt-1">Matematikk 1P/2P · LK20 · Geometri</p>
+  </div>
+</header>
+
+<!-- NAV TABS -->
+<div class="max-w-4xl mx-auto px-4 mt-6">
+  <div class="flex flex-wrap gap-2">
+    <button class="tab-btn active px-4 py-2 rounded-lg text-sm font-semibold" onclick="showTab('kart')">🗺 Kart og avstand</button>
+    <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold" onclick="showTab('forstorring')">🔍 Forstørring / forminskning</button>
+    <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold" onclick="showTab('areal')">⬛ Areal og målestokk</button>
+    <button class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold" onclick="showTab('visuell')">📐 Visuell målestokk</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     TAB 1: KART OG AVSTAND
+     ============================================================ -->
+<main class="max-w-4xl mx-auto px-4 pb-16">
+
+<section id="tab-kart" class="tab-section mt-6 space-y-6">
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h2 class="text-xl font-bold text-blue-800 mb-2">Hva er målestokk?</h2>
+    <p class="text-gray-700 leading-relaxed">
+      Målestokk viser forholdet mellom en avstand på kartet og den tilsvarende virkelige avstanden.
+      Målestokk <strong>1 : n</strong> betyr at <strong>1 cm på kartet</strong> tilsvarer <strong>n cm i virkeligheten</strong>.
+    </p>
+    <div class="formula-box rounded-lg p-4 mt-4 text-sm">
+      <p class="font-semibold text-blue-700 mb-1">Grunnformlene:</p>
+      <p class="font-mono">Virkelig avstand = Kartavstand × n</p>
+      <p class="font-mono mt-1">Kartavstand = Virkelig avstand ÷ n</p>
+      <p class="text-gray-500 mt-2 text-xs">Her er n den andre faktoren i målestokken (f.eks. 50 000 i målestokk 1 : 50 000)</p>
+    </div>
+  </div>
+
+  <!-- KALKULATOR -->
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h2 class="text-lg font-bold text-gray-800 mb-4">Kalkulator – kartavstand ↔ virkelig avstand</h2>
+
+    <!-- Målestokk input -->
+    <div class="mb-5">
+      <label class="block text-sm font-semibold text-gray-600 mb-1">Målestokk  1 :</label>
+      <input id="k-n" type="number" min="1" value="50000"
+        class="w-48 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
+        oninput="kartKalkuler()" />
+      <span class="ml-2 text-gray-500 text-sm">f.eks. 50000 for 1 : 50 000</span>
+    </div>
+
+    <!-- Konverteringsretning -->
+    <div class="flex gap-3 mb-5 flex-wrap">
+      <button id="btn-kart-til-virk" onclick="setKartRetning('kart-til-virk')"
+        class="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white shadow">
+        Kart → Virkelighet
+      </button>
+      <button id="btn-virk-til-kart" onclick="setKartRetning('virk-til-kart')"
+        class="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200 text-gray-700">
+        Virkelighet → Kart
+      </button>
+    </div>
+
+    <!-- Input felt -->
+    <div id="kart-input-kart-til-virk" class="space-y-3">
+      <div class="flex items-center gap-3 flex-wrap">
+        <label class="text-sm font-semibold text-gray-600 w-36">Kartavstand:</label>
+        <input id="k-kartavstand" type="number" min="0" step="0.1" value="3"
+          class="w-32 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="kartKalkuler()" />
+        <select id="k-kart-enhet" onchange="kartKalkuler()"
+          class="border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <option value="cm" selected>cm</option>
+          <option value="mm">mm</option>
+          <option value="m">m</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="kart-input-virk-til-kart" class="space-y-3 hidden">
+      <div class="flex items-center gap-3 flex-wrap">
+        <label class="text-sm font-semibold text-gray-600 w-36">Virkelig avstand:</label>
+        <input id="k-virkavstand" type="number" min="0" step="0.1" value="1.5"
+          class="w-32 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="kartKalkuler()" />
+        <select id="k-virk-enhet" onchange="kartKalkuler()"
+          class="border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <option value="cm">cm</option>
+          <option value="m">m</option>
+          <option value="km" selected>km</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Resultat og utregning -->
+    <div id="kart-resultat" class="result-box rounded-lg p-4 mt-5 hidden">
+      <p class="font-semibold text-green-700 text-sm mb-2">Svar:</p>
+      <p id="kart-svar" class="text-xl font-bold text-gray-800"></p>
+    </div>
+
+    <div id="kart-utregning" class="mt-4 bg-gray-50 rounded-lg p-4 border border-gray-200 hidden">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Utregning steg for steg</p>
+      <ol class="steps space-y-1 text-sm text-gray-700" id="kart-steps"></ol>
+    </div>
+  </div>
+
+  <!-- EKSEMPEL -->
+  <div class="bg-blue-50 rounded-2xl p-5 border border-blue-200">
+    <h3 class="font-bold text-blue-800 mb-2">Eksempel fra læreboken</h3>
+    <p class="text-sm text-gray-700">Kart med målestokk <strong>1 : 50 000</strong>. Kartet viser at det er <strong>3 cm</strong> mellom to hytter.</p>
+    <p class="text-sm text-gray-700 mt-2">Virkelig avstand = 3 cm × 50 000 = 150 000 cm = <strong>1,5 km</strong>.</p>
+    <p class="text-sm text-gray-500 mt-2 italic">Tips: Sett inn verdiene i kalkulatoren over for å se alle stegene.</p>
+  </div>
+</section>
+
+<!-- ============================================================
+     TAB 2: FORSTØRRING / FORMINSKNING
+     ============================================================ -->
+<section id="tab-forstorring" class="tab-section mt-6 space-y-6 hidden">
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h2 class="text-xl font-bold text-blue-800 mb-2">Forstørring og forminskning</h2>
+    <p class="text-gray-700 leading-relaxed">
+      En målestokk trenger ikke være en forminskning. Målestokk <strong>2 : 1</strong> betyr at tegningen er
+      dobbelt så stor som originalen – altså en <em>forstørring</em>.
+    </p>
+    <div class="formula-box rounded-lg p-4 mt-4 text-sm">
+      <p class="font-semibold text-blue-700 mb-1">Generell formel for målestokk a : b:</p>
+      <p class="font-mono">Tegningsavstand / Virkelig avstand = a / b</p>
+      <p class="font-mono mt-1">Virkelig avstand = Tegningsavstand × (b / a)</p>
+      <p class="font-mono mt-1">Tegningsavstand = Virkelig avstand × (a / b)</p>
+    </div>
+    <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+      <div class="bg-orange-50 border border-orange-200 rounded-lg p-3">
+        <p class="font-semibold text-orange-700">Forstørring: a &gt; b</p>
+        <p class="text-gray-600 mt-1">Eks: 2 : 1, 5 : 1, 10 : 1</p>
+        <p class="text-gray-600">Tegning er <em>større</em> enn original</p>
+      </div>
+      <div class="bg-purple-50 border border-purple-200 rounded-lg p-3">
+        <p class="font-semibold text-purple-700">Forminskning: a &lt; b</p>
+        <p class="text-gray-600 mt-1">Eks: 1 : 100, 1 : 50 000</p>
+        <p class="text-gray-600">Tegning er <em>mindre</em> enn original</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- KALKULATOR FORSTØRRING -->
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h2 class="text-lg font-bold text-gray-800 mb-4">Kalkulator – a : b målestokk</h2>
+
+    <div class="flex items-center gap-2 mb-5 flex-wrap">
+      <label class="text-sm font-semibold text-gray-600">Målestokk:</label>
+      <input id="f-a" type="number" min="1" value="2"
+        class="w-20 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
+        oninput="forstKalkuler()" />
+      <span class="text-gray-500 font-bold text-lg">:</span>
+      <input id="f-b" type="number" min="1" value="1"
+        class="w-20 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
+        oninput="forstKalkuler()" />
+    </div>
+
+    <div class="flex gap-3 mb-5 flex-wrap">
+      <button id="btn-f-teg-til-virk" onclick="setForstRetning('teg-til-virk')"
+        class="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white shadow">
+        Tegning → Virkelighet
+      </button>
+      <button id="btn-f-virk-til-teg" onclick="setForstRetning('virk-til-teg')"
+        class="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200 text-gray-700">
+        Virkelighet → Tegning
+      </button>
+    </div>
+
+    <div id="forst-input-teg-til-virk" class="flex items-center gap-3 flex-wrap">
+      <label class="text-sm font-semibold text-gray-600 w-40">Avstand på tegning:</label>
+      <input id="f-teg" type="number" min="0" step="0.1" value="10"
+        class="w-32 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
+        oninput="forstKalkuler()" />
+      <select id="f-teg-enhet" onchange="forstKalkuler()"
+        class="border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <option value="mm">mm</option>
+        <option value="cm" selected>cm</option>
+        <option value="m">m</option>
+      </select>
+    </div>
+
+    <div id="forst-input-virk-til-teg" class="flex items-center gap-3 flex-wrap hidden">
+      <label class="text-sm font-semibold text-gray-600 w-40">Virkelig avstand:</label>
+      <input id="f-virk" type="number" min="0" step="0.1" value="5"
+        class="w-32 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
+        oninput="forstKalkuler()" />
+      <select id="f-virk-enhet" onchange="forstKalkuler()"
+        class="border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <option value="mm">mm</option>
+        <option value="cm" selected>cm</option>
+        <option value="m">m</option>
+      </select>
+    </div>
+
+    <div id="forst-resultat" class="result-box rounded-lg p-4 mt-5 hidden">
+      <p class="font-semibold text-green-700 text-sm mb-1">Svar:</p>
+      <p id="forst-svar" class="text-xl font-bold text-gray-800"></p>
+    </div>
+
+    <div id="forst-utregning" class="mt-4 bg-gray-50 rounded-lg p-4 border border-gray-200 hidden">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Utregning steg for steg</p>
+      <ol class="steps space-y-1 text-sm text-gray-700" id="forst-steps"></ol>
+    </div>
+
+    <!-- Forstørring/forminskning indikator -->
+    <div id="forst-type" class="mt-4 hidden">
+      <span id="forst-type-badge" class="inline-block px-3 py-1 rounded-full text-xs font-bold"></span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     TAB 3: AREAL OG MÅLESTOKK
+     ============================================================ -->
+<section id="tab-areal" class="tab-section mt-6 space-y-6 hidden">
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h2 class="text-xl font-bold text-blue-800 mb-2">Areal skalerer med kvadratet av målestokken</h2>
+    <p class="text-gray-700 leading-relaxed">
+      Når alle lengder skaleres med faktoren <strong>k</strong>, skaleres arealet med <strong>k²</strong>.
+      Det betyr at arealet vokser (eller krymper) mye raskere enn lengdene.
+    </p>
+
+    <div class="formula-box rounded-lg p-4 mt-4 text-sm">
+      <p class="font-semibold text-blue-700 mb-2">Formel:</p>
+      <p class="font-mono">Hvis lengde skaleres med k  →  Areal skaleres med k²</p>
+      <p class="font-mono mt-1">A_ny = A_original × k²</p>
+      <p class="font-mono mt-1">k = (a / b)  der a : b er målestokken</p>
+    </div>
+
+    <!-- Visuell forklaring: rektangel skalert -->
+    <div class="mt-5 overflow-x-auto">
+      <p class="text-sm font-semibold text-gray-600 mb-2">Illustrasjon: lengde dobles (k = 2), areal firedobles (k² = 4)</p>
+      <svg viewBox="0 0 400 180" class="w-full max-w-md" aria-label="Illustrasjon av arealskaling">
+        <!-- Original rektangel -->
+        <rect x="20" y="60" width="60" height="40" fill="#bfdbfe" stroke="#2563eb" stroke-width="2" rx="2"/>
+        <text x="50" y="55" text-anchor="middle" font-size="11" fill="#1e40af">Original</text>
+        <text x="50" y="115" text-anchor="middle" font-size="10" fill="#374151">A = L × B</text>
+        <!-- Pil -->
+        <line x1="100" y1="80" x2="130" y2="80" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="115" y="72" text-anchor="middle" font-size="10" fill="#ea580c">k = 2</text>
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#6b7280"/>
+          </marker>
+        </defs>
+        <!-- Skalert rektangel -->
+        <rect x="140" y="40" width="120" height="80" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" rx="2"/>
+        <text x="200" y="35" text-anchor="middle" font-size="11" fill="#166534">Ny (k = 2)</text>
+        <text x="200" y="135" text-anchor="middle" font-size="10" fill="#374151">A = (2L) × (2B) = 4·L·B</text>
+        <!-- Brev -->
+        <text x="50" y="90" text-anchor="middle" font-size="12" fill="#1e40af">L × B</text>
+        <text x="200" y="85" text-anchor="middle" font-size="12" fill="#166534">2L × 2B</text>
+        <!-- Etikett -->
+        <rect x="280" y="55" width="110" height="50" fill="#fef3c7" stroke="#d97706" stroke-width="1.5" rx="6"/>
+        <text x="335" y="75" text-anchor="middle" font-size="11" fill="#92400e">Areal: ×k² = ×4</text>
+        <text x="335" y="93" text-anchor="middle" font-size="10" fill="#78350f">4 ganger større!</text>
+      </svg>
+    </div>
+
+    <!-- Worked example -->
+    <div class="mt-5 bg-yellow-50 border border-yellow-300 rounded-xl p-5">
+      <h3 class="font-bold text-yellow-800 mb-3">Gjennomgått eksempel</h3>
+      <p class="text-sm text-gray-700 mb-3">
+        En plantegning har målestokk <strong>1 : 100</strong>. Et rom ser ut til å ha et areal på
+        <strong>12 cm²</strong> på tegningen. Hva er det virkelige arealet?
+      </p>
+      <ol class="steps space-y-2 text-sm text-gray-700">
+        <li class="step">Skaleringsforholdet er k = 1/100 (tegning er forminsket med faktor 100).</li>
+        <li class="step">Arealet skaleres med k² = (1/100)² = 1/10 000.</li>
+        <li class="step">Virkelig areal = 12 cm² ÷ (1/10 000) = 12 × 10 000 = 120 000 cm².</li>
+        <li class="step">Omgjøring: 120 000 cm² = 12 m².</li>
+        <li class="step">Svaret er <strong>12 m²</strong>.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- AREAL KALKULATOR -->
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h2 class="text-lg font-bold text-gray-800 mb-4">Kalkulator – arealskaling</h2>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+      <div>
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Målestokk a :</label>
+        <input id="ar-a" type="number" min="1" value="1"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="arealKalkuler()" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-600 mb-1">: b</label>
+        <input id="ar-b" type="number" min="1" value="100"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="arealKalkuler()" />
+      </div>
+    </div>
+
+    <div class="flex gap-3 mb-5 flex-wrap">
+      <button id="btn-ar-teg-til-virk" onclick="setArealRetning('teg-til-virk')"
+        class="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white shadow">
+        Tegningsareal → Virkelig areal
+      </button>
+      <button id="btn-ar-virk-til-teg" onclick="setArealRetning('virk-til-teg')"
+        class="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-200 text-gray-700">
+        Virkelig areal → Tegningsareal
+      </button>
+    </div>
+
+    <div id="areal-input-teg-til-virk" class="flex items-center gap-3 flex-wrap">
+      <label class="text-sm font-semibold text-gray-600 w-44">Areal på tegning:</label>
+      <input id="ar-teg" type="number" min="0" step="0.01" value="12"
+        class="w-32 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
+        oninput="arealKalkuler()" />
+      <select id="ar-teg-enhet" onchange="arealKalkuler()"
+        class="border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <option value="mm2">mm²</option>
+        <option value="cm2" selected>cm²</option>
+        <option value="m2">m²</option>
+      </select>
+    </div>
+
+    <div id="areal-input-virk-til-teg" class="flex items-center gap-3 flex-wrap hidden">
+      <label class="text-sm font-semibold text-gray-600 w-44">Virkelig areal:</label>
+      <input id="ar-virk" type="number" min="0" step="0.01" value="12"
+        class="w-32 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
+        oninput="arealKalkuler()" />
+      <select id="ar-virk-enhet" onchange="arealKalkuler()"
+        class="border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <option value="mm2">mm²</option>
+        <option value="cm2">cm²</option>
+        <option value="m2" selected>m²</option>
+        <option value="km2">km²</option>
+      </select>
+    </div>
+
+    <div id="areal-resultat" class="result-box rounded-lg p-4 mt-5 hidden">
+      <p class="font-semibold text-green-700 text-sm mb-1">Svar:</p>
+      <p id="areal-svar" class="text-xl font-bold text-gray-800"></p>
+    </div>
+
+    <div id="areal-utregning" class="mt-4 bg-gray-50 rounded-lg p-4 border border-gray-200 hidden">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Utregning steg for steg</p>
+      <ol class="steps space-y-1 text-sm text-gray-700" id="areal-steps"></ol>
+    </div>
+  </div>
+
+  <!-- Kvadratisk vekst tabell -->
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h2 class="text-lg font-bold text-gray-800 mb-3">Tabell: Arealskaling for ulike k-verdier</h2>
+    <div class="overflow-x-auto">
+      <table class="text-sm w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-blue-50 text-blue-800">
+            <th class="px-3 py-2 border border-blue-200">Lengdeskalering k</th>
+            <th class="px-3 py-2 border border-blue-200">Arealskaling k²</th>
+            <th class="px-3 py-2 border border-blue-200">Eksempel på målestokk</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="hover:bg-gray-50"><td class="px-3 py-2 border border-gray-200">1/2</td><td class="px-3 py-2 border border-gray-200">1/4</td><td class="px-3 py-2 border border-gray-200">1 : 2</td></tr>
+          <tr class="hover:bg-gray-50"><td class="px-3 py-2 border border-gray-200">1/10</td><td class="px-3 py-2 border border-gray-200">1/100</td><td class="px-3 py-2 border border-gray-200">1 : 10</td></tr>
+          <tr class="hover:bg-gray-50"><td class="px-3 py-2 border border-gray-200">1/100</td><td class="px-3 py-2 border border-gray-200">1/10 000</td><td class="px-3 py-2 border border-gray-200">1 : 100</td></tr>
+          <tr class="hover:bg-gray-50"><td class="px-3 py-2 border border-gray-200">1/1 000</td><td class="px-3 py-2 border border-gray-200">1/1 000 000</td><td class="px-3 py-2 border border-gray-200">1 : 1 000</td></tr>
+          <tr class="hover:bg-gray-50"><td class="px-3 py-2 border border-gray-200">2</td><td class="px-3 py-2 border border-gray-200">4</td><td class="px-3 py-2 border border-gray-200">2 : 1</td></tr>
+          <tr class="hover:bg-gray-50"><td class="px-3 py-2 border border-gray-200">5</td><td class="px-3 py-2 border border-gray-200">25</td><td class="px-3 py-2 border border-gray-200">5 : 1</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     TAB 4: VISUELL MÅLESTOKK
+     ============================================================ -->
+<section id="tab-visuell" class="tab-section mt-6 space-y-6 hidden">
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h2 class="text-xl font-bold text-blue-800 mb-2">Visuell målestokk</h2>
+    <p class="text-gray-700 leading-relaxed mb-4">
+      Tilpass målestokken og se en skaleringslinje (målestokk-bar) og en figur som endrer størrelse i sanntid.
+    </p>
+
+    <!-- Kontroller -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+      <div>
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Målestokk 1 : n</label>
+        <div class="flex items-center gap-2">
+          <input id="vis-n" type="range" min="100" max="200000" step="100" value="25000"
+            class="flex-1 accent-blue-600" oninput="visKalkuler()" />
+          <span id="vis-n-val" class="text-sm font-mono w-20 text-right text-blue-700">25 000</span>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Kartavstand som vises (cm)</label>
+        <div class="flex items-center gap-2">
+          <input id="vis-cm" type="range" min="0.5" max="20" step="0.5" value="5"
+            class="flex-1 accent-green-600" oninput="visKalkuler()" />
+          <span id="vis-cm-val" class="text-sm font-mono w-16 text-right text-green-700">5 cm</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SVG VISNING -->
+    <div class="border border-gray-200 rounded-xl bg-white overflow-hidden">
+      <svg id="vis-svg" viewBox="0 0 500 260" class="w-full" aria-label="Visuell målestokk-illustrasjon">
+
+        <!-- Bakgrunn simulert kart -->
+        <rect width="500" height="260" fill="#f0f9ff"/>
+
+        <!-- Rutenett - stilisert kart -->
+        <g stroke="#dbeafe" stroke-width="0.8">
+          <line x1="0" y1="52" x2="500" y2="52"/>
+          <line x1="0" y1="104" x2="500" y2="104"/>
+          <line x1="0" y1="156" x2="500" y2="156"/>
+          <line x1="0" y1="208" x2="500" y2="208"/>
+          <line x1="83" y1="0" x2="83" y2="260"/>
+          <line x1="166" y1="0" x2="166" y2="260"/>
+          <line x1="249" y1="0" x2="249" y2="260"/>
+          <line x1="332" y1="0" x2="332" y2="260"/>
+          <line x1="415" y1="0" x2="415" y2="260"/>
+        </g>
+
+        <!-- Vei simulasjon -->
+        <path d="M0,130 Q125,110 250,130 Q375,150 500,130" stroke="#fbbf24" stroke-width="4" fill="none" opacity="0.6"/>
+
+        <!-- Skalert figur (rektangel/hus-form) -->
+        <g id="vis-figur" transform="translate(200,70)">
+          <!-- Hus kropp -->
+          <rect id="vis-hus-vegger" x="-30" y="15" width="60" height="45" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.5" rx="2"/>
+          <!-- Tak -->
+          <polygon id="vis-hus-tak" points="0,0 -35,18 35,18" fill="#1d4ed8" stroke="#1e40af" stroke-width="1"/>
+          <!-- Dør -->
+          <rect id="vis-hus-dor" x="-8" y="40" width="16" height="20" fill="#7c3aed" rx="2"/>
+          <!-- Vindu venstre -->
+          <rect id="vis-hus-vindu-l" x="-26" y="25" width="14" height="12" fill="#bae6fd" stroke="#0ea5e9" stroke-width="1" rx="1"/>
+          <!-- Vindu høyre -->
+          <rect id="vis-hus-vindu-r" x="12" y="25" width="14" height="12" fill="#bae6fd" stroke="#0ea5e9" stroke-width="1" rx="1"/>
+        </g>
+
+        <!-- Punkt A -->
+        <circle id="vis-ptA" cx="120" cy="130" r="4" fill="#dc2626"/>
+        <text id="vis-lblA" x="124" y="126" font-size="11" fill="#dc2626" font-weight="bold">A</text>
+
+        <!-- Punkt B (flyttes basert på kartavstand) -->
+        <circle id="vis-ptB" cx="280" cy="130" r="4" fill="#dc2626"/>
+        <text id="vis-lblB" x="284" y="126" font-size="11" fill="#dc2626" font-weight="bold">B</text>
+
+        <!-- Avstandslinje A til B -->
+        <line id="vis-linje" x1="120" y1="130" x2="280" y2="130" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+        <!-- Målestokk-bar (scale bar) -->
+        <g id="vis-scalebar" transform="translate(20, 225)">
+          <!-- Bakgrunn -->
+          <rect x="0" y="-4" width="220" height="28" rx="4" fill="white" fill-opacity="0.85" stroke="#9ca3af" stroke-width="0.8"/>
+          <!-- Bar -->
+          <rect id="sb-fill" x="5" y="4" width="100" height="10" fill="#1d4ed8" rx="1"/>
+          <!-- Ticks -->
+          <line class="scalebar-tick" x1="5" y1="0" x2="5" y2="14"/>
+          <line id="sb-mid-tick" class="scalebar-tick" x1="55" y1="0" x2="55" y2="10"/>
+          <line id="sb-end-tick" class="scalebar-tick" x1="105" y1="0" x2="105" y2="14"/>
+          <!-- Etiketter -->
+          <text x="5" y="-4" font-size="9" fill="#374151" text-anchor="middle">0</text>
+          <text id="sb-mid-lbl" x="55" y="-4" font-size="9" fill="#374151" text-anchor="middle"></text>
+          <text id="sb-end-lbl" x="105" y="-4" font-size="9" fill="#374151" text-anchor="middle"></text>
+          <text id="sb-unit" x="165" y="11" font-size="9" fill="#6b7280"></text>
+        </g>
+
+        <!-- Tekstboks: info -->
+        <rect x="320" y="215" width="175" height="40" rx="6" fill="white" fill-opacity="0.9" stroke="#d1d5db" stroke-width="0.8"/>
+        <text x="408" y="232" text-anchor="middle" font-size="10" fill="#374151" id="vis-info-1"></text>
+        <text x="408" y="247" text-anchor="middle" font-size="10" fill="#059669" font-weight="bold" id="vis-info-2"></text>
+      </svg>
+    </div>
+
+    <!-- Tekstresultat under SVG -->
+    <div class="mt-4 result-box rounded-lg p-4">
+      <p class="text-sm font-semibold text-green-700 mb-1">Avstand i virkeligheten:</p>
+      <p id="vis-tekst" class="text-xl font-bold text-gray-800"></p>
+    </div>
+  </div>
+
+  <!-- Hva betyr symbolene på kart -->
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h2 class="text-lg font-bold text-gray-800 mb-3">Vanlige kartmålestokker i Norge</h2>
+    <div class="overflow-x-auto">
+      <table class="text-sm w-full text-left border-collapse">
+        <thead>
+          <tr class="bg-blue-50 text-blue-800">
+            <th class="px-3 py-2 border border-blue-200">Målestokk</th>
+            <th class="px-3 py-2 border border-blue-200">1 cm på kart =</th>
+            <th class="px-3 py-2 border border-blue-200">Typisk bruksområde</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="hover:bg-gray-50"><td class="px-3 py-2 border border-gray-200">1 : 5 000</td><td class="px-3 py-2 border border-gray-200">50 m</td><td class="px-3 py-2 border border-gray-200">Bykart, detaljert</td></tr>
+          <tr class="hover:bg-gray-50"><td class="px-3 py-2 border border-gray-200">1 : 10 000</td><td class="px-3 py-2 border border-gray-200">100 m</td><td class="px-3 py-2 border border-gray-200">Orienteringskart</td></tr>
+          <tr class="hover:bg-gray-50"><td class="px-3 py-2 border border-gray-200">1 : 50 000</td><td class="px-3 py-2 border border-gray-200">500 m</td><td class="px-3 py-2 border border-gray-200">Turkart (M711-serien)</td></tr>
+          <tr class="hover:bg-gray-50"><td class="px-3 py-2 border border-gray-200">1 : 250 000</td><td class="px-3 py-2 border border-gray-200">2,5 km</td><td class="px-3 py-2 border border-gray-200">Regionskart</td></tr>
+          <tr class="hover:bg-gray-50"><td class="px-3 py-2 border border-gray-200">1 : 1 000 000</td><td class="px-3 py-2 border border-gray-200">10 km</td><td class="px-3 py-2 border border-gray-200">Landsoversikt</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="border-t border-gray-200 mt-8">
+  <div class="max-w-4xl mx-auto px-4 py-4 text-xs text-gray-400 flex flex-wrap gap-2 justify-between items-center">
+    <span>Halison App Studio · <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-blue-500">github.com/halisonworks/public-app-studio</a></span>
+    <span>Matematikk 1P/2P · LK20 · Geometri</span>
+  </div>
+</footer>
+
+<script>
+// =============================================
+// HJELPEFUNKSJONER: ENHETSOMREGNING
+// =============================================
+
+const LENGDE_TIL_CM = { mm: 0.1, cm: 1, m: 100, km: 100000 };
+const AREAL_TIL_CM2 = { mm2: 0.01, cm2: 1, m2: 10000, km2: 1e10 };
+
+function formaterTall(v) {
+  if (isNaN(v) || !isFinite(v)) return '—';
+  if (v === 0) return '0';
+  if (Math.abs(v) >= 1e9) return (v / 1e9).toLocaleString('nb-NO', { maximumFractionDigits: 3 }) + ' × 10⁹';
+  if (Math.abs(v) >= 1000000) return (v / 1000000).toLocaleString('nb-NO', { maximumFractionDigits: 4 }) + ' mill.';
+  return v.toLocaleString('nb-NO', { maximumFractionDigits: 6 });
+}
+
+function velgBestAvastandEnhet(cm) {
+  // Velg best lesbar enhet
+  if (cm >= 100000) return { val: cm / 100000, enhet: 'km' };
+  if (cm >= 100) return { val: cm / 100, enhet: 'm' };
+  if (cm >= 1) return { val: cm, enhet: 'cm' };
+  return { val: cm * 10, enhet: 'mm' };
+}
+
+function velgBestArealEnhet(cm2) {
+  if (cm2 >= 1e10) return { val: cm2 / 1e10, enhet: 'km²' };
+  if (cm2 >= 10000) return { val: cm2 / 10000, enhet: 'm²' };
+  if (cm2 >= 1) return { val: cm2, enhet: 'cm²' };
+  return { val: cm2 * 100, enhet: 'mm²' };
+}
+
+// =============================================
+// TAB-STYRING
+// =============================================
+
+let currentTab = 'kart';
+
+function showTab(tab) {
+  document.querySelectorAll('.tab-section').forEach(s => s.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.remove('hidden');
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    if (b.getAttribute('onclick') === "showTab('" + tab + "')") b.classList.add('active');
+  });
+  currentTab = tab;
+  if (tab === 'visuell') visKalkuler();
+}
+
+// =============================================
+// TAB 1: KART OG AVSTAND
+// =============================================
+
+let kartRetning = 'kart-til-virk';
+
+function setKartRetning(r) {
+  kartRetning = r;
+  document.getElementById('kart-input-kart-til-virk').classList.toggle('hidden', r !== 'kart-til-virk');
+  document.getElementById('kart-input-virk-til-kart').classList.toggle('hidden', r !== 'virk-til-kart');
+  document.getElementById('btn-kart-til-virk').className =
+    'px-4 py-2 rounded-lg text-sm font-semibold ' +
+    (r === 'kart-til-virk' ? 'bg-blue-600 text-white shadow' : 'bg-gray-200 text-gray-700');
+  document.getElementById('btn-virk-til-kart').className =
+    'px-4 py-2 rounded-lg text-sm font-semibold ' +
+    (r === 'virk-til-kart' ? 'bg-blue-600 text-white shadow' : 'bg-gray-200 text-gray-700');
+  kartKalkuler();
+}
+
+function kartKalkuler() {
+  const n = parseFloat(document.getElementById('k-n').value);
+  if (!n || n <= 0) return;
+
+  let steps = [];
+  let svarTekst = '';
+
+  if (kartRetning === 'kart-til-virk') {
+    const kartVal = parseFloat(document.getElementById('k-kartavstand').value);
+    const kartEnhet = document.getElementById('k-kart-enhet').value;
+    if (isNaN(kartVal) || kartVal < 0) return;
+
+    const kartCm = kartVal * LENGDE_TIL_CM[kartEnhet];
+    const virkCm = kartCm * n;
+    const { val: virkVal, enhet: virkEnhet } = velgBestAvastandEnhet(virkCm);
+
+    steps.push(`Målestokk 1 : ${formaterTall(n)}, kartavstand = ${formaterTall(kartVal)} ${kartEnhet}`);
+    steps.push(`Konverter til cm: ${formaterTall(kartVal)} ${kartEnhet} = ${formaterTall(kartCm)} cm`);
+    steps.push(`Formel: Virkelig avstand = Kartavstand × n = ${formaterTall(kartCm)} cm × ${formaterTall(n)}`);
+    steps.push(`= ${formaterTall(virkCm)} cm`);
+    const { val: v2, enhet: e2 } = velgBestAvastandEnhet(virkCm);
+    if (e2 !== 'cm') steps.push(`Omgjøring: ${formaterTall(virkCm)} cm = ${formaterTall(v2)} ${e2}`);
+    svarTekst = `${formaterTall(virkVal)} ${virkEnhet}`;
+
+  } else {
+    const virkVal = parseFloat(document.getElementById('k-virkavstand').value);
+    const virkEnhet = document.getElementById('k-virk-enhet').value;
+    if (isNaN(virkVal) || virkVal < 0) return;
+
+    const virkCm = virkVal * LENGDE_TIL_CM[virkEnhet];
+    const kartCm = virkCm / n;
+    const { val: kartVis, enhet: kartEnhetVis } = velgBestAvastandEnhet(kartCm);
+
+    steps.push(`Målestokk 1 : ${formaterTall(n)}, virkelig avstand = ${formaterTall(virkVal)} ${virkEnhet}`);
+    steps.push(`Konverter til cm: ${formaterTall(virkVal)} ${virkEnhet} = ${formaterTall(virkCm)} cm`);
+    steps.push(`Formel: Kartavstand = Virkelig avstand ÷ n = ${formaterTall(virkCm)} cm ÷ ${formaterTall(n)}`);
+    steps.push(`= ${formaterTall(kartCm)} cm`);
+    if (kartEnhetVis !== 'cm') steps.push(`Omgjøring: ${formaterTall(kartCm)} cm = ${formaterTall(kartVis)} ${kartEnhetVis}`);
+    svarTekst = `${formaterTall(kartVis)} ${kartEnhetVis}`;
+  }
+
+  const resultatEl = document.getElementById('kart-resultat');
+  const utregEl = document.getElementById('kart-utregning');
+  const stepsEl = document.getElementById('kart-steps');
+
+  document.getElementById('kart-svar').textContent = svarTekst;
+  stepsEl.innerHTML = steps.map(s => `<li class="step">${s}</li>`).join('');
+  resultatEl.classList.remove('hidden');
+  utregEl.classList.remove('hidden');
+}
+
+// =============================================
+// TAB 2: FORSTØRRING
+// =============================================
+
+let forstRetning = 'teg-til-virk';
+
+function setForstRetning(r) {
+  forstRetning = r;
+  document.getElementById('forst-input-teg-til-virk').classList.toggle('hidden', r !== 'teg-til-virk');
+  document.getElementById('forst-input-virk-til-teg').classList.toggle('hidden', r !== 'virk-til-teg');
+  document.getElementById('btn-f-teg-til-virk').className =
+    'px-4 py-2 rounded-lg text-sm font-semibold ' +
+    (r === 'teg-til-virk' ? 'bg-blue-600 text-white shadow' : 'bg-gray-200 text-gray-700');
+  document.getElementById('btn-f-virk-til-teg').className =
+    'px-4 py-2 rounded-lg text-sm font-semibold ' +
+    (r === 'virk-til-teg' ? 'bg-blue-600 text-white shadow' : 'bg-gray-200 text-gray-700');
+  forstKalkuler();
+}
+
+function forstKalkuler() {
+  const a = parseFloat(document.getElementById('f-a').value);
+  const b = parseFloat(document.getElementById('f-b').value);
+  if (!a || !b || a <= 0 || b <= 0) return;
+
+  const k = a / b;
+  const typeBadge = document.getElementById('forst-type-badge');
+  const typeDiv = document.getElementById('forst-type');
+  if (k > 1) {
+    typeBadge.textContent = 'Forstørring (a > b)';
+    typeBadge.className = 'inline-block px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700 border border-orange-300';
+  } else if (k < 1) {
+    typeBadge.textContent = 'Forminskning (a < b)';
+    typeBadge.className = 'inline-block px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-300';
+  } else {
+    typeBadge.textContent = 'Ingen skalering (a = b, 1 : 1)';
+    typeBadge.className = 'inline-block px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 border border-gray-300';
+  }
+  typeDiv.classList.remove('hidden');
+
+  let steps = [];
+  let svarTekst = '';
+
+  if (forstRetning === 'teg-til-virk') {
+    const tegVal = parseFloat(document.getElementById('f-teg').value);
+    const tegEnhet = document.getElementById('f-teg-enhet').value;
+    if (isNaN(tegVal) || tegVal < 0) return;
+
+    const tegCm = tegVal * LENGDE_TIL_CM[tegEnhet];
+    // Tegningsavstand / Virkelig = a/b  →  Virkelig = Tegning × b/a
+    const virkCm = tegCm * b / a;
+    const { val: virkVis, enhet: virkEnhetVis } = velgBestAvastandEnhet(virkCm);
+
+    steps.push(`Målestokk ${a} : ${b}  (k = a/b = ${formaterTall(k)})`);
+    steps.push(`Tegningsavstand = ${formaterTall(tegVal)} ${tegEnhet} = ${formaterTall(tegCm)} cm`);
+    steps.push(`Formel: Virkelig = Tegning × (b/a) = ${formaterTall(tegCm)} cm × (${b}/${a})`);
+    steps.push(`= ${formaterTall(tegCm)} cm × ${formaterTall(b/a)} = ${formaterTall(virkCm)} cm`);
+    if (virkEnhetVis !== 'cm') steps.push(`Omgjøring: ${formaterTall(virkCm)} cm = ${formaterTall(virkVis)} ${virkEnhetVis}`);
+    svarTekst = `${formaterTall(virkVis)} ${virkEnhetVis}`;
+
+  } else {
+    const virkVal = parseFloat(document.getElementById('f-virk').value);
+    const virkEnhet = document.getElementById('f-virk-enhet').value;
+    if (isNaN(virkVal) || virkVal < 0) return;
+
+    const virkCm = virkVal * LENGDE_TIL_CM[virkEnhet];
+    // Tegning = Virkelig × (a/b)
+    const tegCm = virkCm * a / b;
+    const { val: tegVis, enhet: tegEnhetVis } = velgBestAvastandEnhet(tegCm);
+
+    steps.push(`Målestokk ${a} : ${b}  (k = a/b = ${formaterTall(k)})`);
+    steps.push(`Virkelig avstand = ${formaterTall(virkVal)} ${virkEnhet} = ${formaterTall(virkCm)} cm`);
+    steps.push(`Formel: Tegning = Virkelig × (a/b) = ${formaterTall(virkCm)} cm × (${a}/${b})`);
+    steps.push(`= ${formaterTall(virkCm)} cm × ${formaterTall(a/b)} = ${formaterTall(tegCm)} cm`);
+    if (tegEnhetVis !== 'cm') steps.push(`Omgjøring: ${formaterTall(tegCm)} cm = ${formaterTall(tegVis)} ${tegEnhetVis}`);
+    svarTekst = `${formaterTall(tegVis)} ${tegEnhetVis}`;
+  }
+
+  document.getElementById('forst-svar').textContent = svarTekst;
+  document.getElementById('forst-steps').innerHTML = steps.map(s => `<li class="step">${s}</li>`).join('');
+  document.getElementById('forst-resultat').classList.remove('hidden');
+  document.getElementById('forst-utregning').classList.remove('hidden');
+}
+
+// =============================================
+// TAB 3: AREAL
+// =============================================
+
+let arealRetning = 'teg-til-virk';
+
+function setArealRetning(r) {
+  arealRetning = r;
+  document.getElementById('areal-input-teg-til-virk').classList.toggle('hidden', r !== 'teg-til-virk');
+  document.getElementById('areal-input-virk-til-teg').classList.toggle('hidden', r !== 'virk-til-teg');
+  document.getElementById('btn-ar-teg-til-virk').className =
+    'px-4 py-2 rounded-lg text-sm font-semibold ' +
+    (r === 'teg-til-virk' ? 'bg-blue-600 text-white shadow' : 'bg-gray-200 text-gray-700');
+  document.getElementById('btn-ar-virk-til-teg').className =
+    'px-4 py-2 rounded-lg text-sm font-semibold ' +
+    (r === 'virk-til-teg' ? 'bg-blue-600 text-white shadow' : 'bg-gray-200 text-gray-700');
+  arealKalkuler();
+}
+
+function arealKalkuler() {
+  const a = parseFloat(document.getElementById('ar-a').value);
+  const b = parseFloat(document.getElementById('ar-b').value);
+  if (!a || !b || a <= 0 || b <= 0) return;
+
+  const k = a / b;
+  const k2 = k * k;
+
+  let steps = [];
+  let svarTekst = '';
+
+  if (arealRetning === 'teg-til-virk') {
+    const tegVal = parseFloat(document.getElementById('ar-teg').value);
+    const tegEnhet = document.getElementById('ar-teg-enhet').value;
+    if (isNaN(tegVal) || tegVal < 0) return;
+
+    const tegCm2 = tegVal * AREAL_TIL_CM2[tegEnhet];
+    // Areal_virkelig = Areal_tegning / k²  (siden k = tegning/virkelig)
+    const virkCm2 = tegCm2 / k2;
+    const { val: virkVis, enhet: virkEnhetVis } = velgBestArealEnhet(virkCm2);
+
+    steps.push(`Målestokk ${a} : ${b}  →  lengdeskalering k = ${formaterTall(a)}/${formaterTall(b)} = ${formaterTall(k)}`);
+    steps.push(`Arealskaleringsfaktor = k² = (${formaterTall(k)})² = ${formaterTall(k2)}`);
+    steps.push(`Tegningsareal = ${formaterTall(tegVal)} ${tegEnhet} = ${formaterTall(tegCm2)} cm²`);
+    steps.push(`Formel: Virkelig areal = Tegningsareal ÷ k²`);
+    steps.push(`= ${formaterTall(tegCm2)} cm² ÷ ${formaterTall(k2)} = ${formaterTall(virkCm2)} cm²`);
+    if (virkEnhetVis !== 'cm²') steps.push(`Omgjøring: ${formaterTall(virkCm2)} cm² = ${formaterTall(virkVis)} ${virkEnhetVis}`);
+    svarTekst = `${formaterTall(virkVis)} ${virkEnhetVis}`;
+
+  } else {
+    const virkVal = parseFloat(document.getElementById('ar-virk').value);
+    const virkEnhet = document.getElementById('ar-virk-enhet').value;
+    if (isNaN(virkVal) || virkVal < 0) return;
+
+    const virkCm2 = virkVal * AREAL_TIL_CM2[virkEnhet];
+    const tegCm2 = virkCm2 * k2;
+    const { val: tegVis, enhet: tegEnhetVis } = velgBestArealEnhet(tegCm2);
+
+    steps.push(`Målestokk ${a} : ${b}  →  lengdeskalering k = ${formaterTall(a)}/${formaterTall(b)} = ${formaterTall(k)}`);
+    steps.push(`Arealskaleringsfaktor = k² = (${formaterTall(k)})² = ${formaterTall(k2)}`);
+    steps.push(`Virkelig areal = ${formaterTall(virkVal)} ${virkEnhet} = ${formaterTall(virkCm2)} cm²`);
+    steps.push(`Formel: Tegningsareal = Virkelig areal × k²`);
+    steps.push(`= ${formaterTall(virkCm2)} cm² × ${formaterTall(k2)} = ${formaterTall(tegCm2)} cm²`);
+    if (tegEnhetVis !== 'cm²') steps.push(`Omgjøring: ${formaterTall(tegCm2)} cm² = ${formaterTall(tegVis)} ${tegEnhetVis}`);
+    svarTekst = `${formaterTall(tegVis)} ${tegEnhetVis}`;
+  }
+
+  document.getElementById('areal-svar').textContent = svarTekst;
+  document.getElementById('areal-steps').innerHTML = steps.map(s => `<li class="step">${s}</li>`).join('');
+  document.getElementById('areal-resultat').classList.remove('hidden');
+  document.getElementById('areal-utregning').classList.remove('hidden');
+}
+
+// =============================================
+// TAB 4: VISUELL
+// =============================================
+
+function visKalkuler() {
+  const n = parseInt(document.getElementById('vis-n').value);
+  const kartCm = parseFloat(document.getElementById('vis-cm').value);
+
+  document.getElementById('vis-n-val').textContent = n.toLocaleString('nb-NO');
+  document.getElementById('vis-cm-val').textContent = kartCm.toLocaleString('nb-NO', {minimumFractionDigits: 1}) + ' cm';
+
+  const virkCm = kartCm * n;
+  const { val: virkVis, enhet: virkEnhet } = velgBestAvastandEnhet(virkCm);
+
+  document.getElementById('vis-tekst').textContent =
+    kartCm.toLocaleString('nb-NO', {minimumFractionDigits: 1}) + ' cm på kartet = ' +
+    formaterTall(virkVis) + ' ' + virkEnhet + ' i virkeligheten (målestokk 1 : ' + n.toLocaleString('nb-NO') + ')';
+
+  // Skalert figur: størrelse relativ til n (figur representerer hus i skala)
+  // Max n = 200000, min = 100. Vi ønsker figur synlig alltid.
+  const scaleFactor = Math.max(0.3, Math.min(3.0, 50000 / n));
+  const figEl = document.getElementById('vis-figur');
+  figEl.setAttribute('transform', `translate(200,70) scale(${scaleFactor})`);
+
+  // Oppdater avstandslinje basert på kartCm (maks 20 cm → maks 320 px, min 0.5 → 8 px)
+  const linjePixels = Math.max(8, Math.min(320, kartCm * 16));
+  const ptBx = 120 + linjePixels;
+  document.getElementById('vis-ptB').setAttribute('cx', ptBx);
+  document.getElementById('vis-lblB').setAttribute('x', ptBx + 4);
+  document.getElementById('vis-linje').setAttribute('x2', ptBx);
+
+  // Scalebar: 100 px = ? km/m
+  // 1 px = (n/96) cm * (1/100) m = n/9600 m
+  // Vi vil vise en "round number" for 100 px
+  const meterPer100px = n * (2.54 / 96); // 1 inch = 2.54 cm, 96 dpi screen
+  // Finn pen tallverdi
+  let sbVal = meterPer100px;
+  let sbUnit = 'm';
+  if (sbVal >= 1000) { sbVal /= 1000; sbUnit = 'km'; }
+  // Round to nice number
+  const sbNice = parseFloat(sbVal.toPrecision(2));
+  const sbNiceMid = parseFloat((sbVal / 2).toPrecision(2));
+
+  document.getElementById('sb-mid-lbl').textContent = formaterTall(sbNiceMid);
+  document.getElementById('sb-end-lbl').textContent = formaterTall(sbNice);
+  document.getElementById('sb-unit').textContent = sbUnit;
+
+  document.getElementById('vis-info-1').textContent = 'Kartavstand: ' + kartCm.toLocaleString('nb-NO', {minimumFractionDigits:1}) + ' cm';
+  document.getElementById('vis-info-2').textContent = '= ' + formaterTall(virkVis) + ' ' + virkEnhet;
+}
+
+// =============================================
+// INITIALISERING
+// =============================================
+window.addEventListener('DOMContentLoaded', function() {
+  kartKalkuler();
+  forstKalkuler();
+  arealKalkuler();
+  visKalkuler();
+});
+</script>
+</body>
+</html>

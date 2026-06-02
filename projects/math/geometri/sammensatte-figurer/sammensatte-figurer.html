@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<!--
+  Sammensatte figurer — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for geometri (matematikk 1P/2P, LK20): finn areal og
+  omkrets av sammensatte figurer ved å dele dem opp i kjente deler.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sammensatte figurer – Areal og omkrets</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .part-highlight { transition: opacity 0.3s, filter 0.3s; }
+    .part-highlight.dim { opacity: 0.3; }
+    .part-label { font-size: 13px; font-weight: 600; }
+    input[type=range] { accent-color: #6366f1; }
+    .step-card { border-left: 4px solid #6366f1; }
+    .formula-box { font-family: 'Courier New', monospace; }
+    svg text { user-select: none; }
+    .tab-btn.active { background: #6366f1; color: #fff; }
+    .tab-btn { transition: background 0.2s, color 0.2s; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+<!-- Header -->
+<header class="bg-indigo-700 text-white shadow-md">
+  <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center gap-2">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">Sammensatte figurer</h1>
+      <p class="text-indigo-200 text-sm mt-0.5">Areal og omkrets — Matematikk 1P/2P (LK20)</p>
+    </div>
+    <span class="sm:ml-auto bg-indigo-600 text-indigo-100 text-xs px-3 py-1 rounded-full font-medium">Interaktivt læremiddel</span>
+  </div>
+</header>
+
+<!-- Intro -->
+<section class="max-w-5xl mx-auto px-4 pt-6 pb-2">
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+    <h2 class="text-lg font-semibold text-slate-800 mb-2">Hva er en sammensatt figur?</h2>
+    <p class="text-slate-600 text-sm leading-relaxed">
+      En <strong>sammensatt figur</strong> er en figur som består av to eller flere kjente grunnformer
+      (rektangler, trekanter, sirkler osv.). For å finne arealet kan vi enten
+      <span class="text-indigo-700 font-semibold">addere</span> delene eller
+      <span class="text-rose-600 font-semibold">subtrahere</span> et utskåret område fra en større figur.
+      Omkretsen er summen av alle <em>ytterlige</em> sider.
+    </p>
+    <div class="mt-3 flex flex-wrap gap-3 text-sm">
+      <span class="bg-indigo-50 text-indigo-800 px-3 py-1 rounded-lg border border-indigo-200">
+        Rektangel: A = l · b
+      </span>
+      <span class="bg-emerald-50 text-emerald-800 px-3 py-1 rounded-lg border border-emerald-200">
+        Trekant: A = ½ · g · h
+      </span>
+      <span class="bg-amber-50 text-amber-800 px-3 py-1 rounded-lg border border-amber-200">
+        Sirkel: A = π · r²
+      </span>
+      <span class="bg-rose-50 text-rose-800 px-3 py-1 rounded-lg border border-rose-200">
+        Halvsirkel: A = ½ · π · r²
+      </span>
+    </div>
+  </div>
+</section>
+
+<!-- Figure selector tabs -->
+<section class="max-w-5xl mx-auto px-4 pt-5">
+  <div class="flex flex-wrap gap-2 mb-1" id="tabs">
+    <button class="tab-btn active text-sm font-medium px-4 py-2 rounded-lg border border-indigo-300" data-tab="0">L-formet rom</button>
+    <button class="tab-btn text-sm font-medium px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700" data-tab="1">Hus med trekanttak</button>
+    <button class="tab-btn text-sm font-medium px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700" data-tab="2">Rektangel med sirkulært hull</button>
+  </div>
+</section>
+
+<!-- Main content area -->
+<main class="max-w-5xl mx-auto px-4 pb-10">
+  <div id="figure-container" class="bg-white rounded-xl shadow-sm border border-slate-200 mt-0 p-5">
+
+    <!-- Figure title & description -->
+    <div class="mb-4">
+      <h2 id="fig-title" class="text-xl font-bold text-slate-800"></h2>
+      <p id="fig-desc" class="text-slate-500 text-sm mt-1"></p>
+    </div>
+
+    <!-- Two-column layout: SVG + steps -->
+    <div class="flex flex-col lg:flex-row gap-6">
+
+      <!-- SVG panel -->
+      <div class="flex-1 flex flex-col items-center">
+        <div id="svg-container" class="w-full flex justify-center"></div>
+
+        <!-- Part highlight buttons (generated per figure) -->
+        <div id="highlight-controls" class="mt-3 flex flex-wrap gap-2 justify-center"></div>
+
+        <!-- Sliders -->
+        <div id="sliders" class="mt-4 w-full max-w-xs space-y-4"></div>
+      </div>
+
+      <!-- Steps panel -->
+      <div class="lg:w-80 flex flex-col gap-3">
+        <div id="method-badge" class="text-xs font-semibold px-3 py-1 rounded-full self-start"></div>
+        <div id="steps-container" class="space-y-3"></div>
+        <div id="result-box" class="rounded-xl p-4 border-2 mt-1"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Forklaring av metode -->
+  <div class="mt-6 bg-indigo-50 border border-indigo-200 rounded-xl p-5">
+    <h3 class="font-semibold text-indigo-800 mb-2">Fremgangsmåte — steg for steg</h3>
+    <ol class="list-decimal list-inside text-sm text-indigo-900 space-y-1 leading-relaxed">
+      <li>Identifiser hvilke grunnformer figuren består av (eller hva som er fjernet).</li>
+      <li>Merk av mål på figuren og sett inn kjente formler.</li>
+      <li>Regn ut arealet for hver del.</li>
+      <li>Adder (eller subtraher) delene for totalarealet.</li>
+      <li>Finn omkretsen ved å legge sammen alle <em>ytterste</em> kanter.</li>
+    </ol>
+  </div>
+</main>
+
+<script>
+// ─── Utility ───────────────────────────────────────────────────────────────────
+function round2(n) { return Math.round(n * 100) / 100; }
+function fmt(n) {
+  const r = round2(n);
+  return Number.isInteger(r) ? r.toString() : r.toFixed(2);
+}
+
+// ─── Figure definitions ────────────────────────────────────────────────────────
+
+// Each figure returns { svgHtml, parts, steps, result } given current dims.
+// dims = { [key]: value }
+
+const FIGURES = [
+
+  // ── 0: L-formet rom ──────────────────────────────────────────────────────────
+  {
+    title: 'L-formet rom',
+    desc:  'Et L-formet rom deles i to rektangler. Arealet finnes ved addisjon.',
+    method: 'Addisjon av deler',
+    methodColor: 'bg-indigo-100 text-indigo-800',
+    sliders: [
+      { key: 'a', label: 'Totalbredde (a)', min: 4, max: 12, step: 0.5, unit: 'm' },
+      { key: 'b', label: 'Totalhøyde (b)',  min: 4, max: 12, step: 0.5, unit: 'm' },
+      { key: 'c', label: 'Utsprang bredde (c)', min: 1, max: 6, step: 0.5, unit: 'm' },
+      { key: 'd', label: 'Utsprang høyde (d)',  min: 1, max: 6, step: 0.5, unit: 'm' },
+    ],
+    defaults: { a: 8, b: 6, c: 3, d: 3 },
+    clamp(dims) {
+      dims.c = Math.min(dims.c, dims.a - 1);
+      dims.d = Math.min(dims.d, dims.b - 1);
+      return dims;
+    },
+    parts: [
+      { id: 'p1', label: 'Del 1 (A₁)', color: '#6366f1', colorLight: '#e0e7ff' },
+      { id: 'p2', label: 'Del 2 (A₂)', color: '#06b6d4', colorLight: '#cffafe' },
+    ],
+    compute(dims) {
+      const { a, b, c, d } = dims;
+      // Split: bottom rectangle full width, top-left rectangle
+      const A1 = a * (b - d);          // bottom strip: full width × (b-d) height
+      const A2 = (a - c) * d;          // top-left: (a-c) width × d height
+      // Wait — standard L: one big rect + one small rect
+      // Let's define: rect1 = a × (b-d) [lower], rect2 = (a-c) × d [upper-left]
+      const totalA = A1 + A2;
+      // Perimeter: trace the L shape
+      // Lower-left corner going clockwise:
+      // bottom: a, right side: b, top of upper-right notch: c, step down: d, step left to (a-c), step up: 0 already counted wrong
+      // Correct perimeter of L-shape:
+      const perim = a + b + c + d + (a - c) + (b - d);
+      return { A1, A2, totalA, perim };
+    },
+    render(dims, highlighted) {
+      const { a, b, c, d } = dims;
+      const res = this.compute(dims);
+      const S = 40; // scale: pixels per metre
+      const PAD = 30;
+      const W = a * S + PAD * 2;
+      const H = b * S + PAD * 2;
+      // Coordinates in SVG (y increases downward)
+      // L-shape: full rect minus top-right corner
+      // Bottom-left of figure at (PAD, PAD+b*S)
+      const ox = PAD, oy = PAD;
+      // L polygon points (clockwise from top-left):
+      // top-left: (ox, oy)
+      // top-right of left part: (ox+(a-c)*S, oy)
+      // inner corner step down: (ox+(a-c)*S, oy+d*S)
+      // top-right: (ox+a*S, oy+d*S)
+      // bottom-right: (ox+a*S, oy+b*S)
+      // bottom-left: (ox, oy+b*S)
+      const pts = [
+        [ox,           oy],
+        [ox+(a-c)*S,   oy],
+        [ox+(a-c)*S,   oy+d*S],
+        [ox+a*S,       oy+d*S],
+        [ox+a*S,       oy+b*S],
+        [ox,           oy+b*S],
+      ];
+      const poly = pts.map(p=>p.join(',')).join(' ');
+
+      const dim1 = highlighted === 'p1' ? 0.9 : (highlighted === 'p2' ? 0.2 : 0.85);
+      const dim2 = highlighted === 'p2' ? 0.9 : (highlighted === 'p1' ? 0.2 : 0.6);
+
+      // Rect1 (bottom strip): x=ox, y=oy+d*S, w=a*S, h=(b-d)*S
+      const r1x=ox, r1y=oy+d*S, r1w=a*S, r1h=(b-d)*S;
+      // Rect2 (top-left): x=ox, y=oy, w=(a-c)*S, h=d*S
+      const r2x=ox, r2y=oy, r2w=(a-c)*S, r2h=d*S;
+
+      const svgW = W, svgH = H;
+
+      let svg = `<svg viewBox="0 0 ${svgW} ${svgH}" width="${svgW}" height="${svgH}" xmlns="http://www.w3.org/2000/svg">`;
+
+      // Part 1 fill
+      svg += `<rect x="${r1x}" y="${r1y}" width="${r1w}" height="${r1h}" fill="#e0e7ff" opacity="${dim1}" class="part-highlight" data-part="p1"/>`;
+      // Part 2 fill
+      svg += `<rect x="${r2x}" y="${r2y}" width="${r2w}" height="${r2h}" fill="#cffafe" opacity="${dim2}" class="part-highlight" data-part="p2"/>`;
+      // Divider line
+      svg += `<line x1="${r2x}" y1="${oy+d*S}" x2="${r2x+r2w}" y2="${oy+d*S}" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6,3"/>`;
+
+      // Outline
+      svg += `<polygon points="${poly}" fill="none" stroke="#1e293b" stroke-width="2.5"/>`;
+
+      // Part labels
+      const cx1 = r1x + r1w/2, cy1 = r1y + r1h/2;
+      const cx2 = r2x + r2w/2, cy2 = r2y + r2h/2;
+      svg += `<text x="${cx1}" y="${cy1}" text-anchor="middle" dominant-baseline="middle" class="part-label" fill="#4338ca" opacity="${dim1}">A₁ = ${fmt(res.A1)} m²</text>`;
+      svg += `<text x="${cx2}" y="${cy2}" text-anchor="middle" dominant-baseline="middle" class="part-label" fill="#0891b2" opacity="${dim2}">A₂ = ${fmt(res.A2)} m²</text>`;
+
+      // Dimension annotations
+      svg += dimArrow(ox, oy+b*S+10, ox+a*S, oy+b*S+10, `a = ${fmt(a)} m`, 'below');
+      svg += dimArrow(ox-10, oy, ox-10, oy+b*S, `b = ${fmt(b)} m`, 'left');
+      svg += dimArrow(ox+(a-c)*S, oy-10, ox+a*S, oy-10, `c = ${fmt(c)} m`, 'above');
+      svg += dimArrow(ox+a*S+10, oy+d*S, ox+a*S+10, oy+b*S, `(b−d) = ${fmt(b-d)} m`, 'right');
+
+      svg += '</svg>';
+      return svg;
+    },
+    buildSteps(dims) {
+      const { a, b, c, d } = dims;
+      const res = this.compute(dims);
+      return [
+        {
+          title: 'Del figuren i to rektangler',
+          text: `Del 1 (nedre): bredde = <b>${fmt(a)} m</b>, høyde = <b>${fmt(b-d)} m</b><br>
+                 Del 2 (øvre venstre): bredde = <b>${fmt(a-c)} m</b>, høyde = <b>${fmt(d)} m</b>`,
+          color: '#e0e7ff', border: '#6366f1'
+        },
+        {
+          title: 'Regn ut arealet av Del 1',
+          formula: `A₁ = ${fmt(a)} · ${fmt(b-d)} = ${fmt(res.A1)} m²`,
+          color: '#ede9fe', border: '#7c3aed'
+        },
+        {
+          title: 'Regn ut arealet av Del 2',
+          formula: `A₂ = ${fmt(a-c)} · ${fmt(d)} = ${fmt(res.A2)} m²`,
+          color: '#cffafe', border: '#06b6d4'
+        },
+        {
+          title: 'Totalarealet',
+          formula: `A = A₁ + A₂ = ${fmt(res.A1)} + ${fmt(res.A2)} = ${fmt(res.totalA)} m²`,
+          color: '#f0fdf4', border: '#22c55e'
+        },
+        {
+          title: 'Omkrets',
+          text: `Legg sammen alle yttersider:<br>
+                 O = a + b + c + d + (a−c) + (b−d)<br>
+                 = ${fmt(a)} + ${fmt(b)} + ${fmt(c)} + ${fmt(d)} + ${fmt(a-c)} + ${fmt(b-d)}`,
+          formula: `O = ${fmt(res.perim)} m`,
+          color: '#fef9c3', border: '#ca8a04'
+        },
+      ];
+    },
+  },
+
+  // ── 1: Hus med trekanttak ────────────────────────────────────────────────────
+  {
+    title: 'Hus med trekanttak',
+    desc:  'Et hus består av et rektangel (vegger) og en likebent trekant (tak). Addér delene.',
+    method: 'Addisjon av deler',
+    methodColor: 'bg-indigo-100 text-indigo-800',
+    sliders: [
+      { key: 'w', label: 'Husbredde (b)',    min: 3, max: 12, step: 0.5, unit: 'm' },
+      { key: 'wh', label: 'Vegg-høyde (h₁)', min: 2, max: 8,  step: 0.5, unit: 'm' },
+      { key: 'th', label: 'Tak-høyde (h₂)',  min: 1, max: 6,  step: 0.5, unit: 'm' },
+    ],
+    defaults: { w: 8, wh: 4, th: 3 },
+    clamp(d) { return d; },
+    parts: [
+      { id: 'p1', label: 'Rektangel (A₁)', color: '#f59e0b', colorLight: '#fef3c7' },
+      { id: 'p2', label: 'Trekant (A₂)',   color: '#ef4444', colorLight: '#fee2e2' },
+    ],
+    compute(dims) {
+      const { w, wh, th } = dims;
+      const A1 = w * wh;
+      const A2 = 0.5 * w * th;
+      const totalA = A1 + A2;
+      // Skråsider av taket (Pytagoras): √((w/2)²+th²)
+      const slope = Math.sqrt((w/2)**2 + th**2);
+      const perim = w + wh + slope + slope + wh; // bottom + left wall + left slope + right slope + right wall
+      return { A1, A2, totalA, slope, perim };
+    },
+    render(dims, highlighted) {
+      const { w, wh, th } = dims;
+      const res = this.compute(dims);
+      const S = 40;
+      const PAD = 35;
+      const svgW = w * S + PAD * 2;
+      const svgH = (wh + th) * S + PAD * 2;
+      const ox = PAD, oy = PAD;
+
+      const dim1 = highlighted === 'p1' ? 0.9 : (highlighted === 'p2' ? 0.2 : 0.85);
+      const dim2 = highlighted === 'p2' ? 0.9 : (highlighted === 'p1' ? 0.2 : 0.7);
+
+      // Rectangle: bottom
+      const rx = ox, ry = oy + th*S, rw = w*S, rh = wh*S;
+      // Triangle: apex at top centre
+      const tx1 = ox, ty1 = oy + th*S;
+      const tx2 = ox + w*S, ty2 = oy + th*S;
+      const tx3 = ox + (w/2)*S, ty3 = oy;
+
+      let svg = `<svg viewBox="0 0 ${svgW} ${svgH}" width="${svgW}" height="${svgH}" xmlns="http://www.w3.org/2000/svg">`;
+
+      svg += `<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" fill="#fef3c7" opacity="${dim1}" class="part-highlight" data-part="p1"/>`;
+      svg += `<polygon points="${tx1},${ty1} ${tx2},${ty2} ${tx3},${ty3}" fill="#fee2e2" opacity="${dim2}" class="part-highlight" data-part="p2"/>`;
+
+      // Outlines
+      svg += `<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" fill="none" stroke="#1e293b" stroke-width="2.5"/>`;
+      svg += `<polygon points="${tx1},${ty1} ${tx2},${ty2} ${tx3},${ty3}" fill="none" stroke="#1e293b" stroke-width="2.5"/>`;
+
+      // Labels
+      svg += `<text x="${rx+rw/2}" y="${ry+rh/2}" text-anchor="middle" dominant-baseline="middle" class="part-label" fill="#b45309" opacity="${dim1}">A₁ = ${fmt(res.A1)} m²</text>`;
+      svg += `<text x="${rx+rw/2}" y="${oy+th*S/2}" text-anchor="middle" dominant-baseline="middle" class="part-label" fill="#b91c1c" opacity="${dim2}">A₂ = ${fmt(res.A2)} m²</text>`;
+
+      // Dim annotations
+      svg += dimArrow(ox, oy+(th+wh)*S+12, ox+w*S, oy+(th+wh)*S+12, `b = ${fmt(w)} m`, 'below');
+      svg += dimArrow(ox-12, oy+th*S, ox-12, oy+(th+wh)*S, `h₁ = ${fmt(wh)} m`, 'left');
+      svg += dimArrow(ox+w*S+12, oy, ox+w*S+12, oy+th*S, `h₂ = ${fmt(th)} m`, 'right');
+
+      svg += '</svg>';
+      return svg;
+    },
+    buildSteps(dims) {
+      const { w, wh, th } = dims;
+      const res = this.compute(dims);
+      return [
+        {
+          title: 'Identifiser delene',
+          text: 'Figuren består av ett <b>rektangel</b> (veggene) og én <b>trekant</b> (taket).',
+          color: '#fff7ed', border: '#f59e0b'
+        },
+        {
+          title: 'Areal av rektangelet (vegger)',
+          formula: `A₁ = b · h₁ = ${fmt(w)} · ${fmt(wh)} = ${fmt(res.A1)} m²`,
+          color: '#fef3c7', border: '#f59e0b'
+        },
+        {
+          title: 'Areal av trekanten (tak)',
+          formula: `A₂ = ½ · g · h = ½ · ${fmt(w)} · ${fmt(th)} = ${fmt(res.A2)} m²`,
+          color: '#fee2e2', border: '#ef4444'
+        },
+        {
+          title: 'Totalareal',
+          formula: `A = A₁ + A₂ = ${fmt(res.A1)} + ${fmt(res.A2)} = ${fmt(res.totalA)} m²`,
+          color: '#f0fdf4', border: '#22c55e'
+        },
+        {
+          title: 'Omkrets',
+          text: `Skråside (Pytagoras): s = √((b/2)² + h₂²) = √(${fmt(w/2)}² + ${fmt(th)}²) = ${fmt(res.slope)} m`,
+          formula: `O = b + 2·h₁ + 2·s = ${fmt(w)} + 2·${fmt(wh)} + 2·${fmt(res.slope)} = ${fmt(res.perim)} m`,
+          color: '#fef9c3', border: '#ca8a04'
+        },
+      ];
+    },
+  },
+
+  // ── 2: Rektangel med sirkulært hull ─────────────────────────────────────────
+  {
+    title: 'Rektangel med sirkulært hull',
+    desc:  'Et rektangel med et sirkulært hull i midten. Arealet finnes ved subtraksjon.',
+    method: 'Subtraksjon av del',
+    methodColor: 'bg-rose-100 text-rose-800',
+    sliders: [
+      { key: 'w', label: 'Bredde (b)',   min: 4, max: 14, step: 0.5, unit: 'm' },
+      { key: 'h', label: 'Høyde (h)',    min: 3, max: 10, step: 0.5, unit: 'm' },
+      { key: 'r', label: 'Radius (r)',   min: 0.5, max: 3, step: 0.1, unit: 'm' },
+    ],
+    defaults: { w: 10, h: 6, r: 2 },
+    clamp(dims) {
+      const maxR = Math.min(dims.w, dims.h) / 2 - 0.5;
+      dims.r = Math.min(dims.r, Math.max(0.5, maxR));
+      return dims;
+    },
+    parts: [
+      { id: 'p1', label: 'Rektangel (A₁)', color: '#8b5cf6', colorLight: '#ede9fe' },
+      { id: 'p2', label: 'Sirkel (A₂)',    color: '#ef4444', colorLight: '#fee2e2' },
+    ],
+    compute(dims) {
+      const { w, h, r } = dims;
+      const A1 = w * h;
+      const A2 = Math.PI * r * r;
+      const totalA = A1 - A2;
+      // Perimeter: outer rect perimeter + inner circle circumference
+      const perim = 2 * (w + h) + 2 * Math.PI * r;
+      return { A1, A2, totalA, perim };
+    },
+    render(dims, highlighted) {
+      const { w, h, r } = dims;
+      const res = this.compute(dims);
+      const S = 40;
+      const PAD = 35;
+      const svgW = w * S + PAD * 2;
+      const svgH = h * S + PAD * 2;
+      const ox = PAD, oy = PAD;
+      const cx = ox + w*S/2, cy = oy + h*S/2;
+      const cr = r * S;
+
+      const dim1 = highlighted === 'p1' ? 0.9 : (highlighted === 'p2' ? 0.2 : 0.8);
+      const dim2 = highlighted === 'p2' ? 0.9 : (highlighted === 'p1' ? 0.2 : 0.85);
+
+      let svg = `<svg viewBox="0 0 ${svgW} ${svgH}" width="${svgW}" height="${svgH}" xmlns="http://www.w3.org/2000/svg">`;
+
+      // Rect fill
+      svg += `<rect x="${ox}" y="${oy}" width="${w*S}" height="${h*S}" fill="#ede9fe" opacity="${dim1}"/>`;
+      // Circle cutout (white, then dashed border)
+      svg += `<circle cx="${cx}" cy="${cy}" r="${cr}" fill="white" opacity="${dim2}"/>`;
+      svg += `<circle cx="${cx}" cy="${cy}" r="${cr}" fill="#fee2e2" opacity="${dim2 * 0.5}"/>`;
+
+      // Rect outline
+      svg += `<rect x="${ox}" y="${oy}" width="${w*S}" height="${h*S}" fill="none" stroke="#1e293b" stroke-width="2.5"/>`;
+      // Circle outline
+      svg += `<circle cx="${cx}" cy="${cy}" r="${cr}" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="8,4"/>`;
+      // Radius line
+      svg += `<line x1="${cx}" y1="${cy}" x2="${cx+cr}" y2="${cy}" stroke="#ef4444" stroke-width="1.5"/>`;
+      svg += `<text x="${cx+cr/2}" y="${cy-6}" text-anchor="middle" class="part-label" fill="#ef4444" font-size="12">r = ${fmt(r)} m</text>`;
+
+      // Labels
+      svg += `<text x="${ox + 20}" y="${oy + 20}" text-anchor="start" class="part-label" fill="#6d28d9" opacity="${dim1}" font-size="13">A₁ = ${fmt(res.A1)} m²</text>`;
+      svg += `<text x="${cx}" y="${cy+4}" text-anchor="middle" class="part-label" fill="#b91c1c" opacity="${dim2}" font-size="12">A₂ = ${fmt(res.A2)} m²</text>`;
+
+      // Dim annotations
+      svg += dimArrow(ox, oy+h*S+12, ox+w*S, oy+h*S+12, `b = ${fmt(w)} m`, 'below');
+      svg += dimArrow(ox-12, oy, ox-12, oy+h*S, `h = ${fmt(h)} m`, 'left');
+
+      svg += '</svg>';
+      return svg;
+    },
+    buildSteps(dims) {
+      const { w, h, r } = dims;
+      const res = this.compute(dims);
+      return [
+        {
+          title: 'Metode: subtraksjon',
+          text: 'Start med hele rektangelet og <b>trekk fra</b> arealet av det sirkulære hullet.',
+          color: '#fdf2f8', border: '#d946ef'
+        },
+        {
+          title: 'Areal av hele rektangelet',
+          formula: `A₁ = b · h = ${fmt(w)} · ${fmt(h)} = ${fmt(res.A1)} m²`,
+          color: '#ede9fe', border: '#8b5cf6'
+        },
+        {
+          title: 'Areal av det sirkulære hullet',
+          formula: `A₂ = π · r² = π · ${fmt(r)}² ≈ ${fmt(res.A2)} m²`,
+          color: '#fee2e2', border: '#ef4444'
+        },
+        {
+          title: 'Totalareal (subtraksjon)',
+          formula: `A = A₁ − A₂ = ${fmt(res.A1)} − ${fmt(res.A2)} ≈ ${fmt(res.totalA)} m²`,
+          color: '#f0fdf4', border: '#22c55e'
+        },
+        {
+          title: 'Omkrets',
+          text: 'Yttersidene inkluderer kantene av rektangelet <em>og</em> kanten av hullet (sirkelomkrets).',
+          formula: `O = 2(b+h) + 2πr = 2·(${fmt(w)}+${fmt(h)}) + 2π·${fmt(r)} ≈ ${fmt(res.perim)} m`,
+          color: '#fef9c3', border: '#ca8a04'
+        },
+      ];
+    },
+  },
+
+];
+
+// ─── SVG dimension arrow helper ────────────────────────────────────────────────
+function dimArrow(x1, y1, x2, y2, label, side) {
+  // Draw a thin dimension line with arrowheads and label
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+  let lx = mx, ly = my;
+  const offset = 0;
+  let anchor = 'middle', dy = 0;
+  if (side === 'below') { ly = y1 + 4; dy = 12; anchor = 'middle'; }
+  if (side === 'above') { ly = y1 - 4; dy = -4; anchor = 'middle'; }
+  if (side === 'left')  { lx = x1 - 4; anchor = 'end'; dy = 4; }
+  if (side === 'right') { lx = x1 + 4; anchor = 'start'; dy = 4; }
+
+  let out = `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#64748b" stroke-width="1" marker-start="url(#arr)" marker-end="url(#arr)"/>`;
+  out += `<text x="${lx}" y="${ly + dy}" text-anchor="${anchor}" font-size="11" fill="#475569">${label}</text>`;
+  return out;
+}
+
+function svgDefs() {
+  return `<defs>
+    <marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse">
+      <path d="M0,0 L0,6 L6,3 z" fill="#64748b"/>
+    </marker>
+  </defs>`;
+}
+
+// ─── State ─────────────────────────────────────────────────────────────────────
+let currentFig = 0;
+let currentDims = {};
+let highlighted = null;
+
+function initFig(idx) {
+  currentFig = idx;
+  const fig = FIGURES[idx];
+  currentDims = {};
+  fig.sliders.forEach(s => { currentDims[s.key] = fig.defaults[s.key]; });
+  highlighted = null;
+  renderAll();
+}
+
+function renderAll() {
+  const fig = FIGURES[currentFig];
+  fig.clamp(currentDims);
+
+  // Title / desc
+  document.getElementById('fig-title').textContent = fig.title;
+  document.getElementById('fig-desc').textContent = fig.desc;
+
+  // Method badge
+  const mb = document.getElementById('method-badge');
+  mb.textContent = fig.method;
+  mb.className = `text-xs font-semibold px-3 py-1 rounded-full self-start ${fig.methodColor}`;
+
+  // SVG
+  const svgEl = document.getElementById('svg-container');
+  const rawSvg = fig.render(currentDims, highlighted);
+  // Inject defs into the SVG
+  const svgWithDefs = rawSvg.replace('<svg ', '<svg ').replace('</svg>', svgDefs() + '</svg>');
+  svgEl.innerHTML = svgWithDefs;
+
+  // Highlight controls
+  const hc = document.getElementById('highlight-controls');
+  hc.innerHTML = '';
+  const resetBtn = document.createElement('button');
+  resetBtn.textContent = 'Vis alle deler';
+  resetBtn.className = `text-xs px-3 py-1 rounded-lg border font-medium transition ${highlighted === null ? 'bg-slate-700 text-white border-slate-700' : 'bg-white text-slate-700 border-slate-300'}`;
+  resetBtn.onclick = () => { highlighted = null; renderAll(); };
+  hc.appendChild(resetBtn);
+
+  fig.parts.forEach(p => {
+    const btn = document.createElement('button');
+    btn.textContent = p.label;
+    const isActive = highlighted === p.id;
+    btn.className = `text-xs px-3 py-1 rounded-lg border font-medium transition`;
+    btn.style.backgroundColor = isActive ? p.color : p.colorLight;
+    btn.style.color = isActive ? '#fff' : '#1e293b';
+    btn.style.borderColor = p.color;
+    btn.onclick = () => { highlighted = isActive ? null : p.id; renderAll(); };
+    hc.appendChild(btn);
+  });
+
+  // Sliders
+  const sl = document.getElementById('sliders');
+  sl.innerHTML = '';
+  fig.sliders.forEach(s => {
+    const val = currentDims[s.key];
+    const wrap = document.createElement('div');
+    wrap.className = 'space-y-1';
+    const labelRow = document.createElement('div');
+    labelRow.className = 'flex justify-between text-sm font-medium text-slate-700';
+    const lbl = document.createElement('span');
+    lbl.textContent = s.label;
+    const valSpan = document.createElement('span');
+    valSpan.className = 'text-indigo-700 font-bold';
+    valSpan.textContent = `${fmt(val)} ${s.unit}`;
+    labelRow.appendChild(lbl);
+    labelRow.appendChild(valSpan);
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.min = s.min;
+    input.max = s.max;
+    input.step = s.step;
+    input.value = val;
+    input.className = 'w-full';
+    input.addEventListener('input', () => {
+      currentDims[s.key] = parseFloat(input.value);
+      renderAll();
+    });
+    wrap.appendChild(labelRow);
+    wrap.appendChild(input);
+    sl.appendChild(wrap);
+  });
+
+  // Steps
+  const sc = document.getElementById('steps-container');
+  sc.innerHTML = '';
+  const steps = fig.buildSteps(currentDims);
+  steps.forEach((step, i) => {
+    const card = document.createElement('div');
+    card.className = 'rounded-lg p-3 text-sm step-card';
+    card.style.backgroundColor = step.color;
+    card.style.borderLeftColor = step.border;
+    const title = document.createElement('div');
+    title.className = 'font-semibold text-slate-800 mb-1';
+    title.textContent = `${i + 1}. ${step.title}`;
+    card.appendChild(title);
+    if (step.text) {
+      const txt = document.createElement('div');
+      txt.className = 'text-slate-700 text-xs leading-relaxed mb-1';
+      txt.innerHTML = step.text;
+      card.appendChild(txt);
+    }
+    if (step.formula) {
+      const f = document.createElement('div');
+      f.className = 'formula-box bg-white rounded px-2 py-1 text-xs font-bold text-slate-900 border mt-1';
+      f.style.borderColor = step.border;
+      f.textContent = step.formula;
+      card.appendChild(f);
+    }
+    sc.appendChild(card);
+  });
+
+  // Result box
+  const rb = document.getElementById('result-box');
+  const res = fig.compute(currentDims);
+  rb.style.backgroundColor = '#f0fdf4';
+  rb.style.borderColor = '#16a34a';
+  rb.innerHTML = `
+    <div class="text-sm font-bold text-green-800 mb-1">Svar</div>
+    <div class="formula-box text-base font-bold text-green-900">A = ${fmt(res.totalA)} m²</div>
+    <div class="formula-box text-sm text-green-800 mt-1">O = ${fmt(res.perim)} m</div>
+  `;
+}
+
+// ─── Tabs ──────────────────────────────────────────────────────────────────────
+document.getElementById('tabs').addEventListener('click', e => {
+  const btn = e.target.closest('[data-tab]');
+  if (!btn) return;
+  const idx = parseInt(btn.dataset.tab);
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    if (i === idx) {
+      b.classList.add('active');
+      b.classList.remove('bg-white', 'text-slate-700', 'border-slate-300');
+      b.classList.add('border-indigo-300');
+    } else {
+      b.classList.remove('active');
+      b.classList.add('bg-white', 'text-slate-700', 'border-slate-300');
+      b.classList.remove('border-indigo-300');
+    }
+  });
+  initFig(idx);
+});
+
+// ─── Boot ──────────────────────────────────────────────────────────────────────
+initFig(0);
+</script>
+
+<footer class="max-w-5xl mx-auto px-4 pb-6 text-center text-xs text-slate-400">
+  Halison App Studio – offentlig eksempelbibliotek &middot;
+  <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-indigo-500" target="_blank" rel="noopener">GitHub</a>
+  &middot; Matematikk 1P/2P, LK20 &middot; Ikke-kommersiell bruk
+</footer>
+
+</body>
+</html>

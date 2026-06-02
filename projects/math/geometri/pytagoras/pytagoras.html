@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<!--
+  Pytagoras' setning — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for geometri (matematikk 1P/2P, LK20): finn sider i en
+  rettvinklet trekant, se det visuelle beviset, avstand mellom punkter og
+  romdiagonal.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pytagoras' setning — Interaktivt læremiddel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .tab-btn { transition: all 0.2s; }
+    .tab-btn.active { background-color: #2563eb; color: white; }
+    .tab-btn:not(.active):hover { background-color: #dbeafe; }
+    input[type="number"]::-webkit-inner-spin-button { opacity: 0.6; }
+    .svgfig { display: block; margin: 0 auto; }
+    .fade-in { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .result-box { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1.5px solid #93c5fd; }
+    .proof-square { opacity: 0.75; }
+    .katex-inline { font-style: italic; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- Header -->
+<header class="bg-blue-700 text-white shadow-md">
+  <div class="max-w-4xl mx-auto px-4 py-5">
+    <h1 class="text-2xl font-bold tracking-tight">Pytagoras' setning</h1>
+    <p class="text-blue-200 text-sm mt-1">Interaktivt læremiddel · Matematikk 1P/2P · LK20</p>
+  </div>
+</header>
+
+<!-- Intro banner -->
+<div class="max-w-4xl mx-auto px-4 mt-5">
+  <div class="bg-white border border-blue-200 rounded-xl p-4 shadow-sm flex gap-3 items-start">
+    <span class="text-2xl mt-0.5">📐</span>
+    <div>
+      <p class="font-semibold text-blue-900">a² + b² = c²</p>
+      <p class="text-gray-600 text-sm mt-1">
+        I en <strong>rettvinklet trekant</strong> er summen av kvadratene på de to katetene (a og b) lik kvadratet på hypotenusen (c).
+        Velg et tema nedenfor for å utforske setningen.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="max-w-4xl mx-auto px-4 mt-5">
+  <div class="flex flex-wrap gap-2" role="tablist">
+    <button class="tab-btn active px-4 py-2 rounded-lg font-medium text-sm border border-blue-300 bg-blue-600 text-white" onclick="showTab('beregn')" id="tab-beregn">🔢 Beregn side</button>
+    <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm border border-gray-300 bg-white text-gray-700" onclick="showTab('bevis')" id="tab-bevis">🟥 Visuelt bevis</button>
+    <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm border border-gray-300 bg-white text-gray-700" onclick="showTab('avstand')" id="tab-avstand">📍 Avstand mellom punkter</button>
+    <button class="tab-btn px-4 py-2 rounded-lg font-medium text-sm border border-gray-300 bg-white text-gray-700" onclick="showTab('3d')" id="tab-3d">📦 Romdiagonal (3D)</button>
+  </div>
+</div>
+
+<!-- Main content area -->
+<main class="max-w-4xl mx-auto px-4 mt-4 pb-16">
+
+  <!-- ======================== TAB 1: BEREGN SIDE ======================== -->
+  <section id="panel-beregn" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 fade-in">
+    <h2 class="text-xl font-bold text-gray-800 mb-1">Finn den ukjente siden</h2>
+    <p class="text-gray-500 text-sm mb-5">
+      Skriv inn to kjente sider — la den ukjente stå tom. Kalkulator bruker <em>a² + b² = c²</em>.
+      <br><span class="text-orange-600 font-medium">Merk: Pytagoras gjelder kun for rettvinklede trekanter.</span>
+    </p>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Katet <em>a</em></label>
+        <input id="inp-a" type="number" min="0" step="any" placeholder="f.eks. 3"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="beregnSide()" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Katet <em>b</em></label>
+        <input id="inp-b" type="number" min="0" step="any" placeholder="f.eks. 4"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="beregnSide()" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Hypotenusen <em>c</em></label>
+        <input id="inp-c" type="number" min="0" step="any" placeholder="f.eks. ?"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="beregnSide()" />
+      </div>
+    </div>
+
+    <div id="beregn-error" class="hidden text-red-600 text-sm mb-3 bg-red-50 border border-red-200 rounded-lg px-3 py-2"></div>
+
+    <div id="beregn-result" class="hidden result-box rounded-xl p-5 mb-6 fade-in">
+      <div id="beregn-svar" class="text-xl font-bold text-blue-800 mb-2"></div>
+      <div id="beregn-utregning" class="text-gray-700 text-sm leading-relaxed font-mono bg-white rounded-lg p-3 border border-blue-100"></div>
+    </div>
+
+    <div id="beregn-svg-container" class="hidden fade-in">
+      <h3 class="text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wide">Trekant tegnet til skala</h3>
+      <svg id="beregn-svg" class="svgfig" viewBox="0 0 320 260" width="320" height="260"></svg>
+    </div>
+
+    <button onclick="nullstillBeregn()" class="mt-4 text-sm text-gray-500 underline hover:text-red-500">Nullstill</button>
+  </section>
+
+  <!-- ======================== TAB 2: VISUELT BEVIS ======================== -->
+  <section id="panel-bevis" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-6 fade-in">
+    <h2 class="text-xl font-bold text-gray-800 mb-1">Visuelt bevis: arealer av kvadratene</h2>
+    <p class="text-gray-500 text-sm mb-5">
+      Tegn tre kvadrater på sidene i en rettvinklet trekant.
+      Arealet av de to små kvadratene (a² og b²) er alltid lik arealet av det store (c²).
+    </p>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Katet <em>a</em></label>
+        <input id="bevis-a" type="number" min="1" max="20" step="any" value="3"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="tegnBevis()" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Katet <em>b</em></label>
+        <input id="bevis-b" type="number" min="1" max="20" step="any" value="4"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="tegnBevis()" />
+      </div>
+    </div>
+
+    <div id="bevis-info" class="result-box rounded-xl p-4 mb-5 text-sm text-gray-700">
+    </div>
+
+    <svg id="bevis-svg" class="svgfig" viewBox="0 0 480 400" width="100%" style="max-width:480px;height:auto;"></svg>
+  </section>
+
+  <!-- ======================== TAB 3: AVSTAND ======================== -->
+  <section id="panel-avstand" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-6 fade-in">
+    <h2 class="text-xl font-bold text-gray-800 mb-1">Avstand mellom to punkter</h2>
+    <p class="text-gray-500 text-sm mb-5">
+      Distansen mellom P₁(x₁, y₁) og P₂(x₂, y₂) er hypotenusen i en rettvinklet trekant med kateter
+      Δx = |x₂ − x₁| og Δy = |y₂ − y₁|. Formel: <strong>d = √(Δx² + Δy²)</strong>
+    </p>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">x₁</label>
+        <input id="av-x1" type="number" step="any" value="1"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="beregnAvstand()" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">y₁</label>
+        <input id="av-y1" type="number" step="any" value="1"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="beregnAvstand()" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">x₂</label>
+        <input id="av-x2" type="number" step="any" value="5"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="beregnAvstand()" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">y₂</label>
+        <input id="av-y2" type="number" step="any" value="4"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="beregnAvstand()" />
+      </div>
+    </div>
+
+    <div id="avstand-result" class="result-box rounded-xl p-5 mb-6 fade-in">
+      <div id="avstand-svar" class="text-xl font-bold text-blue-800 mb-2"></div>
+      <div id="avstand-utregning" class="text-gray-700 text-sm leading-relaxed font-mono bg-white rounded-lg p-3 border border-blue-100"></div>
+    </div>
+
+    <h3 class="text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wide">Figur</h3>
+    <svg id="avstand-svg" class="svgfig" viewBox="0 0 340 300" width="340" height="300"></svg>
+  </section>
+
+  <!-- ======================== TAB 4: 3D ROMDIAGONAL ======================== -->
+  <section id="panel-3d" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-6 fade-in">
+    <h2 class="text-xl font-bold text-gray-800 mb-1">Romdiagonal i en kasse (3D)</h2>
+    <p class="text-gray-500 text-sm mb-5">
+      Gitt en rektangulær kasse med lengde <em>l</em>, bredde <em>b</em> og høyde <em>h</em>,
+      er romdiagonalen <strong>d = √(l² + b² + h²)</strong>.
+      <br>Beviset bruker Pytagoras to ganger: først grunnflaten, deretter høyden.
+    </p>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Lengde <em>l</em></label>
+        <input id="d3-l" type="number" min="0.1" step="any" value="4"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="beregn3D()" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Bredde <em>b</em></label>
+        <input id="d3-b" type="number" min="0.1" step="any" value="3"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="beregn3D()" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Høyde <em>h</em></label>
+        <input id="d3-h" type="number" min="0.1" step="any" value="2"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="beregn3D()" />
+      </div>
+    </div>
+
+    <div id="d3-result" class="result-box rounded-xl p-5 mb-6 fade-in">
+      <div id="d3-svar" class="text-xl font-bold text-blue-800 mb-2"></div>
+      <div id="d3-utregning" class="text-gray-700 text-sm leading-relaxed font-mono bg-white rounded-lg p-3 border border-blue-100"></div>
+    </div>
+
+    <h3 class="text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wide">Illustrasjon</h3>
+    <svg id="d3-svg" class="svgfig" viewBox="0 0 340 280" width="340" height="280"></svg>
+  </section>
+
+</main>
+
+<!-- Footer -->
+<footer class="border-t border-gray-200 bg-white text-center text-xs text-gray-400 py-4 px-4">
+  Pytagoras' setning · Halison App Studio-eksempel · Matematikk 1P/2P · LK20 ·
+  <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-blue-500" target="_blank">GitHub</a>
+</footer>
+
+<script>
+// ─────────────────────────────────────────────
+// Utility
+// ─────────────────────────────────────────────
+function fmt(n, decimaler) {
+  if (decimaler === undefined) decimaler = 4;
+  var s = parseFloat(n.toFixed(decimaler));
+  return s.toString();
+}
+
+function rund(n) {
+  // Display: up to 4 significant decimals, strip trailing zeros
+  return parseFloat(n.toPrecision(6)).toString();
+}
+
+// ─────────────────────────────────────────────
+// Tab navigation
+// ─────────────────────────────────────────────
+var TABS = ['beregn', 'bevis', 'avstand', '3d'];
+
+function showTab(id) {
+  TABS.forEach(function(t) {
+    var panel = document.getElementById('panel-' + t);
+    var btn   = document.getElementById('tab-' + t);
+    if (t === id) {
+      panel.classList.remove('hidden');
+      btn.classList.add('active');
+      btn.classList.remove('bg-white', 'text-gray-700', 'border-gray-300');
+      btn.classList.add('bg-blue-600', 'text-white', 'border-blue-300');
+    } else {
+      panel.classList.add('hidden');
+      btn.classList.remove('active');
+      btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-300');
+      btn.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
+    }
+  });
+  // Trigger renders on tab switch
+  if (id === 'bevis')    tegnBevis();
+  if (id === 'avstand')  beregnAvstand();
+  if (id === '3d')       beregn3D();
+}
+
+// ─────────────────────────────────────────────
+// TAB 1 – BEREGN SIDE
+// ─────────────────────────────────────────────
+function beregnSide() {
+  var va = document.getElementById('inp-a').value.trim();
+  var vb = document.getElementById('inp-b').value.trim();
+  var vc = document.getElementById('inp-c').value.trim();
+
+  var errDiv    = document.getElementById('beregn-error');
+  var resultDiv = document.getElementById('beregn-result');
+  var svgCont   = document.getElementById('beregn-svg-container');
+
+  errDiv.classList.add('hidden');
+  resultDiv.classList.add('hidden');
+  svgCont.classList.add('hidden');
+
+  var filled = [va, vb, vc].filter(function(v) { return v !== ''; });
+  if (filled.length < 2) return; // wait for more input
+
+  var a = va !== '' ? parseFloat(va) : NaN;
+  var b = vb !== '' ? parseFloat(vb) : NaN;
+  var c = vc !== '' ? parseFloat(vc) : NaN;
+
+  // Validate positives
+  var vals = [va !== '' ? a : 1, vb !== '' ? b : 1, vc !== '' ? c : 1];
+  for (var i = 0; i < vals.length; i++) {
+    if (vals[i] <= 0 || isNaN(vals[i])) {
+      showError('Alle sider må være positive tall.');
+      return;
+    }
+  }
+
+  var svar, utregning, aFin, bFin, cFin;
+
+  if (va === '' && vb !== '' && vc !== '') {
+    // a = √(c² - b²)
+    if (c <= b) {
+      showError('Hypotenusen c må være større enn kateten b (c > b).');
+      return;
+    }
+    aFin = Math.sqrt(c * c - b * b);
+    bFin = b; cFin = c;
+    svar = 'a = √(c² − b²) = √(' + rund(c*c) + ' − ' + rund(b*b) + ') = √' + rund(c*c - b*b) + ' ≈ ' + rund(aFin);
+    utregning = 'a² + b² = c²\na² = c² − b²\na² = ' + rund(c) + '² − ' + rund(b) + '²\na² = ' + rund(c*c) + ' − ' + rund(b*b) + '\na² = ' + rund(c*c - b*b) + '\na  = √' + rund(c*c - b*b) + '\na  ≈ ' + rund(aFin);
+  } else if (vb === '' && va !== '' && vc !== '') {
+    // b = √(c² - a²)
+    if (c <= a) {
+      showError('Hypotenusen c må være større enn kateten a (c > a).');
+      return;
+    }
+    bFin = Math.sqrt(c * c - a * a);
+    aFin = a; cFin = c;
+    svar = 'b = √(c² − a²) = √(' + rund(c*c) + ' − ' + rund(a*a) + ') = √' + rund(c*c - a*a) + ' ≈ ' + rund(bFin);
+    utregning = 'a² + b² = c²\nb² = c² − a²\nb² = ' + rund(c) + '² − ' + rund(a) + '²\nb² = ' + rund(c*c) + ' − ' + rund(a*a) + '\nb² = ' + rund(c*c - a*a) + '\nb  = √' + rund(c*c - a*a) + '\nb  ≈ ' + rund(bFin);
+  } else if (vc === '' && va !== '' && vb !== '') {
+    // c = √(a² + b²)
+    cFin = Math.sqrt(a * a + b * b);
+    aFin = a; bFin = b;
+    svar = 'c = √(a² + b²) = √(' + rund(a*a) + ' + ' + rund(b*b) + ') = √' + rund(a*a + b*b) + ' ≈ ' + rund(cFin);
+    utregning = 'a² + b² = c²\nc² = a² + b²\nc² = ' + rund(a) + '² + ' + rund(b) + '²\nc² = ' + rund(a*a) + ' + ' + rund(b*b) + '\nc² = ' + rund(a*a + b*b) + '\nc  = √' + rund(a*a + b*b) + '\nc  ≈ ' + rund(cFin);
+  } else if (va !== '' && vb !== '' && vc !== '') {
+    // All three filled — verify
+    var diff = Math.abs(a*a + b*b - c*c);
+    var relErr = diff / (c*c);
+    if (relErr < 1e-9) {
+      showOK('✓ Disse tre sidene passer perfekt med Pytagoras: ' + rund(a) + '² + ' + rund(b) + '² = ' + rund(c) + '²', '');
+    } else {
+      showError('Disse tre sidene danner IKKE en rettvinklet trekant. Sjekk: a² + b² = ' + rund(a*a + b*b) + ', men c² = ' + rund(c*c) + '.');
+    }
+    return;
+  } else {
+    return;
+  }
+
+  // Show result
+  resultDiv.classList.remove('hidden');
+  document.getElementById('beregn-svar').textContent = svar;
+  document.getElementById('beregn-utregning').textContent = utregning;
+
+  // Draw triangle
+  svgCont.classList.remove('hidden');
+  tegnBeregnTrekant(aFin, bFin, cFin);
+}
+
+function showError(msg) {
+  var errDiv = document.getElementById('beregn-error');
+  errDiv.textContent = msg;
+  errDiv.classList.remove('hidden');
+}
+
+function showOK(title, body) {
+  var resultDiv = document.getElementById('beregn-result');
+  resultDiv.classList.remove('hidden');
+  document.getElementById('beregn-svar').textContent = title;
+  document.getElementById('beregn-utregning').textContent = body;
+}
+
+function nullstillBeregn() {
+  ['inp-a', 'inp-b', 'inp-c'].forEach(function(id) {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('beregn-error').classList.add('hidden');
+  document.getElementById('beregn-result').classList.add('hidden');
+  document.getElementById('beregn-svg-container').classList.add('hidden');
+}
+
+function tegnBeregnTrekant(a, b, c) {
+  var svg = document.getElementById('beregn-svg');
+  var W = 320, H = 260;
+  var pad = 40;
+
+  // Scale so triangle fits
+  var scale = Math.min((W - 2*pad) / b, (H - 2*pad) / a);
+  var sw = b * scale;
+  var sh = a * scale;
+
+  // Anchor: right angle at bottom-left
+  var ox = (W - sw) / 2;
+  var oy = (H + sh) / 2;
+
+  // Points: right angle at (ox, oy), along x-axis for b, up y-axis for a
+  var P = { x: ox,      y: oy      }; // right angle
+  var Q = { x: ox + sw, y: oy      }; // end of b
+  var R = { x: ox,      y: oy - sh }; // end of a
+
+  // Midpoints for labels
+  var midA = { x: (R.x + P.x)/2 - 18, y: (R.y + P.y)/2 };
+  var midB = { x: (P.x + Q.x)/2,      y: (P.y + Q.y)/2 + 18 };
+  var midC = { x: (R.x + Q.x)/2 + 14, y: (R.y + Q.y)/2 };
+
+  var html = '';
+  // Triangle fill
+  html += '<polygon points="' + P.x + ',' + P.y + ' ' + Q.x + ',' + Q.y + ' ' + R.x + ',' + R.y + '" fill="#dbeafe" stroke="#2563eb" stroke-width="2.5"/>';
+  // Right angle marker
+  var ms = 12;
+  html += '<polyline points="' + (P.x+ms) + ',' + P.y + ' ' + (P.x+ms) + ',' + (P.y-ms) + ' ' + P.x + ',' + (P.y-ms) + '" fill="none" stroke="#1d4ed8" stroke-width="1.5"/>';
+  // Labels
+  html += '<text x="' + midA.x + '" y="' + midA.y + '" text-anchor="middle" font-size="15" fill="#1d4ed8" font-weight="bold">a = ' + rund(a) + '</text>';
+  html += '<text x="' + midB.x + '" y="' + midB.y + '" text-anchor="middle" font-size="15" fill="#1d4ed8" font-weight="bold">b = ' + rund(b) + '</text>';
+  html += '<text x="' + midC.x + '" y="' + midC.y + '" text-anchor="middle" font-size="15" fill="#7c3aed" font-weight="bold">c = ' + rund(c) + '</text>';
+  // Vertex labels
+  html += '<text x="' + (P.x - 8) + '" y="' + (P.y + 16) + '" font-size="13" fill="#374151">C</text>';
+  html += '<text x="' + (Q.x + 4) + '" y="' + (Q.y + 16) + '" font-size="13" fill="#374151">B</text>';
+  html += '<text x="' + (R.x - 14) + '" y="' + (R.y - 4) + '" font-size="13" fill="#374151">A</text>';
+
+  svg.innerHTML = html;
+}
+
+// ─────────────────────────────────────────────
+// TAB 2 – VISUELT BEVIS
+// ─────────────────────────────────────────────
+function tegnBevis() {
+  var aVal = parseFloat(document.getElementById('bevis-a').value);
+  var bVal = parseFloat(document.getElementById('bevis-b').value);
+
+  var infoDiv = document.getElementById('bevis-info');
+
+  if (isNaN(aVal) || isNaN(bVal) || aVal <= 0 || bVal <= 0) {
+    infoDiv.innerHTML = '<span class="text-red-600">Skriv inn positive verdier for a og b.</span>';
+    return;
+  }
+
+  var cVal = Math.sqrt(aVal * aVal + bVal * bVal);
+  var a2   = aVal * aVal;
+  var b2   = bVal * bVal;
+  var c2   = cVal * cVal;
+
+  infoDiv.innerHTML =
+    '<strong>a² = ' + rund(aVal) + '² = ' + rund(a2) + '</strong>&nbsp;&nbsp;' +
+    '<strong>b² = ' + rund(bVal) + '² = ' + rund(b2) + '</strong>&nbsp;&nbsp;' +
+    '<strong>c² = ' + rund(cVal) + '² ≈ ' + rund(c2) + '</strong><br>' +
+    '<span class="text-blue-700 font-semibold mt-1 inline-block">a² + b² = ' + rund(a2) + ' + ' + rund(b2) + ' = ' + rund(a2 + b2) + ' = c² ✓</span>';
+
+  var svg = document.getElementById('bevis-svg');
+  var W = 480, H = 400;
+
+  // Scale everything so the figure fits nicely
+  var maxSide = Math.max(aVal, bVal, cVal);
+  // We want the drawing area to be about W×H with margins
+  var scale = Math.min(110 / maxSide, 12); // rough cap
+
+  var sa = aVal * scale;
+  var sb = bVal * scale;
+  var sc = cVal * scale;
+
+  // Right angle at origin; place the triangle centrally
+  // Triangle: P (right angle), Q (along x by sb), R (along y by sa) — measured from bottom-left
+  // Center the whole scene
+  var sceneW = sb + sc + sa + 60; // rough estimate
+  var sceneH = sa + sc + 40;
+  var scaleF = Math.min((W - 40) / sceneW, (H - 40) / sceneH);
+  sa *= scaleF; sb *= scaleF; sc *= scaleF;
+  scale *= scaleF;
+
+  // triangle anchor: right angle vertex
+  var ox = 30 + sc * Math.cos(Math.PI - Math.atan2(aVal, bVal)) + sa;
+  // Simpler: place triangle with right-angle corner at (px, py)
+  var px = 30 + sc + 10;
+  var py = 30 + sc + 10;
+
+  // Triangle vertices
+  var P = { x: px,      y: py      }; // right angle
+  var Q = { x: px + sb, y: py      }; // along b
+  var R = { x: px,      y: py - sa }; // along a
+
+  // Angle of hypotenuse: from Q to R
+  var angle = Math.atan2(R.y - Q.y, R.x - Q.x); // direction Q→R
+  // unit vectors perpendicular to hypotenuse (outward from triangle)
+  var perpX = Math.sin(angle);  // rotated 90° clockwise outward
+  var perpY = -Math.cos(angle);
+
+  // Square on a (left side, P to R)
+  // a goes upward: P→R is (0, -sa)
+  // square outward to the left
+  var Sqa = [
+    P,
+    R,
+    { x: R.x - sa, y: R.y },     // R moved left by sa
+    { x: P.x - sa, y: P.y }      // P moved left by sa
+  ];
+
+  // Square on b (bottom, P to Q)
+  // b goes right: P→Q is (sb, 0)
+  // square outward downward
+  var Sqb = [
+    P,
+    Q,
+    { x: Q.x, y: Q.y + sb },
+    { x: P.x, y: P.y + sb }
+  ];
+
+  // Square on c (hypotenuse Q to R, outward)
+  // vector Q→R
+  var qrX = R.x - Q.x, qrY = R.y - Q.y;
+  // perpendicular outward (away from triangle, i.e. rotated CCW)
+  var pX = -qrY, pY = qrX; // rotate 90° CCW (into the "outside")
+  // Check: inside point is P; we want perpendicular pointing away from P
+  // Midpoint of QR:
+  var mQR = { x: (Q.x + R.x)/2, y: (Q.y + R.y)/2 };
+  // dot product of perp with (mQR → P): if positive, we need to flip
+  var dotCheck = (P.x - mQR.x) * pX + (P.y - mQR.y) * pY;
+  if (dotCheck > 0) { pX = -pX; pY = -pY; }
+
+  var Sqc = [
+    Q,
+    R,
+    { x: R.x + pX, y: R.y + pY },
+    { x: Q.x + pX, y: Q.y + pY }
+  ];
+
+  function pts(arr) {
+    return arr.map(function(p) { return p.x + ',' + p.y; }).join(' ');
+  }
+  function midOf(arr) {
+    var mx = arr.reduce(function(s,p){return s+p.x;},0)/arr.length;
+    var my = arr.reduce(function(s,p){return s+p.y;},0)/arr.length;
+    return {x: mx, y: my};
+  }
+
+  var html = '';
+
+  // Squares
+  html += '<polygon points="' + pts(Sqa) + '" fill="#bfdbfe" stroke="#2563eb" stroke-width="2" class="proof-square"/>';
+  html += '<polygon points="' + pts(Sqb) + '" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" class="proof-square"/>';
+  html += '<polygon points="' + pts(Sqc) + '" fill="#fde68a" stroke="#d97706" stroke-width="2" class="proof-square"/>';
+
+  // Triangle
+  html += '<polygon points="' + P.x + ',' + P.y + ' ' + Q.x + ',' + Q.y + ' ' + R.x + ',' + R.y + '" fill="#e0e7ff" stroke="#4338ca" stroke-width="2.5"/>';
+
+  // Right angle marker
+  var ms = Math.min(sa, sb, 10);
+  html += '<polyline points="' + (P.x+ms) + ',' + P.y + ' ' + (P.x+ms) + ',' + (P.y-ms) + ' ' + P.x + ',' + (P.y-ms) + '" fill="none" stroke="#374151" stroke-width="1.5"/>';
+
+  // Area labels
+  var ma = midOf(Sqa);
+  var mb = midOf(Sqb);
+  var mc = midOf(Sqc);
+
+  html += '<text x="' + ma.x + '" y="' + (ma.y+6) + '" text-anchor="middle" font-size="13" fill="#1d4ed8" font-weight="bold">a² = ' + rund(a2) + '</text>';
+  html += '<text x="' + mb.x + '" y="' + (mb.y+6) + '" text-anchor="middle" font-size="13" fill="#15803d" font-weight="bold">b² = ' + rund(b2) + '</text>';
+  html += '<text x="' + mc.x + '" y="' + (mc.y+6) + '" text-anchor="middle" font-size="13" fill="#92400e" font-weight="bold">c² ≈ ' + rund(c2) + '</text>';
+
+  // Side labels inside triangle
+  var midA2 = { x: (R.x + P.x)/2 + 10, y: (R.y + P.y)/2 };
+  var midB2 = { x: (P.x + Q.x)/2,      y: (P.y + Q.y)/2 + 14 };
+  var midC2 = { x: (R.x + Q.x)/2 + 6,  y: (R.y + Q.y)/2 };
+
+  html += '<text x="' + midA2.x + '" y="' + midA2.y + '" text-anchor="middle" font-size="12" fill="#1d4ed8">a=' + rund(aVal) + '</text>';
+  html += '<text x="' + midB2.x + '" y="' + midB2.y + '" text-anchor="middle" font-size="12" fill="#15803d">b=' + rund(bVal) + '</text>';
+  html += '<text x="' + midC2.x + '" y="' + midC2.y + '" text-anchor="middle" font-size="12" fill="#92400e">c≈' + rund(cVal) + '</text>';
+
+  svg.innerHTML = html;
+}
+
+// ─────────────────────────────────────────────
+// TAB 3 – AVSTAND MELLOM TO PUNKTER
+// ─────────────────────────────────────────────
+function beregnAvstand() {
+  var x1 = parseFloat(document.getElementById('av-x1').value);
+  var y1 = parseFloat(document.getElementById('av-y1').value);
+  var x2 = parseFloat(document.getElementById('av-x2').value);
+  var y2 = parseFloat(document.getElementById('av-y2').value);
+
+  var svarDiv = document.getElementById('avstand-svar');
+  var utrDiv  = document.getElementById('avstand-utregning');
+
+  if ([x1,y1,x2,y2].some(isNaN)) {
+    svarDiv.textContent = 'Skriv inn gyldige koordinater.';
+    utrDiv.textContent  = '';
+    tegnAvstand(0, 0, 1, 1, false);
+    return;
+  }
+
+  var dx   = x2 - x1;
+  var dy   = y2 - y1;
+  var dx2  = dx * dx;
+  var dy2  = dy * dy;
+  var d    = Math.sqrt(dx2 + dy2);
+
+  svarDiv.textContent = 'd = √(Δx² + Δy²) = √(' + rund(dx2) + ' + ' + rund(dy2) + ') ≈ ' + rund(d);
+  utrDiv.textContent  =
+    'P₁ = (' + rund(x1) + ', ' + rund(y1) + '),  P₂ = (' + rund(x2) + ', ' + rund(y2) + ')\n' +
+    'Δx = x₂ − x₁ = ' + rund(x2) + ' − ' + rund(x1) + ' = ' + rund(dx) + '\n' +
+    'Δy = y₂ − y₁ = ' + rund(y2) + ' − ' + rund(y1) + ' = ' + rund(dy) + '\n' +
+    'd  = √(Δx² + Δy²)\n' +
+    'd  = √(' + rund(dx) + '² + ' + rund(dy) + '²)\n' +
+    'd  = √(' + rund(dx2) + ' + ' + rund(dy2) + ')\n' +
+    'd  = √' + rund(dx2 + dy2) + '\n' +
+    'd  ≈ ' + rund(d);
+
+  tegnAvstand(x1, y1, x2, y2, true);
+}
+
+function tegnAvstand(x1, y1, x2, y2, valid) {
+  var svg = document.getElementById('avstand-svg');
+  var W = 340, H = 300;
+
+  if (!valid) { svg.innerHTML = ''; return; }
+
+  // Map world coords to SVG
+  var pad = 50;
+  var allX = [x1, x2];
+  var allY = [y1, y2];
+  var minX = Math.min.apply(null, allX) - 1;
+  var maxX = Math.max.apply(null, allX) + 1;
+  var minY = Math.min.apply(null, allY) - 1;
+  var maxY = Math.max.apply(null, allY) + 1;
+
+  // Keep aspect ratio reasonable
+  var rangeX = maxX - minX || 2;
+  var rangeY = maxY - minY || 2;
+
+  // Force equal aspect ratio
+  var aspect = rangeX / rangeY;
+  var drawW = W - 2*pad;
+  var drawH = H - 2*pad;
+
+  var scaleX, scaleY;
+  if (drawW / drawH > aspect) {
+    scaleY = drawH / rangeY;
+    scaleX = scaleY;
+  } else {
+    scaleX = drawW / rangeX;
+    scaleY = scaleX;
+  }
+
+  function toSvgX(wx) { return pad + (wx - minX) * scaleX; }
+  function toSvgY(wy) { return H - pad - (wy - minY) * scaleY; }
+
+  var sx1 = toSvgX(x1), sy1 = toSvgY(y1);
+  var sx2 = toSvgX(x2), sy2 = toSvgY(y2);
+  var sc  = toSvgX(x2); // corner of right angle
+  var scY = toSvgY(y1);
+
+  // Axis zero lines (if in range)
+  var html = '';
+  if (minX <= 0 && maxX >= 0) {
+    var ax0 = toSvgX(0);
+    html += '<line x1="' + ax0 + '" y1="' + (pad-10) + '" x2="' + ax0 + '" y2="' + (H-pad+10) + '" stroke="#d1d5db" stroke-width="1" stroke-dasharray="4,3"/>';
+  }
+  if (minY <= 0 && maxY >= 0) {
+    var ay0 = toSvgY(0);
+    html += '<line x1="' + (pad-10) + '" y1="' + ay0 + '" x2="' + (W-pad+10) + '" y2="' + ay0 + '" stroke="#d1d5db" stroke-width="1" stroke-dasharray="4,3"/>';
+  }
+
+  // Δx and Δy dashed lines (the two legs)
+  html += '<line x1="' + sx1 + '" y1="' + sy1 + '" x2="' + sc + '" y2="' + scY + '" stroke="#16a34a" stroke-width="2" stroke-dasharray="6,3"/>';
+  html += '<line x1="' + sc  + '" y1="' + scY + '" x2="' + sx2 + '" y2="' + sy2 + '" stroke="#9333ea" stroke-width="2" stroke-dasharray="6,3"/>';
+
+  // Hypotenuse (the distance d)
+  html += '<line x1="' + sx1 + '" y1="' + sy1 + '" x2="' + sx2 + '" y2="' + sy2 + '" stroke="#dc2626" stroke-width="2.5"/>';
+
+  // Right-angle marker at corner
+  var ms = 8;
+  var cornerX = sc, cornerY = scY;
+  var sign_dx = (sx2 > sx1) ? -1 : 1;
+  var sign_dy = (sy2 < sy1) ? 1 : -1; // SVG y is inverted
+  if (Math.abs(x2 - x1) > 1e-9 && Math.abs(y2 - y1) > 1e-9) {
+    var dxDir = sx1 < sx2 ? ms : -ms;
+    var dyDir = sy1 > sy2 ? ms : -ms;
+    html += '<polyline points="' +
+      (cornerX + dxDir) + ',' + cornerY + ' ' +
+      (cornerX + dxDir) + ',' + (cornerY - dyDir) + ' ' +
+      cornerX + ',' + (cornerY - dyDir) + '" fill="none" stroke="#374151" stroke-width="1.5"/>';
+  }
+
+  // Points
+  html += '<circle cx="' + sx1 + '" cy="' + sy1 + '" r="5" fill="#2563eb"/>';
+  html += '<circle cx="' + sx2 + '" cy="' + sy2 + '" r="5" fill="#2563eb"/>';
+
+  // Point labels
+  var loff = 10;
+  html += '<text x="' + (sx1 - loff) + '" y="' + (sy1 - loff) + '" font-size="13" fill="#1e40af" font-weight="bold">P₁(' + rund(x1) + ', ' + rund(y1) + ')</text>';
+  html += '<text x="' + (sx2 + 4)    + '" y="' + (sy2 - loff) + '" font-size="13" fill="#1e40af" font-weight="bold">P₂(' + rund(x2) + ', ' + rund(y2) + ')</text>';
+
+  // Δx label
+  var dx = x2 - x1, dy = y2 - y1;
+  var midDxSvgX = (sx1 + sc) / 2;
+  var midDxSvgY = scY + 16;
+  html += '<text x="' + midDxSvgX + '" y="' + midDxSvgY + '" text-anchor="middle" font-size="12" fill="#15803d" font-weight="bold">Δx = ' + rund(dx) + '</text>';
+
+  // Δy label
+  var midDySvgX = sc + 16;
+  var midDySvgY = (scY + sy2) / 2;
+  html += '<text x="' + midDySvgX + '" y="' + midDySvgY + '" text-anchor="middle" font-size="12" fill="#7e22ce" font-weight="bold">Δy = ' + rund(dy) + '</text>';
+
+  // d label along hypotenuse
+  var midHX = (sx1 + sx2) / 2 - 12;
+  var midHY = (sy1 + sy2) / 2 - 8;
+  var d = Math.sqrt(dx*dx + dy*dy);
+  html += '<text x="' + midHX + '" y="' + midHY + '" text-anchor="middle" font-size="12" fill="#b91c1c" font-weight="bold">d ≈ ' + rund(d) + '</text>';
+
+  svg.innerHTML = html;
+}
+
+// ─────────────────────────────────────────────
+// TAB 4 – 3D ROMDIAGONAL
+// ─────────────────────────────────────────────
+function beregn3D() {
+  var l = parseFloat(document.getElementById('d3-l').value);
+  var b = parseFloat(document.getElementById('d3-b').value);
+  var h = parseFloat(document.getElementById('d3-h').value);
+
+  var svarDiv = document.getElementById('d3-svar');
+  var utrDiv  = document.getElementById('d3-utregning');
+
+  if ([l,b,h].some(function(v){return isNaN(v)||v<=0;})) {
+    svarDiv.textContent = 'Skriv inn positive verdier for l, b og h.';
+    utrDiv.textContent  = '';
+    document.getElementById('d3-svg').innerHTML = '';
+    return;
+  }
+
+  // Step 1: diagonal of base = √(l² + b²)
+  var d_base = Math.sqrt(l*l + b*b);
+  // Step 2: space diagonal = √(d_base² + h²) = √(l² + b² + h²)
+  var d_space = Math.sqrt(l*l + b*b + h*h);
+
+  svarDiv.textContent = 'd = √(l² + b² + h²) = √(' + rund(l*l) + ' + ' + rund(b*b) + ' + ' + rund(h*h) + ') ≈ ' + rund(d_space);
+  utrDiv.textContent  =
+    'Steg 1 — diagonal i grunnflaten:\n' +
+    '  d₁ = √(l² + b²) = √(' + rund(l) + '² + ' + rund(b) + '²) = √(' + rund(l*l) + ' + ' + rund(b*b) + ') = √' + rund(l*l+b*b) + ' ≈ ' + rund(d_base) + '\n\n' +
+    'Steg 2 — romdiagonal (d₁ er katet, h er katet):\n' +
+    '  d = √(d₁² + h²) = √(' + rund(d_base) + '² + ' + rund(h) + '²)\n' +
+    '    = √(' + rund(d_base*d_base) + ' + ' + rund(h*h) + ')\n' +
+    '    = √' + rund(d_space*d_space) + '\n' +
+    '    ≈ ' + rund(d_space) + '\n\n' +
+    'Alternativt direkte:\n' +
+    '  d = √(l² + b² + h²) = √(' + rund(l*l) + ' + ' + rund(b*b) + ' + ' + rund(h*h) + ') ≈ ' + rund(d_space);
+
+  tegn3D(l, b, h, d_base, d_space);
+}
+
+function tegn3D(l, b, h, d_base, d_space) {
+  var svg = document.getElementById('d3-svg');
+  var W = 340, H = 280;
+
+  // Isometric-style box projection
+  var maxD = Math.max(l, b, h);
+  var scale = Math.min(80 / maxD, 12);
+  var sl = l * scale;
+  var sb = b * scale;
+  var sh = h * scale;
+
+  // Isometric angles
+  var cosA = Math.cos(Math.PI * 30 / 180);
+  var sinA = Math.sin(Math.PI * 30 / 180);
+
+  // Base origin (front-bottom-left corner in SVG space)
+  var ox = W / 2 - (sl * cosA) / 2;
+  var oy = H * 0.65;
+
+  // 8 corners of the box in isometric projection
+  // x-axis goes right-down (for l), z-axis goes left-down (for b), y-axis goes up (for h)
+  function iso(lc, bc, hc) {
+    return {
+      x: ox + lc * sl * cosA - bc * sb * cosA,
+      y: oy - hc * sh + lc * sl * sinA + bc * sb * sinA
+    };
+  }
+
+  var A = iso(0,0,0); // front-bottom-left
+  var B = iso(1,0,0); // front-bottom-right (along l)
+  var C = iso(1,1,0); // back-bottom-right
+  var D = iso(0,1,0); // back-bottom-left
+  var E = iso(0,0,1); // front-top-left
+  var F = iso(1,0,1); // front-top-right
+  var G = iso(1,1,1); // back-top-right (far corner)
+  var Hi= iso(0,1,1); // back-top-left
+
+  function pt(p) { return p.x.toFixed(1) + ',' + p.y.toFixed(1); }
+
+  var html = '';
+  // Hidden edges (dashed)
+  html += '<line x1="' + pt(A).split(',')[0] + '" y1="' + A.y.toFixed(1) + '" x2="' + D.x.toFixed(1) + '" y2="' + D.y.toFixed(1) + '" stroke="#9ca3af" stroke-width="1.2" stroke-dasharray="4,3"/>';
+  html += '<line x1="' + D.x.toFixed(1) + '" y1="' + D.y.toFixed(1) + '" x2="' + Hi.x.toFixed(1) + '" y2="' + Hi.y.toFixed(1) + '" stroke="#9ca3af" stroke-width="1.2" stroke-dasharray="4,3"/>';
+  html += '<line x1="' + D.x.toFixed(1) + '" y1="' + D.y.toFixed(1) + '" x2="' + C.x.toFixed(1) + '" y2="' + C.y.toFixed(1) + '" stroke="#9ca3af" stroke-width="1.2" stroke-dasharray="4,3"/>';
+
+  // Faces
+  // Bottom
+  html += '<polygon points="' + pt(A) + ' ' + pt(B) + ' ' + pt(C) + ' ' + pt(D) + '" fill="#e0e7ff" stroke="#4338ca" stroke-width="1.5"/>';
+  // Front face
+  html += '<polygon points="' + pt(A) + ' ' + pt(B) + ' ' + pt(F) + ' ' + pt(E) + '" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>';
+  // Right face
+  html += '<polygon points="' + pt(B) + ' ' + pt(C) + ' ' + pt(G) + ' ' + pt(F) + '" fill="#ede9fe" stroke="#6d28d9" stroke-width="1.5"/>';
+  // Top face
+  html += '<polygon points="' + pt(E) + ' ' + pt(F) + ' ' + pt(G) + ' ' + pt(Hi) + '" fill="#ecfdf5" stroke="#059669" stroke-width="1.5"/>';
+
+  // Base diagonal (A to C)
+  html += '<line x1="' + A.x.toFixed(1) + '" y1="' + A.y.toFixed(1) + '" x2="' + C.x.toFixed(1) + '" y2="' + C.y.toFixed(1) + '" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,3"/>';
+
+  // Space diagonal (A to G) — main feature
+  html += '<line x1="' + A.x.toFixed(1) + '" y1="' + A.y.toFixed(1) + '" x2="' + G.x.toFixed(1) + '" y2="' + G.y.toFixed(1) + '" stroke="#dc2626" stroke-width="2.5"/>';
+
+  // Remaining visible edges
+  html += '<line x1="' + E.x.toFixed(1) + '" y1="' + E.y.toFixed(1) + '" x2="' + Hi.x.toFixed(1) + '" y2="' + Hi.y.toFixed(1) + '" stroke="#2563eb" stroke-width="1.5"/>';
+  html += '<line x1="' + Hi.x.toFixed(1) + '" y1="' + Hi.y.toFixed(1) + '" x2="' + G.x.toFixed(1) + '" y2="' + G.y.toFixed(1) + '" stroke="#2563eb" stroke-width="1.5"/>';
+  html += '<line x1="' + C.x.toFixed(1) + '" y1="' + C.y.toFixed(1) + '" x2="' + G.x.toFixed(1) + '" y2="' + G.y.toFixed(1) + '" stroke="#2563eb" stroke-width="1.5"/>';
+
+  // Dots at corners
+  html += '<circle cx="' + A.x.toFixed(1) + '" cy="' + A.y.toFixed(1) + '" r="3" fill="#2563eb"/>';
+  html += '<circle cx="' + G.x.toFixed(1) + '" cy="' + G.y.toFixed(1) + '" r="3" fill="#dc2626"/>';
+  html += '<circle cx="' + C.x.toFixed(1) + '" cy="' + C.y.toFixed(1) + '" r="3" fill="#f59e0b"/>';
+
+  // Labels on edges
+  var midAB = { x: (A.x+B.x)/2, y: (A.y+B.y)/2 + 14 };
+  var midAD = { x: (A.x+D.x)/2 - 20, y: (A.y+D.y)/2 + 6 };
+  var midAE = { x: A.x - 20, y: (A.y+E.y)/2 };
+  html += '<text x="' + midAB.x.toFixed(0) + '" y="' + midAB.y.toFixed(0) + '" text-anchor="middle" font-size="12" fill="#1d4ed8">l=' + rund(l) + '</text>';
+  html += '<text x="' + midAD.x.toFixed(0) + '" y="' + midAD.y.toFixed(0) + '" text-anchor="middle" font-size="12" fill="#6d28d9">b=' + rund(b) + '</text>';
+  html += '<text x="' + midAE.x.toFixed(0) + '" y="' + midAE.y.toFixed(0) + '" text-anchor="middle" font-size="12" fill="#065f46">h=' + rund(h) + '</text>';
+
+  // Space diagonal label
+  var midAG = { x: (A.x+G.x)/2 + 8, y: (A.y+G.y)/2 - 8 };
+  html += '<text x="' + midAG.x.toFixed(0) + '" y="' + midAG.y.toFixed(0) + '" text-anchor="middle" font-size="12" fill="#b91c1c" font-weight="bold">d≈' + rund(d_space) + '</text>';
+
+  // Base diagonal label
+  var midAC = { x: (A.x+C.x)/2, y: (A.y+C.y)/2 + 14 };
+  html += '<text x="' + midAC.x.toFixed(0) + '" y="' + midAC.y.toFixed(0) + '" text-anchor="middle" font-size="11" fill="#b45309">d₁≈' + rund(d_base) + '</text>';
+
+  svg.innerHTML = html;
+}
+
+// ─────────────────────────────────────────────
+// Init on load
+// ─────────────────────────────────────────────
+window.addEventListener('load', function() {
+  // Pre-fill the beregn tab for a 3-4-5 triangle demonstration
+  document.getElementById('inp-a').value = '3';
+  document.getElementById('inp-b').value = '4';
+  beregnSide();
+
+  // Init other tabs silently (so they render when visited)
+  tegnBevis();
+  beregnAvstand();
+  beregn3D();
+});
+</script>
+</body>
+</html>

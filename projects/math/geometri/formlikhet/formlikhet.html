@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<!--
+  Formlikhet og kongruens — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for geometri (matematikk 1P/2P, LK20): formlike og
+  kongruente figurer, skaleringsfaktor, og hvordan areal og volum skalerer.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Formlikhet og kongruens – Matematikk 1P/2P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; }
+    .tab-btn { transition: background 0.15s, color 0.15s; }
+    .tab-btn.active { background: #1d4ed8; color: #fff; }
+    .tab-btn:not(.active) { background: #e0e7ff; color: #1d4ed8; }
+    .step-box { border-left: 4px solid #3b82f6; background: #eff6ff; padding: 10px 16px; border-radius: 6px; margin: 8px 0; }
+    .formula-box { background: #fef9c3; border: 1px solid #fbbf24; border-radius: 8px; padding: 10px 16px; font-size: 1.05em; }
+    .highlight { color: #1d4ed8; font-weight: bold; }
+    .warn-box { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 8px 14px; }
+    input[type=range] { accent-color: #3b82f6; }
+    input[type=number] { border: 1.5px solid #93c5fd; border-radius: 6px; padding: 4px 8px; width: 80px; font-size: 1em; }
+    select { border: 1.5px solid #93c5fd; border-radius: 6px; padding: 4px 8px; font-size: 1em; }
+    .svg-container { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; justify-content: center; }
+    .kongruent-badge { background: #d1fae5; color: #065f46; border: 1.5px solid #6ee7b7; border-radius: 999px; padding: 2px 12px; font-size: 0.92em; font-weight: bold; display: inline-block; }
+    .formlik-badge { background: #dbeafe; color: #1e3a8a; border: 1.5px solid #93c5fd; border-radius: 999px; padding: 2px 12px; font-size: 0.92em; font-weight: bold; display: inline-block; }
+  </style>
+</head>
+<body class="bg-blue-50 min-h-screen">
+
+<div class="max-w-3xl mx-auto px-3 py-6">
+
+  <!-- Header -->
+  <div class="bg-white rounded-2xl shadow p-5 mb-5">
+    <div class="flex items-center gap-3 mb-1">
+      <span class="text-3xl">📐</span>
+      <div>
+        <h1 class="text-2xl font-bold text-blue-800">Formlikhet og kongruens</h1>
+        <div class="text-sm text-gray-500">Matematikk 1P/2P · LK20 · Geometri</div>
+      </div>
+    </div>
+    <p class="text-gray-700 mt-2 text-sm">
+      Utforsk formlike og kongruente figurer interaktivt. Juster skaleringsfaktoren, finn manglende sider, og se hvordan areal og volum skalerer.
+    </p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-2 mb-4 flex-wrap">
+    <button class="tab-btn active rounded-lg px-4 py-2 font-semibold text-sm" onclick="showTab('teori')">Teori</button>
+    <button class="tab-btn rounded-lg px-4 py-2 font-semibold text-sm" onclick="showTab('trekant')">Trekanter</button>
+    <button class="tab-btn rounded-lg px-4 py-2 font-semibold text-sm" onclick="showTab('rektangel')">Rektangler</button>
+    <button class="tab-btn rounded-lg px-4 py-2 font-semibold text-sm" onclick="showTab('areal')">Areal &amp; volum</button>
+  </div>
+
+  <!-- ── TAB: TEORI ── -->
+  <div id="tab-teori" class="tab-content">
+    <div class="bg-white rounded-2xl shadow p-5 mb-4">
+      <h2 class="text-xl font-bold text-blue-700 mb-3">Hva er kongruente figurer?</h2>
+      <p class="text-gray-700 mb-3">
+        To figurer er <strong>kongruente</strong> dersom de har nøyaktig samme form <em>og</em> størrelse.
+        Den ene kan roteres, speiles eller forskyves slik at den passer perfekt oppå den andre.
+      </p>
+      <div class="formula-box mb-3">
+        Kongruente figurer: <span class="highlight">alle tilsvarende sider like lange</span> og <span class="highlight">alle tilsvarende vinkler like store</span>.
+      </div>
+      <div class="flex gap-4 justify-center my-4">
+        <svg width="110" height="100" viewBox="0 0 110 100" aria-label="Kongruente trekanter">
+          <polygon points="10,90 55,10 100,90" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+          <text x="55" y="104" text-anchor="middle" font-size="12" fill="#1e40af">△ABC</text>
+        </svg>
+        <div class="flex items-center text-2xl text-green-600 font-bold">≅</div>
+        <svg width="110" height="100" viewBox="0 0 110 100" aria-label="Kongruente trekanter">
+          <polygon points="10,90 55,10 100,90" fill="#d1fae5" stroke="#10b981" stroke-width="2"/>
+          <text x="55" y="104" text-anchor="middle" font-size="12" fill="#065f46">△DEF</text>
+        </svg>
+      </div>
+      <span class="kongruent-badge">△ABC ≅ △DEF</span>
+
+      <h2 class="text-xl font-bold text-blue-700 mt-6 mb-3">Hva er formlike figurer?</h2>
+      <p class="text-gray-700 mb-3">
+        To figurer er <strong>formlike</strong> dersom de har samme form, men kan ha ulik størrelse.
+        Tilsvarende vinkler er like, og tilsvarende sider er <em>proporsjonale</em> – de har samme <strong>formlikhetsforhold</strong> (skaleringsfaktor <em>k</em>).
+      </p>
+      <div class="formula-box mb-3">
+        <div>Formlikhetsforhold: <span class="highlight">k = a' / a = b' / b = c' / c</span></div>
+        <div class="mt-1 text-sm text-gray-600">der a, b, c er sider i den lille figuren og a', b', c' er tilsvarende sider i den store.</div>
+      </div>
+
+      <div class="flex gap-4 justify-center items-end my-4">
+        <svg width="90" height="80" viewBox="0 0 90 80" aria-label="Liten trekant">
+          <polygon points="10,70 45,10 80,70" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+          <text x="45" y="84" text-anchor="middle" font-size="12" fill="#1e40af">Liten</text>
+        </svg>
+        <div class="flex flex-col items-center text-blue-700 font-bold">
+          <span class="text-lg">×k</span>
+          <span class="text-2xl">→</span>
+        </div>
+        <svg width="140" height="126" viewBox="0 0 140 126" aria-label="Stor trekant">
+          <polygon points="10,116 70,10 130,116" fill="#bfdbfe" stroke="#2563eb" stroke-width="2.5"/>
+          <text x="70" y="138" text-anchor="middle" font-size="13" fill="#1e3a8a">Stor (k=1,5)</text>
+        </svg>
+      </div>
+      <span class="formlik-badge">△ABC ~ △DEF</span>
+
+      <div class="warn-box mt-5">
+        <strong>Husk:</strong> Kongruens er et spesialtilfelle av formlikhet der <span class="highlight">k = 1</span>.
+      </div>
+
+      <h2 class="text-xl font-bold text-blue-700 mt-6 mb-2">Slik finner du manglende side</h2>
+      <div class="step-box">1. Identifiser tilsvarende sider i de to figurene.</div>
+      <div class="step-box">2. Regn ut skaleringsfaktoren: <strong>k = (kjent side i stor figur) ÷ (tilsvarende side i liten figur)</strong></div>
+      <div class="step-box">3. Multipliser alle sider i den lille figuren med k for å finne den store figurens sider.</div>
+      <div class="step-box">4. Kontroller at alle sideforhold er like.</div>
+
+      <div class="bg-blue-50 rounded-xl p-4 mt-4">
+        <div class="font-semibold text-blue-800 mb-1">Eksempel</div>
+        <p class="text-sm text-gray-700">
+          Trekant ABC har sider 3, 4 og 5 cm. Trekant DEF er formlik med ABC, og den korteste siden i DEF er 6 cm.<br/>
+          <strong>k = 6 ÷ 3 = 2</strong><br/>
+          Sider i DEF: 6, 8 og 10 cm.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: TREKANTER ── -->
+  <div id="tab-trekant" class="tab-content hidden">
+    <div class="bg-white rounded-2xl shadow p-5 mb-4">
+      <h2 class="text-xl font-bold text-blue-700 mb-1">Formlike trekanter – interaktivt</h2>
+      <p class="text-sm text-gray-500 mb-4">Juster skaleringsfaktoren eller sett en kjent side, og se de manglende sidene beregnet steg for steg.</p>
+
+      <!-- Figurtype -->
+      <div class="mb-4">
+        <label class="font-semibold text-gray-700 mr-2">Figurtype:</label>
+        <select id="triType" onchange="updateTriangle()" class="mr-3">
+          <option value="scalene">Skalene trekant (3 ulike sider)</option>
+          <option value="right">Rettvinklet trekant</option>
+          <option value="isosceles">Likebeint trekant</option>
+        </select>
+      </div>
+
+      <!-- Original sides -->
+      <div class="grid grid-cols-3 gap-3 mb-4">
+        <div>
+          <label class="text-sm text-gray-600 font-semibold">Side a (cm)</label>
+          <input type="number" id="triA" value="3" min="1" max="30" step="0.5" oninput="updateTriangle()" class="block mt-1"/>
+        </div>
+        <div>
+          <label class="text-sm text-gray-600 font-semibold">Side b (cm)</label>
+          <input type="number" id="triB" value="4" min="1" max="30" step="0.5" oninput="updateTriangle()" class="block mt-1"/>
+        </div>
+        <div>
+          <label class="text-sm text-gray-600 font-semibold">Side c (cm)</label>
+          <input type="number" id="triC" value="5" min="1" max="30" step="0.5" oninput="updateTriangle()" class="block mt-1"/>
+        </div>
+      </div>
+
+      <!-- Scale factor -->
+      <div class="mb-4">
+        <label class="font-semibold text-gray-700">Skaleringsfaktor k: <span id="kValTri" class="text-blue-700">2,0</span></label>
+        <input type="range" id="kSliderTri" min="0.5" max="4" step="0.1" value="2" oninput="updateTriangle()" class="w-full mt-1"/>
+        <div class="flex justify-between text-xs text-gray-400"><span>0,5 (forminsker)</span><span>k=1 (kongruent)</span><span>4,0 (forstørrer)</span></div>
+      </div>
+
+      <!-- Or enter a known side of the big triangle -->
+      <div class="bg-blue-50 rounded-xl p-3 mb-4">
+        <div class="font-semibold text-blue-800 mb-1 text-sm">Eller: oppgi én kjent side i den store trekanten for å beregne k automatisk</div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <label class="text-sm text-gray-700">Tilsvarer side:</label>
+          <select id="knownSideSelect" class="text-sm" onchange="updateTriangle()">
+            <option value="a">a</option>
+            <option value="b">b</option>
+            <option value="c">c</option>
+          </select>
+          <label class="text-sm text-gray-700">Verdi (cm):</label>
+          <input type="number" id="knownSideVal" value="" min="0.1" step="0.5" placeholder="f.eks. 9" oninput="knownSideInput()" class="w-24"/>
+          <button onclick="clearKnownSide()" class="text-xs bg-gray-200 hover:bg-gray-300 rounded px-2 py-1">Tøm</button>
+        </div>
+      </div>
+
+      <!-- SVG drawing -->
+      <div class="svg-container my-4" id="triSvgContainer">
+        <!-- will be filled by JS -->
+      </div>
+
+      <!-- Worked steps -->
+      <div id="triSteps" class="mt-4"></div>
+    </div>
+  </div>
+
+  <!-- ── TAB: REKTANGLER ── -->
+  <div id="tab-rektangel" class="tab-content hidden">
+    <div class="bg-white rounded-2xl shadow p-5 mb-4">
+      <h2 class="text-xl font-bold text-blue-700 mb-1">Formlike rektangler – interaktivt</h2>
+      <p class="text-sm text-gray-500 mb-4">Sett lengde og bredde for det lille rektangelet, velg skaleringsfaktor, og se beregningene.</p>
+
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="text-sm text-gray-600 font-semibold">Lengde l (cm)</label>
+          <input type="number" id="rectL" value="6" min="1" max="30" step="0.5" oninput="updateRect()" class="block mt-1"/>
+        </div>
+        <div>
+          <label class="text-sm text-gray-600 font-semibold">Bredde b (cm)</label>
+          <input type="number" id="rectB" value="4" min="1" max="30" step="0.5" oninput="updateRect()" class="block mt-1"/>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="font-semibold text-gray-700">Skaleringsfaktor k: <span id="kValRect" class="text-blue-700">1,5</span></label>
+        <input type="range" id="kSliderRect" min="0.5" max="4" step="0.1" value="1.5" oninput="updateRect()" class="w-full mt-1"/>
+        <div class="flex justify-between text-xs text-gray-400"><span>0,5</span><span>k=1 (kongruent)</span><span>4,0</span></div>
+      </div>
+
+      <div class="bg-blue-50 rounded-xl p-3 mb-4">
+        <div class="font-semibold text-blue-800 mb-1 text-sm">Eller: oppgi én kjent side i det store rektangelet</div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <label class="text-sm text-gray-700">Side:</label>
+          <select id="rectKnownSide" class="text-sm" onchange="updateRect()">
+            <option value="l">Lengde</option>
+            <option value="b">Bredde</option>
+          </select>
+          <label class="text-sm text-gray-700">Verdi (cm):</label>
+          <input type="number" id="rectKnownVal" value="" min="0.1" step="0.5" placeholder="f.eks. 12" oninput="rectKnownInput()" class="w-24"/>
+          <button onclick="clearRectKnown()" class="text-xs bg-gray-200 hover:bg-gray-300 rounded px-2 py-1">Tøm</button>
+        </div>
+      </div>
+
+      <div class="svg-container my-4" id="rectSvgContainer"></div>
+      <div id="rectSteps" class="mt-4"></div>
+    </div>
+  </div>
+
+  <!-- ── TAB: AREAL & VOLUM ── -->
+  <div id="tab-areal" class="tab-content hidden">
+    <div class="bg-white rounded-2xl shadow p-5 mb-4">
+      <h2 class="text-xl font-bold text-blue-700 mb-2">Areal og volum skalerer</h2>
+      <p class="text-gray-700 mb-3">Når en figur skaleres med faktoren k:</p>
+
+      <div class="grid grid-cols-1 gap-3 mb-4 sm:grid-cols-3">
+        <div class="formula-box text-center">
+          <div class="text-lg font-bold text-blue-800">Lengde</div>
+          <div class="text-2xl mt-1">× k</div>
+          <div class="text-xs text-gray-500 mt-1">lineært</div>
+        </div>
+        <div class="formula-box text-center">
+          <div class="text-lg font-bold text-orange-700">Areal</div>
+          <div class="text-2xl mt-1">× k²</div>
+          <div class="text-xs text-gray-500 mt-1">kvadratisk</div>
+        </div>
+        <div class="formula-box text-center">
+          <div class="text-lg font-bold text-purple-700">Volum</div>
+          <div class="text-2xl mt-1">× k³</div>
+          <div class="text-xs text-gray-500 mt-1">kubisk</div>
+        </div>
+      </div>
+
+      <!-- Why section -->
+      <div class="bg-blue-50 rounded-xl p-4 mb-4">
+        <div class="font-bold text-blue-800 mb-1">Hvorfor skalerer areal med k²?</div>
+        <p class="text-sm text-gray-700 mb-2">
+          Et rektangel med lengde l og bredde b har areal A = l · b.<br/>
+          Skalerer vi med k, blir lengden k·l og bredden k·b.<br/>
+          Nytt areal = (k·l) · (k·b) = <strong>k² · l · b = k² · A</strong>.
+        </p>
+        <div class="font-bold text-purple-800 mb-1">Hvorfor skalerer volum med k³?</div>
+        <p class="text-sm text-gray-700">
+          En boks med l, b, h har volum V = l·b·h.<br/>
+          Skalert: (k·l)·(k·b)·(k·h) = <strong>k³ · V</strong>.
+        </p>
+      </div>
+
+      <!-- Interactive scaler -->
+      <div class="mb-4">
+        <label class="font-semibold text-gray-700">Velg skaleringsfaktor k: <span id="kValAreal" class="text-blue-700">2,0</span></label>
+        <input type="range" id="kSliderAreal" min="0.5" max="5" step="0.1" value="2" oninput="updateAreal()" class="w-full mt-1"/>
+      </div>
+
+      <!-- Base shape for areal tab -->
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="text-sm text-gray-600 font-semibold">Grunnform: Lengde (cm)</label>
+          <input type="number" id="arealL" value="4" min="1" max="20" step="1" oninput="updateAreal()" class="block mt-1"/>
+        </div>
+        <div>
+          <label class="text-sm text-gray-600 font-semibold">Grunnform: Bredde (cm)</label>
+          <input type="number" id="arealB" value="3" min="1" max="20" step="1" oninput="updateAreal()" class="block mt-1"/>
+        </div>
+      </div>
+
+      <div id="arealResult" class="mb-4"></div>
+
+      <!-- Visual comparison of squares -->
+      <div class="mt-4">
+        <div class="font-semibold text-gray-700 mb-2">Visuell sammenligning (areal):</div>
+        <div id="arealSvg" class="flex items-end gap-8 justify-center"></div>
+      </div>
+
+      <!-- Volume worked example -->
+      <div class="mt-6">
+        <h3 class="font-bold text-purple-700 mb-2">Volumeksempel – terning</h3>
+        <div id="volumeExample"></div>
+      </div>
+
+      <!-- Worked through example problem -->
+      <div class="bg-yellow-50 border border-yellow-300 rounded-xl p-4 mt-6">
+        <div class="font-bold text-yellow-800 mb-2">Oppgaveeksempel med utregning</div>
+        <div id="arealExampleProblem"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end max-w -->
+
+<script>
+// ─── Utility ───────────────────────────────────────────────────────────────
+function fmt(n) {
+  return Number(n.toFixed(2)).toLocaleString('nb-NO');
+}
+
+// ─── Tab switching ──────────────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.remove('hidden');
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    if (btn.getAttribute('onclick') === "showTab('" + name + "')") btn.classList.add('active');
+  });
+
+  if (name === 'trekant') updateTriangle();
+  if (name === 'rektangel') updateRect();
+  if (name === 'areal') updateAreal();
+}
+
+// ─── TRIANGLE TAB ──────────────────────────────────────────────────────────
+function updateTriangle() {
+  const a = parseFloat(document.getElementById('triA').value) || 3;
+  const b = parseFloat(document.getElementById('triB').value) || 4;
+  const c = parseFloat(document.getElementById('triC').value) || 5;
+  let k = parseFloat(document.getElementById('kSliderTri').value) || 2;
+
+  document.getElementById('kValTri').textContent = fmt(k);
+
+  const a2 = a * k, b2 = b * k, c2 = c * k;
+  const isKong = Math.abs(k - 1) < 0.01;
+
+  // Build SVG for two triangles
+  const container = document.getElementById('triSvgContainer');
+  container.innerHTML = makeTwoTriangleSVGs(a, b, c, a2, b2, c2, k);
+
+  // Worked steps
+  const stepsDiv = document.getElementById('triSteps');
+  stepsDiv.innerHTML = `
+    <div class="font-bold text-blue-800 mb-2">Utregning – steg for steg</div>
+    <div class="step-box">
+      <strong>Steg 1:</strong> Vi kjenner trekant ABC med sider
+      a = ${fmt(a)} cm, b = ${fmt(b)} cm, c = ${fmt(c)} cm.
+    </div>
+    <div class="step-box">
+      <strong>Steg 2:</strong> Skaleringsfaktoren er k = <span class="highlight">${fmt(k)}</span>.
+      ${isKong ? '<span class="kongruent-badge ml-2">Kongruente (k=1)</span>' : '<span class="formlik-badge ml-2">Formlike</span>'}
+    </div>
+    <div class="step-box">
+      <strong>Steg 3:</strong> Beregn alle sider i trekant DEF:
+      <ul class="list-disc ml-5 mt-1 text-sm">
+        <li>d = k · a = ${fmt(k)} · ${fmt(a)} = <span class="highlight">${fmt(a2)} cm</span></li>
+        <li>e = k · b = ${fmt(k)} · ${fmt(b)} = <span class="highlight">${fmt(b2)} cm</span></li>
+        <li>f = k · c = ${fmt(k)} · ${fmt(c)} = <span class="highlight">${fmt(c2)} cm</span></li>
+      </ul>
+    </div>
+    <div class="step-box">
+      <strong>Kontroll:</strong> d/a = ${fmt(a2)}/${fmt(a)} = <span class="highlight">${fmt(a2/a)}</span> &nbsp;
+      e/b = ${fmt(b2)}/${fmt(b)} = <span class="highlight">${fmt(b2/b)}</span> &nbsp;
+      f/c = ${fmt(c2)}/${fmt(c)} = <span class="highlight">${fmt(c2/c)}</span> &nbsp;
+      ✓ Alle lik k
+    </div>
+    <div class="formula-box mt-2">
+      Areal av ABC = ${fmt(triangleArea(a,b,c))} cm² &nbsp;|&nbsp;
+      Areal av DEF = ${fmt(triangleArea(a2,b2,c2))} cm² &nbsp;|&nbsp;
+      Forholdstall: k² = ${fmt(k*k)}
+    </div>
+  `;
+}
+
+function triangleArea(a, b, c) {
+  // Heron's formula
+  const s = (a + b + c) / 2;
+  const area2 = s * (s-a) * (s-b) * (s-c);
+  if (area2 <= 0) return 0;
+  return Math.sqrt(area2);
+}
+
+function triCoords(a, b, c, scale) {
+  // Place triangle with base c along x-axis, use cosine rule to find angles
+  // A at origin, B at (c*scale, 0), find C
+  const sc = scale;
+  const ax = 0, ay = 0;
+  const bx = c * sc, by = 0;
+  // cos A = (a² - b² - c²)/(-2bc) ... actually: cosA = (b²+c²-a²)/(2bc)
+  // But here a,b,c are labelled as opposite sides — let's keep it simple:
+  // Place C by computing angle at A
+  // Law of cosines: cos(A) = (b²+c²-a²)/(2bc) — a=BC, b=AC, c=AB
+  // Rename to avoid confusion: sides p=a,q=b,r=c; angle at vertex 0=A
+  const p = a * sc, q = b * sc, r = c * sc;
+  const cosA = (q*q + r*r - p*p) / (2*q*r);
+  const sinA = Math.sqrt(Math.max(0, 1 - cosA*cosA));
+  const cx = q * cosA;
+  const cy = -q * sinA; // negative because SVG y goes down
+  return { ax, ay, bx: r, by: 0, cx, cy };
+}
+
+function makeTwoTriangleSVGs(a, b, c, a2, b2, c2, k) {
+  const PAD = 22;
+  const SC1 = 26, SC2 = 26;
+
+  function svgForTri(sa, sb, sc, sc_factor, label1, label2, label3, titleLabel, fillColor, strokeColor) {
+    const scale = sc_factor;
+    const coords = triCoords(sa, sb, sc, scale);
+    const xs = [coords.ax, coords.bx, coords.cx];
+    const ys = [coords.ay, coords.by, coords.cy];
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const W = maxX - minX + PAD*2;
+    const H = maxY - minY + PAD*2 + 24;
+    const ox = -minX + PAD, oy = -minY + PAD;
+    const pts = `${coords.ax+ox},${coords.ay+oy} ${coords.bx+ox},${coords.by+oy} ${coords.cx+ox},${coords.cy+oy}`;
+    // midpoints of sides for labels
+    const mAB = { x: (coords.ax+coords.bx)/2+ox, y: (coords.ay+coords.by)/2+oy+10 };
+    const mBC = { x: (coords.bx+coords.cx)/2+ox+8, y: (coords.by+coords.cy)/2+oy };
+    const mAC = { x: (coords.ax+coords.cx)/2+ox-14, y: (coords.ay+coords.cy)/2+oy };
+    return `<div class="flex flex-col items-center">
+      <svg width="${Math.round(W)}" height="${Math.round(H)}" viewBox="0 0 ${Math.round(W)} ${Math.round(H)}" aria-label="${titleLabel}">
+        <polygon points="${pts}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"/>
+        <text x="${coords.ax+ox-8}" y="${coords.ay+oy}" font-size="12" fill="#1e3a8a" font-weight="bold">A</text>
+        <text x="${coords.bx+ox+4}" y="${coords.by+oy}" font-size="12" fill="#1e3a8a" font-weight="bold">B</text>
+        <text x="${coords.cx+ox-6}" y="${coords.cy+oy-4}" font-size="12" fill="#1e3a8a" font-weight="bold">C</text>
+        <text x="${mAB.x}" y="${mAB.y}" font-size="11" fill="#b45309" text-anchor="middle">${label1} cm</text>
+        <text x="${mBC.x}" y="${mBC.y}" font-size="11" fill="#b45309" text-anchor="middle">${label2} cm</text>
+        <text x="${mAC.x}" y="${mAC.y}" font-size="11" fill="#b45309" text-anchor="middle">${label3} cm</text>
+      </svg>
+      <div class="text-sm font-semibold text-blue-700 mt-1">${titleLabel}</div>
+    </div>`;
+  }
+
+  const s1 = svgForTri(a, b, c, SC1, fmt(c), fmt(a), fmt(b), 'Trekant ABC', '#dbeafe', '#3b82f6');
+  const arrow = `<div class="flex flex-col items-center justify-center pb-8">
+    <span class="text-blue-600 font-bold text-lg">×k=${fmt(k)}</span>
+    <span class="text-3xl text-blue-500">→</span>
+  </div>`;
+  const s2 = svgForTri(a2, b2, c2, SC1, fmt(c2), fmt(a2), fmt(b2), 'Trekant DEF', '#bfdbfe', '#2563eb');
+
+  return `<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;justify-content:center">${s1}${arrow}${s2}</div>`;
+}
+
+function knownSideInput() {
+  const val = parseFloat(document.getElementById('knownSideVal').value);
+  if (!val || val <= 0) { updateTriangle(); return; }
+  const side = document.getElementById('knownSideSelect').value;
+  let orig;
+  if (side === 'a') orig = parseFloat(document.getElementById('triA').value);
+  else if (side === 'b') orig = parseFloat(document.getElementById('triB').value);
+  else orig = parseFloat(document.getElementById('triC').value);
+  if (!orig || orig <= 0) return;
+  const k = val / orig;
+  const slider = document.getElementById('kSliderTri');
+  const clampedK = Math.min(4, Math.max(0.5, k));
+  slider.value = clampedK;
+  document.getElementById('kValTri').textContent = fmt(clampedK);
+  updateTriangle();
+}
+
+function clearKnownSide() {
+  document.getElementById('knownSideVal').value = '';
+  updateTriangle();
+}
+
+// ─── RECTANGLE TAB ─────────────────────────────────────────────────────────
+function updateRect() {
+  const l = parseFloat(document.getElementById('rectL').value) || 6;
+  const b = parseFloat(document.getElementById('rectB').value) || 4;
+  let k = parseFloat(document.getElementById('kSliderRect').value) || 1.5;
+
+  document.getElementById('kValRect').textContent = fmt(k);
+  const l2 = l * k, b2 = b * k;
+  const isKong = Math.abs(k - 1) < 0.01;
+
+  const container = document.getElementById('rectSvgContainer');
+  container.innerHTML = makeTwoRectSVGs(l, b, l2, b2, k);
+
+  const stepsDiv = document.getElementById('rectSteps');
+  stepsDiv.innerHTML = `
+    <div class="font-bold text-blue-800 mb-2">Utregning – steg for steg</div>
+    <div class="step-box">
+      <strong>Steg 1:</strong> Rektangel ABCD: lengde = ${fmt(l)} cm, bredde = ${fmt(b)} cm.
+      Areal₁ = ${fmt(l)} × ${fmt(b)} = <span class="highlight">${fmt(l*b)} cm²</span>
+    </div>
+    <div class="step-box">
+      <strong>Steg 2:</strong> Skaleringsfaktor k = <span class="highlight">${fmt(k)}</span>.
+      ${isKong ? '<span class="kongruent-badge ml-2">Kongruente (k=1)</span>' : '<span class="formlik-badge ml-2">Formlike</span>'}
+    </div>
+    <div class="step-box">
+      <strong>Steg 3:</strong> Rektangel EFGH:
+      <ul class="list-disc ml-5 mt-1 text-sm">
+        <li>Lengde = k · l = ${fmt(k)} · ${fmt(l)} = <span class="highlight">${fmt(l2)} cm</span></li>
+        <li>Bredde = k · b = ${fmt(k)} · ${fmt(b)} = <span class="highlight">${fmt(b2)} cm</span></li>
+      </ul>
+    </div>
+    <div class="step-box">
+      <strong>Steg 4:</strong> Areal av EFGH = ${fmt(l2)} × ${fmt(b2)} = <span class="highlight">${fmt(l2*b2)} cm²</span>
+      = k² · Areal₁ = ${fmt(k*k)} · ${fmt(l*b)} = <span class="highlight">${fmt(k*k*l*b)} cm²</span> ✓
+    </div>
+    <div class="step-box">
+      <strong>Kontroll sideforhold:</strong> l'/l = ${fmt(l2)}/${fmt(l)} = ${fmt(l2/l)} &nbsp;|&nbsp;
+      b'/b = ${fmt(b2)}/${fmt(b)} = ${fmt(b2/b)} &nbsp; ✓ begge lik k
+    </div>
+  `;
+}
+
+function makeTwoRectSVGs(l, b, l2, b2, k) {
+  const MAX_W = 130;
+  function rectSVG(lv, bv, fillColor, strokeColor, titleLabel) {
+    const scale = Math.min(MAX_W / Math.max(lv, bv), 14);
+    const sw = lv * scale, sh = bv * scale;
+    const W = sw + 40, H = sh + 44;
+    return `<div class="flex flex-col items-center">
+      <svg width="${Math.round(W)}" height="${Math.round(H)}" viewBox="0 0 ${Math.round(W)} ${Math.round(H)}" aria-label="${titleLabel}">
+        <rect x="20" y="14" width="${sw}" height="${sh}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"/>
+        <text x="${20+sw/2}" y="${14+sh+16}" font-size="12" text-anchor="middle" fill="#b45309">${fmt(lv)} cm</text>
+        <text x="8" y="${14+sh/2}" font-size="12" text-anchor="middle" fill="#b45309" transform="rotate(-90,8,${14+sh/2})">${fmt(bv)} cm</text>
+      </svg>
+      <div class="text-xs font-semibold text-blue-700 mt-1">${titleLabel}</div>
+    </div>`;
+  }
+  const r1 = rectSVG(l, b, '#dbeafe', '#3b82f6', 'Rektangel ABCD');
+  const arrow = `<div class="flex flex-col items-center justify-center pb-8">
+    <span class="text-blue-600 font-bold text-lg">×k=${fmt(k)}</span>
+    <span class="text-3xl text-blue-500">→</span>
+  </div>`;
+  const r2 = rectSVG(l2, b2, '#bfdbfe', '#2563eb', 'Rektangel EFGH');
+  return `<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;justify-content:center">${r1}${arrow}${r2}</div>`;
+}
+
+function rectKnownInput() {
+  const val = parseFloat(document.getElementById('rectKnownVal').value);
+  if (!val || val <= 0) { updateRect(); return; }
+  const side = document.getElementById('rectKnownSide').value;
+  let orig;
+  if (side === 'l') orig = parseFloat(document.getElementById('rectL').value);
+  else orig = parseFloat(document.getElementById('rectB').value);
+  if (!orig || orig <= 0) return;
+  const k = val / orig;
+  const slider = document.getElementById('kSliderRect');
+  const clampedK = Math.min(4, Math.max(0.5, k));
+  slider.value = clampedK;
+  document.getElementById('kValRect').textContent = fmt(clampedK);
+  updateRect();
+}
+
+function clearRectKnown() {
+  document.getElementById('rectKnownVal').value = '';
+  updateRect();
+}
+
+// ─── AREAL & VOLUM TAB ─────────────────────────────────────────────────────
+function updateAreal() {
+  const k = parseFloat(document.getElementById('kSliderAreal').value) || 2;
+  const l = parseFloat(document.getElementById('arealL').value) || 4;
+  const b = parseFloat(document.getElementById('arealB').value) || 3;
+  document.getElementById('kValAreal').textContent = fmt(k);
+
+  const l2 = l * k, b2 = b * k;
+  const A1 = l * b, A2 = l2 * b2;
+  const k2 = k * k, k3 = k * k * k;
+
+  // Result boxes
+  document.getElementById('arealResult').innerHTML = `
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
+      <div class="bg-blue-50 rounded-xl p-3 text-center">
+        <div class="text-blue-700 font-bold">Grunnform</div>
+        <div class="text-sm">l = ${fmt(l)} cm, b = ${fmt(b)} cm</div>
+        <div class="font-bold mt-1">Areal = ${fmt(A1)} cm²</div>
+      </div>
+      <div class="bg-orange-50 rounded-xl p-3 text-center border-2 border-orange-300">
+        <div class="text-orange-700 font-bold">Skalert form (k=${fmt(k)})</div>
+        <div class="text-sm">l' = ${fmt(l2)} cm, b' = ${fmt(b2)} cm</div>
+        <div class="font-bold mt-1">Areal = ${fmt(A2)} cm²</div>
+      </div>
+      <div class="bg-green-50 rounded-xl p-3 text-center">
+        <div class="text-green-700 font-bold">Arealforhold</div>
+        <div class="text-2xl mt-1 font-bold text-green-800">k² = ${fmt(k2)}</div>
+        <div class="text-sm text-gray-500">${fmt(A2)}/${fmt(A1)} = ${fmt(A2/A1)}</div>
+      </div>
+    </div>
+    <div class="step-box mt-3">
+      <strong>Utregning:</strong><br/>
+      Areal₁ = ${fmt(l)} × ${fmt(b)} = ${fmt(A1)} cm²<br/>
+      Areal₂ = (k·l) × (k·b) = (${fmt(k)}·${fmt(l)}) × (${fmt(k)}·${fmt(b)}) = ${fmt(l2)} × ${fmt(b2)} = <span class="highlight">${fmt(A2)} cm²</span><br/>
+      Areal₂ / Areal₁ = ${fmt(A2)} / ${fmt(A1)} = <span class="highlight">${fmt(A2/A1)}</span> = k² = ${fmt(k)}² = <span class="highlight">${fmt(k2)}</span> ✓
+    </div>
+  `;
+
+  // Visual SVG area comparison
+  const maxSide = 120;
+  const s1 = Math.min(maxSide, Math.sqrt(A1) * 18);
+  const s2 = Math.min(maxSide, s1 * k);
+  document.getElementById('arealSvg').innerHTML = `
+    <div class="flex flex-col items-center">
+      <svg width="${Math.round(s1+4)}" height="${Math.round(s1+4)}" viewBox="0 0 ${Math.round(s1+4)} ${Math.round(s1+4)}" aria-label="Grunnform areal">
+        <rect x="2" y="2" width="${Math.round(s1)}" height="${Math.round(s1)}" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+      </svg>
+      <div class="text-xs text-blue-700 mt-1 font-semibold">A = ${fmt(A1)} cm²</div>
+    </div>
+    <div class="flex items-center pb-6 text-blue-500 font-bold text-lg">×k²=${fmt(k2)}</div>
+    <div class="flex flex-col items-center">
+      <svg width="${Math.round(Math.min(s2,120)+4)}" height="${Math.round(Math.min(s2,120)+4)}" viewBox="0 0 ${Math.round(Math.min(s2,120)+4)} ${Math.round(Math.min(s2,120)+4)}" aria-label="Skalert areal">
+        <rect x="2" y="2" width="${Math.round(Math.min(s2,120))}" height="${Math.round(Math.min(s2,120))}" fill="#fed7aa" stroke="#f97316" stroke-width="2"/>
+      </svg>
+      <div class="text-xs text-orange-700 mt-1 font-semibold">A' = ${fmt(A2)} cm²${s2 > 120 ? ' (beskåret)' : ''}</div>
+    </div>
+  `;
+
+  // Volume example – cube with side l
+  const V1 = l * l * l;
+  const V2 = l2 * l2 * l2;
+  document.getElementById('volumeExample').innerHTML = `
+    <div class="step-box">
+      <strong>Terning med side ${fmt(l)} cm:</strong><br/>
+      Volum = ${fmt(l)}³ = <span class="highlight">${fmt(V1)} cm³</span>
+    </div>
+    <div class="step-box">
+      <strong>Skalert terning (k=${fmt(k)}), side = k·${fmt(l)} = ${fmt(l2)} cm:</strong><br/>
+      Volum = ${fmt(l2)}³ = <span class="highlight">${fmt(V2)} cm³</span>
+    </div>
+    <div class="step-box">
+      <strong>Volumforhold:</strong> ${fmt(V2)} / ${fmt(V1)} = ${fmt(V2/V1)} = k³ = ${fmt(k)}³ = <span class="highlight">${fmt(k3)}</span> ✓
+    </div>
+  `;
+
+  // Worked example problem
+  document.getElementById('arealExampleProblem').innerHTML = `
+    <p class="text-sm text-gray-700 mb-2">
+      <strong>Oppgave:</strong> Et fotografi er 10 cm × 15 cm. Det skal forstørres med k = ${fmt(k)}.<br/>
+      Hva er det nye arealet, og hva er forholdstallet mellom arealene?
+    </p>
+    <div class="step-box text-sm">
+      <strong>Steg 1:</strong> Opprinnelig areal = 10 × 15 = <span class="highlight">150 cm²</span>
+    </div>
+    <div class="step-box text-sm">
+      <strong>Steg 2:</strong> Nytt areal = k² × 150 = ${fmt(k2)} × 150 = <span class="highlight">${fmt(k2 * 150)} cm²</span>
+    </div>
+    <div class="step-box text-sm">
+      <strong>Steg 3:</strong> Nye mål: ${fmt(10*k)} cm × ${fmt(15*k)} cm.
+      Areal = ${fmt(10*k)} × ${fmt(15*k)} = <span class="highlight">${fmt(10*k*15*k)} cm²</span> ✓
+    </div>
+    <div class="step-box text-sm">
+      <strong>Svar:</strong> Nytt areal er <span class="highlight">${fmt(k2 * 150)} cm²</span>, som er k² = ${fmt(k2)} ganger det opprinnelige.
+    </div>
+  `;
+}
+
+// ─── Init ───────────────────────────────────────────────────────────────────
+updateTriangle();
+updateRect();
+updateAreal();
+</script>
+</body>
+</html>

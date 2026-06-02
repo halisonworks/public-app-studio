@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<!--
+  Sirkelen — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for geometri (matematikk 1P/2P, LK20): omkrets og areal
+  av sirkel, og sektorareal og buelengde.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sirkelen – Interaktiv geometri (1P/2P)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --color-primary: #1d4ed8;
+      --color-accent: #f59e0b;
+      --color-sector: #ef4444;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    .formula-box {
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border-left: 4px solid #1d4ed8;
+    }
+
+    .formula-box.sektor {
+      background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%);
+      border-left: 4px solid #f59e0b;
+    }
+
+    .pi-box {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border-left: 4px solid #16a34a;
+    }
+
+    input[type="range"] {
+      accent-color: var(--color-primary);
+    }
+
+    input[type="range"].sektor-slider {
+      accent-color: var(--color-sector);
+    }
+
+    .value-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 9999px;
+      font-weight: 700;
+      font-size: 1rem;
+      background: #1d4ed8;
+      color: #fff;
+      min-width: 3.5rem;
+      text-align: center;
+    }
+
+    .value-badge.orange {
+      background: #f59e0b;
+      color: #1a1a1a;
+    }
+
+    .value-badge.red {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .value-badge.green {
+      background: #16a34a;
+      color: #fff;
+    }
+
+    .tab-btn {
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .tab-btn.active {
+      background: #1d4ed8;
+      color: #fff;
+      border-color: #1d4ed8;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    svg text {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      user-select: none;
+    }
+
+    .highlight-change {
+      animation: flash 0.35s ease-out;
+    }
+
+    @keyframes flash {
+      0% { background-color: #fef9c3; }
+      100% { background-color: transparent; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-blue-700 text-white shadow-lg">
+    <div class="max-w-4xl mx-auto px-4 py-5">
+      <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Sirkelen</h1>
+      <p class="text-blue-200 text-sm mt-1">Interaktivt læremiddel · Matematikk 1P/2P · LK20</p>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="max-w-4xl mx-auto px-4 mt-6">
+    <div class="flex gap-2 flex-wrap">
+      <button id="tab-btn-sirkel" class="tab-btn active px-5 py-2 rounded-full border-2 border-blue-700 font-semibold text-sm focus:outline-none" onclick="showTab('sirkel')">
+        Sirkel
+      </button>
+      <button id="tab-btn-sektor" class="tab-btn px-5 py-2 rounded-full border-2 border-slate-300 font-semibold text-sm text-slate-600 hover:border-blue-400 focus:outline-none" onclick="showTab('sektor')">
+        Sektor
+      </button>
+      <button id="tab-btn-pi" class="tab-btn px-5 py-2 rounded-full border-2 border-slate-300 font-semibold text-sm text-slate-600 hover:border-green-500 focus:outline-none" onclick="showTab('pi')">
+        Hva er π?
+      </button>
+    </div>
+  </div>
+
+  <main class="max-w-4xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- ===================== TAB: SIRKEL ===================== -->
+    <section id="tab-sirkel" class="tab-content active space-y-6">
+
+      <!-- Intro tekst -->
+      <div class="bg-white rounded-2xl shadow-sm p-5 border border-slate-100">
+        <h2 class="text-xl font-bold text-blue-700 mb-2">Radius, diameter, omkrets og areal</h2>
+        <p class="text-slate-600 text-sm leading-relaxed">
+          En sirkel er mengden av alle punkter som er like langt fra ett bestemt punkt – <strong>sentrum</strong>.
+          Avstanden fra sentrum til sirkelen kalles <strong>radius</strong> (r). Bruk glidebryteren nedenfor
+          til å utforske hvordan radius påvirker omkrets og areal.
+        </p>
+      </div>
+
+      <!-- Formler -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="formula-box rounded-xl p-4">
+          <p class="text-xs font-semibold text-blue-500 uppercase tracking-widest mb-1">Formler</p>
+          <ul class="space-y-1 text-sm font-mono text-slate-700">
+            <li><span class="font-bold text-blue-700">d</span> = 2r &nbsp;(diameter)</li>
+            <li><span class="font-bold text-blue-700">O</span> = 2πr = πd &nbsp;(omkrets)</li>
+            <li><span class="font-bold text-blue-700">A</span> = πr² &nbsp;(areal)</li>
+          </ul>
+        </div>
+        <div class="formula-box rounded-xl p-4">
+          <p class="text-xs font-semibold text-blue-500 uppercase tracking-widest mb-1">Nåværende verdier</p>
+          <ul class="space-y-2 text-sm text-slate-700">
+            <li>Radius <span class="value-badge" id="val-r">5</span> cm</li>
+            <li>Diameter <span class="value-badge orange" id="val-d">10</span> cm</li>
+            <li>Omkrets <span class="value-badge green" id="val-o">31,42</span> cm</li>
+            <li>Areal <span class="value-badge red" id="val-a">78,54</span> cm²</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- SVG + Slider -->
+      <div class="bg-white rounded-2xl shadow-sm p-5 border border-slate-100 flex flex-col items-center gap-5">
+        <svg id="sirkel-svg" viewBox="0 0 300 300" width="280" height="280" aria-label="Interaktiv sirkel">
+          <!-- Grid bakgrunn (lette linjer) -->
+          <defs>
+            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" stroke-width="0.5"/>
+            </pattern>
+          </defs>
+          <rect width="300" height="300" fill="url(#grid)"/>
+
+          <!-- Sirkel -->
+          <circle id="svg-circle" cx="150" cy="150" r="80"
+            fill="rgba(59,130,246,0.12)" stroke="#1d4ed8" stroke-width="2.5"/>
+
+          <!-- Sentrum -->
+          <circle cx="150" cy="150" r="4" fill="#1d4ed8"/>
+
+          <!-- Radius-linje -->
+          <line id="svg-radius-line" x1="150" y1="150" x2="230" y2="150"
+            stroke="#1d4ed8" stroke-width="1.8" stroke-dasharray="5,3"/>
+
+          <!-- Diameter-linje -->
+          <line id="svg-diameter-line" x1="70" y1="150" x2="230" y2="150"
+            stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="2,4" opacity="0.7"/>
+
+          <!-- Etiketter -->
+          <text id="svg-label-r" x="185" y="143" fill="#1d4ed8" font-size="12" font-weight="600">r = 5 cm</text>
+          <text id="svg-label-d" x="108" y="168" fill="#b45309" font-size="11" opacity="0.85">d = 10 cm</text>
+          <text id="svg-label-o" x="150" y="270" fill="#16a34a" font-size="11" text-anchor="middle">O ≈ 31,42 cm</text>
+          <text id="svg-label-a" x="150" y="285" fill="#ef4444" font-size="11" text-anchor="middle">A ≈ 78,54 cm²</text>
+        </svg>
+
+        <!-- Slider -->
+        <div class="w-full max-w-xs space-y-1">
+          <label for="slider-r" class="flex justify-between text-sm font-medium text-slate-700">
+            <span>Radius (r)</span>
+            <span id="slider-r-display" class="text-blue-700 font-bold">5 cm</span>
+          </label>
+          <input type="range" id="slider-r" min="1" max="13" step="0.5" value="5"
+            class="w-full h-2 rounded-lg cursor-pointer"
+            oninput="updateSirkel()" />
+          <div class="flex justify-between text-xs text-slate-400">
+            <span>1 cm</span>
+            <span>13 cm</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Utregning steg-for-steg -->
+      <div class="bg-white rounded-2xl shadow-sm p-5 border border-slate-100">
+        <h3 class="font-bold text-slate-700 mb-3 text-base">Utregning steg for steg</h3>
+        <div id="steg-sirkel" class="text-sm text-slate-600 space-y-1 font-mono"></div>
+      </div>
+
+    </section>
+
+    <!-- ===================== TAB: SEKTOR ===================== -->
+    <section id="tab-sektor" class="tab-content space-y-6">
+
+      <div class="bg-white rounded-2xl shadow-sm p-5 border border-slate-100">
+        <h2 class="text-xl font-bold text-amber-600 mb-2">Sektor – sentralvinkel, sektorareal og buelengde</h2>
+        <p class="text-slate-600 text-sm leading-relaxed">
+          En <strong>sektor</strong> er «kakestykket» du klipper ut av sirkelen med to radier og en bue.
+          Størrelsen bestemmes av <strong>sentralvinkelen v</strong> (i grader).
+          Juster radius og vinkel for å se hvordan sektorarealet og buelengden endrer seg.
+        </p>
+      </div>
+
+      <!-- Formler sektor -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="formula-box sektor rounded-xl p-4">
+          <p class="text-xs font-semibold text-amber-600 uppercase tracking-widest mb-1">Formler</p>
+          <ul class="space-y-1 text-sm font-mono text-slate-700">
+            <li><span class="font-bold text-amber-600">A<sub>s</sub></span> = (v / 360) · πr²</li>
+            <li><span class="font-bold text-amber-600">l</span> = (v / 360) · 2πr</li>
+          </ul>
+          <p class="text-xs text-slate-500 mt-2">v = sentralvinkel (°), r = radius</p>
+        </div>
+        <div class="formula-box sektor rounded-xl p-4">
+          <p class="text-xs font-semibold text-amber-600 uppercase tracking-widest mb-1">Nåværende verdier</p>
+          <ul class="space-y-2 text-sm text-slate-700">
+            <li>Radius <span class="value-badge" id="sek-val-r">6</span> cm</li>
+            <li>Sentralvinkel <span class="value-badge orange" id="sek-val-v">90</span>°</li>
+            <li>Buelengde <span class="value-badge green" id="sek-val-l">9,42</span> cm</li>
+            <li>Sektorareal <span class="value-badge red" id="sek-val-a">28,27</span> cm²</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- SVG sektor + slidere -->
+      <div class="bg-white rounded-2xl shadow-sm p-5 border border-slate-100 flex flex-col items-center gap-5">
+        <svg id="sektor-svg" viewBox="0 0 300 300" width="280" height="280" aria-label="Interaktiv sektor">
+          <defs>
+            <pattern id="grid2" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" stroke-width="0.5"/>
+            </pattern>
+          </defs>
+          <rect width="300" height="300" fill="url(#grid2)"/>
+
+          <!-- Hel sirkelkontur (grå) -->
+          <circle id="sek-full-circle" cx="150" cy="150" r="90"
+            fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+          <!-- Sektor (fylt) -->
+          <path id="sek-sector-path" d=""
+            fill="rgba(245,158,11,0.25)" stroke="#f59e0b" stroke-width="2.5" stroke-linejoin="round"/>
+
+          <!-- Buen-markering (rød) -->
+          <path id="sek-arc-path" d=""
+            fill="none" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+
+          <!-- Sentrum -->
+          <circle cx="150" cy="150" r="4" fill="#1d4ed8"/>
+
+          <!-- Vinkelmarkering (liten bue) -->
+          <path id="sek-angle-arc" d="" fill="none" stroke="#6366f1" stroke-width="1.5"/>
+
+          <!-- Etiketter -->
+          <text id="sek-label-v" x="150" y="270" fill="#6366f1" font-size="11" text-anchor="middle"></text>
+          <text id="sek-label-l" x="150" y="284" fill="#ef4444" font-size="11" text-anchor="middle"></text>
+          <text id="sek-label-a" x="150" y="298" fill="#b45309" font-size="11" text-anchor="middle"></text>
+        </svg>
+
+        <!-- Slidere -->
+        <div class="w-full max-w-xs space-y-4">
+          <div class="space-y-1">
+            <label for="slider-sek-r" class="flex justify-between text-sm font-medium text-slate-700">
+              <span>Radius (r)</span>
+              <span id="slider-sek-r-display" class="text-blue-700 font-bold">6 cm</span>
+            </label>
+            <input type="range" id="slider-sek-r" min="1" max="13" step="0.5" value="6"
+              class="w-full h-2 rounded-lg cursor-pointer"
+              oninput="updateSektor()" />
+            <div class="flex justify-between text-xs text-slate-400">
+              <span>1 cm</span>
+              <span>13 cm</span>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label for="slider-sek-v" class="flex justify-between text-sm font-medium text-slate-700">
+              <span>Sentralvinkel (v)</span>
+              <span id="slider-sek-v-display" class="text-red-600 font-bold">90°</span>
+            </label>
+            <input type="range" id="slider-sek-v" min="1" max="359" step="1" value="90"
+              class="sektor-slider w-full h-2 rounded-lg cursor-pointer"
+              oninput="updateSektor()" />
+            <div class="flex justify-between text-xs text-slate-400">
+              <span>1°</span>
+              <span>359°</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Utregning steg-for-steg sektor -->
+      <div class="bg-white rounded-2xl shadow-sm p-5 border border-slate-100">
+        <h3 class="font-bold text-slate-700 mb-3 text-base">Utregning steg for steg</h3>
+        <div id="steg-sektor" class="text-sm text-slate-600 space-y-1 font-mono"></div>
+      </div>
+
+    </section>
+
+    <!-- ===================== TAB: PI ===================== -->
+    <section id="tab-pi" class="tab-content space-y-6">
+
+      <div class="bg-white rounded-2xl shadow-sm p-5 border border-slate-100">
+        <h2 class="text-xl font-bold text-green-700 mb-2">Hva er π (pi)?</h2>
+        <p class="text-slate-600 text-sm leading-relaxed mb-4">
+          Tallet π (pi) er forholdet mellom <strong>omkretsen</strong> og <strong>diameteren</strong> til en sirkel –
+          uansett hvor stor eller liten sirkelen er. Det vil si:
+        </p>
+        <div class="pi-box rounded-xl p-4 text-center mb-4">
+          <p class="text-2xl font-bold text-green-700 font-mono">π = O / d</p>
+          <p class="text-slate-500 text-sm mt-1">omkrets delt på diameter – alltid det samme tallet</p>
+        </div>
+        <p class="text-slate-600 text-sm leading-relaxed">
+          π er et <em>irrasjonalt tall</em>: desimalene fortsetter i det uendelige uten mønster.
+          De første sifrene er <strong>3,14159265358979…</strong>
+          I beregninger bruker vi gjerne <strong>π ≈ 3,14</strong> (2 desimaler) eller den eksakte verdien på kalkulatoren.
+        </p>
+      </div>
+
+      <!-- Interaktiv Pi-demonstrasjon -->
+      <div class="bg-white rounded-2xl shadow-sm p-5 border border-slate-100">
+        <h3 class="font-bold text-slate-700 mb-3">Utforsk: diameter og omkrets</h3>
+        <p class="text-slate-500 text-sm mb-4">
+          Endre diameteren og se at <strong>O ÷ d alltid er ≈ π</strong>.
+        </p>
+
+        <div class="flex flex-col items-center gap-4">
+          <svg id="pi-svg" viewBox="0 0 300 200" width="300" height="200" aria-label="Pi-illustrasjon">
+            <defs>
+              <pattern id="grid3" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" stroke-width="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="300" height="200" fill="url(#grid3)"/>
+
+            <!-- Sirkel -->
+            <circle id="pi-circle" cx="150" cy="100" r="60"
+              fill="rgba(22,163,74,0.10)" stroke="#16a34a" stroke-width="2.2"/>
+
+            <!-- Diameter -->
+            <line id="pi-diameter-line" x1="90" y1="100" x2="210" y2="100"
+              stroke="#6366f1" stroke-width="2" stroke-dasharray="4,3"/>
+
+            <!-- Pil markering diameter -->
+            <polygon id="pi-arrow-r" points="210,100 204,96 204,104" fill="#6366f1"/>
+            <polygon id="pi-arrow-l" points="90,100 96,96 96,104" fill="#6366f1"/>
+
+            <!-- Etikett diameter -->
+            <text id="pi-label-d" x="150" y="92" fill="#6366f1" font-size="11" font-weight="600" text-anchor="middle">d = 8 cm</text>
+
+            <!-- Etikett omkrets -->
+            <text id="pi-label-o" x="150" y="175" fill="#16a34a" font-size="11" font-weight="600" text-anchor="middle">O ≈ 25,13 cm</text>
+            <text id="pi-label-ratio" x="150" y="190" fill="#ef4444" font-size="11" font-weight="700" text-anchor="middle">O ÷ d = π ≈ 3,14159…</text>
+          </svg>
+
+          <div class="w-full max-w-xs space-y-1">
+            <label for="slider-pi-d" class="flex justify-between text-sm font-medium text-slate-700">
+              <span>Diameter (d)</span>
+              <span id="slider-pi-d-display" class="text-green-700 font-bold">8 cm</span>
+            </label>
+            <input type="range" id="slider-pi-d" min="2" max="16" step="0.5" value="8"
+              class="w-full h-2 rounded-lg cursor-pointer"
+              style="accent-color: #16a34a;"
+              oninput="updatePi()" />
+            <div class="flex justify-between text-xs text-slate-400">
+              <span>2 cm</span>
+              <span>16 cm</span>
+            </div>
+          </div>
+
+          <!-- Tabell med eksempler -->
+          <div class="w-full overflow-x-auto mt-2">
+            <table class="w-full text-sm text-center border-collapse">
+              <thead>
+                <tr class="bg-green-50 text-green-700 font-semibold">
+                  <th class="border border-green-200 px-3 py-2">Diameter d</th>
+                  <th class="border border-green-200 px-3 py-2">Omkrets O</th>
+                  <th class="border border-green-200 px-3 py-2">O ÷ d</th>
+                </tr>
+              </thead>
+              <tbody class="text-slate-600" id="pi-table-body">
+                <!-- Fylles av JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- π desimaler -->
+      <div class="pi-box rounded-2xl p-5">
+        <h3 class="font-bold text-green-700 mb-2">De første 20 desimalene av π</h3>
+        <p class="font-mono text-slate-700 text-base break-all leading-relaxed">
+          3.<span class="text-green-700 font-bold">14159265358979323846</span>…
+        </p>
+        <p class="text-slate-500 text-xs mt-2">
+          I skolematematikk bruker vi <strong>π ≈ 3,14</strong> eller <strong>π-knappen</strong> på kalkulatoren.
+          Husk: norsk desimaltegn er komma (3,14), ikke punktum.
+        </p>
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer class="max-w-4xl mx-auto px-4 pb-8 mt-2 text-center text-xs text-slate-400">
+    Halison App Studio-eksempel · Matematikk 1P/2P · LK20 ·
+    <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-blue-500" target="_blank" rel="noopener">
+      github.com/halisonworks/public-app-studio
+    </a>
+  </footer>
+
+  <script>
+    'use strict';
+
+    // ============================================================
+    // Hjelpefunksjoner
+    // ============================================================
+
+    /** Formater tall norsk stil (komma som desimaltegn, gitt antall desimaler) */
+    function norsk(num, des) {
+      return num.toFixed(des).replace('.', ',');
+    }
+
+    /** Konverter grader til radianer */
+    function toRad(deg) {
+      return (deg * Math.PI) / 180;
+    }
+
+    /**
+     * Beregn SVG-bane for en sektor med sentrum (cx,cy), radius r, startvinkel alpha (rad),
+     * og sluttpunkt bestemt av sentralvinkel v (grader).
+     * Returnerer {sectorPath, arcPath}
+     */
+    function sektorPath(cx, cy, r, startDeg, vDeg) {
+      var startRad = toRad(startDeg);
+      var endRad   = toRad(startDeg + vDeg);
+      var x1 = cx + r * Math.cos(startRad);
+      var y1 = cy + r * Math.sin(startRad);
+      var x2 = cx + r * Math.cos(endRad);
+      var y2 = cy + r * Math.sin(endRad);
+      var large = vDeg > 180 ? 1 : 0;
+
+      var sectorPath = [
+        'M', cx, cy,
+        'L', x1, y1,
+        'A', r, r, 0, large, 1, x2, y2,
+        'Z'
+      ].join(' ');
+
+      var arcPath = [
+        'M', x1, y1,
+        'A', r, r, 0, large, 1, x2, y2
+      ].join(' ');
+
+      return { sectorPath: sectorPath, arcPath: arcPath };
+    }
+
+    /** Liten vinkelbuepath (for vinkelmarkering i sentrum) */
+    function vinkelArcPath(cx, cy, r, startDeg, vDeg) {
+      if (vDeg >= 359) return '';
+      var startRad = toRad(startDeg);
+      var endRad   = toRad(startDeg + vDeg);
+      var x1 = cx + r * Math.cos(startRad);
+      var y1 = cy + r * Math.sin(startRad);
+      var x2 = cx + r * Math.cos(endRad);
+      var y2 = cy + r * Math.sin(endRad);
+      var large = vDeg > 180 ? 1 : 0;
+      return ['M', x1, y1, 'A', r, r, 0, large, 1, x2, y2].join(' ');
+    }
+
+    // ============================================================
+    // Tab-bytte
+    // ============================================================
+    function showTab(id) {
+      var tabs = ['sirkel', 'sektor', 'pi'];
+      tabs.forEach(function(t) {
+        var content = document.getElementById('tab-' + t);
+        var btn = document.getElementById('tab-btn-' + t);
+        if (t === id) {
+          content.classList.add('active');
+          btn.classList.add('active');
+          btn.classList.remove('border-slate-300', 'text-slate-600');
+        } else {
+          content.classList.remove('active');
+          btn.classList.remove('active');
+          btn.classList.add('border-slate-300', 'text-slate-600');
+        }
+      });
+    }
+
+    // ============================================================
+    // TAB 1: SIRKEL
+    // ============================================================
+    function updateSirkel() {
+      var r = parseFloat(document.getElementById('slider-r').value);
+      var d = 2 * r;
+      var O = 2 * Math.PI * r;
+      var A = Math.PI * r * r;
+
+      // Oppdater badges
+      setText('val-r', norsk(r, 1));
+      setText('val-d', norsk(d, 1));
+      setText('val-o', norsk(O, 2));
+      setText('val-a', norsk(A, 2));
+      setText('slider-r-display', norsk(r, 1) + ' cm');
+
+      // Skaler SVG-sirkel (maks radius = 13 cm → 125 px i SVG)
+      var scale = 125 / 13;
+      var svgR  = r * scale;
+      var cx = 150, cy = 150;
+
+      setAttr('svg-circle', 'r', svgR);
+      setAttr('svg-radius-line', 'x2', cx + svgR);
+      setAttr('svg-diameter-line', 'x1', cx - svgR);
+      setAttr('svg-diameter-line', 'x2', cx + svgR);
+
+      var midR = cx + svgR / 2;
+      setAttr('svg-label-r', 'x', midR - 15);
+      document.getElementById('svg-label-r').textContent = 'r = ' + norsk(r, 1) + ' cm';
+      document.getElementById('svg-label-d').textContent = 'd = ' + norsk(d, 1) + ' cm';
+      document.getElementById('svg-label-o').textContent = 'O ≈ ' + norsk(O, 2) + ' cm';
+      document.getElementById('svg-label-a').textContent = 'A ≈ ' + norsk(A, 2) + ' cm²';
+
+      // Plasser tekst riktig
+      var oy = cy + svgR + 18;
+      if (oy > 270) oy = 270;
+      setAttr('svg-label-o', 'y', oy);
+      setAttr('svg-label-a', 'y', oy + 14);
+
+      // Steg for steg
+      var steg = [
+        'd = 2 · r = 2 · ' + norsk(r, 1) + ' = ' + norsk(d, 1) + ' cm',
+        'O = 2 · π · r = 2 · 3,14159… · ' + norsk(r, 1) + ' ≈ ' + norsk(O, 2) + ' cm',
+        'A = π · r² = π · ' + norsk(r, 1) + '² = π · ' + norsk(r * r, 2) + ' ≈ ' + norsk(A, 2) + ' cm²'
+      ];
+      document.getElementById('steg-sirkel').innerHTML = steg.map(function(s) {
+        return '<p class="py-0.5 border-b border-slate-100">' + s + '</p>';
+      }).join('');
+    }
+
+    // ============================================================
+    // TAB 2: SEKTOR
+    // ============================================================
+    function updateSektor() {
+      var r = parseFloat(document.getElementById('slider-sek-r').value);
+      var v = parseFloat(document.getElementById('slider-sek-v').value);
+
+      var As = (v / 360) * Math.PI * r * r;
+      var l  = (v / 360) * 2 * Math.PI * r;
+
+      // Badges
+      setText('sek-val-r', norsk(r, 1));
+      setText('sek-val-v', norsk(v, 0));
+      setText('sek-val-l', norsk(l, 2));
+      setText('sek-val-a', norsk(As, 2));
+      setText('slider-sek-r-display', norsk(r, 1) + ' cm');
+      setText('slider-sek-v-display', norsk(v, 0) + '°');
+
+      // SVG
+      var scale = 120 / 13;
+      var svgR  = r * scale;
+      var cx = 150, cy = 150;
+
+      setAttr('sek-full-circle', 'r', svgR);
+
+      // Start fra høyre (0°) og gå med klokka (SVG y-akse peker ned)
+      var startDeg = -90; // topp av sirkelen
+      var paths = sektorPath(cx, cy, svgR, startDeg, v);
+      document.getElementById('sek-sector-path').setAttribute('d', paths.sectorPath);
+      document.getElementById('sek-arc-path').setAttribute('d', paths.arcPath);
+
+      // Vinkelmarkering
+      var vArc = vinkelArcPath(cx, cy, 22, startDeg, v);
+      document.getElementById('sek-angle-arc').setAttribute('d', vArc);
+
+      // Etiketter
+      var yBase = cy + svgR + 15;
+      if (yBase > 268) yBase = 268;
+
+      var labelEl = document.getElementById('sek-label-v');
+      labelEl.setAttribute('y', yBase);
+      labelEl.textContent = 'v = ' + norsk(v, 0) + '°';
+
+      var lEl = document.getElementById('sek-label-l');
+      lEl.setAttribute('y', yBase + 14);
+      lEl.textContent = 'Buelengde l ≈ ' + norsk(l, 2) + ' cm';
+
+      var aEl = document.getElementById('sek-label-a');
+      aEl.setAttribute('y', yBase + 28);
+      if (yBase + 28 > 300) {
+        aEl.setAttribute('y', 298);
+        lEl.setAttribute('y', 284);
+        labelEl.setAttribute('y', 270);
+      }
+      aEl.textContent = 'Sektorareal ≈ ' + norsk(As, 2) + ' cm²';
+
+      // Steg for steg
+      var steg = [
+        'r = ' + norsk(r, 1) + ' cm,  v = ' + norsk(v, 0) + '°',
+        'Buelengde: l = (v/360) · 2πr = (' + norsk(v, 0) + '/360) · 2π · ' + norsk(r, 1),
+        '  = ' + norsk(v / 360, 4) + ' · ' + norsk(2 * Math.PI * r, 4) + ' ≈ ' + norsk(l, 2) + ' cm',
+        'Sektorareal: As = (v/360) · πr² = (' + norsk(v, 0) + '/360) · π · ' + norsk(r, 1) + '²',
+        '  = ' + norsk(v / 360, 4) + ' · ' + norsk(Math.PI * r * r, 4) + ' ≈ ' + norsk(As, 2) + ' cm²'
+      ];
+      document.getElementById('steg-sektor').innerHTML = steg.map(function(s) {
+        return '<p class="py-0.5 border-b border-slate-100">' + s + '</p>';
+      }).join('');
+    }
+
+    // ============================================================
+    // TAB 3: PI
+    // ============================================================
+    function updatePi() {
+      var d = parseFloat(document.getElementById('slider-pi-d').value);
+      var r = d / 2;
+      var O = Math.PI * d;
+
+      setText('slider-pi-d-display', norsk(d, 1) + ' cm');
+
+      // SVG
+      var maxD  = 16;
+      var scale = 90 / maxD; // maks radius = 90/2 = 45 ved d=16... justert
+      var svgR  = r * scale;
+      var cx = 150, cy = 100;
+
+      setAttr('pi-circle', 'r', svgR);
+      setAttr('pi-circle', 'cx', cx);
+      setAttr('pi-circle', 'cy', cy);
+
+      setAttr('pi-diameter-line', 'x1', cx - svgR);
+      setAttr('pi-diameter-line', 'x2', cx + svgR);
+      setAttr('pi-diameter-line', 'y1', cy);
+      setAttr('pi-diameter-line', 'y2', cy);
+
+      setAttr('pi-arrow-r', 'points', (cx + svgR) + ',' + cy + ' ' + (cx + svgR - 6) + ',' + (cy - 4) + ' ' + (cx + svgR - 6) + ',' + (cy + 4));
+      setAttr('pi-arrow-l', 'points', (cx - svgR) + ',' + cy + ' ' + (cx - svgR + 6) + ',' + (cy - 4) + ' ' + (cx - svgR + 6) + ',' + (cy + 4));
+
+      document.getElementById('pi-label-d').textContent = 'd = ' + norsk(d, 1) + ' cm';
+      document.getElementById('pi-label-d').setAttribute('x', cx);
+      document.getElementById('pi-label-d').setAttribute('y', cy - svgR - 6 > 20 ? cy - svgR - 6 : 14);
+
+      document.getElementById('pi-label-o').textContent = 'O = π · d = π · ' + norsk(d, 1) + ' ≈ ' + norsk(O, 2) + ' cm';
+      document.getElementById('pi-label-ratio').textContent = 'O ÷ d = ' + norsk(O, 5) + ' ÷ ' + norsk(d, 1) + ' = π ≈ 3,14159…';
+
+      // Tabell
+      var diameters = [2, 4, 6, 8, 10, 12, 14, 16];
+      var tbody = document.getElementById('pi-table-body');
+      tbody.innerHTML = diameters.map(function(di) {
+        var oi = Math.PI * di;
+        var ratio = oi / di;
+        var highlight = Math.abs(di - d) < 0.01 ? ' class="bg-green-50 font-semibold"' : '';
+        return '<tr' + highlight + '>' +
+          '<td class="border border-slate-200 px-3 py-1">' + norsk(di, 0) + ' cm</td>' +
+          '<td class="border border-slate-200 px-3 py-1">' + norsk(oi, 2) + ' cm</td>' +
+          '<td class="border border-slate-200 px-3 py-1 text-green-700 font-mono">' + norsk(ratio, 5) + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    // ============================================================
+    // DOM-hjelpere
+    // ============================================================
+    function setText(id, val) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = val;
+    }
+
+    function setAttr(id, attr, val) {
+      var el = document.getElementById(id);
+      if (el) el.setAttribute(attr, val);
+    }
+
+    // ============================================================
+    // Init
+    // ============================================================
+    updateSirkel();
+    updateSektor();
+    updatePi();
+  </script>
+
+</body>
+</html>

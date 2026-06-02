@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<!--
+  Volum og overflate — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for geometri (matematikk 1P/2P, LK20): volum og
+  overflate av prisme, sylinder, kule, kjegle og pyramide — med liter-omregning.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Volum og overflate av romfigurer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .shape-btn { transition: all 0.2s; }
+    .shape-btn.active { transform: scale(1.04); }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+    .result-block { border-left: 4px solid #6366f1; }
+    .formula-box { background: linear-gradient(135deg, #f0f4ff 0%, #e8f5ff 100%); }
+    .step { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .svg-3d { filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.18)); }
+    .unit-tag { font-size: 0.75rem; color: #6b7280; margin-left: 2px; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- HEADER -->
+<header class="bg-indigo-700 text-white py-5 px-4 shadow-lg">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Volum og overflate av romfigurer</h1>
+    <p class="text-indigo-200 text-sm mt-1">Matematikk 1P/2P · Læreplanen LK20 · Velg en figur og juster målene</p>
+  </div>
+</header>
+
+<!-- SHAPE PICKER -->
+<nav class="bg-white shadow-sm sticky top-0 z-10">
+  <div class="max-w-4xl mx-auto px-4 py-3 flex flex-wrap gap-2">
+    <button onclick="selectShape('prisme')" id="btn-prisme"
+      class="shape-btn active px-4 py-2 rounded-lg font-semibold text-sm bg-indigo-600 text-white shadow">
+      📦 Rett prisme
+    </button>
+    <button onclick="selectShape('sylinder')" id="btn-sylinder"
+      class="shape-btn px-4 py-2 rounded-lg font-semibold text-sm bg-gray-100 text-gray-700 hover:bg-indigo-50">
+      🥫 Sylinder
+    </button>
+    <button onclick="selectShape('kule')" id="btn-kule"
+      class="shape-btn px-4 py-2 rounded-lg font-semibold text-sm bg-gray-100 text-gray-700 hover:bg-indigo-50">
+      🔵 Kule
+    </button>
+    <button onclick="selectShape('kjegle')" id="btn-kjegle"
+      class="shape-btn px-4 py-2 rounded-lg font-semibold text-sm bg-gray-100 text-gray-700 hover:bg-indigo-50">
+      🔺 Kjegle
+    </button>
+    <button onclick="selectShape('pyramide')" id="btn-pyramide"
+      class="shape-btn px-4 py-2 rounded-lg font-semibold text-sm bg-gray-100 text-gray-700 hover:bg-indigo-50">
+      🏛️ Pyramide
+    </button>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main class="max-w-4xl mx-auto px-4 py-8 space-y-8">
+
+  <!-- FIGURE + INPUTS SIDE BY SIDE -->
+  <div class="grid md:grid-cols-2 gap-6">
+
+    <!-- SVG FIGURE -->
+    <div class="bg-white rounded-2xl shadow p-6 flex flex-col items-center justify-center min-h-64" id="svg-container">
+      <!-- filled by JS -->
+    </div>
+
+    <!-- INPUTS & FORMULAS -->
+    <div class="space-y-5">
+      <div class="bg-white rounded-2xl shadow p-5">
+        <h2 class="text-lg font-bold text-gray-800 mb-4" id="shape-title">Rett prisme (kasse)</h2>
+
+        <!-- Formula display -->
+        <div class="formula-box rounded-xl p-4 mb-4 text-sm" id="formula-display">
+          <!-- filled by JS -->
+        </div>
+
+        <!-- Inputs -->
+        <div class="space-y-3" id="inputs-container">
+          <!-- filled by JS -->
+        </div>
+
+        <!-- Unit selector -->
+        <div class="mt-4">
+          <label class="block text-xs font-semibold text-gray-500 mb-1">Måleenhet</label>
+          <select id="unit-select" onchange="recalc()"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-300 outline-none">
+            <option value="cm">cm (centimeter)</option>
+            <option value="dm">dm (desimeter)</option>
+            <option value="m">m (meter)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="bg-white rounded-2xl shadow p-6" id="results-container">
+    <!-- filled by JS -->
+  </div>
+
+  <!-- LITER CONVERSION -->
+  <div class="bg-indigo-50 border border-indigo-200 rounded-2xl p-6" id="liter-container">
+    <!-- filled by JS -->
+  </div>
+
+  <!-- INFO BOX -->
+  <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 text-sm text-amber-900">
+    <p class="font-bold mb-1">Husk: enheter og volum</p>
+    <ul class="list-disc ml-5 space-y-1">
+      <li>1 dm³ = 1 liter (L)</li>
+      <li>1 m³ = 1 000 liter</li>
+      <li>1 cm³ = 0,001 liter = 1 milliliter (mL)</li>
+      <li>Overflate måles i kvadratenheter (f.eks. cm²)</li>
+      <li>Volum måles i kubikkenheter (f.eks. cm³ eller dm³)</li>
+    </ul>
+  </div>
+
+</main>
+
+<footer class="text-center text-xs text-gray-400 py-6">
+  Halison App Studio · Matematikk 1P/2P · LK20
+</footer>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let currentShape = 'prisme';
+
+// Default values per shape (in the chosen unit)
+const defaults = {
+  prisme:   { l: 4, b: 3, h: 5 },
+  sylinder: { r: 3, h: 7 },
+  kule:     { r: 4 },
+  kjegle:   { r: 3, h: 8 },
+  pyramide: { l: 4, b: 4, h: 6 }
+};
+
+// ─── SHAPE METADATA ──────────────────────────────────────────────────────────
+const shapes = {
+  prisme: {
+    title: 'Rett prisme (kasse / rektangulær prisme)',
+    formulaHtml: `
+      <p class="font-bold text-indigo-800 mb-1">Formler — Rett prisme</p>
+      <p><strong>Volum:</strong> V = l · b · h</p>
+      <p><strong>Overflate:</strong> O = 2(l·b + l·h + b·h)</p>
+      <p class="text-xs text-gray-500 mt-1">l = lengde, b = bredde, h = høyde</p>`,
+    inputs: [
+      { id: 'l', label: 'Lengde (l)', min: 0.1, step: 0.1, val: () => defaults.prisme.l },
+      { id: 'b', label: 'Bredde (b)', min: 0.1, step: 0.1, val: () => defaults.prisme.b },
+      { id: 'h', label: 'Høyde (h)', min: 0.1, step: 0.1, val: () => defaults.prisme.h }
+    ]
+  },
+  sylinder: {
+    title: 'Sylinder',
+    formulaHtml: `
+      <p class="font-bold text-indigo-800 mb-1">Formler — Sylinder</p>
+      <p><strong>Volum:</strong> V = π · r² · h</p>
+      <p><strong>Overflate:</strong> O = 2π · r² + 2π · r · h = 2πr(r + h)</p>
+      <p class="text-xs text-gray-500 mt-1">r = radius, h = høyde</p>`,
+    inputs: [
+      { id: 'r', label: 'Radius (r)', min: 0.1, step: 0.1, val: () => defaults.sylinder.r },
+      { id: 'h', label: 'Høyde (h)', min: 0.1, step: 0.1, val: () => defaults.sylinder.h }
+    ]
+  },
+  kule: {
+    title: 'Kule',
+    formulaHtml: `
+      <p class="font-bold text-indigo-800 mb-1">Formler — Kule</p>
+      <p><strong>Volum:</strong> V = 4/3 · π · r³</p>
+      <p><strong>Overflate:</strong> O = 4 · π · r²</p>
+      <p class="text-xs text-gray-500 mt-1">r = radius</p>`,
+    inputs: [
+      { id: 'r', label: 'Radius (r)', min: 0.1, step: 0.1, val: () => defaults.kule.r }
+    ]
+  },
+  kjegle: {
+    title: 'Kjegle',
+    formulaHtml: `
+      <p class="font-bold text-indigo-800 mb-1">Formler — Kjegle</p>
+      <p><strong>Volum:</strong> V = 1/3 · π · r² · h</p>
+      <p><strong>Overflate:</strong> O = π · r² + π · r · s</p>
+      <p><strong>Slantelengde:</strong> s = √(r² + h²)</p>
+      <p class="text-xs text-gray-500 mt-1">r = radius (bunn), h = høyde, s = slantelengde</p>`,
+    inputs: [
+      { id: 'r', label: 'Radius (r)', min: 0.1, step: 0.1, val: () => defaults.kjegle.r },
+      { id: 'h', label: 'Høyde (h)', min: 0.1, step: 0.1, val: () => defaults.kjegle.h }
+    ]
+  },
+  pyramide: {
+    title: 'Rett pyramide (rektangulær base)',
+    formulaHtml: `
+      <p class="font-bold text-indigo-800 mb-1">Formler — Pyramide</p>
+      <p><strong>Volum:</strong> V = 1/3 · G · h</p>
+      <p><strong>Grunnflate:</strong> G = l · b</p>
+      <p><strong>Overflate:</strong> O = G + 2 · (½ · l · h<sub>l</sub>) + 2 · (½ · b · h<sub>b</sub>)</p>
+      <p class="text-xs text-gray-500 mt-1">l = lengde, b = bredde, h = høyde · h<sub>l</sub> og h<sub>b</sub> er høydene i trekantflatene</p>`,
+    inputs: [
+      { id: 'l', label: 'Lengde (l)', min: 0.1, step: 0.1, val: () => defaults.pyramide.l },
+      { id: 'b', label: 'Bredde (b)', min: 0.1, step: 0.1, val: () => defaults.pyramide.b },
+      { id: 'h', label: 'Høyde (h)', min: 0.1, step: 0.1, val: () => defaults.pyramide.h }
+    ]
+  }
+};
+
+// ─── SVG GENERATORS ──────────────────────────────────────────────────────────
+function svgPrisme(l, b, h) {
+  // Isometric-ish box
+  const W = 200, H = 180;
+  const ox = 100, oy = 130;
+  const sx = 1.6, sy = 0.7; // skew for depth
+  const fw = Math.min(l * 10, 90);
+  const fh = Math.min(h * 10, 80);
+  const fd = Math.min(b * 8, 50);
+  const dx = fd * sx, dy = fd * sy;
+
+  const p = (x, y) => `${ox + x},${oy + y}`;
+  // Front face
+  const f = [[0,0],[fw,0],[fw,-fh],[0,-fh]];
+  // Top face
+  const t = [[0,-fh],[fw,-fh],[fw+dx,-fh-dy],[dx,-fh-dy]];
+  // Right face
+  const r = [[fw,0],[fw+dx,-dy],[fw+dx,-fh-dy],[fw,-fh]];
+
+  return `<svg viewBox="0 0 ${W} ${H}" class="svg-3d w-full max-w-xs">
+    <defs>
+      <linearGradient id="gFront" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#818cf8"/>
+        <stop offset="100%" stop-color="#6366f1"/>
+      </linearGradient>
+      <linearGradient id="gTop" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#a5b4fc"/>
+        <stop offset="100%" stop-color="#818cf8"/>
+      </linearGradient>
+      <linearGradient id="gRight" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#4f46e5"/>
+        <stop offset="100%" stop-color="#6366f1"/>
+      </linearGradient>
+    </defs>
+    <!-- Front -->
+    <polygon points="${f.map(([x,y])=>p(x,y)).join(' ')}" fill="url(#gFront)" stroke="#3730a3" stroke-width="1.5"/>
+    <!-- Top -->
+    <polygon points="${t.map(([x,y])=>p(x,y)).join(' ')}" fill="url(#gTop)" stroke="#3730a3" stroke-width="1.5"/>
+    <!-- Right -->
+    <polygon points="${r.map(([x,y])=>p(x,y)).join(' ')}" fill="url(#gRight)" stroke="#3730a3" stroke-width="1.5"/>
+    <!-- Labels -->
+    <text x="${ox + fw/2}" y="${oy + 14}" text-anchor="middle" font-size="11" fill="#3730a3" font-weight="bold">l</text>
+    <text x="${ox + fw + dx/2 + 6}" y="${oy - dy/2}" text-anchor="start" font-size="11" fill="#3730a3" font-weight="bold">b</text>
+    <text x="${ox - 10}" y="${oy - fh/2}" text-anchor="end" font-size="11" fill="#3730a3" font-weight="bold">h</text>
+  </svg>`;
+}
+
+function svgSylinder(r, h) {
+  const W = 200, H = 200;
+  const cx = 100, ry = 18;
+  const width = Math.min(r * 18, 70);
+  const height = Math.min(h * 12, 110);
+  const top = 40;
+  const bot = top + height;
+
+  return `<svg viewBox="0 0 ${W} ${H}" class="svg-3d w-full max-w-xs">
+    <defs>
+      <linearGradient id="cylGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#4f46e5"/>
+        <stop offset="40%" stop-color="#818cf8"/>
+        <stop offset="100%" stop-color="#4f46e5"/>
+      </linearGradient>
+      <linearGradient id="cylTop" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#a5b4fc"/>
+        <stop offset="100%" stop-color="#818cf8"/>
+      </linearGradient>
+    </defs>
+    <!-- Body -->
+    <rect x="${cx - width}" y="${top}" width="${width*2}" height="${height}" fill="url(#cylGrad)" stroke="#3730a3" stroke-width="1.5"/>
+    <!-- Bottom ellipse -->
+    <ellipse cx="${cx}" cy="${bot}" rx="${width}" ry="${ry}" fill="#4f46e5" stroke="#3730a3" stroke-width="1.5"/>
+    <!-- Top ellipse -->
+    <ellipse cx="${cx}" cy="${top}" rx="${width}" ry="${ry}" fill="url(#cylTop)" stroke="#3730a3" stroke-width="1.5"/>
+    <!-- Radius line -->
+    <line x1="${cx}" y1="${top}" x2="${cx+width}" y2="${top}" stroke="#e0e7ff" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <text x="${cx + width/2}" y="${top - 6}" text-anchor="middle" font-size="11" fill="#3730a3" font-weight="bold">r</text>
+    <!-- Height line -->
+    <line x1="${cx + width + 8}" y1="${top}" x2="${cx + width + 8}" y2="${bot}" stroke="#3730a3" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="${cx + width + 18}" y="${top + height/2}" text-anchor="start" font-size="11" fill="#3730a3" font-weight="bold">h</text>
+  </svg>`;
+}
+
+function svgKule(r) {
+  const W = 200, H = 200;
+  const cx = 100, cy = 100;
+  const rad = Math.min(r * 14, 75);
+
+  return `<svg viewBox="0 0 ${W} ${H}" class="svg-3d w-full max-w-xs">
+    <defs>
+      <radialGradient id="kuleGrad" cx="38%" cy="35%">
+        <stop offset="0%" stop-color="#c7d2fe"/>
+        <stop offset="50%" stop-color="#818cf8"/>
+        <stop offset="100%" stop-color="#3730a3"/>
+      </radialGradient>
+    </defs>
+    <circle cx="${cx}" cy="${cy}" r="${rad}" fill="url(#kuleGrad)" stroke="#3730a3" stroke-width="1.5"/>
+    <!-- Equator ellipse (dashed) -->
+    <ellipse cx="${cx}" cy="${cy}" rx="${rad}" ry="${rad*0.28}" fill="none" stroke="#6366f1" stroke-width="1" stroke-dasharray="5,4"/>
+    <!-- Radius -->
+    <line x1="${cx}" y1="${cy}" x2="${cx + rad}" y2="${cy}" stroke="white" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <circle cx="${cx}" cy="${cy}" r="3" fill="white"/>
+    <text x="${cx + rad/2}" y="${cy - 7}" text-anchor="middle" font-size="12" fill="white" font-weight="bold">r</text>
+  </svg>`;
+}
+
+function svgKjegle(r, h) {
+  const W = 200, H = 210;
+  const cx = 100;
+  const ry = 18;
+  const width = Math.min(r * 18, 68);
+  const height = Math.min(h * 12, 120);
+  const top = 30;
+  const bot = top + height;
+
+  return `<svg viewBox="0 0 ${W} ${H}" class="svg-3d w-full max-w-xs">
+    <defs>
+      <linearGradient id="kjGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#4f46e5"/>
+        <stop offset="50%" stop-color="#818cf8"/>
+        <stop offset="100%" stop-color="#4f46e5"/>
+      </linearGradient>
+    </defs>
+    <!-- Left side -->
+    <line x1="${cx}" y1="${top}" x2="${cx - width}" y2="${bot}" stroke="#3730a3" stroke-width="1.5"/>
+    <!-- Right side -->
+    <line x1="${cx}" y1="${top}" x2="${cx + width}" y2="${bot}" stroke="#3730a3" stroke-width="1.5"/>
+    <!-- Filled cone body (left half) -->
+    <polygon points="${cx},${top} ${cx - width},${bot} ${cx + width},${bot}" fill="url(#kjGrad)" stroke="#3730a3" stroke-width="1.5" opacity="0.9"/>
+    <!-- Bottom ellipse -->
+    <ellipse cx="${cx}" cy="${bot}" rx="${width}" ry="${ry}" fill="#4f46e5" stroke="#3730a3" stroke-width="1.5"/>
+    <!-- Height dashed line -->
+    <line x1="${cx}" y1="${top}" x2="${cx}" y2="${bot}" stroke="#e0e7ff" stroke-width="1.5" stroke-dasharray="5,4"/>
+    <!-- Radius line -->
+    <line x1="${cx}" y1="${bot}" x2="${cx + width}" y2="${bot}" stroke="white" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <!-- Slant line label -->
+    <line x1="${cx}" y1="${top}" x2="${cx + width}" y2="${bot}" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,3"/>
+    <text x="${cx + width/2 + 10}" y="${top + height/2}" text-anchor="start" font-size="10" fill="#b45309" font-weight="bold">s</text>
+    <text x="${cx - 10}" y="${top + height/2}" text-anchor="end" font-size="11" fill="#e0e7ff" font-weight="bold">h</text>
+    <text x="${cx + width/2}" y="${bot + ry + 12}" text-anchor="middle" font-size="11" fill="#3730a3" font-weight="bold">r</text>
+  </svg>`;
+}
+
+function svgPyramide(l, b, h) {
+  const W = 200, H = 200;
+  const ox = 100, oy = 155;
+  const fw = Math.min(l * 9, 80);
+  const fd = Math.min(b * 7, 45);
+  const fh = Math.min(h * 12, 110);
+  const sx = 1.5, sy = 0.6;
+  const dx = fd * sx, dy = fd * sy;
+  const tipX = ox + fw/2 + dx/2;
+  const tipY = oy - fh - dy/2;
+
+  // Base corners
+  const A = [ox, oy];
+  const B = [ox + fw, oy];
+  const C = [ox + fw + dx, oy - dy];
+  const D = [ox + dx, oy - dy];
+  const T = [tipX, tipY];
+
+  const pt = arr => arr.map(([x,y])=>`${x},${y}`).join(' ');
+
+  return `<svg viewBox="0 0 ${W} ${H}" class="svg-3d w-full max-w-xs">
+    <defs>
+      <linearGradient id="pyLeft" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#4f46e5"/>
+        <stop offset="100%" stop-color="#818cf8"/>
+      </linearGradient>
+      <linearGradient id="pyRight" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#6366f1"/>
+        <stop offset="100%" stop-color="#4338ca"/>
+      </linearGradient>
+      <linearGradient id="pyFront" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#818cf8"/>
+        <stop offset="100%" stop-color="#4f46e5"/>
+      </linearGradient>
+    </defs>
+    <!-- Base -->
+    <polygon points="${pt([A,B,C,D])}" fill="#a5b4fc" stroke="#3730a3" stroke-width="1.5" opacity="0.7"/>
+    <!-- Left face (A-D-T) -->
+    <polygon points="${pt([A,D,T])}" fill="url(#pyLeft)" stroke="#3730a3" stroke-width="1.5" opacity="0.9"/>
+    <!-- Back face (D-C-T) -->
+    <polygon points="${pt([D,C,T])}" fill="#6366f1" stroke="#3730a3" stroke-width="1.5" opacity="0.75"/>
+    <!-- Right face (B-C-T) -->
+    <polygon points="${pt([B,C,T])}" fill="url(#pyRight)" stroke="#3730a3" stroke-width="1.5" opacity="0.85"/>
+    <!-- Front face (A-B-T) -->
+    <polygon points="${pt([A,B,T])}" fill="url(#pyFront)" stroke="#3730a3" stroke-width="1.5"/>
+    <!-- Height dashed -->
+    <line x1="${(A[0]+B[0]+C[0]+D[0])/4}" y1="${(A[1]+B[1]+C[1]+D[1])/4}" x2="${T[0]}" y2="${T[1]}" stroke="#e0e7ff" stroke-width="1.5" stroke-dasharray="5,4"/>
+    <!-- Labels -->
+    <text x="${(A[0]+B[0])/2}" y="${oy+14}" text-anchor="middle" font-size="11" fill="#3730a3" font-weight="bold">l</text>
+    <text x="${B[0]+dx/2+5}" y="${(B[1]+C[1])/2}" text-anchor="start" font-size="11" fill="#3730a3" font-weight="bold">b</text>
+    <text x="${T[0]+8}" y="${(T[1]+oy)/2}" text-anchor="start" font-size="11" fill="#e0e7ff" font-weight="bold">h</text>
+  </svg>`;
+}
+
+// ─── CALCULATION FUNCTIONS ────────────────────────────────────────────────────
+function calcPrisme(l, b, h, u) {
+  const V = l * b * h;
+  const O = 2 * (l*b + l*h + b*h);
+  const steps = [
+    `Volum: V = l · b · h`,
+    `V = ${fmt(l)} · ${fmt(b)} · ${fmt(h)} ${u}³`,
+    `V = ${fmt(V)} ${u}³`,
+    ``,
+    `Overflate: O = 2(l·b + l·h + b·h)`,
+    `O = 2·(${fmt(l)}·${fmt(b)} + ${fmt(l)}·${fmt(h)} + ${fmt(b)}·${fmt(h)}) ${u}²`,
+    `O = 2·(${fmt(l*b)} + ${fmt(l*h)} + ${fmt(b*h)}) ${u}²`,
+    `O = 2·${fmt(l*b + l*h + b*h)} ${u}²`,
+    `O = ${fmt(O)} ${u}²`
+  ];
+  return { V, O, steps };
+}
+
+function calcSylinder(r, h, u) {
+  const V = Math.PI * r * r * h;
+  const O = 2 * Math.PI * r * (r + h);
+  const steps = [
+    `Volum: V = π · r² · h`,
+    `V = π · ${fmt(r)}² · ${fmt(h)} ${u}³`,
+    `V = π · ${fmt(r*r)} · ${fmt(h)} ${u}³`,
+    `V = ${fmt(Math.PI * r * r)} · ${fmt(h)} ${u}³`,
+    `V ≈ ${fmt(V)} ${u}³`,
+    ``,
+    `Overflate: O = 2πr(r + h)`,
+    `O = 2 · π · ${fmt(r)} · (${fmt(r)} + ${fmt(h)}) ${u}²`,
+    `O = 2 · π · ${fmt(r)} · ${fmt(r+h)} ${u}²`,
+    `O ≈ ${fmt(O)} ${u}²`
+  ];
+  return { V, O, steps };
+}
+
+function calcKule(r, u) {
+  const V = (4/3) * Math.PI * r * r * r;
+  const O = 4 * Math.PI * r * r;
+  const steps = [
+    `Volum: V = 4/3 · π · r³`,
+    `V = 4/3 · π · ${fmt(r)}³`,
+    `V = 4/3 · π · ${fmt(r*r*r)}`,
+    `V ≈ ${fmt(V)} ${u}³`,
+    ``,
+    `Overflate: O = 4 · π · r²`,
+    `O = 4 · π · ${fmt(r)}²`,
+    `O = 4 · π · ${fmt(r*r)}`,
+    `O ≈ ${fmt(O)} ${u}²`
+  ];
+  return { V, O, steps };
+}
+
+function calcKjegle(r, h, u) {
+  const s = Math.sqrt(r*r + h*h);
+  const V = (1/3) * Math.PI * r * r * h;
+  const O = Math.PI * r * r + Math.PI * r * s;
+  const steps = [
+    `Slantelengde: s = √(r² + h²)`,
+    `s = √(${fmt(r)}² + ${fmt(h)}²) = √(${fmt(r*r)} + ${fmt(h*h)})`,
+    `s = √${fmt(r*r + h*h)} ≈ ${fmt(s)} ${u}`,
+    ``,
+    `Volum: V = 1/3 · π · r² · h`,
+    `V = 1/3 · π · ${fmt(r)}² · ${fmt(h)} ${u}³`,
+    `V = 1/3 · π · ${fmt(r*r)} · ${fmt(h)} ${u}³`,
+    `V ≈ ${fmt(V)} ${u}³`,
+    ``,
+    `Overflate: O = π·r² + π·r·s`,
+    `O = π · ${fmt(r)}² + π · ${fmt(r)} · ${fmt(s)}`,
+    `O = π · ${fmt(r*r)} + π · ${fmt(r*s)}`,
+    `O ≈ ${fmt(Math.PI*r*r)} + ${fmt(Math.PI*r*s)} ${u}²`,
+    `O ≈ ${fmt(O)} ${u}²`
+  ];
+  return { V, O, steps, s };
+}
+
+function calcPyramide(l, b, h, u) {
+  const G = l * b;
+  const V = (1/3) * G * h;
+  // Heights of the triangular faces
+  // For l-faces: slant from apex to midpoint of l-edge
+  const hl = Math.sqrt((b/2)*(b/2) + h*h);
+  // For b-faces: slant from apex to midpoint of b-edge
+  const hb = Math.sqrt((l/2)*(l/2) + h*h);
+  const A_l_faces = 2 * (0.5 * l * hl); // two l-faces
+  const A_b_faces = 2 * (0.5 * b * hb); // two b-faces
+  const O = G + A_l_faces + A_b_faces;
+  const steps = [
+    `Grunnflate: G = l · b = ${fmt(l)} · ${fmt(b)} = ${fmt(G)} ${u}²`,
+    ``,
+    `Volum: V = 1/3 · G · h`,
+    `V = 1/3 · ${fmt(G)} · ${fmt(h)} ${u}³`,
+    `V ≈ ${fmt(V)} ${u}³`,
+    ``,
+    `Overflate: O = G + sideflater`,
+    `Slanth. mot l-kanter: h_l = √((b/2)² + h²) = √(${fmt((b/2)*(b/2))} + ${fmt(h*h)}) ≈ ${fmt(hl)} ${u}`,
+    `Slanth. mot b-kanter: h_b = √((l/2)² + h²) = √(${fmt((l/2)*(l/2))} + ${fmt(h*h)}) ≈ ${fmt(hb)} ${u}`,
+    `2 l-flater: 2 · ½ · ${fmt(l)} · ${fmt(hl)} ≈ ${fmt(A_l_faces)} ${u}²`,
+    `2 b-flater: 2 · ½ · ${fmt(b)} · ${fmt(hb)} ≈ ${fmt(A_b_faces)} ${u}²`,
+    `O = ${fmt(G)} + ${fmt(A_l_faces)} + ${fmt(A_b_faces)}`,
+    `O ≈ ${fmt(O)} ${u}²`
+  ];
+  return { V, O, steps, G };
+}
+
+// ─── LITER CONVERSION ────────────────────────────────────────────────────────
+function toLiter(V, unit) {
+  // Convert V (in unit³) to litres
+  // 1 cm³ = 0.001 L, 1 dm³ = 1 L, 1 m³ = 1000 L
+  const factors = { cm: 0.001, dm: 1, m: 1000 };
+  return V * (factors[unit] || 1);
+}
+
+function fmtLiter(L) {
+  if (L >= 1000) return `${fmt(L / 1000)} kL (kiloliter)`;
+  if (L >= 1) return `${fmt(L)} L (liter)`;
+  if (L >= 0.001) return `${fmt(L * 1000)} mL (milliliter)`;
+  return `${fmt(L * 1000)} mL (milliliter)`;
+}
+
+// ─── NUMBER FORMATTING ───────────────────────────────────────────────────────
+function fmt(n) {
+  if (Math.abs(n) >= 1000) return n.toFixed(1).replace('.', ',');
+  if (Math.abs(n) >= 100) return n.toFixed(2).replace('.', ',');
+  if (Math.abs(n) >= 10) return n.toFixed(3).replace('.', ',');
+  return n.toFixed(4).replace('.', ',').replace(/,?0+$/, '').replace(/,$/, '');
+}
+
+// ─── GET INPUT VALUES ────────────────────────────────────────────────────────
+function getVal(id) {
+  const el = document.getElementById('inp-' + id);
+  if (!el) return 0;
+  return parseFloat(el.value) || 0;
+}
+
+// ─── RENDER FUNCTIONS ────────────────────────────────────────────────────────
+function renderInputs(shape) {
+  const meta = shapes[shape];
+  const container = document.getElementById('inputs-container');
+  const unit = document.getElementById('unit-select').value;
+  container.innerHTML = meta.inputs.map(inp => `
+    <div class="flex items-center gap-3">
+      <label class="w-28 text-sm font-medium text-gray-700 shrink-0">${inp.label} <span class="unit-tag">(${unit})</span></label>
+      <input id="inp-${inp.id}" type="number" min="${inp.min}" step="${inp.step}"
+        value="${inp.val()}"
+        oninput="recalc()"
+        class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-300 outline-none" />
+    </div>
+  `).join('');
+}
+
+function renderSVG(shape) {
+  const container = document.getElementById('svg-container');
+  const unit = document.getElementById('unit-select').value;
+  let svg = '';
+  if (shape === 'prisme') {
+    const l = getVal('l') || defaults.prisme.l;
+    const b = getVal('b') || defaults.prisme.b;
+    const h = getVal('h') || defaults.prisme.h;
+    svg = svgPrisme(l, b, h);
+  } else if (shape === 'sylinder') {
+    const r = getVal('r') || defaults.sylinder.r;
+    const h = getVal('h') || defaults.sylinder.h;
+    svg = svgSylinder(r, h);
+  } else if (shape === 'kule') {
+    const r = getVal('r') || defaults.kule.r;
+    svg = svgKule(r);
+  } else if (shape === 'kjegle') {
+    const r = getVal('r') || defaults.kjegle.r;
+    const h = getVal('h') || defaults.kjegle.h;
+    svg = svgKjegle(r, h);
+  } else if (shape === 'pyramide') {
+    const l = getVal('l') || defaults.pyramide.l;
+    const b = getVal('b') || defaults.pyramide.b;
+    const h = getVal('h') || defaults.pyramide.h;
+    svg = svgPyramide(l, b, h);
+  }
+  container.innerHTML = svg;
+}
+
+function renderResults(shape) {
+  const unit = document.getElementById('unit-select').value;
+  let result = null;
+  let valid = true;
+
+  if (shape === 'prisme') {
+    const l = getVal('l'), b = getVal('b'), h = getVal('h');
+    if (l <= 0 || b <= 0 || h <= 0) { valid = false; }
+    else result = calcPrisme(l, b, h, unit);
+  } else if (shape === 'sylinder') {
+    const r = getVal('r'), h = getVal('h');
+    if (r <= 0 || h <= 0) { valid = false; }
+    else result = calcSylinder(r, h, unit);
+  } else if (shape === 'kule') {
+    const r = getVal('r');
+    if (r <= 0) { valid = false; }
+    else result = calcKule(r, unit);
+  } else if (shape === 'kjegle') {
+    const r = getVal('r'), h = getVal('h');
+    if (r <= 0 || h <= 0) { valid = false; }
+    else result = calcKjegle(r, h, unit);
+  } else if (shape === 'pyramide') {
+    const l = getVal('l'), b = getVal('b'), h = getVal('h');
+    if (l <= 0 || b <= 0 || h <= 0) { valid = false; }
+    else result = calcPyramide(l, b, h, unit);
+  }
+
+  const rc = document.getElementById('results-container');
+  const lc = document.getElementById('liter-container');
+
+  if (!valid || !result) {
+    rc.innerHTML = `<p class="text-red-500 text-sm">Alle mål må være større enn 0.</p>`;
+    lc.innerHTML = '';
+    return;
+  }
+
+  // Result cards
+  rc.innerHTML = `
+    <h2 class="text-lg font-bold text-gray-800 mb-5">Beregning — steg for steg</h2>
+    <div class="grid md:grid-cols-2 gap-6 mb-6">
+      <div class="result-block bg-indigo-50 rounded-xl p-5">
+        <p class="text-xs font-semibold text-indigo-500 uppercase tracking-wide mb-1">Volum</p>
+        <p class="text-3xl font-bold text-indigo-700">${fmt(result.V)} <span class="text-lg font-normal text-indigo-400">${unit}³</span></p>
+      </div>
+      <div class="result-block bg-purple-50 rounded-xl p-5" style="border-color:#a855f7">
+        <p class="text-xs font-semibold text-purple-500 uppercase tracking-wide mb-1">Overflate</p>
+        <p class="text-3xl font-bold text-purple-700">${fmt(result.O)} <span class="text-lg font-normal text-purple-400">${unit}²</span></p>
+      </div>
+    </div>
+    <div class="bg-gray-50 rounded-xl p-4">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Utregning</p>
+      <div class="space-y-1 font-mono text-sm text-gray-700">
+        ${result.steps.map(s => s === '' ? '<div class="h-2"></div>' : `<div class="step">${s.replace(/≈/g, '≈').replace(/·/g, '·')}</div>`).join('')}
+      </div>
+    </div>
+  `;
+
+  // Liter conversion
+  const liters = toLiter(result.V, unit);
+  const litersFormatted = fmtLiter(liters);
+  const convFactor = unit === 'cm' ? '0,001' : unit === 'dm' ? '1' : '1 000';
+  const convUnit = unit === 'cm' ? 'cm³' : unit === 'dm' ? 'dm³' : 'm³';
+
+  lc.innerHTML = `
+    <h3 class="font-bold text-indigo-800 mb-3 flex items-center gap-2">
+      <span class="text-xl">💧</span> Liter-omregning: Hvor mye rommer figuren?
+    </h3>
+    <div class="grid md:grid-cols-2 gap-5">
+      <div>
+        <p class="text-sm text-indigo-700 mb-2"><strong>Volum:</strong> ${fmt(result.V)} ${unit}³</p>
+        <div class="bg-white rounded-lg p-3 text-sm font-mono text-gray-700 space-y-1">
+          <div>1 ${convUnit} = ${convFactor} L</div>
+          <div>${fmt(result.V)} ${convUnit} × ${convFactor} L/${convUnit}</div>
+          <div class="font-bold text-indigo-700">= ${litersFormatted}</div>
+        </div>
+      </div>
+      <div class="flex flex-col justify-center">
+        <p class="text-xs text-indigo-600 font-semibold mb-2">Omregningstabell</p>
+        <table class="text-xs w-full border-collapse">
+          <thead>
+            <tr class="bg-indigo-100">
+              <th class="text-left px-2 py-1 rounded-tl-lg">Enhet</th>
+              <th class="text-right px-2 py-1 rounded-tr-lg">= Liter</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white">
+            <tr class="border-b border-indigo-50"><td class="px-2 py-1">1 cm³</td><td class="text-right px-2 py-1">0,001 L = 1 mL</td></tr>
+            <tr class="border-b border-indigo-50"><td class="px-2 py-1">1 dm³</td><td class="text-right px-2 py-1">1 L</td></tr>
+            <tr><td class="px-2 py-1">1 m³</td><td class="text-right px-2 py-1">1 000 L</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ─── MAIN RECALC ─────────────────────────────────────────────────────────────
+function recalc() {
+  renderSVG(currentShape);
+  renderResults(currentShape);
+}
+
+// ─── SELECT SHAPE ────────────────────────────────────────────────────────────
+function selectShape(shape) {
+  currentShape = shape;
+
+  // Update button styles
+  Object.keys(shapes).forEach(s => {
+    const btn = document.getElementById('btn-' + s);
+    if (s === shape) {
+      btn.className = 'shape-btn active px-4 py-2 rounded-lg font-semibold text-sm bg-indigo-600 text-white shadow';
+    } else {
+      btn.className = 'shape-btn px-4 py-2 rounded-lg font-semibold text-sm bg-gray-100 text-gray-700 hover:bg-indigo-50';
+    }
+  });
+
+  // Update title and formula
+  document.getElementById('shape-title').textContent = shapes[shape].title;
+  document.getElementById('formula-display').innerHTML = shapes[shape].formulaHtml;
+
+  // Render inputs (fresh defaults)
+  renderInputs(shape);
+  recalc();
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+selectShape('prisme');
+</script>
+</body>
+</html>
