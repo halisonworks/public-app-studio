@@ -16,7 +16,8 @@ and anyone who wants to make a quick prototype of an app idea.
 |---|---|---|
 | [![price-calculator](projects/price-calculator/screenshot.png)](projects/price-calculator/) **Price calculator** | [![ux-retention-simulator](projects/ux-retention-simulator/screenshot.png)](projects/ux-retention-simulator/) **UX retention simulator** | [![persona-developer](projects/persona-developer/screenshot.png)](projects/persona-developer/) **Persona developer** |
 | [![habit-tracker](projects/habit-tracker/screenshot.png)](projects/habit-tracker/) **Habit tracker** | [![color-palette](projects/color-palette/screenshot.png)](projects/color-palette/) **Color palette** | [![quiz-game](projects/quiz-game/screenshot.png)](projects/quiz-game/) **Quiz game** |
-| [![saas-prototype](projects/saas-prototype/screenshot.png)](projects/saas-prototype/) **SaaS prototype** | | |
+| [![saas-prototype](projects/saas-prototype/screenshot.png)](projects/saas-prototype/) **SaaS prototype** | [![invoice-generator](projects/invoice-generator/screenshot.png)](projects/invoice-generator/) **Invoice generator** | [![pricing-page](projects/pricing-page/screenshot.png)](projects/pricing-page/) **Pricing page** |
+| [![flashcards](projects/flashcards/screenshot.png)](projects/flashcards/) **Flashcards** | [![pomodoro-timer](projects/pomodoro-timer/screenshot.png)](projects/pomodoro-timer/) **Pomodoro timer** | [![infographic-stats](projects/infographic-stats/screenshot.png)](projects/infographic-stats/) **Infographic stats** |
 
 *(`tip-calculator` and `sales-dashboard` are React components — they render inside App Studio.)*
 
@@ -33,6 +34,11 @@ and anyone who wants to make a quick prototype of an app idea.
 | [color-palette](projects/color-palette/) | Creative | HTML | EN | [starter](prompts/context/creative.md) |
 | [quiz-game](projects/quiz-game/) | Game / quiz | HTML | EN | [starter](prompts/context/game-quiz.md) |
 | [saas-prototype](projects/saas-prototype/) | Prototype | HTML | EN | [starter](prompts/context/prototype.md) |
+| [invoice-generator](projects/invoice-generator/) | Business / finance | HTML | EN | — |
+| [pricing-page](projects/pricing-page/) | Business / sales | HTML | EN | — |
+| [flashcards](projects/flashcards/) | Educational | HTML | EN | — |
+| [pomodoro-timer](projects/pomodoro-timer/) | Personal | HTML | EN | — |
+| [infographic-stats](projects/infographic-stats/) | Creative | HTML | EN | — |
 
 ## Categories (prompt add-ons)
 

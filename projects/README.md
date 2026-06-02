@@ -13,6 +13,11 @@ Ready-made App Studio projects you can download and load.
 - [`color-palette/`](./color-palette/) — harmonious palette generator with lock & copy (HTML)
 - [`quiz-game/`](./quiz-game/) — 8-question multiple-choice quiz with score (HTML)
 - [`saas-prototype/`](./saas-prototype/) — clickable project-management app mockup (HTML)
+- [`invoice-generator/`](./invoice-generator/) — freelancer/SMB invoice with live totals, print-friendly (HTML)
+- [`pricing-page/`](./pricing-page/) — SaaS pricing page with monthly/annual toggle (HTML)
+- [`flashcards/`](./flashcards/) — flip-card study tool with shuffle and known-tracking (HTML)
+- [`pomodoro-timer/`](./pomodoro-timer/) — focus timer with work/break cycles (HTML)
+- [`infographic-stats/`](./infographic-stats/) — editable share-ready stats infographic (HTML)
 
 See [`catalog.md`](../catalog.md) for the full table by category.
 
