@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<!--
+  Tallregning — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 1P (LK20): regnerekkefølge steg for steg
+  og overslagsregning.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tallregning – Matematikk 1P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .step-highlight { animation: pulse-bg 0.6s ease-in-out; }
+    @keyframes pulse-bg {
+      0%   { background-color: #fef9c3; }
+      50%  { background-color: #fde68a; }
+      100% { background-color: #fef9c3; }
+    }
+    .tab-active   { border-bottom: 3px solid #2563eb; color: #1d4ed8; font-weight: 700; }
+    .tab-inactive { border-bottom: 3px solid transparent; color: #6b7280; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans text-gray-800">
+
+<!-- ===== TOPBAR ===== -->
+<header class="bg-blue-700 text-white shadow-md">
+  <div class="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
+    <span class="text-3xl">🔢</span>
+    <div>
+      <h1 class="text-xl font-bold leading-tight">Tallregning</h1>
+      <p class="text-blue-200 text-sm">Matematikk 1P · LK20 · Kap. 1.1–1.2</p>
+    </div>
+  </div>
+</header>
+
+<!-- ===== TABS ===== -->
+<div class="max-w-3xl mx-auto px-4 mt-4">
+  <div class="flex border-b border-gray-200 gap-4">
+    <button id="tab-btn-rekkefølge"
+      class="py-2 px-3 text-sm tab-active transition-colors"
+      onclick="switchTab('rekkefølge')">
+      📐 Regnerekkefølge
+    </button>
+    <button id="tab-btn-overslag"
+      class="py-2 px-3 text-sm tab-inactive transition-colors"
+      onclick="switchTab('overslag')">
+      📏 Overslagsregning
+    </button>
+  </div>
+</div>
+
+<!-- ===== TAB: REGNEREKKEFØLGE ===== -->
+<div id="tab-rekkefølge" class="max-w-3xl mx-auto px-4 py-6 space-y-6">
+
+  <!-- Teori-boks -->
+  <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-3">
+    <h2 class="font-bold text-blue-800 text-lg">Hva er regnerekkefølge?</h2>
+    <p class="text-sm text-blue-900 leading-relaxed">
+      Når et regnestykke inneholder flere operasjoner, bestemmer <strong>regnerekkefølgen</strong>
+      hvilken vi regner ut først. På norsk husker vi det slik:
+    </p>
+    <ol class="list-none space-y-2 text-sm">
+      <li class="flex items-start gap-3">
+        <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold shrink-0 text-xs">1</span>
+        <span><strong>Parenteser</strong> — alltid først: <code class="bg-white px-1 rounded">(2 + 3) × 4</code> → regn ut <code class="bg-white px-1 rounded">2+3</code> first</span>
+      </li>
+      <li class="flex items-start gap-3">
+        <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold shrink-0 text-xs">2</span>
+        <span><strong>Potenser</strong> — deretter: <code class="bg-white px-1 rounded">2^3</code> = 8</span>
+      </li>
+      <li class="flex items-start gap-3">
+        <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold shrink-0 text-xs">3</span>
+        <span><strong>Multiplikasjon og divisjon</strong> — fra venstre mot høyre</span>
+      </li>
+      <li class="flex items-start gap-3">
+        <span class="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold shrink-0 text-xs">4</span>
+        <span><strong>Addisjon og subtraksjon</strong> — fra venstre mot høyre</span>
+      </li>
+    </ol>
+    <p class="text-xs text-blue-700 italic">Huskeregel: <strong>P</strong>o<strong>P</strong>·<strong>M</strong>A — Parenteser, Potenser, Multiplikasjon/divisjon, Addisjon/subtraksjon</p>
+  </div>
+
+  <!-- Eksempel-knapper -->
+  <div>
+    <p class="text-sm font-semibold text-gray-600 mb-2">Velg et eksempel:</p>
+    <div class="flex flex-wrap gap-2">
+      <button onclick="loadExample('2 + 3 * 4')"
+        class="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm hover:bg-blue-50 hover:border-blue-400 transition-colors">
+        2 + 3 × 4
+      </button>
+      <button onclick="loadExample('(2 + 3) * 4')"
+        class="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm hover:bg-blue-50 hover:border-blue-400 transition-colors">
+        (2 + 3) × 4
+      </button>
+      <button onclick="loadExample('10 - 2^3 + 1')"
+        class="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm hover:bg-blue-50 hover:border-blue-400 transition-colors">
+        10 − 2³ + 1
+      </button>
+      <button onclick="loadExample('100 / 5 / 4')"
+        class="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm hover:bg-blue-50 hover:border-blue-400 transition-colors">
+        100 ÷ 5 ÷ 4
+      </button>
+      <button onclick="loadExample('3 + (2 * (4 - 1))^2')"
+        class="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm hover:bg-blue-50 hover:border-blue-400 transition-colors">
+        3 + (2 × (4−1))²
+      </button>
+      <button onclick="loadExample('8 / 2 * (2 + 2)')"
+        class="bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-sm hover:bg-blue-50 hover:border-blue-400 transition-colors">
+        8 ÷ 2 × (2+2)
+      </button>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+    <label class="block font-semibold text-gray-700" for="expr-input">
+      Skriv inn et regnestykke:
+    </label>
+    <p class="text-xs text-gray-500">Bruk: <code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>^</code> og parenteser. Eksempel: <code>3 + 2 * (4 - 1)^2</code></p>
+    <div class="flex gap-2">
+      <input id="expr-input" type="text" placeholder="f.eks. 2 + 3 * 4"
+        class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-400"
+        onkeydown="if(event.key==='Enter') solveExpression()" />
+      <button onclick="solveExpression()"
+        class="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition-colors font-semibold">
+        Løs
+      </button>
+    </div>
+    <div id="expr-error" class="text-red-600 text-sm hidden"></div>
+  </div>
+
+  <!-- Steg-for-steg resultat -->
+  <div id="steps-container" class="space-y-3 hidden">
+    <h3 class="font-bold text-gray-700 text-base">Steg-for-steg løsning:</h3>
+    <div id="steps-list" class="space-y-2"></div>
+    <div id="final-answer" class="bg-green-50 border border-green-300 rounded-xl p-4 flex items-center gap-3">
+      <span class="text-2xl">✅</span>
+      <div>
+        <p class="text-xs text-green-700 font-semibold uppercase tracking-wide">Svar</p>
+        <p id="final-value" class="text-xl font-bold text-green-800"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TAB: OVERSLAGSREGNING ===== -->
+<div id="tab-overslag" class="max-w-3xl mx-auto px-4 py-6 space-y-6 hidden">
+
+  <!-- Teori-boks -->
+  <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 space-y-3">
+    <h2 class="font-bold text-amber-800 text-lg">Hva er overslagsregning?</h2>
+    <p class="text-sm text-amber-900 leading-relaxed">
+      Et <strong>overslag</strong> er en rask, omtrentlig beregning. Vi runder av tallene
+      til nærmeste 10, 100 eller 1000 og regner deretter. Dette er nyttig for å sjekke
+      om svaret er fornuftig, eller for å beregne noe raskt i hodet.
+    </p>
+    <div class="bg-white rounded-lg p-3 space-y-1 text-sm">
+      <p class="font-semibold text-amber-800">Eksempel:</p>
+      <p>Nøyaktig: <strong>487 + 312 = 799</strong></p>
+      <p>Overslag: <strong>500 + 300 = 800</strong> (runder til nærmeste 100)</p>
+      <p class="text-xs text-amber-700">Overslaget er 800 — svaret 799 er fornuftig!</p>
+    </div>
+    <div class="bg-white rounded-lg p-3 space-y-1 text-sm">
+      <p class="font-semibold text-amber-800">Avrundingsregler:</p>
+      <ul class="list-disc list-inside space-y-1 text-amber-900">
+        <li>Siffer &lt; 5 → rund ned (behold)</li>
+        <li>Siffer ≥ 5 → rund opp</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Interaktiv kalkulator -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5 space-y-5">
+    <h3 class="font-bold text-gray-700">Lag ditt eget overslag</h3>
+
+    <!-- Tall 1 -->
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Tall 1</label>
+        <input id="ov-a" type="number" placeholder="f.eks. 487"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400"
+          oninput="updateOverslag()" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">Tall 2</label>
+        <input id="ov-b" type="number" placeholder="f.eks. 312"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400"
+          oninput="updateOverslag()" />
+      </div>
+    </div>
+
+    <!-- Operasjon -->
+    <div>
+      <label class="block text-sm font-medium text-gray-600 mb-2">Operasjon</label>
+      <div class="flex gap-3 flex-wrap">
+        <label class="flex items-center gap-1.5 cursor-pointer">
+          <input type="radio" name="ov-op" value="+" checked class="accent-amber-500" onchange="updateOverslag()" />
+          <span class="text-sm">Addisjon (+)</span>
+        </label>
+        <label class="flex items-center gap-1.5 cursor-pointer">
+          <input type="radio" name="ov-op" value="-" class="accent-amber-500" onchange="updateOverslag()" />
+          <span class="text-sm">Subtraksjon (−)</span>
+        </label>
+        <label class="flex items-center gap-1.5 cursor-pointer">
+          <input type="radio" name="ov-op" value="*" class="accent-amber-500" onchange="updateOverslag()" />
+          <span class="text-sm">Multiplikasjon (×)</span>
+        </label>
+        <label class="flex items-center gap-1.5 cursor-pointer">
+          <input type="radio" name="ov-op" value="/" class="accent-amber-500" onchange="updateOverslag()" />
+          <span class="text-sm">Divisjon (÷)</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Avrundingsnivå -->
+    <div>
+      <label class="block text-sm font-medium text-gray-600 mb-2">Avrund til nærmeste:</label>
+      <div class="flex gap-3 flex-wrap">
+        <label class="flex items-center gap-1.5 cursor-pointer">
+          <input type="radio" name="ov-round" value="1" class="accent-amber-500" onchange="updateOverslag()" />
+          <span class="text-sm">1 (ingen avrunding)</span>
+        </label>
+        <label class="flex items-center gap-1.5 cursor-pointer">
+          <input type="radio" name="ov-round" value="10" checked class="accent-amber-500" onchange="updateOverslag()" />
+          <span class="text-sm">10</span>
+        </label>
+        <label class="flex items-center gap-1.5 cursor-pointer">
+          <input type="radio" name="ov-round" value="100" class="accent-amber-500" onchange="updateOverslag()" />
+          <span class="text-sm">100</span>
+        </label>
+        <label class="flex items-center gap-1.5 cursor-pointer">
+          <input type="radio" name="ov-round" value="1000" class="accent-amber-500" onchange="updateOverslag()" />
+          <span class="text-sm">1000</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Resultat -->
+    <div id="ov-result" class="hidden space-y-3">
+      <div class="border-t border-gray-100 pt-4 space-y-3">
+        <!-- Avrunding -->
+        <div class="bg-amber-50 rounded-lg p-4 space-y-2">
+          <p class="text-sm font-semibold text-amber-800">Steg 1: Avrund tallene</p>
+          <div class="flex items-center gap-2 flex-wrap text-sm">
+            <span id="ov-a-val" class="font-mono bg-white px-2 py-1 rounded border border-amber-200"></span>
+            <span class="text-amber-600">→ avrundet til nærmeste <span id="ov-round-label"></span> →</span>
+            <span id="ov-a-rounded" class="font-mono bg-amber-100 px-2 py-1 rounded border border-amber-300 font-bold"></span>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap text-sm">
+            <span id="ov-b-val" class="font-mono bg-white px-2 py-1 rounded border border-amber-200"></span>
+            <span class="text-amber-600">→ avrundet til nærmeste <span class="ov-round-label2"></span> →</span>
+            <span id="ov-b-rounded" class="font-mono bg-amber-100 px-2 py-1 rounded border border-amber-300 font-bold"></span>
+          </div>
+        </div>
+        <!-- Overslag -->
+        <div class="bg-amber-100 rounded-lg p-4">
+          <p class="text-sm font-semibold text-amber-800 mb-1">Steg 2: Regn ut overslaget</p>
+          <p id="ov-estimate-calc" class="text-base font-mono text-amber-900"></p>
+          <p class="text-sm font-semibold text-amber-800 mt-2">Overslag: <span id="ov-estimate-val" class="text-lg font-bold"></span></p>
+        </div>
+        <!-- Nøyaktig svar -->
+        <div class="bg-green-50 rounded-lg p-4 space-y-1">
+          <p class="text-sm font-semibold text-green-800">Nøyaktig svar:</p>
+          <p id="ov-exact-calc" class="text-base font-mono text-green-900"></p>
+          <p class="text-sm font-semibold text-green-800 mt-1">Svar: <span id="ov-exact-val" class="text-lg font-bold"></span></p>
+        </div>
+        <!-- Sammenligning -->
+        <div id="ov-comparison" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p class="text-sm font-semibold text-blue-800">Sammenligning</p>
+          <p id="ov-comparison-text" class="text-sm text-blue-700 mt-1"></p>
+          <div class="mt-3 relative h-5 bg-gray-200 rounded-full overflow-hidden">
+            <div id="ov-bar-exact" class="absolute top-0 left-0 h-full bg-green-400 rounded-full transition-all duration-500" style="width:0%"></div>
+            <div id="ov-bar-overslag" class="absolute top-0 left-0 h-full bg-amber-400 rounded-full opacity-70 transition-all duration-500" style="width:0%"></div>
+          </div>
+          <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 bg-green-400 rounded-full"></span> Nøyaktig</span>
+            <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 bg-amber-400 rounded-full"></span> Overslag</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preset-eksempler -->
+    <div class="border-t border-gray-100 pt-4">
+      <p class="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Prøv disse eksemplene:</p>
+      <div class="flex flex-wrap gap-2">
+        <button onclick="loadOvExample(487, 312, '+', 100)"
+          class="bg-gray-100 hover:bg-amber-100 border border-gray-200 hover:border-amber-300 text-xs px-3 py-1.5 rounded-lg transition-colors">
+          487 + 312 (til 100)
+        </button>
+        <button onclick="loadOvExample(2360, 880, '-', 100)"
+          class="bg-gray-100 hover:bg-amber-100 border border-gray-200 hover:border-amber-300 text-xs px-3 py-1.5 rounded-lg transition-colors">
+          2360 − 880 (til 100)
+        </button>
+        <button onclick="loadOvExample(48, 21, '*', 10)"
+          class="bg-gray-100 hover:bg-amber-100 border border-gray-200 hover:border-amber-300 text-xs px-3 py-1.5 rounded-lg transition-colors">
+          48 × 21 (til 10)
+        </button>
+        <button onclick="loadOvExample(593, 29, '/', 10)"
+          class="bg-gray-100 hover:bg-amber-100 border border-gray-200 hover:border-amber-300 text-xs px-3 py-1.5 rounded-lg transition-colors">
+          593 ÷ 29 (til 10)
+        </button>
+        <button onclick="loadOvExample(7845, 3210, '+', 1000)"
+          class="bg-gray-100 hover:bg-amber-100 border border-gray-200 hover:border-amber-300 text-xs px-3 py-1.5 rounded-lg transition-colors">
+          7845 + 3210 (til 1000)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== FOOTER ===== -->
+<footer class="max-w-3xl mx-auto px-4 py-6 text-center text-xs text-gray-400 border-t border-gray-200 mt-8">
+  Halison App Studio · Matematikk 1P LK20 ·
+  <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-blue-500" target="_blank">GitHub</a>
+</footer>
+
+<script>
+// =====================================================================
+// UTILITY: formatNumber (avoids floating point display issues)
+// =====================================================================
+function fmt(n) {
+  if (!isFinite(n)) return String(n);
+  // Round to 10 significant decimal places to suppress floating-point noise
+  let s = parseFloat(n.toPrecision(10));
+  // Display as integer if whole number
+  if (Number.isInteger(s)) return String(s);
+  // Otherwise show up to 6 decimals, trimming trailing zeros
+  return parseFloat(s.toFixed(6)).toString();
+}
+
+function opSymbol(op) {
+  return op === '*' ? '×' : op === '/' ? '÷' : op;
+}
+
+// =====================================================================
+// TABS
+// =====================================================================
+function switchTab(tab) {
+  document.getElementById('tab-rekkefølge').classList.toggle('hidden', tab !== 'rekkefølge');
+  document.getElementById('tab-overslag').classList.toggle('hidden', tab !== 'overslag');
+  document.getElementById('tab-btn-rekkefølge').className =
+    'py-2 px-3 text-sm transition-colors ' + (tab === 'rekkefølge' ? 'tab-active' : 'tab-inactive');
+  document.getElementById('tab-btn-overslag').className =
+    'py-2 px-3 text-sm transition-colors ' + (tab === 'overslag' ? 'tab-active' : 'tab-inactive');
+}
+
+function loadExample(expr) {
+  document.getElementById('expr-input').value = expr;
+  solveExpression();
+}
+
+// =====================================================================
+// SAFE EXPRESSION PARSER & EVALUATOR
+// Returns { value, steps }
+// steps: [{ before, opDesc, after, reason }]
+// =====================================================================
+
+// --- Tokenizer ---
+function tokenize(src) {
+  let tokens = [];
+  let i = 0;
+  const s = src.trim();
+  while (i < s.length) {
+    if (s[i] === ' ') { i++; continue; }
+    // Numbers (including decimals)
+    if (/[0-9.]/.test(s[i])) {
+      let num = '';
+      while (i < s.length && /[0-9.]/.test(s[i])) num += s[i++];
+      if (isNaN(parseFloat(num))) throw new Error('Ugyldig tall: ' + num);
+      tokens.push({ type: 'NUM', val: parseFloat(num) });
+      continue;
+    }
+    if ('+-*/^()'.includes(s[i])) {
+      tokens.push({ type: 'OP', val: s[i] });
+      i++;
+      continue;
+    }
+    throw new Error('Ukjent tegn: "' + s[i] + '"');
+  }
+  return tokens;
+}
+
+// --- Recursive Descent Parser -> AST ---
+// Grammar:
+//   expr   = term (('+' | '-') term)*
+//   term   = power (('*' | '/') power)*
+//   power  = unary ('^' unary)*      (right-associative)
+//   unary  = '-' unary | primary
+//   primary= NUM | '(' expr ')'
+
+function parse(tokens) {
+  let pos = 0;
+
+  function peek() { return tokens[pos]; }
+  function consume(expected) {
+    let t = tokens[pos++];
+    if (expected && (!t || t.val !== expected))
+      throw new Error('Forventet "' + expected + '"');
+    return t;
+  }
+
+  function parseExpr() {
+    let node = parseTerm();
+    while (peek() && (peek().val === '+' || peek().val === '-')) {
+      let op = tokens[pos++].val;
+      let right = parseTerm();
+      node = { type: 'BIN', op, left: node, right };
+    }
+    return node;
+  }
+
+  function parseTerm() {
+    let node = parsePower();
+    while (peek() && (peek().val === '*' || peek().val === '/')) {
+      let op = tokens[pos++].val;
+      let right = parsePower();
+      node = { type: 'BIN', op, left: node, right };
+    }
+    return node;
+  }
+
+  function parsePower() {
+    let base = parseUnary();
+    if (peek() && peek().val === '^') {
+      pos++;
+      let exp = parsePower(); // right-associative
+      return { type: 'BIN', op: '^', left: base, right: exp };
+    }
+    return base;
+  }
+
+  function parseUnary() {
+    if (peek() && peek().val === '-') {
+      pos++;
+      let operand = parseUnary();
+      return { type: 'NEG', operand };
+    }
+    return parsePrimary();
+  }
+
+  function parsePrimary() {
+    let t = peek();
+    if (!t) throw new Error('Uventet slutt på uttrykk');
+    if (t.type === 'NUM') { pos++; return { type: 'NUM', val: t.val }; }
+    if (t.val === '(') {
+      pos++;
+      let inner = parseExpr();
+      consume(')');
+      return { type: 'PAREN', inner };
+    }
+    throw new Error('Uventet tegn: "' + t.val + '"');
+  }
+
+  let ast = parseExpr();
+  if (pos < tokens.length) throw new Error('Uventet tegn: "' + tokens[pos].val + '"');
+  return ast;
+}
+
+// --- AST -> string representation ---
+function astToString(node, parentPrec) {
+  if (node.type === 'NUM') return fmt(node.val);
+  if (node.type === 'NEG') return '(-' + astToString(node.operand, 100) + ')';
+  if (node.type === 'PAREN') return '(' + astToString(node.inner, 0) + ')';
+  if (node.type === 'BIN') {
+    const prec = { '+': 1, '-': 1, '*': 2, '/': 2, '^': 3 };
+    let left = astToString(node.left, prec[node.op]);
+    let right = astToString(node.right, prec[node.op] + (node.op === '^' ? 0 : 1));
+    let sym = opSymbol(node.op);
+    // Add parens if needed for display
+    let str = left + ' ' + sym + ' ' + right;
+    if (parentPrec && prec[node.op] < parentPrec) str = '(' + str + ')';
+    return str;
+  }
+  return '?';
+}
+
+// --- Evaluate AST and collect steps ---
+// Returns { value, steps }
+// Each step has { expression (string), opDesc (string), result }
+function evalASTWithSteps(ast) {
+  let steps = [];
+
+  // We'll do a step-by-step approach: find leftmost-innermost reducible node,
+  // reduce it, record the step, repeat.
+  // Strategy: clone AST, repeatedly reduce one node at a time.
+
+  function cloneAST(node) {
+    if (!node) return node;
+    if (node.type === 'NUM') return { type: 'NUM', val: node.val };
+    if (node.type === 'NEG') return { type: 'NEG', operand: cloneAST(node.operand) };
+    if (node.type === 'PAREN') return { type: 'PAREN', inner: cloneAST(node.inner) };
+    if (node.type === 'BIN') return { type: 'BIN', op: node.op, left: cloneAST(node.left), right: cloneAST(node.right) };
+  }
+
+  // priority: PAREN > ^ > * / > + -
+  // Returns priority level of a node (for step ordering)
+  function opPriority(op) {
+    if (op === '^') return 3;
+    if (op === '*' || op === '/') return 2;
+    return 1; // + -
+  }
+
+  // Find the highest-priority reducible node
+  // "Reducible" = BIN or NEG where both children are NUM (or NEG of NUM)
+  // Also PAREN wrapping a NUM.
+  // Returns null if nothing to reduce.
+  function findReducible(node) {
+    // Deepest-first (innermost), highest-priority
+    if (!node) return null;
+
+    // First, recurse to find deeper reducible nodes
+    if (node.type === 'PAREN') {
+      // If inner is a simple number, this paren can be stripped
+      if (node.inner.type === 'NUM') return node;
+      // Otherwise reduce inside first
+      return findReducible(node.inner) || node;
+    }
+    if (node.type === 'NEG') {
+      if (node.operand.type === 'NUM') return node;
+      return findReducible(node.operand) || null;
+    }
+    if (node.type === 'BIN') {
+      // Try children first
+      let lr = findReducible(node.left);
+      let rr = findReducible(node.right);
+      if (lr || rr) {
+        // Return the one with higher op priority (deeper first among equals)
+        if (!lr) return rr;
+        if (!rr) return lr;
+        // Prefer left
+        return lr;
+      }
+      // Both children are NUM? Then this node is reducible.
+      if (isNumericLeaf(node.left) && isNumericLeaf(node.right)) return node;
+      return null;
+    }
+    return null;
+  }
+
+  function isNumericLeaf(node) {
+    return node.type === 'NUM';
+  }
+
+  // Find and reduce the highest-priority, innermost node in the full AST
+  // Uses a priority queue approach: collect all currently-reducible nodes,
+  // pick the one with highest priority (paren > ^ > *,/ > +,-)
+
+  function collectReducible(node, list) {
+    if (!node) return;
+    if (node.type === 'NUM') return;
+    if (node.type === 'PAREN') {
+      if (node.inner.type === 'NUM') { list.push(node); return; }
+      collectReducible(node.inner, list);
+      return;
+    }
+    if (node.type === 'NEG') {
+      if (node.operand.type === 'NUM') { list.push(node); return; }
+      collectReducible(node.operand, list);
+      return;
+    }
+    if (node.type === 'BIN') {
+      // Recurse into children first (innermost first)
+      let childFound = false;
+      let ll = []; collectReducible(node.left, ll);
+      let rl = []; collectReducible(node.right, rl);
+      if (ll.length || rl.length) {
+        ll.forEach(x => list.push(x));
+        rl.forEach(x => list.push(x));
+        return;
+      }
+      // No reducible children — are both children NUM?
+      if (node.left.type === 'NUM' && node.right.type === 'NUM') {
+        list.push(node);
+      }
+    }
+  }
+
+  function nodePriority(node) {
+    if (node.type === 'PAREN') return 10;
+    if (node.type === 'NEG') return 9;
+    if (node.type === 'BIN') return opPriority(node.op);
+    return 0;
+  }
+
+  // Replace a specific node (by reference) in the tree with a NUM node
+  function replaceNode(root, target, replacement) {
+    if (root === target) return replacement;
+    if (!root || root.type === 'NUM') return root;
+    if (root.type === 'PAREN') {
+      return Object.assign({}, root, { inner: replaceNode(root.inner, target, replacement) });
+    }
+    if (root.type === 'NEG') {
+      return Object.assign({}, root, { operand: replaceNode(root.operand, target, replacement) });
+    }
+    if (root.type === 'BIN') {
+      return Object.assign({}, root, {
+        left: replaceNode(root.left, target, replacement),
+        right: replaceNode(root.right, target, replacement)
+      });
+    }
+    return root;
+  }
+
+  function evalNode(node) {
+    if (node.type === 'NUM') return node.val;
+    if (node.type === 'PAREN') return evalNode(node.inner);
+    if (node.type === 'NEG') return -evalNode(node.operand);
+    if (node.type === 'BIN') {
+      let l = evalNode(node.left);
+      let r = evalNode(node.right);
+      if (node.op === '+') return l + r;
+      if (node.op === '-') return l - r;
+      if (node.op === '*') return l * r;
+      if (node.op === '/') {
+        if (r === 0) throw new Error('Divisjon med null er ikke tillatt');
+        return l / r;
+      }
+      if (node.op === '^') return Math.pow(l, r);
+    }
+    throw new Error('Ukjent nodetype');
+  }
+
+  function stepDescription(node) {
+    if (node.type === 'PAREN') return 'Fjern parentesene rundt ' + fmt(node.inner.val);
+    if (node.type === 'NEG') return 'Negasjon: −' + fmt(node.operand.val);
+    if (node.type === 'BIN') {
+      let l = fmt(node.left.val), r = fmt(node.right.val), sym = opSymbol(node.op);
+      let reasonMap = {
+        '+': 'Addisjon (lavest prioritet, venstre→høyre)',
+        '-': 'Subtraksjon (lavest prioritet, venstre→høyre)',
+        '*': 'Multiplikasjon (høyere prioritet enn + og −)',
+        '/': 'Divisjon (høyere prioritet enn + og −)',
+        '^': 'Potens (nest høyest prioritet)'
+      };
+      return `${l} ${sym} ${r} = ${fmt(evalNode(node))} — ${reasonMap[node.op]}`;
+    }
+    return '?';
+  }
+
+  let current = cloneAST(ast);
+  let maxSteps = 50;
+
+  while (maxSteps-- > 0) {
+    if (current.type === 'NUM') break;
+
+    let reducibles = [];
+    collectReducible(current, reducibles);
+    if (reducibles.length === 0) break;
+
+    // Pick highest priority
+    reducibles.sort((a, b) => nodePriority(b) - nodePriority(a));
+    let target = reducibles[0];
+
+    let before = astToString(current, 0);
+    let val = evalNode(target);
+    let desc = stepDescription(target);
+    let replacement = { type: 'NUM', val };
+
+    current = replaceNode(current, target, replacement);
+    let after = astToString(current, 0);
+
+    steps.push({ before, desc, after, result: val });
+  }
+
+  return { value: evalNode(ast), steps };
+}
+
+// =====================================================================
+// REGNEREKKEFØLGE — Solve button handler
+// =====================================================================
+function solveExpression() {
+  const input = document.getElementById('expr-input').value.trim();
+  const errorEl = document.getElementById('expr-error');
+  const container = document.getElementById('steps-container');
+  const stepsList = document.getElementById('steps-list');
+  const finalVal = document.getElementById('final-value');
+
+  errorEl.classList.add('hidden');
+  container.classList.add('hidden');
+  stepsList.innerHTML = '';
+
+  if (!input) {
+    errorEl.textContent = 'Skriv inn et regnestykke først.';
+    errorEl.classList.remove('hidden');
+    return;
+  }
+
+  try {
+    let tokens = tokenize(input);
+    let ast = parse(tokens);
+    let { value, steps } = evalASTWithSteps(ast);
+
+    if (steps.length === 0) {
+      // Already a single number
+      steps = [{ before: input, desc: 'Regnestykket er allerede et tall.', after: fmt(value), result: value }];
+    }
+
+    steps.forEach((step, idx) => {
+      let el = document.createElement('div');
+      el.className = 'bg-white border border-gray-200 rounded-lg p-3 space-y-1 step-highlight';
+      el.innerHTML = `
+        <div class="flex items-start gap-2">
+          <span class="bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">${idx + 1}</span>
+          <div class="space-y-1 min-w-0">
+            <p class="text-xs font-mono text-gray-500 break-all">${escHtml(step.before)}</p>
+            <p class="text-xs text-blue-700 font-semibold">${escHtml(step.desc)}</p>
+            <p class="text-sm font-mono font-bold text-gray-800 break-all">= ${escHtml(step.after)}</p>
+          </div>
+        </div>
+      `;
+      stepsList.appendChild(el);
+    });
+
+    finalVal.textContent = fmt(value);
+    container.classList.remove('hidden');
+
+  } catch (e) {
+    errorEl.textContent = 'Feil: ' + e.message;
+    errorEl.classList.remove('hidden');
+  }
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// =====================================================================
+// OVERSLAGSREGNING
+// =====================================================================
+function roundTo(n, step) {
+  if (step <= 1) return n;
+  return Math.round(n / step) * step;
+}
+
+function getOvOp() {
+  return document.querySelector('input[name="ov-op"]:checked').value;
+}
+
+function getOvRound() {
+  return parseInt(document.querySelector('input[name="ov-round"]:checked').value);
+}
+
+function applyOp(a, b, op) {
+  if (op === '+') return a + b;
+  if (op === '-') return a - b;
+  if (op === '*') return a * b;
+  if (op === '/') {
+    if (b === 0) return NaN;
+    return a / b;
+  }
+  return NaN;
+}
+
+function updateOverslag() {
+  const aStr = document.getElementById('ov-a').value;
+  const bStr = document.getElementById('ov-b').value;
+  const resultEl = document.getElementById('ov-result');
+
+  if (aStr === '' || bStr === '') { resultEl.classList.add('hidden'); return; }
+
+  const a = parseFloat(aStr);
+  const b = parseFloat(bStr);
+  if (isNaN(a) || isNaN(b)) { resultEl.classList.add('hidden'); return; }
+
+  const op = getOvOp();
+  const roundStep = getOvRound();
+
+  if (op === '/' && b === 0) { resultEl.classList.add('hidden'); return; }
+
+  const aR = roundTo(a, roundStep);
+  const bR = roundTo(b, roundStep);
+  const estimate = applyOp(aR, bR, op);
+  const exact = applyOp(a, b, op);
+
+  document.getElementById('ov-a-val').textContent = fmt(a);
+  document.getElementById('ov-b-val').textContent = fmt(b);
+  document.getElementById('ov-a-rounded').textContent = fmt(aR);
+  document.getElementById('ov-b-rounded').textContent = fmt(bR);
+  document.getElementById('ov-round-label').textContent = roundStep;
+  // Update all .ov-round-label2 spans
+  document.querySelectorAll('.ov-round-label2').forEach(el => el.textContent = roundStep);
+
+  const sym = opSymbol(op);
+  document.getElementById('ov-estimate-calc').textContent = `${fmt(aR)} ${sym} ${fmt(bR)} = ${fmt(estimate)}`;
+  document.getElementById('ov-estimate-val').textContent = fmt(estimate);
+  document.getElementById('ov-exact-calc').textContent = `${fmt(a)} ${sym} ${fmt(b)} = ${fmt(exact)}`;
+  document.getElementById('ov-exact-val').textContent = fmt(exact);
+
+  // Sammenligning
+  const diff = Math.abs(estimate - exact);
+  const pct = exact !== 0 ? (diff / Math.abs(exact) * 100) : 0;
+  let compText = '';
+  if (diff === 0) {
+    compText = 'Overslaget er nøyaktig likt det eksakte svaret! 🎯';
+  } else {
+    compText = `Overslaget (${fmt(estimate)}) avviker ${fmt(parseFloat(diff.toPrecision(4)))} fra det nøyaktige svaret (${fmt(exact)}) — det er ${parseFloat(pct.toPrecision(3))} % avvik.`;
+    if (pct < 5) compText += ' Veldig godt overslag!';
+    else if (pct < 15) compText += ' Greit overslag.';
+    else compText += ' Stort avvik — prøv å avrunde til et mindre tall.';
+  }
+  document.getElementById('ov-comparison-text').textContent = compText;
+
+  // Bar chart
+  const maxVal = Math.max(Math.abs(exact), Math.abs(estimate));
+  if (maxVal > 0) {
+    document.getElementById('ov-bar-exact').style.width = (Math.abs(exact) / maxVal * 100) + '%';
+    document.getElementById('ov-bar-overslag').style.width = (Math.abs(estimate) / maxVal * 100) + '%';
+  }
+
+  resultEl.classList.remove('hidden');
+}
+
+function loadOvExample(a, b, op, round) {
+  document.getElementById('ov-a').value = a;
+  document.getElementById('ov-b').value = b;
+  document.querySelector(`input[name="ov-op"][value="${op}"]`).checked = true;
+  document.querySelector(`input[name="ov-round"][value="${round}"]`).checked = true;
+  updateOverslag();
+}
+
+// =====================================================================
+// Init
+// =====================================================================
+window.addEventListener('DOMContentLoaded', function() {
+  // Load a default example on start
+  loadExample('2 + 3 * 4');
+});
+</script>
+</body>
+</html>

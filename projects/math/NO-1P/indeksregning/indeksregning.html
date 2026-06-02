@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<!--
+  Indeksregning — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 1P (LK20): indekser, konsumprisindeksen,
+  reallønn og kroneverdi.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Indeksregning – Matematikk 1P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+
+    /* Tab underline animation */
+    .tab-btn.active { border-bottom: 3px solid #3b82f6; color: #1d4ed8; font-weight: 700; }
+    .tab-btn { transition: color 0.2s, border-color 0.2s; }
+
+    /* SVG chart lines */
+    .chart-line { stroke: #3b82f6; stroke-width: 2.5; fill: none; }
+    .chart-line-red { stroke: #ef4444; stroke-width: 2.5; fill: none; }
+    .chart-area { fill: rgba(59,130,246,0.08); stroke: none; }
+
+    /* Formula box */
+    .formula-box {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      border-radius: 0 8px 8px 0;
+    }
+
+    /* Highlight row */
+    tr.basis-row { background: #dbeafe; font-weight: 700; }
+
+    /* Number inputs */
+    input[type="number"] { -moz-appearance: textfield; }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
+
+<!-- =========================================================
+     HEADER
+========================================================= -->
+<header class="bg-blue-700 text-white shadow-md">
+  <div class="max-w-5xl mx-auto px-4 py-5 flex items-center gap-3">
+    <div class="text-3xl select-none">📊</div>
+    <div>
+      <h1 class="text-2xl font-bold leading-tight">Indeksregning</h1>
+      <p class="text-blue-200 text-sm">Matematikk 1P (LK20) · Sinus 1P kap. 6</p>
+    </div>
+  </div>
+</header>
+
+<!-- =========================================================
+     TABS
+========================================================= -->
+<div class="max-w-5xl mx-auto px-4 mt-6">
+  <div class="flex gap-0 border-b border-slate-200 mb-6 overflow-x-auto">
+    <button class="tab-btn active px-5 py-3 text-sm whitespace-nowrap border-b-2" data-tab="indeks" onclick="switchTab('indeks', this)">
+      1 · Indeks
+    </button>
+    <button class="tab-btn px-5 py-3 text-sm whitespace-nowrap border-b-2 border-transparent" data-tab="kpi" onclick="switchTab('kpi', this)">
+      2 · Konsumprisindeksen (KPI)
+    </button>
+    <button class="tab-btn px-5 py-3 text-sm whitespace-nowrap border-b-2 border-transparent" data-tab="reallohn" onclick="switchTab('reallohn', this)">
+      3 · Reallønn og kroneverdi
+    </button>
+  </div>
+
+  <!-- =====================================================
+       TAB 1 – INDEKS
+  ===================================================== -->
+  <div id="tab-indeks" class="tab-content">
+
+    <div class="formula-box p-4 mb-6">
+      <p class="text-sm font-semibold text-blue-800 mb-1">Formel — indeks</p>
+      <p class="text-blue-900 font-mono text-base">
+        Indeks = (verdi / basisverdi) × 100
+      </p>
+      <p class="text-xs text-blue-700 mt-1">
+        Basisåret får alltid indeks = 100. Andre år sammenlignes relativt til dette.
+      </p>
+    </div>
+
+    <!-- Controls -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+      <h2 class="font-semibold text-slate-700 mb-4">Legg inn verdier for hvert år</h2>
+
+      <div class="flex flex-wrap gap-4 mb-4 items-end">
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Velg basisår</label>
+          <select id="basisYearSelect" class="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="recalcIndex()"></select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Enhet (valgfri)</label>
+          <input id="unitLabel" type="text" value="kr" maxlength="12"
+            class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            oninput="recalcIndex()" />
+        </div>
+      </div>
+
+      <!-- Year rows -->
+      <div id="yearRowsContainer" class="space-y-2 mb-4"></div>
+
+      <button onclick="addYearRow()"
+        class="mt-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-300 hover:border-blue-500 rounded-lg px-4 py-2 transition">
+        + Legg til år
+      </button>
+    </div>
+
+    <!-- Results table -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+      <h2 class="font-semibold text-slate-700 mb-3">Resultater</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse" id="indexTable">
+          <thead>
+            <tr class="bg-slate-100">
+              <th class="text-left px-3 py-2 rounded-tl-lg">År</th>
+              <th class="text-right px-3 py-2" id="valueColHeader">Verdi (kr)</th>
+              <th class="text-right px-3 py-2 rounded-tr-lg">Indeks</th>
+            </tr>
+          </thead>
+          <tbody id="indexTableBody">
+          </tbody>
+        </table>
+      </div>
+      <p class="text-xs text-slate-400 mt-2">Blå rad = basisår (indeks = 100)</p>
+    </div>
+
+    <!-- SVG chart -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-8">
+      <h2 class="font-semibold text-slate-700 mb-3">Diagram</h2>
+      <div id="indexChartContainer" class="w-full overflow-x-auto">
+        <svg id="indexChart" width="700" height="320" viewBox="0 0 700 320"
+          class="block mx-auto" style="max-width:100%"></svg>
+      </div>
+    </div>
+
+  </div><!-- /tab-indeks -->
+
+
+  <!-- =====================================================
+       TAB 2 – KPI
+  ===================================================== -->
+  <div id="tab-kpi" class="tab-content hidden">
+
+    <div class="formula-box p-4 mb-6">
+      <p class="text-sm font-semibold text-blue-800 mb-1">Formel — KPI-omregning</p>
+      <p class="text-blue-900 font-mono text-base">
+        Beløp i år Y = Beløp i år X × (KPI<sub>Y</sub> / KPI<sub>X</sub>)
+      </p>
+      <p class="text-xs text-blue-700 mt-1">
+        Konsumprisindeksen (KPI) er utgitt av Statistisk sentralbyrå (SSB).
+        Basisår er 2015 = 100 i denne tabellen (offisielle tall, avrundet).
+      </p>
+    </div>
+
+    <!-- Static KPI table -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+      <h2 class="font-semibold text-slate-700 mb-3">KPI-tabell (SSB, basis 2015=100)</h2>
+      <div class="overflow-x-auto">
+        <table class="text-sm border-collapse w-full">
+          <thead>
+            <tr class="bg-slate-100">
+              <th class="text-left px-3 py-2 rounded-tl-lg">År</th>
+              <th class="text-right px-3 py-2 rounded-tr-lg">KPI</th>
+            </tr>
+          </thead>
+          <tbody id="kpiStaticBody"></tbody>
+        </table>
+      </div>
+      <p class="text-xs text-slate-400 mt-2">
+        Kilde: SSB (Statistisk sentralbyrå), tabell 03013. Tall er approksimerte årsgjennomsnitt.
+      </p>
+    </div>
+
+    <!-- Interactive calculator -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+      <h2 class="font-semibold text-slate-700 mb-4">Kalkulator — hva tilsvarer X kr fra ett år i et annet?</h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Beløp (kr)</label>
+          <input id="kpiAmount" type="number" value="1000" min="0"
+            class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+            oninput="calcKPI()" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Fra år</label>
+          <select id="kpiFromYear" class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="calcKPI()"></select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Til år</label>
+          <select id="kpiToYear" class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="calcKPI()"></select>
+        </div>
+      </div>
+
+      <div id="kpiResult" class="formula-box p-4 text-sm text-blue-900"></div>
+    </div>
+
+    <!-- Worked example -->
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-8">
+      <h2 class="font-semibold text-amber-800 mb-3">📝 Regneeksempel</h2>
+      <div id="kpiExample" class="text-sm text-amber-900 leading-relaxed space-y-2"></div>
+    </div>
+
+    <!-- KPI chart -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-8">
+      <h2 class="font-semibold text-slate-700 mb-3">KPI-utvikling (diagram)</h2>
+      <svg id="kpiChart" width="700" height="300" viewBox="0 0 700 300"
+        class="block mx-auto" style="max-width:100%"></svg>
+    </div>
+
+  </div><!-- /tab-kpi -->
+
+
+  <!-- =====================================================
+       TAB 3 – REALLØNN OG KRONEVERDI
+  ===================================================== -->
+  <div id="tab-reallohn" class="tab-content hidden">
+
+    <div class="formula-box p-4 mb-6">
+      <p class="text-sm font-semibold text-blue-800 mb-2">Formler</p>
+      <p class="text-blue-900 font-mono text-sm mb-1">
+        Reallønn = Nominell lønn × (KPI<sub>basisår</sub> / KPI<sub>år</sub>)
+      </p>
+      <p class="text-blue-900 font-mono text-sm mb-1">
+        Kroneverdi (indeks) = (KPI<sub>basisår</sub> / KPI<sub>år</sub>) × 100
+      </p>
+      <p class="text-xs text-blue-700 mt-2">
+        <strong>Nominell lønn</strong> er den lønnen du faktisk mottar (i kroner).
+        <strong>Reallønn</strong> er hva lønnen er verdt i faste priser — altså kjøpekraften.
+        <strong>Kroneverdi</strong> viser hvor mye en krone fra basisåret er verdt i et gitt år.
+      </p>
+    </div>
+
+    <!-- Reallønn kalkulator -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+      <h2 class="font-semibold text-slate-700 mb-4">Kalkulator — reallønn</h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Nominell lønn (kr/år)</label>
+          <input id="rlNomLon" type="number" value="520000" min="0"
+            class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+            oninput="calcReallon()" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Lønnens år</label>
+          <select id="rlLonYear" class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="calcReallon()"></select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">Sammenlign med basisår</label>
+          <select id="rlBaseYear" class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="calcReallon()"></select>
+        </div>
+      </div>
+
+      <div id="rlResult" class="formula-box p-4 text-sm text-blue-900 mb-4"></div>
+    </div>
+
+    <!-- Scenario tabell – lønnsutvikling -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+      <h2 class="font-semibold text-slate-700 mb-3">Eksempel — lønnsutvikling med og uten prisjustering</h2>
+      <p class="text-xs text-slate-500 mb-3">
+        En arbeidstaker hadde lønn 400 000 kr i 2015. Tabellen viser nominell lønn etter gjennomsnitlig lønnsvekst ≈ 3 % per år,
+        og hva dette tilsvarer i 2015-kroner (reallønn).
+      </p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse">
+          <thead>
+            <tr class="bg-slate-100">
+              <th class="text-left px-3 py-2">År</th>
+              <th class="text-right px-3 py-2">Nominell lønn (kr)</th>
+              <th class="text-right px-3 py-2">KPI</th>
+              <th class="text-right px-3 py-2">Reallønn (2015-kr)</th>
+              <th class="text-right px-3 py-2 rounded-tr-lg">Kroneverdi (2015=100)</th>
+            </tr>
+          </thead>
+          <tbody id="rlScenarioBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-8">
+      <h2 class="font-semibold text-slate-700 mb-3">Diagram — nominell vs. reallønn</h2>
+      <div class="flex gap-4 text-xs text-slate-500 mb-2">
+        <span class="flex items-center gap-1"><span class="inline-block w-6 h-1 bg-blue-500 rounded"></span> Nominell lønn</span>
+        <span class="flex items-center gap-1"><span class="inline-block w-6 h-1 bg-red-500 rounded"></span> Reallønn (2015-kr)</span>
+      </div>
+      <svg id="rlChart" width="700" height="300" viewBox="0 0 700 300"
+        class="block mx-auto" style="max-width:100%"></svg>
+    </div>
+
+    <!-- Forklaring -->
+    <div class="bg-green-50 border border-green-200 rounded-xl p-5 mb-8">
+      <h2 class="font-semibold text-green-800 mb-2">Forklaring — kroneverdi</h2>
+      <p class="text-sm text-green-900 leading-relaxed">
+        <strong>Kroneverdi</strong> forteller oss hva én krone fra basisåret er verdt i et annet år, målt i kjøpekraft.
+        Hvis KPI stiger fra 100 til 120, har prisene økt med 20 %. Én krone fra basisåret tilsvarer da
+        <span class="font-mono">100/120 × 100 ≈ 83,3</span> øre i kjøpekraft.
+        Det betyr at pengene har mistet ca. 17 % av verdien sin.
+      </p>
+      <p class="text-sm text-green-900 leading-relaxed mt-2">
+        <strong>Reallønn</strong> er viktig fordi en lønnsvekst på 3 % ikke betyr noe hvis prisene stiger 5 %. Da er
+        reallønnen faktisk <em>redusert</em> — du har fått mer kroner, men kan kjøpe mindre.
+      </p>
+    </div>
+
+  </div><!-- /tab-reallohn -->
+
+</div><!-- /max-w-5xl -->
+
+<!-- =========================================================
+     FOOTER
+========================================================= -->
+<footer class="text-center text-xs text-slate-400 py-6 mt-4 border-t border-slate-200">
+  Matematikk 1P (LK20) · Indeksregning · Halison App Studio — pedagogisk bruk
+</footer>
+
+<!-- =========================================================
+     JAVASCRIPT
+========================================================= -->
+<script>
+  "use strict";
+
+  // -------------------------------------------------------
+  // KPI DATA (SSB tabell 03013, årsgjennomsnitt, basis 2015=100)
+  // -------------------------------------------------------
+  const KPI_DATA = {
+    2000: 74.3,
+    2001: 76.8,
+    2002: 78.5,
+    2003: 80.1,
+    2004: 80.4,
+    2005: 81.6,
+    2006: 83.7,
+    2007: 85.0,
+    2008: 88.5,
+    2009: 90.5,
+    2010: 92.0,
+    2011: 94.2,
+    2012: 96.1,
+    2013: 97.8,
+    2014: 99.1,
+    2015: 100.0,
+    2016: 103.6,
+    2017: 105.5,
+    2018: 107.6,
+    2019: 109.7,
+    2020: 110.6,
+    2021: 113.0,
+    2022: 122.3,
+    2023: 130.1,
+    2024: 134.5,
+  };
+  const KPI_YEARS = Object.keys(KPI_DATA).map(Number).sort((a, b) => a - b);
+
+  // -------------------------------------------------------
+  // TAB SWITCHING
+  // -------------------------------------------------------
+  function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(el => {
+      el.classList.remove('active');
+      el.classList.add('border-transparent');
+    });
+    document.getElementById('tab-' + tabId).classList.remove('hidden');
+    btn.classList.add('active');
+    btn.classList.remove('border-transparent');
+  }
+
+  // -------------------------------------------------------
+  // HELPERS
+  // -------------------------------------------------------
+  function fmt(n, decimals = 1) {
+    return n.toLocaleString('nb-NO', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  }
+
+  function fmtInt(n) {
+    return Math.round(n).toLocaleString('nb-NO');
+  }
+
+  // -------------------------------------------------------
+  // TAB 1 – INDEKS
+  // -------------------------------------------------------
+
+  // Default data: boligprisindeks (illustrativt, realistiske tall)
+  let indexData = [
+    { year: 2018, value: 3250000 },
+    { year: 2019, value: 3380000 },
+    { year: 2020, value: 3600000 },
+    { year: 2021, value: 4100000 },
+    { year: 2022, value: 4350000 },
+    { year: 2023, value: 4280000 },
+    { year: 2024, value: 4510000 },
+  ];
+  let basisYear = 2018;
+
+  function initIndexTab() {
+    renderYearRows();
+    updateBasisSelect();
+    recalcIndex();
+  }
+
+  function renderYearRows() {
+    const container = document.getElementById('yearRowsContainer');
+    container.innerHTML = '';
+    indexData.forEach((row, i) => {
+      const div = document.createElement('div');
+      div.className = 'flex flex-wrap gap-2 items-center';
+      div.innerHTML = `
+        <input type="number" value="${row.year}" min="1900" max="2100"
+          class="border border-slate-300 rounded-lg px-2 py-1.5 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          onchange="updateIndexRow(${i}, 'year', this.value)" placeholder="År" />
+        <input type="number" value="${row.value}" min="0"
+          class="border border-slate-300 rounded-lg px-2 py-1.5 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          onchange="updateIndexRow(${i}, 'value', this.value)" placeholder="Verdi" />
+        <button onclick="removeIndexRow(${i})"
+          class="text-slate-400 hover:text-red-500 text-lg leading-none px-1 transition" title="Fjern rad">×</button>
+      `;
+      container.appendChild(div);
+    });
+    updateBasisSelect();
+  }
+
+  function updateIndexRow(i, field, val) {
+    if (field === 'year') indexData[i].year = parseInt(val) || 0;
+    else indexData[i].value = parseFloat(val) || 0;
+    indexData.sort((a, b) => a.year - b.year);
+    renderYearRows();
+    recalcIndex();
+  }
+
+  function removeIndexRow(i) {
+    if (indexData.length <= 2) { alert('Du trenger minst 2 rader.'); return; }
+    indexData.splice(i, 1);
+    renderYearRows();
+    recalcIndex();
+  }
+
+  function addYearRow() {
+    const lastYear = indexData.length > 0 ? Math.max(...indexData.map(r => r.year)) : 2024;
+    indexData.push({ year: lastYear + 1, value: 0 });
+    indexData.sort((a, b) => a.year - b.year);
+    renderYearRows();
+    recalcIndex();
+  }
+
+  function updateBasisSelect() {
+    const sel = document.getElementById('basisYearSelect');
+    const currentBasis = basisYear;
+    sel.innerHTML = '';
+    indexData.forEach(row => {
+      const opt = document.createElement('option');
+      opt.value = row.year;
+      opt.textContent = row.year;
+      if (row.year === currentBasis) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    if (!indexData.find(r => r.year === currentBasis)) {
+      basisYear = indexData[0] ? indexData[0].year : 2018;
+    }
+  }
+
+  function recalcIndex() {
+    basisYear = parseInt(document.getElementById('basisYearSelect').value) || basisYear;
+    const unit = document.getElementById('unitLabel').value || 'kr';
+
+    // Update header
+    document.getElementById('valueColHeader').textContent = 'Verdi (' + unit + ')';
+
+    const basisRow = indexData.find(r => r.year === basisYear);
+    if (!basisRow || basisRow.value === 0) {
+      document.getElementById('indexTableBody').innerHTML =
+        '<tr><td colspan="3" class="text-center py-3 text-slate-400">Basisverdien kan ikke være 0.</td></tr>';
+      return;
+    }
+
+    const basisVal = basisRow.value;
+    const rows = indexData.map(r => ({
+      year: r.year,
+      value: r.value,
+      index: (r.value / basisVal) * 100
+    }));
+
+    // Table
+    const tbody = document.getElementById('indexTableBody');
+    tbody.innerHTML = '';
+    rows.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.className = (r.year === basisYear) ? 'basis-row' : 'hover:bg-slate-50';
+      tr.innerHTML = `
+        <td class="px-3 py-2">${r.year}${r.year === basisYear ? ' <span class="text-xs text-blue-600">(basisår)</span>' : ''}</td>
+        <td class="px-3 py-2 text-right font-mono">${fmtInt(r.value)}</td>
+        <td class="px-3 py-2 text-right font-mono">${fmt(r.index)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    drawIndexChart(rows);
+  }
+
+  function drawIndexChart(rows) {
+    const svg = document.getElementById('indexChart');
+    const W = 700, H = 320;
+    const padL = 60, padR = 30, padT = 20, padB = 50;
+    const cW = W - padL - padR;
+    const cH = H - padT - padB;
+
+    if (rows.length < 2) { svg.innerHTML = ''; return; }
+
+    const indices = rows.map(r => r.index);
+    const minIdx = Math.min(...indices);
+    const maxIdx = Math.max(...indices);
+    const span = maxIdx - minIdx || 1;
+    const yMin = Math.max(0, minIdx - span * 0.1);
+    const yMax = maxIdx + span * 0.1;
+
+    const xScale = i => padL + (i / (rows.length - 1)) * cW;
+    const yScale = v => padT + cH - ((v - yMin) / (yMax - yMin)) * cH;
+
+    let html = '';
+
+    // Grid lines
+    const ticks = 5;
+    for (let t = 0; t <= ticks; t++) {
+      const v = yMin + (yMax - yMin) * (t / ticks);
+      const y = yScale(v);
+      html += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}"
+        stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,3"/>`;
+      html += `<text x="${padL - 6}" y="${y + 4}" text-anchor="end" font-size="11" fill="#94a3b8">${fmt(v, 0)}</text>`;
+    }
+
+    // Reference line at 100
+    if (yMin <= 100 && yMax >= 100) {
+      const y100 = yScale(100);
+      html += `<line x1="${padL}" y1="${y100}" x2="${W - padR}" y2="${y100}"
+        stroke="#3b82f6" stroke-width="1" stroke-dasharray="6,4" opacity="0.5"/>`;
+      html += `<text x="${padL + 4}" y="${y100 - 4}" font-size="10" fill="#3b82f6">100</text>`;
+    }
+
+    // Area
+    let areaPoints = `${xScale(0)},${padT + cH}`;
+    rows.forEach((r, i) => { areaPoints += ` ${xScale(i)},${yScale(r.index)}`; });
+    areaPoints += ` ${xScale(rows.length - 1)},${padT + cH}`;
+    html += `<polygon points="${areaPoints}" class="chart-area"/>`;
+
+    // Line
+    let linePath = `M ${xScale(0)},${yScale(rows[0].index)}`;
+    rows.forEach((r, i) => { if (i > 0) linePath += ` L ${xScale(i)},${yScale(r.index)}`; });
+    html += `<path d="${linePath}" class="chart-line"/>`;
+
+    // Points and labels
+    rows.forEach((r, i) => {
+      const x = xScale(i), y = yScale(r.index);
+      const isBasis = r.year === basisYear;
+      html += `<circle cx="${x}" cy="${y}" r="${isBasis ? 6 : 4}"
+        fill="${isBasis ? '#1d4ed8' : '#3b82f6'}" stroke="white" stroke-width="1.5"/>`;
+      html += `<text x="${x}" y="${y - 10}" text-anchor="middle" font-size="11"
+        fill="${isBasis ? '#1d4ed8' : '#475569'}" font-weight="${isBasis ? 'bold' : 'normal'}">${fmt(r.index, 1)}</text>`;
+      // X axis label
+      html += `<text x="${x}" y="${H - padB + 18}" text-anchor="middle" font-size="11" fill="#64748b">${r.year}</text>`;
+    });
+
+    // Axes
+    html += `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + cH}" stroke="#94a3b8" stroke-width="1"/>`;
+    html += `<line x1="${padL}" y1="${padT + cH}" x2="${W - padR}" y2="${padT + cH}" stroke="#94a3b8" stroke-width="1"/>`;
+
+    // Y axis label
+    html += `<text x="14" y="${padT + cH / 2}" text-anchor="middle" font-size="12" fill="#64748b"
+      transform="rotate(-90, 14, ${padT + cH / 2})">Indeks</text>`;
+
+    svg.innerHTML = html;
+  }
+
+  // -------------------------------------------------------
+  // TAB 2 – KPI
+  // -------------------------------------------------------
+
+  function initKpiTab() {
+    // Static table
+    const tbody = document.getElementById('kpiStaticBody');
+    KPI_YEARS.forEach(y => {
+      const tr = document.createElement('tr');
+      tr.className = (y === 2015) ? 'basis-row' : 'hover:bg-slate-50';
+      tr.innerHTML = `<td class="px-3 py-2">${y}${y === 2015 ? ' <span class="text-xs text-blue-600">(basisår)</span>' : ''}</td>
+        <td class="px-3 py-2 text-right font-mono">${fmt(KPI_DATA[y])}</td>`;
+      tbody.appendChild(tr);
+    });
+
+    // Dropdowns
+    ['kpiFromYear', 'kpiToYear'].forEach(id => {
+      const sel = document.getElementById(id);
+      KPI_YEARS.forEach(y => {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        sel.appendChild(opt);
+      });
+    });
+    document.getElementById('kpiFromYear').value = '2010';
+    document.getElementById('kpiToYear').value = '2024';
+
+    calcKPI();
+    drawKpiChart();
+  }
+
+  function calcKPI() {
+    const amount = parseFloat(document.getElementById('kpiAmount').value) || 0;
+    const fromY = parseInt(document.getElementById('kpiFromYear').value);
+    const toY = parseInt(document.getElementById('kpiToYear').value);
+
+    const kpiFrom = KPI_DATA[fromY];
+    const kpiTo = KPI_DATA[toY];
+    const result = amount * (kpiTo / kpiFrom);
+    const change = ((result - amount) / amount) * 100;
+    const changeStr = change >= 0 ? '+' + fmt(change) + ' %' : fmt(change) + ' %';
+
+    const div = document.getElementById('kpiResult');
+    div.innerHTML = `
+      <p class="font-mono text-base mb-1">
+        ${fmtInt(amount)} kr i ${fromY} ≈ <strong class="text-blue-700">${fmtInt(result)} kr</strong> i ${toY}
+      </p>
+      <p class="text-xs mt-1 text-slate-600">
+        Prisendring: ${changeStr} &nbsp;|&nbsp; KPI ${fromY}: ${fmt(kpiFrom)} &nbsp;→&nbsp; KPI ${toY}: ${fmt(kpiTo)}
+      </p>
+      <p class="text-xs mt-1 text-slate-500 font-mono">
+        Utregning: ${fmtInt(amount)} × (${fmt(kpiTo)} / ${fmt(kpiFrom)}) = ${fmtInt(result)}
+      </p>
+    `;
+
+    updateKpiExample(amount, fromY, toY, kpiFrom, kpiTo, result);
+  }
+
+  function updateKpiExample(amount, fromY, toY, kpiFrom, kpiTo, result) {
+    const div = document.getElementById('kpiExample');
+    const earlier = fromY < toY ? fromY : toY;
+    const later = fromY < toY ? toY : fromY;
+    const amtEarlier = fromY < toY ? amount : result;
+    const amtLater = fromY < toY ? result : amount;
+
+    div.innerHTML = `
+      <p><strong>Oppgave:</strong> En bruktbil kostet ${fmtInt(amount)} kr i ${fromY}. Hva tilsvarer det i ${toY}?</p>
+      <p><strong>Steg 1 – finn KPI-verdiene:</strong></p>
+      <p class="font-mono pl-4">KPI<sub>${fromY}</sub> = ${fmt(kpiFrom)}, &nbsp; KPI<sub>${toY}</sub> = ${fmt(kpiTo)}</p>
+      <p><strong>Steg 2 – bruk formelen:</strong></p>
+      <p class="font-mono pl-4">
+        Beløp i ${toY} = ${fmtInt(amount)} × (${fmt(kpiTo)} / ${fmt(kpiFrom)})
+      </p>
+      <p class="font-mono pl-4">
+        = ${fmtInt(amount)} × ${fmt(kpiTo / kpiFrom, 4)} ≈ <strong>${fmtInt(result)} kr</strong>
+      </p>
+      <p><strong>Svar:</strong> ${fmtInt(amount)} kr i ${fromY} tilsvarer omtrent ${fmtInt(result)} kr i ${toY}
+        i faste priser (kjøpekraft).</p>
+    `;
+  }
+
+  function drawKpiChart() {
+    const svg = document.getElementById('kpiChart');
+    const W = 700, H = 300;
+    const padL = 60, padR = 30, padT = 20, padB = 50;
+    const cW = W - padL - padR;
+    const cH = H - padT - padB;
+
+    const vals = KPI_YEARS.map(y => KPI_DATA[y]);
+    const yMin = 60;
+    const yMax = 145;
+    const n = KPI_YEARS.length;
+
+    const xScale = i => padL + (i / (n - 1)) * cW;
+    const yScale = v => padT + cH - ((v - yMin) / (yMax - yMin)) * cH;
+
+    let html = '';
+
+    // Grid
+    [70, 80, 90, 100, 110, 120, 130, 140].forEach(v => {
+      if (v < yMin || v > yMax) return;
+      const y = yScale(v);
+      html += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}"
+        stroke="${v === 100 ? '#3b82f6' : '#e2e8f0'}" stroke-width="${v === 100 ? 1.5 : 1}"
+        stroke-dasharray="${v === 100 ? '6,4' : '4,3'}" opacity="${v === 100 ? '0.6' : '1'}"/>`;
+      html += `<text x="${padL - 6}" y="${y + 4}" text-anchor="end" font-size="11" fill="#94a3b8">${v}</text>`;
+    });
+
+    // Area
+    let area = `${xScale(0)},${padT + cH}`;
+    KPI_YEARS.forEach((y, i) => { area += ` ${xScale(i)},${yScale(KPI_DATA[y])}`; });
+    area += ` ${xScale(n - 1)},${padT + cH}`;
+    html += `<polygon points="${area}" fill="rgba(59,130,246,0.07)"/>`;
+
+    // Line
+    let path = `M ${xScale(0)},${yScale(vals[0])}`;
+    KPI_YEARS.forEach((y, i) => { if (i > 0) path += ` L ${xScale(i)},${yScale(KPI_DATA[y])}`; });
+    html += `<path d="${path}" class="chart-line"/>`;
+
+    // X labels — every 5 years
+    KPI_YEARS.forEach((y, i) => {
+      if (y % 5 === 0) {
+        html += `<text x="${xScale(i)}" y="${H - padB + 18}" text-anchor="middle" font-size="11" fill="#64748b">${y}</text>`;
+        html += `<line x1="${xScale(i)}" y1="${padT + cH}" x2="${xScale(i)}" y2="${padT + cH + 4}" stroke="#94a3b8" stroke-width="1"/>`;
+      }
+    });
+
+    // Axes
+    html += `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + cH}" stroke="#94a3b8" stroke-width="1"/>`;
+    html += `<line x1="${padL}" y1="${padT + cH}" x2="${W - padR}" y2="${padT + cH}" stroke="#94a3b8" stroke-width="1"/>`;
+    html += `<text x="14" y="${padT + cH / 2}" text-anchor="middle" font-size="12" fill="#64748b"
+      transform="rotate(-90, 14, ${padT + cH / 2})">KPI</text>`;
+
+    svg.innerHTML = html;
+  }
+
+  // -------------------------------------------------------
+  // TAB 3 – REALLØNN
+  // -------------------------------------------------------
+
+  function initReallonnTab() {
+    // Populate dropdowns
+    ['rlLonYear', 'rlBaseYear'].forEach(id => {
+      const sel = document.getElementById(id);
+      KPI_YEARS.forEach(y => {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        sel.appendChild(opt);
+      });
+    });
+    document.getElementById('rlLonYear').value = '2024';
+    document.getElementById('rlBaseYear').value = '2015';
+
+    buildScenarioTable();
+    calcReallon();
+  }
+
+  function calcReallon() {
+    const nomLon = parseFloat(document.getElementById('rlNomLon').value) || 0;
+    const lonYear = parseInt(document.getElementById('rlLonYear').value);
+    const baseYear = parseInt(document.getElementById('rlBaseYear').value);
+
+    const kpiLon = KPI_DATA[lonYear];
+    const kpiBase = KPI_DATA[baseYear];
+    if (!kpiLon || !kpiBase) return;
+
+    const realLon = nomLon * (kpiBase / kpiLon);
+    const kroneverdi = (kpiBase / kpiLon) * 100;
+    const diff = realLon - nomLon;
+    const diffStr = diff >= 0 ? '+' + fmtInt(Math.abs(diff)) : '−' + fmtInt(Math.abs(diff));
+
+    document.getElementById('rlResult').innerHTML = `
+      <p class="font-mono text-base mb-1">
+        Reallønn (${baseYear}-kroner): <strong class="text-blue-700">${fmtInt(realLon)} kr/år</strong>
+      </p>
+      <p class="text-xs text-slate-600 mt-1">
+        Nominell lønn ${lonYear}: ${fmtInt(nomLon)} kr &nbsp;|&nbsp;
+        Reallønn: ${fmtInt(realLon)} kr &nbsp;(${diffStr} kr justert for prisvekst siden ${baseYear})
+      </p>
+      <p class="text-xs text-slate-500 font-mono mt-1">
+        Kroneverdi (${baseYear}=100): ${fmt(kroneverdi)} &nbsp;|&nbsp;
+        Utregning: ${fmtInt(nomLon)} × (${fmt(kpiBase)} / ${fmt(kpiLon)}) = ${fmtInt(realLon)}
+      </p>
+    `;
+  }
+
+  function buildScenarioTable() {
+    // Worker started 2015 with 400 000 kr, ~3% nominal raise per year
+    const startYear = 2015;
+    const startLon = 400000;
+    const nomGrowth = 0.03;
+    const baseKpi = KPI_DATA[2015];
+
+    const scenarioYears = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024];
+    const tbody = document.getElementById('rlScenarioBody');
+    tbody.innerHTML = '';
+
+    const nomData = [];
+    const realData = [];
+
+    scenarioYears.forEach(y => {
+      const yearsSince = y - startYear;
+      const nomLon = startLon * Math.pow(1 + nomGrowth, yearsSince);
+      const kpi = KPI_DATA[y];
+      const realLon = nomLon * (baseKpi / kpi);
+      const kroneverdi = (baseKpi / kpi) * 100;
+
+      nomData.push(nomLon);
+      realData.push(realLon);
+
+      const tr = document.createElement('tr');
+      tr.className = (y === startYear) ? 'basis-row' : 'hover:bg-slate-50';
+      tr.innerHTML = `
+        <td class="px-3 py-2">${y}${y === startYear ? ' <span class="text-xs text-blue-600">(basis)</span>' : ''}</td>
+        <td class="px-3 py-2 text-right font-mono">${fmtInt(nomLon)}</td>
+        <td class="px-3 py-2 text-right font-mono">${fmt(kpi)}</td>
+        <td class="px-3 py-2 text-right font-mono ${realLon >= nomLon ? 'text-green-700' : 'text-red-700'}">${fmtInt(realLon)}</td>
+        <td class="px-3 py-2 text-right font-mono">${fmt(kroneverdi)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    drawRlChart(scenarioYears, nomData, realData);
+  }
+
+  function drawRlChart(years, nomData, realData) {
+    const svg = document.getElementById('rlChart');
+    const W = 700, H = 300;
+    const padL = 75, padR = 30, padT = 20, padB = 50;
+    const cW = W - padL - padR;
+    const cH = H - padT - padB;
+    const n = years.length;
+
+    const allVals = [...nomData, ...realData];
+    const yMin = Math.min(...allVals) * 0.95;
+    const yMax = Math.max(...allVals) * 1.05;
+
+    const xScale = i => padL + (i / (n - 1)) * cW;
+    const yScale = v => padT + cH - ((v - yMin) / (yMax - yMin)) * cH;
+
+    let html = '';
+
+    // Grid
+    const ticks = 5;
+    for (let t = 0; t <= ticks; t++) {
+      const v = yMin + (yMax - yMin) * (t / ticks);
+      const y = yScale(v);
+      html += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}"
+        stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,3"/>`;
+      html += `<text x="${padL - 6}" y="${y + 4}" text-anchor="end" font-size="10" fill="#94a3b8">${fmtInt(v)}</text>`;
+    }
+
+    // Nominal area + line
+    let nomArea = `${xScale(0)},${padT + cH}`;
+    nomData.forEach((v, i) => { nomArea += ` ${xScale(i)},${yScale(v)}`; });
+    nomArea += ` ${xScale(n - 1)},${padT + cH}`;
+    html += `<polygon points="${nomArea}" fill="rgba(59,130,246,0.06)"/>`;
+
+    let nomPath = `M ${xScale(0)},${yScale(nomData[0])}`;
+    nomData.forEach((v, i) => { if (i > 0) nomPath += ` L ${xScale(i)},${yScale(v)}`; });
+    html += `<path d="${nomPath}" class="chart-line"/>`;
+
+    // Real line
+    let realPath = `M ${xScale(0)},${yScale(realData[0])}`;
+    realData.forEach((v, i) => { if (i > 0) realPath += ` L ${xScale(i)},${yScale(v)}`; });
+    html += `<path d="${realPath}" class="chart-line-red"/>`;
+
+    // Points
+    nomData.forEach((v, i) => {
+      html += `<circle cx="${xScale(i)}" cy="${yScale(v)}" r="3.5" fill="#3b82f6" stroke="white" stroke-width="1.5"/>`;
+    });
+    realData.forEach((v, i) => {
+      html += `<circle cx="${xScale(i)}" cy="${yScale(v)}" r="3.5" fill="#ef4444" stroke="white" stroke-width="1.5"/>`;
+    });
+
+    // X labels
+    years.forEach((y, i) => {
+      html += `<text x="${xScale(i)}" y="${H - padB + 18}" text-anchor="middle" font-size="11" fill="#64748b">${y}</text>`;
+    });
+
+    // Axes
+    html += `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + cH}" stroke="#94a3b8" stroke-width="1"/>`;
+    html += `<line x1="${padL}" y1="${padT + cH}" x2="${W - padR}" y2="${padT + cH}" stroke="#94a3b8" stroke-width="1"/>`;
+    html += `<text x="14" y="${padT + cH / 2}" text-anchor="middle" font-size="11" fill="#64748b"
+      transform="rotate(-90, 14, ${padT + cH / 2})">Lønn (kr)</text>`;
+
+    svg.innerHTML = html;
+  }
+
+  // -------------------------------------------------------
+  // INIT
+  // -------------------------------------------------------
+  (function init() {
+    initIndexTab();
+    initKpiTab();
+    initReallonnTab();
+  })();
+</script>
+
+</body>
+</html>

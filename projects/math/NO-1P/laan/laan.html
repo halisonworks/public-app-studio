@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<!--
+  Serielån og annuitetslån — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 1P (LK20): sammenlikn serielån og
+  annuitetslån — nedbetalingsplan, renter og terminbeløp over tid.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Serielån og annuitetslån — Matematikk 1P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .table-scroll { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: 0.45rem 0.75rem; text-align: right; white-space: nowrap; }
+    th:first-child, td:first-child { text-align: center; }
+    thead th { background: #1e40af; color: white; position: sticky; top: 0; }
+    tbody tr:nth-child(even) { background: #eff6ff; }
+    tbody tr:hover { background: #dbeafe; }
+    .serie-thead th { background: #065f46; }
+    tbody tr:nth-child(even).serie { background: #ecfdf5; }
+    tbody tr:hover.serie { background: #d1fae5; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+    .tooltip { position: relative; display: inline-block; }
+    .tooltip .tip {
+      visibility: hidden; opacity: 0; transition: opacity 0.2s;
+      background: #1e293b; color: #fff; font-size: 0.78rem;
+      border-radius: 6px; padding: 6px 10px;
+      position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%);
+      width: 220px; text-align: left; z-index: 10; pointer-events: none;
+    }
+    .tooltip:hover .tip { visibility: visible; opacity: 1; }
+    .svg-chart { width: 100%; height: auto; display: block; }
+    @media (max-width: 640px) {
+      th, td { padding: 0.3rem 0.45rem; font-size: 0.82rem; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+<!-- Header -->
+<header class="bg-blue-900 text-white py-4 px-4 shadow-md">
+  <div class="max-w-5xl mx-auto">
+    <div class="flex items-center gap-3">
+      <span class="text-3xl">🏦</span>
+      <div>
+        <h1 class="text-xl sm:text-2xl font-bold leading-tight">Serielån og annuitetslån</h1>
+        <p class="text-blue-200 text-sm mt-0.5">Matematikk 1P · LK20 · Sinus kap. 5.6–5.7</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Main -->
+<main class="max-w-5xl mx-auto px-3 py-6 space-y-8">
+
+  <!-- Forklaringsboks -->
+  <section class="bg-white rounded-xl shadow p-5 border border-blue-100">
+    <h2 class="text-lg font-bold text-blue-900 mb-2">📚 Hva er forskjellen?</h2>
+    <div class="grid sm:grid-cols-2 gap-4 text-sm text-slate-700">
+      <div class="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+        <h3 class="font-bold text-emerald-800 mb-1">Serielån</h3>
+        <p>Du betaler <strong>like stort avdrag</strong> hver termin. Renten regnes av <em>restgjelden</em>, som synker for hver termin. Derfor er <strong>terminbeløpet størst i starten</strong> og minker gradvis. Totalt betaler du <em>mindre renter</em> enn ved annuitetslån.</p>
+      </div>
+      <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+        <h3 class="font-bold text-blue-800 mb-1">Annuitetslån</h3>
+        <p>Du betaler <strong>like stort terminbeløp</strong> hver gang. I starten er renten stor og avdraget lite. Mot slutten er det omvendt. Terminbeløpet regnes med annuitetsformelen. Totalt betaler du <em>mer renter</em>, men det er lettere å budsjettere.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Inndata -->
+  <section class="bg-white rounded-xl shadow p-5 border border-blue-100">
+    <h2 class="text-lg font-bold text-blue-900 mb-4">⚙️ Innstillinger</h2>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">
+          Lånebeløp (kr)
+          <span class="tooltip ml-1 text-blue-400 cursor-help">ℹ️<span class="tip">Beløpet du låner, f.eks. 500 000 kr for et billån eller 2 000 000 kr for et boliglån.</span></span>
+        </label>
+        <input id="laan" type="number" min="1000" max="100000000" step="1000" value="500000"
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-right" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">
+          Årlig rente (%)
+          <span class="tooltip ml-1 text-blue-400 cursor-help">ℹ️<span class="tip">Nominell årlig rente. Terminrenten beregnes som: årsrente ÷ antall terminer per år.</span></span>
+        </label>
+        <input id="rente" type="number" min="0.01" max="50" step="0.01" value="5.5"
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-right" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">
+          Antall år
+          <span class="tooltip ml-1 text-blue-400 cursor-help">ℹ️<span class="tip">Løpetiden på lånet. F.eks. 20 år for et boliglån.</span></span>
+        </label>
+        <input id="aar" type="number" min="1" max="50" step="1" value="5"
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-right" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">
+          Terminer per år
+          <span class="tooltip ml-1 text-blue-400 cursor-help">ℹ️<span class="tip">Månedlig = 12 terminer/år. Kvartalsvis = 4. Halvårlig = 2. Årlig = 1.</span></span>
+        </label>
+        <select id="termPerAar"
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+          <option value="12" selected>Månedlig (12/år)</option>
+          <option value="4">Kvartalsvis (4/år)</option>
+          <option value="2">Halvårlig (2/år)</option>
+          <option value="1">Årlig (1/år)</option>
+        </select>
+      </div>
+
+    </div>
+
+    <div class="mt-5 flex flex-wrap gap-3 items-center">
+      <button id="beregn" onclick="beregn()"
+        class="bg-blue-700 hover:bg-blue-800 active:bg-blue-900 text-white font-semibold px-6 py-2.5 rounded-lg shadow transition-colors">
+        Beregn nedbetalingsplan
+      </button>
+      <button onclick="tilbakestill()"
+        class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium px-5 py-2.5 rounded-lg transition-colors">
+        Tilbakestill
+      </button>
+      <span id="feilmelding" class="text-red-600 text-sm font-medium hidden"></span>
+    </div>
+  </section>
+
+  <!-- Resultatsammendrag -->
+  <section id="sammendrag" class="hidden">
+    <div class="grid sm:grid-cols-3 gap-4">
+      <div class="bg-white rounded-xl shadow p-4 border border-blue-100 text-center">
+        <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Lånebeløp</div>
+        <div id="sum-laan" class="text-2xl font-bold text-slate-800"></div>
+      </div>
+      <div class="bg-emerald-50 rounded-xl shadow p-4 border border-emerald-200 text-center">
+        <div class="text-xs text-emerald-700 uppercase tracking-wide mb-1">Totale renter — Serielån</div>
+        <div id="sum-serie-renter" class="text-2xl font-bold text-emerald-700"></div>
+      </div>
+      <div class="bg-blue-50 rounded-xl shadow p-4 border border-blue-200 text-center">
+        <div class="text-xs text-blue-700 uppercase tracking-wide mb-1">Totale renter — Annuitetslån</div>
+        <div id="sum-ann-renter" class="text-2xl font-bold text-blue-700"></div>
+      </div>
+    </div>
+    <div id="rentediff-boks" class="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-900"></div>
+  </section>
+
+  <!-- Graf -->
+  <section id="graf-seksjon" class="hidden bg-white rounded-xl shadow p-5 border border-blue-100">
+    <h2 class="text-lg font-bold text-blue-900 mb-1">📈 Terminbeløp over tid</h2>
+    <p class="text-sm text-slate-500 mb-3">Grønn = serielån (synkende), blå = annuitetslån (konstant)</p>
+    <div id="graf-container"></div>
+    <p class="text-xs text-slate-400 mt-2">Merk: ved mange terminer vises hvert <span id="vis-steg-tekst"></span> termin i grafen for bedre lesbarhet.</p>
+  </section>
+
+  <!-- Tabeller -->
+  <section id="tabeller" class="hidden space-y-8">
+
+    <!-- Serielån tabell -->
+    <div>
+      <h2 class="text-lg font-bold text-emerald-800 mb-2">📋 Nedbetalingsplan — Serielån</h2>
+      <div class="table-scroll rounded-xl shadow border border-emerald-200">
+        <table>
+          <thead class="serie-thead">
+            <tr>
+              <th>Termin</th>
+              <th>Avdrag (kr)</th>
+              <th>Renter (kr)</th>
+              <th>Terminbeløp (kr)</th>
+              <th>Restgjeld (kr)</th>
+            </tr>
+          </thead>
+          <tbody id="serie-tbody"></tbody>
+          <tfoot>
+            <tr class="bg-emerald-100 font-semibold">
+              <td class="text-center">Sum</td>
+              <td id="serie-sum-avdrag" class="text-right"></td>
+              <td id="serie-sum-renter" class="text-right"></td>
+              <td id="serie-sum-term" class="text-right"></td>
+              <td class="text-right">—</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Annuitetslån tabell -->
+    <div>
+      <h2 class="text-lg font-bold text-blue-800 mb-2">📋 Nedbetalingsplan — Annuitetslån</h2>
+      <div class="table-scroll rounded-xl shadow border border-blue-200">
+        <table>
+          <thead>
+            <tr>
+              <th>Termin</th>
+              <th>Avdrag (kr)</th>
+              <th>Renter (kr)</th>
+              <th>Terminbeløp (kr)</th>
+              <th>Restgjeld (kr)</th>
+            </tr>
+          </thead>
+          <tbody id="ann-tbody"></tbody>
+          <tfoot>
+            <tr class="bg-blue-100 font-semibold">
+              <td class="text-center">Sum</td>
+              <td id="ann-sum-avdrag" class="text-right"></td>
+              <td id="ann-sum-renter" class="text-right"></td>
+              <td id="ann-sum-term" class="text-right"></td>
+              <td class="text-right">—</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- Formelboks -->
+  <section class="bg-white rounded-xl shadow p-5 border border-slate-200">
+    <h2 class="text-lg font-bold text-slate-800 mb-3">🧮 Formler</h2>
+    <div class="grid sm:grid-cols-2 gap-5 text-sm text-slate-700">
+      <div class="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+        <h3 class="font-bold text-emerald-800 mb-2">Serielån</h3>
+        <p class="mb-1"><strong>Fast avdrag:</strong></p>
+        <p class="font-mono bg-white rounded px-2 py-1 mb-2 text-xs border border-emerald-100">avdrag = lånebeløp ÷ antall terminer</p>
+        <p class="mb-1"><strong>Rente i termin <em>t</em>:</strong></p>
+        <p class="font-mono bg-white rounded px-2 py-1 mb-2 text-xs border border-emerald-100">rente_t = restgjeld_{t-1} × terminrente</p>
+        <p class="mb-1"><strong>Terminbeløp:</strong></p>
+        <p class="font-mono bg-white rounded px-2 py-1 text-xs border border-emerald-100">term_t = avdrag + rente_t</p>
+      </div>
+      <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+        <h3 class="font-bold text-blue-800 mb-2">Annuitetslån</h3>
+        <p class="mb-1"><strong>Fast terminbeløp (annuitetsformelen):</strong></p>
+        <p class="font-mono bg-white rounded px-2 py-1 mb-2 text-xs border border-blue-100">A = G × r × (1+r)^n / ((1+r)^n − 1)</p>
+        <p class="text-xs text-slate-500 mb-2">der G = lånebeløp, r = terminrente, n = antall terminer</p>
+        <p class="mb-1"><strong>Rente i termin <em>t</em>:</strong></p>
+        <p class="font-mono bg-white rounded px-2 py-1 mb-2 text-xs border border-blue-100">rente_t = restgjeld_{t-1} × r</p>
+        <p class="mb-1"><strong>Avdrag:</strong></p>
+        <p class="font-mono bg-white rounded px-2 py-1 text-xs border border-blue-100">avdrag_t = A − rente_t</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="text-center text-xs text-slate-400 py-6">
+  Halison App Studio · Matematikk 1P · LK20 · Sinus kap. 5.6–5.7 ·
+  <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-slate-600" target="_blank" rel="noopener">GitHub</a>
+</footer>
+
+<script>
+  // ── Hjelpefunksjoner ──────────────────────────────────────────────────────────
+
+  function kr(tall) {
+    // Formater som norske kroner med to desimaler
+    return tall.toLocaleString('nb-NO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function vis(id) { document.getElementById(id).classList.remove('hidden'); }
+  function skjul(id) { document.getElementById(id).classList.add('hidden'); }
+
+  function tilbakestill() {
+    document.getElementById('laan').value = '500000';
+    document.getElementById('rente').value = '5.5';
+    document.getElementById('aar').value = '5';
+    document.getElementById('termPerAar').value = '12';
+    skjul('sammendrag');
+    skjul('graf-seksjon');
+    skjul('tabeller');
+    document.getElementById('feilmelding').classList.add('hidden');
+  }
+
+  // ── Serielån-beregning ────────────────────────────────────────────────────────
+
+  function beregnSerie(G, r, n) {
+    // G: lånebeløp, r: terminrente, n: antall terminer
+    const avdrag = G / n;
+    let restgjeld = G;
+    const plan = [];
+    for (let t = 1; t <= n; t++) {
+      const renter = restgjeld * r;
+      const terminbelop = avdrag + renter;
+      restgjeld -= avdrag;
+      // Unngå negativ restgjeld på grunn av flytall
+      if (Math.abs(restgjeld) < 0.005) restgjeld = 0;
+      plan.push({ t, avdrag, renter, terminbelop, restgjeld });
+    }
+    return plan;
+  }
+
+  // ── Annuitetslån-beregning ────────────────────────────────────────────────────
+
+  function beregnAnnuitet(G, r, n) {
+    // Annuitetsformelen: A = G * r * (1+r)^n / ((1+r)^n - 1)
+    const faktor = Math.pow(1 + r, n);
+    const A = G * r * faktor / (faktor - 1);
+    let restgjeld = G;
+    const plan = [];
+    for (let t = 1; t <= n; t++) {
+      const renter = restgjeld * r;
+      let avdrag = A - renter;
+      restgjeld -= avdrag;
+      if (Math.abs(restgjeld) < 0.005) restgjeld = 0;
+      plan.push({ t, avdrag, renter, terminbelop: A, restgjeld });
+    }
+    return plan;
+  }
+
+  // ── Fyll tabell ───────────────────────────────────────────────────────────────
+
+  function fyllTabell(tbodyId, plan, rowClass) {
+    const tbody = document.getElementById(tbodyId);
+    tbody.innerHTML = '';
+    for (const row of plan) {
+      const tr = document.createElement('tr');
+      if (rowClass) tr.classList.add(rowClass);
+      tr.innerHTML = `
+        <td>${row.t}</td>
+        <td>${kr(row.avdrag)}</td>
+        <td>${kr(row.renter)}</td>
+        <td>${kr(row.terminbelop)}</td>
+        <td>${kr(row.restgjeld)}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function summertRad(plan, felt) {
+    return plan.reduce((s, r) => s + r[felt], 0);
+  }
+
+  // ── SVG-graf ──────────────────────────────────────────────────────────────────
+
+  function tegnGraf(seriePlan, annPlan) {
+    const n = seriePlan.length;
+
+    // Steg for lesbarhet
+    let steg = 1;
+    if (n > 360) steg = 12;
+    else if (n > 180) steg = 6;
+    else if (n > 60) steg = 3;
+    else if (n > 24) steg = 2;
+    document.getElementById('vis-steg-tekst').textContent =
+      steg === 1 ? 'enkelt' : steg + '.';
+
+    const punkterSerie = [];
+    const punkterAnn = [];
+    for (let i = 0; i < n; i += steg) {
+      punkterSerie.push(seriePlan[i].terminbelop);
+      punkterAnn.push(annPlan[i].terminbelop);
+    }
+
+    // Alle verdier for skalering
+    const alleVerdier = punkterSerie.concat(punkterAnn);
+    const maxV = Math.max(...alleVerdier);
+    const minV = Math.min(...alleVerdier) * 0.9;
+    const antP = punkterSerie.length;
+
+    // SVG dimensjoner
+    const W = 800; const H = 300;
+    const padL = 90; const padR = 20; const padT = 15; const padB = 45;
+    const grafW = W - padL - padR;
+    const grafH = H - padT - padB;
+
+    function xPos(i) { return padL + (i / Math.max(antP - 1, 1)) * grafW; }
+    function yPos(v) { return padT + grafH - ((v - minV) / (maxV - minV || 1)) * grafH; }
+
+    // Bygg SVG
+    let svg = `<svg viewBox="0 0 ${W} ${H}" class="svg-chart" role="img" aria-label="Graf over terminbeløp">`;
+
+    // Rutenett og y-akse etiketter
+    const yTicks = 5;
+    for (let i = 0; i <= yTicks; i++) {
+      const v = minV + (maxV - minV) * (i / yTicks);
+      const y = yPos(v);
+      svg += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#e2e8f0" stroke-width="1"/>`;
+      svg += `<text x="${padL - 6}" y="${y + 4}" text-anchor="end" font-size="11" fill="#64748b">${kr(v)}</text>`;
+    }
+
+    // x-akse etiketter
+    const xTicks = Math.min(antP - 1, 10);
+    for (let i = 0; i <= xTicks; i++) {
+      const idx = Math.round((i / xTicks) * (antP - 1));
+      const termNr = idx * steg + 1;
+      const x = xPos(idx);
+      svg += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT + grafH}" stroke="#f1f5f9" stroke-width="1"/>`;
+      svg += `<text x="${x}" y="${padT + grafH + 16}" text-anchor="middle" font-size="11" fill="#64748b">${termNr}</text>`;
+    }
+
+    // Akse-linjer
+    svg += `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + grafH}" stroke="#94a3b8" stroke-width="1.5"/>`;
+    svg += `<line x1="${padL}" y1="${padT + grafH}" x2="${W - padR}" y2="${padT + grafH}" stroke="#94a3b8" stroke-width="1.5"/>`;
+
+    // Akse-titler
+    svg += `<text x="${padL + grafW / 2}" y="${H - 4}" text-anchor="middle" font-size="12" fill="#475569">Termin</text>`;
+    svg += `<text x="12" y="${padT + grafH / 2}" text-anchor="middle" font-size="11" fill="#475569" transform="rotate(-90 12 ${padT + grafH / 2})">Terminbeløp (kr)</text>`;
+
+    // Hjelpefunksjon for polyline
+    function lagPolyline(punkter, farge, dash) {
+      const pts = punkter.map((v, i) => `${xPos(i)},${yPos(v)}`).join(' ');
+      const dashAttr = dash ? `stroke-dasharray="${dash}"` : '';
+      return `<polyline points="${pts}" fill="none" stroke="${farge}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" ${dashAttr}/>`;
+    }
+
+    // Serielån (grønn) og annuitetslån (blå)
+    svg += lagPolyline(punkterSerie, '#059669');
+    svg += lagPolyline(punkterAnn, '#2563eb', '6,4');
+
+    // Legende
+    svg += `<rect x="${padL + 10}" y="${padT + 5}" width="14" height="4" rx="2" fill="#059669"/>`;
+    svg += `<text x="${padL + 28}" y="${padT + 12}" font-size="12" fill="#065f46">Serielån</text>`;
+    svg += `<line x1="${padL + 130}" y1="${padT + 7}" x2="${padL + 144}" y2="${padT + 7}" stroke="#2563eb" stroke-width="2.5" stroke-dasharray="5,3"/>`;
+    svg += `<text x="${padL + 148}" y="${padT + 12}" font-size="12" fill="#1e40af">Annuitetslån</text>`;
+
+    svg += '</svg>';
+    document.getElementById('graf-container').innerHTML = svg;
+  }
+
+  // ── Hoved-beregn funksjon ─────────────────────────────────────────────────────
+
+  function beregn() {
+    const feilEl = document.getElementById('feilmelding');
+    feilEl.classList.add('hidden');
+
+    const G = parseFloat(document.getElementById('laan').value);
+    const renteProsent = parseFloat(document.getElementById('rente').value);
+    const aar = parseInt(document.getElementById('aar').value);
+    const termPerAar = parseInt(document.getElementById('termPerAar').value);
+
+    // Validering
+    if (!G || G < 1000) {
+      feilEl.textContent = 'Lånebeløp må være minst 1 000 kr.';
+      feilEl.classList.remove('hidden'); return;
+    }
+    if (!renteProsent || renteProsent <= 0 || renteProsent > 50) {
+      feilEl.textContent = 'Renten må være mellom 0,01 % og 50 %.';
+      feilEl.classList.remove('hidden'); return;
+    }
+    if (!aar || aar < 1 || aar > 50) {
+      feilEl.textContent = 'Antall år må være mellom 1 og 50.';
+      feilEl.classList.remove('hidden'); return;
+    }
+
+    const n = aar * termPerAar;          // totalt antall terminer
+    const r = renteProsent / 100 / termPerAar;  // terminrente
+
+    const seriePlan = beregnSerie(G, r, n);
+    const annPlan = beregnAnnuitet(G, r, n);
+
+    // Fyll tabeller
+    fyllTabell('serie-tbody', seriePlan, 'serie');
+    fyllTabell('ann-tbody', annPlan, '');
+
+    // Summer
+    const serieAvdragSum = summertRad(seriePlan, 'avdrag');
+    const serieRenterSum = summertRad(seriePlan, 'renter');
+    const serieTermSum   = summertRad(seriePlan, 'terminbelop');
+    const annAvdragSum   = summertRad(annPlan, 'avdrag');
+    const annRenterSum   = summertRad(annPlan, 'renter');
+    const annTermSum     = summertRad(annPlan, 'terminbelop');
+
+    document.getElementById('serie-sum-avdrag').textContent = kr(serieAvdragSum);
+    document.getElementById('serie-sum-renter').textContent = kr(serieRenterSum);
+    document.getElementById('serie-sum-term').textContent   = kr(serieTermSum);
+    document.getElementById('ann-sum-avdrag').textContent   = kr(annAvdragSum);
+    document.getElementById('ann-sum-renter').textContent   = kr(annRenterSum);
+    document.getElementById('ann-sum-term').textContent     = kr(annTermSum);
+
+    // Sammendrag
+    const diff = annRenterSum - serieRenterSum;
+    document.getElementById('sum-laan').textContent = kr(G) + ' kr';
+    document.getElementById('sum-serie-renter').textContent = kr(serieRenterSum) + ' kr';
+    document.getElementById('sum-ann-renter').textContent   = kr(annRenterSum) + ' kr';
+
+    document.getElementById('rentediff-boks').innerHTML =
+      `<strong>💡 Sammenligning:</strong> Med serielån betaler du totalt <strong>${kr(serieRenterSum)} kr</strong> i renter, mot <strong>${kr(annRenterSum)} kr</strong> med annuitetslån. ` +
+      `Det er <strong>${kr(diff)} kr ${diff >= 0 ? 'mer' : 'mindre'}</strong> med annuitetslån. ` +
+      `Serielånet er rimeligere totalt, men terminbeløpet er <strong>${kr(seriePlan[0].terminbelop)} kr</strong> i starten mot et fast <strong>${kr(annPlan[0].terminbelop)} kr</strong> for annuitetslånet.`;
+
+    // Graf
+    tegnGraf(seriePlan, annPlan);
+
+    // Vis seksjoner
+    vis('sammendrag');
+    vis('graf-seksjon');
+    vis('tabeller');
+
+    // Scroll til sammendrag
+    document.getElementById('sammendrag').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Kjør én gang ved innlasting for å vise eksempelresultat
+  window.addEventListener('DOMContentLoaded', beregn);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<!--
+  Sammensatte hendelser — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 1P (LK20): multiplikasjonsprinsippet,
+  uavhengige og avhengige hendinger, og sannsynlighetstre.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sammensatte hendelser – Matematikk 1P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .tab-btn.active { background-color: #1d4ed8; color: white; }
+    .tab-btn { transition: background-color 0.2s, color 0.2s; }
+    .section { display: none; }
+    .section.active { display: block; }
+    .fraction { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 2px; }
+    .fraction .num { border-bottom: 1.5px solid currentColor; padding: 0 3px; line-height: 1.2; }
+    .fraction .den { padding: 0 3px; line-height: 1.2; }
+    .tree-path { stroke: #64748b; stroke-width: 2; fill: none; }
+    .tree-path.highlight { stroke: #2563eb; stroke-width: 2.5; }
+    .tree-node { fill: #1d4ed8; }
+    .tree-leaf { fill: #16a34a; }
+    .tree-leaf.red { fill: #dc2626; }
+    .answer-box { min-height: 2.5rem; }
+    .step { border-left: 3px solid #3b82f6; padding-left: 0.75rem; margin-bottom: 0.5rem; }
+    .correct { background-color: #dcfce7; border-color: #16a34a; }
+    .wrong { background-color: #fee2e2; border-color: #dc2626; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+    .quiz-feedback { min-height: 1.5rem; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+
+<!-- Header -->
+<header class="bg-blue-800 text-white py-4 px-4 shadow-md">
+  <div class="max-w-4xl mx-auto">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <h1 class="text-2xl font-bold">Sammensatte hendelser</h1>
+        <p class="text-blue-200 text-sm mt-0.5">Matematikk 1P · LK20 · Sinus kap. 9.3–9.6</p>
+      </div>
+      <span class="bg-blue-600 text-xs font-semibold px-3 py-1 rounded-full">Sannsynlighet</span>
+    </div>
+  </div>
+</header>
+
+<!-- Navigation tabs -->
+<nav class="bg-white shadow sticky top-0 z-10">
+  <div class="max-w-4xl mx-auto px-4 flex overflow-x-auto gap-1 py-2">
+    <button class="tab-btn active rounded px-4 py-2 text-sm font-medium whitespace-nowrap" onclick="showTab('komplement')">1 · Komplement</button>
+    <button class="tab-btn rounded px-4 py-2 text-sm font-medium whitespace-nowrap bg-gray-100 text-gray-700 hover:bg-gray-200" onclick="showTab('multiprinsipp')">2 · Multiplikasjonsprinsippet</button>
+    <button class="tab-btn rounded px-4 py-2 text-sm font-medium whitespace-nowrap bg-gray-100 text-gray-700 hover:bg-gray-200" onclick="showTab('uavhengig')">3 · Uavhengige hendinger</button>
+    <button class="tab-btn rounded px-4 py-2 text-sm font-medium whitespace-nowrap bg-gray-100 text-gray-700 hover:bg-gray-200" onclick="showTab('tre')">4 · Sannsynlighetstre</button>
+    <button class="tab-btn rounded px-4 py-2 text-sm font-medium whitespace-nowrap bg-gray-100 text-gray-700 hover:bg-gray-200" onclick="showTab('quiz')">5 · Øv deg</button>
+  </div>
+</nav>
+
+<main class="max-w-4xl mx-auto px-4 py-6 space-y-0">
+
+<!-- ===== TAB 1: Komplement ===== -->
+<section id="tab-komplement" class="section active space-y-5">
+  <div class="bg-white rounded-xl shadow p-5">
+    <h2 class="text-xl font-bold text-blue-800 mb-2">1 · Komplement og sum av sannsynligheter</h2>
+    <p class="text-gray-600 mb-4">To grunnregler du trenger for å jobbe med sammensatte hendinger:</p>
+
+    <div class="grid md:grid-cols-2 gap-4 mb-5">
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 class="font-semibold text-blue-800 mb-2">Komplement</h3>
+        <p class="text-sm mb-2">Sannsynligheten for at <strong>A ikke</strong> skjer:</p>
+        <div class="bg-white rounded p-3 text-center font-mono text-lg font-bold text-blue-700">
+          P(ikke A) = 1 − P(A)
+        </div>
+        <p class="text-xs text-gray-500 mt-2">Alle utfall enten skjer i A eller <em>ikke</em> i A — de er utfyllende.</p>
+      </div>
+      <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+        <h3 class="font-semibold text-green-800 mb-2">Sum for disjunkte hendinger</h3>
+        <p class="text-sm mb-2">Hvis A og B <strong>ikke kan skje samtidig</strong> (disjunkte):</p>
+        <div class="bg-white rounded p-3 text-center font-mono text-lg font-bold text-green-700">
+          P(A eller B) = P(A) + P(B)
+        </div>
+        <p class="text-xs text-gray-500 mt-2">Summen av alle elementærhendingene er alltid 1.</p>
+      </div>
+    </div>
+
+    <!-- Interactive example -->
+    <div class="bg-gray-50 border border-gray-200 rounded-lg p-5">
+      <h3 class="font-semibold mb-3">🎲 Interaktivt eksempel: Kast en terning</h3>
+      <p class="text-sm text-gray-600 mb-4">Velg en hendelse. Se sannsynligheten og komplementet steg for steg.</p>
+
+      <div class="flex flex-wrap gap-2 mb-4">
+        <button class="px-3 py-1.5 rounded bg-blue-600 text-white text-sm font-medium hover:bg-blue-700" onclick="diceExample('par')">A: Partall {2,4,6}</button>
+        <button class="px-3 py-1.5 rounded bg-blue-600 text-white text-sm font-medium hover:bg-blue-700" onclick="diceExample('tre')">A: Mer enn 3 {4,5,6}</button>
+        <button class="px-3 py-1.5 rounded bg-blue-600 text-white text-sm font-medium hover:bg-blue-700" onclick="diceExample('en')">A: Øynene er 1 {1}</button>
+        <button class="px-3 py-1.5 rounded bg-blue-600 text-white text-sm font-medium hover:bg-blue-700" onclick="diceExample('under4')">A: Mindre enn 4 {1,2,3}</button>
+      </div>
+
+      <div id="dice-result" class="space-y-2 hidden">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <!-- Disjoint example -->
+    <div class="bg-gray-50 border border-gray-200 rounded-lg p-5 mt-4">
+      <h3 class="font-semibold mb-3">🃏 Eksempel: Kortspill (disjunkte hendinger)</h3>
+      <p class="text-sm text-gray-600 mb-2">Du trekker ett kort fra en vanlig kortstokk (52 kort). La:</p>
+      <ul class="text-sm mb-4 space-y-1 list-disc ml-5">
+        <li><strong>A</strong> = trekke et hjerte ♥ (13 av 52 kort)</li>
+        <li><strong>B</strong> = trekke et spar ♠ (13 av 52 kort)</li>
+      </ul>
+      <p class="text-sm text-gray-600 mb-3">A og B er <em>disjunkte</em> (et kort kan ikke være både hjerte og spar). Regn ut P(A eller B):</p>
+
+      <div class="space-y-2" id="disjoint-steps" style="display:none">
+        <div class="step"><span class="font-mono text-sm">P(A) = 13/52 = 1/4</span></div>
+        <div class="step"><span class="font-mono text-sm">P(B) = 13/52 = 1/4</span></div>
+        <div class="step font-semibold"><span class="font-mono">P(A eller B) = P(A) + P(B) = 1/4 + 1/4 = 2/4 = 1/2</span></div>
+        <p class="text-sm text-green-700 font-medium">✓ Sannsynligheten for å trekke hjerte eller spar er 1/2 = 50 %.</p>
+      </div>
+      <button class="mt-2 px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700" onclick="toggleDisjoint()">Vis utregning</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TAB 2: Multiplikasjonsprinsippet ===== -->
+<section id="tab-multiprinsipp" class="section space-y-5">
+  <div class="bg-white rounded-xl shadow p-5">
+    <h2 class="text-xl font-bold text-blue-800 mb-2">2 · Multiplikasjonsprinsippet</h2>
+    <p class="text-gray-600 mb-4">Når et valg skjer i <strong>flere trinn</strong>, og antall muligheter i hvert trinn er uavhengig av de andre, kan vi bruke:</p>
+
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-5 text-center">
+      <p class="font-semibold text-blue-800 mb-1">Multiplikasjonsprinsippet</p>
+      <p class="font-mono text-blue-700 text-lg font-bold">Totalt antall utfall = n₁ · n₂ · n₃ · …</p>
+      <p class="text-xs text-gray-500 mt-1">der n₁ er antall muligheter i trinn 1, n₂ i trinn 2, osv.</p>
+    </div>
+
+    <!-- Antrekk eksempel -->
+    <div class="bg-gray-50 border border-gray-200 rounded-lg p-5 mb-5">
+      <h3 class="font-semibold mb-2">👕 Eksempel: Velge antrekk</h3>
+      <p class="text-sm text-gray-600 mb-4">Kari har 3 gensere og 4 bukser. Hvor mange forskjellige antrekk kan hun velge?</p>
+
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div class="bg-white border rounded p-3 text-center">
+          <div class="text-2xl mb-1">👕</div>
+          <div id="sweater-count" class="text-3xl font-bold text-blue-700">3</div>
+          <div class="text-xs text-gray-500 mt-1">gensere</div>
+          <div class="flex justify-center gap-2 mt-2">
+            <button class="px-2 py-1 bg-gray-200 rounded text-sm font-bold hover:bg-gray-300" onclick="changeCount('sweater',-1)">−</button>
+            <button class="px-2 py-1 bg-gray-200 rounded text-sm font-bold hover:bg-gray-300" onclick="changeCount('sweater',1)">+</button>
+          </div>
+        </div>
+        <div class="bg-white border rounded p-3 text-center">
+          <div class="text-2xl mb-1">👖</div>
+          <div id="pants-count" class="text-3xl font-bold text-blue-700">4</div>
+          <div class="text-xs text-gray-500 mt-1">bukser</div>
+          <div class="flex justify-center gap-2 mt-2">
+            <button class="px-2 py-1 bg-gray-200 rounded text-sm font-bold hover:bg-gray-300" onclick="changeCount('pants',-1)">−</button>
+            <button class="px-2 py-1 bg-gray-200 rounded text-sm font-bold hover:bg-gray-300" onclick="changeCount('pants',1)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white border border-blue-200 rounded p-4">
+        <p class="text-sm font-medium mb-2">Utregning:</p>
+        <p class="font-mono text-center text-lg" id="outfit-calc">
+          Antall antrekk = 3 · 4 = <strong class="text-blue-700">12</strong>
+        </p>
+      </div>
+
+      <!-- Visual grid -->
+      <div class="mt-4">
+        <p class="text-xs text-gray-500 mb-2">Alle mulige kombinasjoner (G = genser, B = bukse):</p>
+        <div id="outfit-grid" class="flex flex-wrap gap-1"></div>
+      </div>
+    </div>
+
+    <!-- Probability from counting -->
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-5">
+      <h3 class="font-semibold text-yellow-800 mb-2">Fra telling til sannsynlighet</h3>
+      <p class="text-sm mb-3">Kari velger et tilfeldig antrekk. Hva er sannsynligheten for at hun velger genser 2 (G2) og en bestemt bukse (B3)?</p>
+      <div class="space-y-2" id="prob-from-count" style="display:none">
+        <div class="step text-sm">Totalt antall like sannsynlige antrekk: 3 · 4 = 12</div>
+        <div class="step text-sm">Antall gunstige utfall: 1 (kun G2 og B3)</div>
+        <div class="step text-sm font-semibold font-mono">P(G2 og B3) = 1/12 ≈ 0,083 = 8,3 %</div>
+      </div>
+      <button class="mt-2 px-4 py-2 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700" onclick="toggleProbCount()">Vis utregning</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TAB 3: Uavhengige vs avhengige hendinger ===== -->
+<section id="tab-uavhengig" class="section space-y-5">
+  <div class="bg-white rounded-xl shadow p-5">
+    <h2 class="text-xl font-bold text-blue-800 mb-2">3 · Uavhengige og avhengige hendinger</h2>
+    <p class="text-gray-600 mb-4">Skiller du på <em>trekking med tilbakelegging</em> og <em>uten tilbakelegging</em>?</p>
+
+    <div class="grid md:grid-cols-2 gap-4 mb-5">
+      <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+        <h3 class="font-semibold text-green-800 mb-1">Uavhengige hendinger</h3>
+        <p class="text-sm text-gray-600 mb-2">Det første utfallet <strong>påvirker ikke</strong> sannsynligheten for det neste.</p>
+        <div class="bg-white rounded p-3 text-center font-mono font-bold text-green-700">
+          P(A og B) = P(A) · P(B)
+        </div>
+        <p class="text-xs text-gray-500 mt-2">Eksempel: kaste terning to ganger. Hva du fikk første gang påvirker ikke andre kast.</p>
+      </div>
+      <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+        <h3 class="font-semibold text-orange-800 mb-1">Avhengige hendinger</h3>
+        <p class="text-sm text-gray-600 mb-2">Det første utfallet <strong>endrer</strong> mulighetene for det neste.</p>
+        <div class="bg-white rounded p-3 text-center font-mono font-bold text-orange-700">
+          P(A og B) = P(A) · P(B|A)
+        </div>
+        <p class="text-xs text-gray-500 mt-2">Eksempel: trekke kuler uten tilbakelegging. Etter første trekk er en kule borte.</p>
+      </div>
+    </div>
+
+    <!-- Interactive: Bag of balls -->
+    <div class="bg-gray-50 border border-gray-200 rounded-lg p-5">
+      <h3 class="font-semibold mb-3">🎱 Interaktivt eksempel: Pose med kuler</h3>
+      <p class="text-sm text-gray-600 mb-4">En pose inneholder <strong>3 røde</strong> og <strong>2 blå</strong> kuler. Du trekker to kuler. Finn sannsynligheten for å trekke <strong>rød og deretter rød</strong>.</p>
+
+      <div class="flex gap-3 mb-4">
+        <button id="btn-med" class="px-4 py-2 text-sm font-medium rounded border-2 border-green-600 bg-green-600 text-white hover:bg-green-700" onclick="setBagMode('med')">Med tilbakelegging</button>
+        <button id="btn-uten" class="px-4 py-2 text-sm font-medium rounded border-2 border-gray-300 bg-white text-gray-700 hover:bg-gray-100" onclick="setBagMode('uten')">Uten tilbakelegging</button>
+      </div>
+
+      <div id="bag-visual" class="flex flex-wrap gap-2 mb-4 p-3 bg-white border rounded">
+        <!-- filled by JS -->
+      </div>
+
+      <div id="bag-explanation" class="space-y-2">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <!-- Fixed worked example -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-5 mt-4">
+      <h3 class="font-semibold text-blue-800 mb-2">📌 Eksempel: Kaste to mynter</h3>
+      <p class="text-sm mb-3">Du kaster to mynter. Hva er sannsynligheten for å få <em>krone på begge</em>?</p>
+      <div class="space-y-2">
+        <div class="step text-sm">De to kastene er <strong>uavhengige</strong> (hva du fikk på første mynt endrer ingenting for andre mynt).</div>
+        <div class="step text-sm font-mono">P(krone) = 1/2 for hvert kast</div>
+        <div class="step text-sm font-mono">P(krone og krone) = P(krone) · P(krone) = 1/2 · 1/2 = <strong>1/4</strong></div>
+        <p class="text-sm text-blue-700 font-medium mt-1">✓ Sannsynligheten er 1/4 = 25 %.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TAB 4: Sannsynlighetstre ===== -->
+<section id="tab-tre" class="section space-y-5">
+  <div class="bg-white rounded-xl shadow p-5">
+    <h2 class="text-xl font-bold text-blue-800 mb-2">4 · Sannsynlighetstre</h2>
+    <p class="text-gray-600 mb-4">Et sannsynlighetstre viser alle mulige utfall i et totrinnsforsøk. Multipliser sannsynlighetene langs grenene for å finne sannsynligheten for hvert utfall.</p>
+
+    <!-- Mode selector -->
+    <div class="flex flex-wrap gap-3 mb-5">
+      <button id="tree-btn-mynt" class="px-4 py-2 rounded text-sm font-medium bg-blue-600 text-white hover:bg-blue-700" onclick="setTreeMode('mynt')">To myntkast</button>
+      <button id="tree-btn-kule" class="px-4 py-2 rounded text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" onclick="setTreeMode('kule')">Pose med kuler (uten tilbakelegging)</button>
+      <button id="tree-btn-terning" class="px-4 py-2 rounded text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200" onclick="setTreeMode('terning')">Terning + mynt</button>
+    </div>
+
+    <div id="tree-description" class="bg-blue-50 border border-blue-100 rounded p-3 mb-4 text-sm text-gray-700">
+      <!-- filled by JS -->
+    </div>
+
+    <div class="overflow-x-auto">
+      <svg id="prob-tree" width="680" height="320" viewBox="0 0 680 320" class="block mx-auto max-w-full">
+        <!-- filled by JS -->
+      </svg>
+    </div>
+
+    <div class="mt-5">
+      <h3 class="font-semibold mb-2">Utfall og sannsynligheter</h3>
+      <div id="tree-table" class="space-y-2">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <div class="mt-4 bg-yellow-50 border border-yellow-200 rounded p-4 text-sm">
+      <strong class="text-yellow-800">Huskeregel:</strong> Multipliser langs grenene, <strong>summer</strong> de separate utfallene. Summen av alle utfallssannsynligheter skal alltid bli <strong>1</strong>.
+    </div>
+  </div>
+</section>
+
+<!-- ===== TAB 5: Quiz ===== -->
+<section id="tab-quiz" class="section space-y-5">
+  <div class="bg-white rounded-xl shadow p-5">
+    <h2 class="text-xl font-bold text-blue-800 mb-4">5 · Øv deg</h2>
+    <p class="text-gray-600 mb-5">Svar på oppgavene. Klikk «Sjekk svar» etter hvert.</p>
+
+    <!-- Q1 -->
+    <div class="border rounded-lg p-4 mb-4" id="q1-box">
+      <p class="font-medium mb-1"><span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded mr-2">Oppg. 1</span>Komplement</p>
+      <p class="text-sm text-gray-700 mb-3">Sannsynligheten for regn i morgen er P(R) = 0,35. Hva er sannsynligheten for at det <strong>ikke</strong> regner?</p>
+      <div class="flex items-center gap-3 mb-2">
+        <label class="text-sm font-medium">P(ikke R) =</label>
+        <input type="number" step="0.01" min="0" max="1" id="q1-input" class="border rounded px-3 py-1.5 w-28 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="0.xx" />
+        <button class="px-4 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700" onclick="checkQ(1)">Sjekk svar</button>
+      </div>
+      <p class="quiz-feedback text-sm" id="q1-feedback"></p>
+    </div>
+
+    <!-- Q2 -->
+    <div class="border rounded-lg p-4 mb-4" id="q2-box">
+      <p class="font-medium mb-1"><span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded mr-2">Oppg. 2</span>Sum (disjunkte)</p>
+      <p class="text-sm text-gray-700 mb-3">En pose inneholder 10 kuler: 4 røde, 3 blå og 3 gule. Du trekker én kule. Hva er sannsynligheten for å trekke <strong>rød eller gul</strong>?</p>
+      <div class="flex items-center gap-3 mb-2">
+        <label class="text-sm font-medium">P(rød eller gul) =</label>
+        <input type="number" step="0.01" min="0" max="1" id="q2-input" class="border rounded px-3 py-1.5 w-28 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="0.xx" />
+        <button class="px-4 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700" onclick="checkQ(2)">Sjekk svar</button>
+      </div>
+      <p class="quiz-feedback text-sm" id="q2-feedback"></p>
+    </div>
+
+    <!-- Q3 -->
+    <div class="border rounded-lg p-4 mb-4" id="q3-box">
+      <p class="font-medium mb-1"><span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded mr-2">Oppg. 3</span>Multiplikasjonsprinsippet</p>
+      <p class="text-sm text-gray-700 mb-3">En restaurant tilbyr 4 forretter, 5 hovedretter og 3 desserter. Hvor mange ulike trerettersmiddager kan du sette sammen?</p>
+      <div class="flex items-center gap-3 mb-2">
+        <label class="text-sm font-medium">Antall middager =</label>
+        <input type="number" step="1" min="1" id="q3-input" class="border rounded px-3 py-1.5 w-28 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="?" />
+        <button class="px-4 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700" onclick="checkQ(3)">Sjekk svar</button>
+      </div>
+      <p class="quiz-feedback text-sm" id="q3-feedback"></p>
+    </div>
+
+    <!-- Q4 -->
+    <div class="border rounded-lg p-4 mb-4" id="q4-box">
+      <p class="font-medium mb-1"><span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded mr-2">Oppg. 4</span>Uavhengige hendinger</p>
+      <p class="text-sm text-gray-700 mb-3">Du kaster en terning to ganger. Hva er sannsynligheten for å få <strong>6</strong> på begge kastene? Skriv svaret som en desimalbrøk (to desimaler).</p>
+      <div class="flex items-center gap-3 mb-2">
+        <label class="text-sm font-medium">P(6 og 6) ≈</label>
+        <input type="number" step="0.001" min="0" max="1" id="q4-input" class="border rounded px-3 py-1.5 w-32 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="0.xxx" />
+        <button class="px-4 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700" onclick="checkQ(4)">Sjekk svar</button>
+      </div>
+      <p class="quiz-feedback text-sm" id="q4-feedback"></p>
+    </div>
+
+    <!-- Q5 -->
+    <div class="border rounded-lg p-4 mb-4" id="q5-box">
+      <p class="font-medium mb-1"><span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded mr-2">Oppg. 5</span>Avhengige hendinger</p>
+      <p class="text-sm text-gray-700 mb-3">En pose har 5 røde og 3 blå kuler. Du trekker to kuler <strong>uten tilbakelegging</strong>. Hva er sannsynligheten for at begge er røde? Skriv svaret som desimalbrøk (to desimaler).</p>
+      <div class="flex items-center gap-3 mb-2">
+        <label class="text-sm font-medium">P(rød, rød) ≈</label>
+        <input type="number" step="0.01" min="0" max="1" id="q5-input" class="border rounded px-3 py-1.5 w-28 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="0.xx" />
+        <button class="px-4 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700" onclick="checkQ(5)">Sjekk svar</button>
+      </div>
+      <p class="quiz-feedback text-sm" id="q5-feedback"></p>
+    </div>
+
+    <!-- Score -->
+    <div id="score-area" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+      <p class="font-semibold text-blue-800 text-lg" id="score-text"></p>
+      <button class="mt-3 px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onclick="resetQuiz()">Start på nytt</button>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="mt-10 bg-gray-100 border-t py-4 px-4 text-center text-xs text-gray-400">
+  Matematikk 1P · LK20 · Sinus kap. 9.3–9.6 · Halison App Studio
+</footer>
+
+<script>
+// ===========================
+// TAB NAVIGATION
+// ===========================
+function showTab(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.remove('active');
+    b.classList.add('bg-gray-100', 'text-gray-700');
+    b.classList.remove('bg-blue-800', 'text-white');
+  });
+  document.getElementById('tab-' + name).classList.add('active');
+  const btns = document.querySelectorAll('.tab-btn');
+  btns.forEach(b => {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + name + "'")) {
+      b.classList.add('active');
+      b.classList.remove('bg-gray-100', 'text-gray-700');
+    }
+  });
+  // Init sections on first show
+  if (name === 'tre') initTree('mynt');
+  if (name === 'uavhengig') initBag();
+  if (name === 'multiprinsipp') renderOutfitGrid();
+}
+
+// ===========================
+// TAB 1: KOMPLEMENT
+// ===========================
+const diceEvents = {
+  par:   { label: 'Partall {2, 4, 6}', favorable: 3, total: 6 },
+  tre:   { label: 'Mer enn 3 {4, 5, 6}', favorable: 3, total: 6 },
+  en:    { label: 'Øynene er 1 {1}', favorable: 1, total: 6 },
+  under4:{ label: 'Mindre enn 4 {1, 2, 3}', favorable: 3, total: 6 }
+};
+
+function frac(a, b) {
+  return `<span class="fraction"><span class="num">${a}</span><span class="den">${b}</span></span>`;
+}
+
+function diceExample(key) {
+  const ev = diceEvents[key];
+  const pA = ev.favorable / ev.total;
+  const pNotA = 1 - pA;
+  const pAFrac = `${ev.favorable}/${ev.total}`;
+  const pNotFrac = `${ev.total - ev.favorable}/${ev.total}`;
+
+  const html = `
+    <div class="step bg-white p-3 rounded border text-sm">
+      <strong>Hendelse A:</strong> ${ev.label}
+      <br>Gunstige utfall: ${ev.favorable}  &nbsp;|&nbsp; Totalt antall utfall: ${ev.total}
+    </div>
+    <div class="step bg-white p-3 rounded border text-sm">
+      <strong>P(A)</strong> = ${frac(ev.favorable, ev.total)} = <strong>${pA.toFixed(4).replace(/\.?0+$/, '')}</strong> = <strong>${(pA*100).toFixed(1).replace(/\.0$/,'')} %</strong>
+    </div>
+    <div class="step bg-white p-3 rounded border text-sm">
+      <strong>P(ikke A)</strong> = 1 − P(A) = 1 − ${frac(ev.favorable, ev.total)} = ${frac(ev.total-ev.favorable, ev.total)} = <strong>${pNotA.toFixed(4).replace(/\.?0+$/, '')}</strong> = <strong>${(pNotA*100).toFixed(1).replace(/\.0$/,'')} %</strong>
+    </div>
+    <div class="step bg-green-50 border-green-400 p-3 rounded text-sm font-medium text-green-800">
+      ✓ P(A) + P(ikke A) = ${pAFrac} + ${pNotFrac} = ${ev.total}/${ev.total} = 1 ✓
+    </div>`;
+
+  const el = document.getElementById('dice-result');
+  el.innerHTML = html;
+  el.classList.remove('hidden');
+}
+
+let disjointShown = false;
+function toggleDisjoint() {
+  const el = document.getElementById('disjoint-steps');
+  const btn = el.nextElementSibling;
+  disjointShown = !disjointShown;
+  el.style.display = disjointShown ? 'block' : 'none';
+  btn.textContent = disjointShown ? 'Skjul utregning' : 'Vis utregning';
+}
+
+// ===========================
+// TAB 2: MULTIPLIKASJONSPRINSIPPET
+// ===========================
+let sweaterN = 3, pantsN = 4;
+
+function changeCount(type, delta) {
+  if (type === 'sweater') {
+    sweaterN = Math.max(1, Math.min(6, sweaterN + delta));
+    document.getElementById('sweater-count').textContent = sweaterN;
+  } else {
+    pantsN = Math.max(1, Math.min(6, pantsN + delta));
+    document.getElementById('pants-count').textContent = pantsN;
+  }
+  const total = sweaterN * pantsN;
+  document.getElementById('outfit-calc').innerHTML =
+    `Antall antrekk = ${sweaterN} · ${pantsN} = <strong class="text-blue-700">${total}</strong>`;
+  renderOutfitGrid();
+}
+
+function renderOutfitGrid() {
+  const grid = document.getElementById('outfit-grid');
+  grid.innerHTML = '';
+  const colors = ['bg-blue-100', 'bg-green-100', 'bg-yellow-100', 'bg-red-100', 'bg-purple-100', 'bg-orange-100'];
+  for (let g = 1; g <= sweaterN; g++) {
+    for (let b = 1; b <= pantsN; b++) {
+      const el = document.createElement('div');
+      el.className = `${colors[(g-1) % colors.length]} border rounded px-2 py-1 text-xs font-mono text-gray-700`;
+      el.textContent = `G${g}B${b}`;
+      grid.appendChild(el);
+    }
+  }
+}
+
+let probCountShown = false;
+function toggleProbCount() {
+  const el = document.getElementById('prob-from-count');
+  const btn = el.nextElementSibling;
+  probCountShown = !probCountShown;
+  el.style.display = probCountShown ? 'block' : 'none';
+  btn.textContent = probCountShown ? 'Skjul utregning' : 'Vis utregning';
+}
+
+// ===========================
+// TAB 3: UAVHENGIGE / AVHENGIGE
+// ===========================
+let bagMode = 'med';
+
+function initBag() {
+  setBagMode('med');
+}
+
+function setBagMode(mode) {
+  bagMode = mode;
+  const btnMed = document.getElementById('btn-med');
+  const btnUten = document.getElementById('btn-uten');
+  if (mode === 'med') {
+    btnMed.className = 'px-4 py-2 text-sm font-medium rounded border-2 border-green-600 bg-green-600 text-white hover:bg-green-700';
+    btnUten.className = 'px-4 py-2 text-sm font-medium rounded border-2 border-gray-300 bg-white text-gray-700 hover:bg-gray-100';
+  } else {
+    btnUten.className = 'px-4 py-2 text-sm font-medium rounded border-2 border-orange-600 bg-orange-600 text-white hover:bg-orange-700';
+    btnMed.className = 'px-4 py-2 text-sm font-medium rounded border-2 border-gray-300 bg-white text-gray-700 hover:bg-gray-100';
+  }
+  renderBag(mode);
+}
+
+function renderBag(mode) {
+  const visual = document.getElementById('bag-visual');
+  const exp = document.getElementById('bag-explanation');
+  // Draw balls: 3 red, 2 blue
+  let ballsHTML = '<span class="text-xs text-gray-500 mr-2 self-center">Pose:</span>';
+  for (let i = 0; i < 3; i++) {
+    ballsHTML += '<div class="w-9 h-9 rounded-full bg-red-500 border-2 border-red-700 flex items-center justify-center text-white text-xs font-bold">R</div>';
+  }
+  for (let i = 0; i < 2; i++) {
+    ballsHTML += '<div class="w-9 h-9 rounded-full bg-blue-500 border-2 border-blue-700 flex items-center justify-center text-white text-xs font-bold">B</div>';
+  }
+  visual.innerHTML = ballsHTML;
+
+  if (mode === 'med') {
+    exp.innerHTML = `
+      <div class="bg-green-50 border border-green-200 rounded p-4 space-y-2">
+        <p class="text-sm font-semibold text-green-800">Med tilbakelegging — uavhengige hendinger</p>
+        <div class="step text-sm">Hendelse A: første kule er rød. Pose: 3 røde + 2 blå = 5 kuler.<br>
+          <span class="font-mono">P(A) = 3/5</span>
+        </div>
+        <div class="step text-sm">Kulen legges <strong>tilbake</strong>. Pose er fortsatt 3 røde + 2 blå = 5 kuler.<br>
+          Hendelse B: andre kule er rød.<br>
+          <span class="font-mono">P(B|A) = 3/5</span> (uendret — uavhengig)
+        </div>
+        <div class="step text-sm font-semibold font-mono">P(A og B) = P(A) · P(B) = 3/5 · 3/5 = 9/25 = <strong>0,36 = 36 %</strong></div>
+      </div>`;
+  } else {
+    exp.innerHTML = `
+      <div class="bg-orange-50 border border-orange-200 rounded p-4 space-y-2">
+        <p class="text-sm font-semibold text-orange-800">Uten tilbakelegging — avhengige hendinger</p>
+        <div class="step text-sm">Hendelse A: første kule er rød. Pose: 3 røde + 2 blå = 5 kuler.<br>
+          <span class="font-mono">P(A) = 3/5</span>
+        </div>
+        <div class="step text-sm">Kulen legges <strong>ikke</strong> tilbake. Nå er det <strong>2 røde + 2 blå = 4 kuler</strong> igjen.<br>
+          Hendelse B: andre kule er rød.<br>
+          <span class="font-mono">P(B|A) = 2/4 = 1/2</span> (endret — avhengig)
+        </div>
+        <div class="step text-sm font-semibold font-mono">P(A og B) = P(A) · P(B|A) = 3/5 · 2/4 = 6/20 = 3/10 = <strong>0,30 = 30 %</strong></div>
+        <p class="text-xs text-orange-700 mt-1">Legg merke til: 30 % &lt; 36 %. Uten tilbakelegging er det <em>vanskeligere</em> å trekke rød to ganger på rad.</p>
+      </div>`;
+  }
+}
+
+// ===========================
+// TAB 4: SANNSYNLIGHETSTRE
+// ===========================
+const treeModes = {
+  mynt: {
+    desc: 'Eksperiment: Kaste en mynt to ganger. K = krone, M = mynt.',
+    stage1: [
+      { label: 'K', p: '1/2', pNum: 0.5 },
+      { label: 'M', p: '1/2', pNum: 0.5 }
+    ],
+    stage2: {
+      K: [{ label: 'K', p: '1/2', pNum: 0.5 }, { label: 'M', p: '1/2', pNum: 0.5 }],
+      M: [{ label: 'K', p: '1/2', pNum: 0.5 }, { label: 'M', p: '1/2', pNum: 0.5 }]
+    },
+    outcomeFn: (a, b) => a + b,
+    outcomeLabelFn: (a, b) => a + ', ' + b
+  },
+  kule: {
+    desc: 'Pose med 3 røde (R) og 2 blå (B) kuler. Trekker to kuler uten tilbakelegging.',
+    stage1: [
+      { label: 'R', p: '3/5', pNum: 3/5 },
+      { label: 'B', p: '2/5', pNum: 2/5 }
+    ],
+    stage2: {
+      R: [{ label: 'R', p: '2/4', pNum: 2/4 }, { label: 'B', p: '2/4', pNum: 2/4 }],
+      B: [{ label: 'R', p: '3/4', pNum: 3/4 }, { label: 'B', p: '1/4', pNum: 1/4 }]
+    },
+    outcomeFn: (a, b) => a + b,
+    outcomeLabelFn: (a, b) => a + ', ' + b
+  },
+  terning: {
+    desc: 'Trinn 1: Kast en terning. Hendelse P = partall {2,4,6}, O = oddetall {1,3,5}. Trinn 2: Kast en mynt. K = krone, M = mynt.',
+    stage1: [
+      { label: 'P', p: '1/2', pNum: 0.5 },
+      { label: 'O', p: '1/2', pNum: 0.5 }
+    ],
+    stage2: {
+      P: [{ label: 'K', p: '1/2', pNum: 0.5 }, { label: 'M', p: '1/2', pNum: 0.5 }],
+      O: [{ label: 'K', p: '1/2', pNum: 0.5 }, { label: 'M', p: '1/2', pNum: 0.5 }]
+    },
+    outcomeFn: (a, b) => a + b,
+    outcomeLabelFn: (a, b) => a + ', ' + b
+  }
+};
+
+let currentTreeMode = 'mynt';
+
+function setTreeMode(mode) {
+  currentTreeMode = mode;
+  ['mynt', 'kule', 'terning'].forEach(m => {
+    const btn = document.getElementById('tree-btn-' + m);
+    if (m === mode) {
+      btn.className = 'px-4 py-2 rounded text-sm font-medium bg-blue-600 text-white hover:bg-blue-700';
+    } else {
+      btn.className = 'px-4 py-2 rounded text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200';
+    }
+  });
+  initTree(mode);
+}
+
+function initTree(mode) {
+  const tm = treeModes[mode];
+  document.getElementById('tree-description').textContent = tm.desc;
+  drawTree(tm);
+  buildTreeTable(tm);
+}
+
+function drawTree(tm) {
+  const svg = document.getElementById('prob-tree');
+  svg.innerHTML = '';
+
+  const W = 680, H = 320;
+  const rootX = 60, rootY = H / 2;
+  const midX = 240;
+  const leafX = 560;
+
+  // Root node
+  drawCircle(svg, rootX, rootY, 16, '#1d4ed8', 'Start');
+
+  const s1 = tm.stage1;
+  const midYs = [];
+  if (s1.length === 2) {
+    midYs.push(H * 0.28, H * 0.72);
+  } else {
+    for (let i = 0; i < s1.length; i++) {
+      midYs.push(H * (i + 1) / (s1.length + 1));
+    }
+  }
+
+  s1.forEach((node, i) => {
+    const my = midYs[i];
+    // Line root -> mid
+    drawLine(svg, rootX, rootY, midX, my);
+    // Mid circle
+    drawCircle(svg, midX, my, 14, '#1d4ed8', node.label);
+    // Branch label (probability)
+    const mlx = (rootX + midX) / 2;
+    const mly = (rootY + my) / 2 - 10;
+    drawText(svg, mlx, mly, node.p, '#2563eb', 12, 'middle');
+
+    // Stage 2
+    const s2arr = tm.stage2[node.label];
+    const leafCount = s2arr.length;
+    const leafYs = [];
+    if (leafCount === 2) {
+      const span = 70;
+      leafYs.push(my - span, my + span);
+    } else {
+      for (let j = 0; j < leafCount; j++) {
+        leafYs.push(H * (j + 1) / (leafCount + 1));
+      }
+    }
+
+    s2arr.forEach((leaf, j) => {
+      const ly = leafYs[j];
+      // Line mid -> leaf
+      const isRed = leaf.label === 'R' || leaf.label === 'M' || leaf.label === 'O';
+      drawLine(svg, midX, my, leafX, ly);
+      // Leaf circle
+      const leafColor = leaf.label === 'R' ? '#dc2626' : leaf.label === 'B' ? '#2563eb' : '#16a34a';
+      drawCircle(svg, leafX, ly, 13, leafColor, leaf.label);
+      // Branch probability label
+      const blx = (midX + leafX) / 2;
+      const bly = (my + ly) / 2 - 9;
+      drawText(svg, blx, bly, leaf.p, '#374151', 11, 'middle');
+
+      // Outcome label
+      const product = (node.pNum * leaf.pNum);
+      const productStr = formatProb(product);
+      drawText(svg, leafX + 28, ly, tm.outcomeLabelFn(node.label, leaf.label), '#374151', 11, 'start');
+      drawText(svg, leafX + 28, ly + 14, '= ' + productStr, '#6b21a8', 10, 'start');
+    });
+  });
+}
+
+function formatProb(p) {
+  // Try to express as simple fraction if possible
+  const fracs = [
+    [1,2],[1,4],[3,4],[1,3],[2,3],[1,5],[2,5],[3,5],[4,5],[1,6],[5,6],
+    [1,8],[3,8],[5,8],[7,8],[1,9],[4,9],[2,9],[1,16],[9/25, '9/25'],
+    [3/10,'3/10'],[9/25,'9/25'],[3/20,'3/20'],[1/25,'1/25'],[6/25,'6/25']
+  ];
+  // Simple approach: round to 4 dec
+  const rounded = Math.round(p * 10000) / 10000;
+  // Check common fracs
+  const map = {
+    0.5:'1/2', 0.25:'1/4', 0.75:'3/4',
+    0.3333:'1/3', 0.6667:'2/3',
+    0.2:'1/5', 0.4:'2/5', 0.6:'3/5', 0.8:'4/5',
+    0.1667:'1/6', 0.8333:'5/6',
+    0.3:'3/10', 0.36:'9/25',
+    0.1250:'1/8', 0.3750:'3/8', 0.1:'1/10', 0.05:'1/20',
+    0.15:'3/20', 0.09:'9/100'
+  };
+  for (const [k,v] of Object.entries(map)) {
+    if (Math.abs(rounded - parseFloat(k)) < 0.00015) return v;
+  }
+  return rounded.toString();
+}
+
+function drawLine(svg, x1, y1, x2, y2) {
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+  line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+  line.setAttribute('stroke', '#94a3b8'); line.setAttribute('stroke-width', '2');
+  svg.appendChild(line);
+}
+
+function drawCircle(svg, cx, cy, r, fill, label) {
+  const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  c.setAttribute('cx', cx); c.setAttribute('cy', cy); c.setAttribute('r', r);
+  c.setAttribute('fill', fill); c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', '2');
+  svg.appendChild(c);
+  const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  t.setAttribute('x', cx); t.setAttribute('y', cy + 4);
+  t.setAttribute('text-anchor', 'middle');
+  t.setAttribute('fill', 'white');
+  t.setAttribute('font-size', '11');
+  t.setAttribute('font-weight', 'bold');
+  t.textContent = label;
+  svg.appendChild(t);
+}
+
+function drawText(svg, x, y, text, fill, size, anchor) {
+  const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  t.setAttribute('x', x); t.setAttribute('y', y);
+  t.setAttribute('text-anchor', anchor || 'middle');
+  t.setAttribute('fill', fill || '#374151');
+  t.setAttribute('font-size', size || 12);
+  t.textContent = text;
+  svg.appendChild(t);
+}
+
+function buildTreeTable(tm) {
+  const div = document.getElementById('tree-table');
+  div.innerHTML = '';
+  let rows = '';
+  let total = 0;
+  tm.stage1.forEach(n1 => {
+    tm.stage2[n1.label].forEach(n2 => {
+      const p = n1.pNum * n2.pNum;
+      total += p;
+      const label = tm.outcomeLabelFn(n1.label, n2.label);
+      rows += `<tr class="border-t"><td class="py-2 px-3 font-mono text-sm">${label}</td>
+        <td class="py-2 px-3 text-sm">${n1.p} · ${n2.p}</td>
+        <td class="py-2 px-3 font-mono font-semibold text-purple-700">${formatProb(p)}</td></tr>`;
+    });
+  });
+  div.innerHTML = `<div class="overflow-x-auto"><table class="w-full border border-gray-200 rounded text-sm">
+    <thead class="bg-gray-50"><tr>
+      <th class="py-2 px-3 text-left">Utfall</th>
+      <th class="py-2 px-3 text-left">Grenprodukter</th>
+      <th class="py-2 px-3 text-left">Sannsynlighet</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot class="bg-gray-50 font-semibold"><tr>
+      <td class="py-2 px-3 text-sm" colspan="2">Sum</td>
+      <td class="py-2 px-3 font-mono text-green-700">${Math.round(total * 10000) / 10000} ✓</td>
+    </tr></tfoot>
+  </table></div>`;
+}
+
+// ===========================
+// TAB 5: QUIZ
+// ===========================
+const answers = {
+  1: { val: 0.65, tol: 0.005, solution: 'P(ikke R) = 1 − P(R) = 1 − 0,35 = 0,65 (65 %)' },
+  2: { val: 0.70, tol: 0.005, solution: 'P(rød) = 4/10 = 0,4, P(gul) = 3/10 = 0,3. P(rød eller gul) = 0,4 + 0,3 = 0,7 (70 %)' },
+  3: { val: 60, tol: 0.5, solution: '4 · 5 · 3 = 60 ulike trerettersmiddager' },
+  4: { val: 1/36, tol: 0.002, solution: 'P(6) = 1/6. P(6 og 6) = 1/6 · 1/6 = 1/36 ≈ 0,028 (2,8 %)' },
+  5: { val: 5/8 * 4/7, tol: 0.01, solution: 'P(1. rød) = 5/8. P(2. rød | 1. rød) = 4/7. P = 5/8 · 4/7 = 20/56 = 5/14 ≈ 0,357 (35,7 %)' }
+};
+
+let answered = {};
+
+function checkQ(n) {
+  const input = document.getElementById('q' + n + '-input');
+  const feedback = document.getElementById('q' + n + '-feedback');
+  const box = document.getElementById('q' + n + '-box');
+  const val = parseFloat(input.value);
+  if (isNaN(val)) {
+    feedback.textContent = 'Skriv inn et tall.';
+    feedback.className = 'quiz-feedback text-sm text-orange-600';
+    return;
+  }
+  const ans = answers[n];
+  const correct = Math.abs(val - ans.val) <= ans.tol;
+  if (correct) {
+    feedback.innerHTML = '✓ Riktig! <span class="font-mono">' + ans.solution + '</span>';
+    feedback.className = 'quiz-feedback text-sm text-green-700 font-medium';
+    box.classList.add('border-green-400', 'bg-green-50');
+    answered[n] = true;
+  } else {
+    feedback.innerHTML = '✗ Prøv igjen. Tips: ' + getHint(n);
+    feedback.className = 'quiz-feedback text-sm text-red-600';
+    box.classList.add('border-red-300', 'bg-red-50');
+    box.classList.remove('border-green-400', 'bg-green-50');
+    answered[n] = false;
+  }
+  checkAllAnswered();
+}
+
+function getHint(n) {
+  const hints = {
+    1: 'Bruk: P(ikke A) = 1 − P(A)',
+    2: 'Rød og gul er disjunkte hendinger. Summer sannsynlighetene.',
+    3: 'Multipliser antall valg i hvert trinn: 4 · 5 · 3',
+    4: 'P(6) = 1/6. De to kastene er uavhengige, bruk multiplikasjon.',
+    5: 'Uten tilbakelegging! Etter første trekk er det én kule mindre.'
+  };
+  return hints[n] || '';
+}
+
+function checkAllAnswered() {
+  const total = Object.keys(answers).length;
+  const correct = Object.values(answered).filter(Boolean).length;
+  if (Object.keys(answered).length === total) {
+    const scoreArea = document.getElementById('score-area');
+    const scoreText = document.getElementById('score-text');
+    scoreArea.classList.remove('hidden');
+    scoreText.textContent = `Du fikk ${correct} av ${total} riktig!`;
+  }
+}
+
+function resetQuiz() {
+  answered = {};
+  for (let i = 1; i <= 5; i++) {
+    const input = document.getElementById('q' + i + '-input');
+    const feedback = document.getElementById('q' + i + '-feedback');
+    const box = document.getElementById('q' + i + '-box');
+    input.value = '';
+    feedback.textContent = '';
+    feedback.className = 'quiz-feedback text-sm';
+    box.className = 'border rounded-lg p-4 mb-4';
+  }
+  document.getElementById('score-area').classList.add('hidden');
+}
+
+// ===========================
+// INIT
+// ===========================
+(function init() {
+  renderOutfitGrid();
+  // Bag init will happen when tab is shown
+})();
+</script>
+</body>
+</html>

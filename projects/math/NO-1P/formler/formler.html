@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<!--
+  Formler — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 1P (LK20): regn med formler og form om
+  formler til å løse for en annen variabel.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Formler – Matematikk 1P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .tab-active { border-bottom: 3px solid #2563eb; color: #2563eb; font-weight: 700; }
+    .tab-inactive { border-bottom: 3px solid transparent; color: #6b7280; }
+    .result-box { background: #f0fdf4; border-left: 4px solid #16a34a; }
+    .error-box  { background: #fef2f2; border-left: 4px solid #dc2626; }
+    .step-line  { border-left: 3px solid #93c5fd; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+    .katex-display { overflow-x: auto; }
+    .formula-card { cursor: pointer; transition: box-shadow .15s; }
+    .formula-card:hover { box-shadow: 0 4px 16px rgba(37,99,235,.15); }
+    .formula-card.selected { border-color: #2563eb; background: #eff6ff; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+
+<!-- HEADER -->
+<header class="bg-blue-700 text-white py-5 px-4 shadow-md">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold tracking-tight">📐 Formler og omforming</h1>
+    <p class="text-blue-200 text-sm mt-1">Matematikk 1P · LK20 · Sinus 1P kap. 7.1–7.3</p>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="max-w-4xl mx-auto mt-4 px-4">
+  <div class="flex gap-0 border-b border-gray-200 bg-white rounded-t-lg shadow-sm">
+    <button id="tab-forklaring" onclick="visTab('forklaring')"
+      class="tab-active px-5 py-3 text-sm transition focus:outline-none">
+      📖 Teori
+    </button>
+    <button id="tab-regning" onclick="visTab('regning')"
+      class="tab-inactive px-5 py-3 text-sm transition focus:outline-none">
+      🔢 Formelregning
+    </button>
+    <button id="tab-omforming" onclick="visTab('omforming')"
+      class="tab-inactive px-5 py-3 text-sm transition focus:outline-none">
+      🔄 Omforming
+    </button>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- TAB 1 – TEORI                                                -->
+  <!-- ============================================================ -->
+  <div id="panel-forklaring" class="bg-white rounded-b-lg shadow-sm p-6 space-y-6">
+
+    <section>
+      <h2 class="text-xl font-bold text-blue-700 mb-2">Hva er en variabel?</h2>
+      <p class="text-gray-700 leading-relaxed">
+        En <strong>variabel</strong> er et symbol – vanligvis en bokstav – som representerer
+        en ukjent eller skiftende størrelse. Når vi skriver <em>v</em> for fart eller
+        <em>l</em> for lengde, er det variabler. Verdien kan variere fra oppgave til oppgave,
+        men symbolet er det samme.
+      </p>
+    </section>
+
+    <section>
+      <h2 class="text-xl font-bold text-blue-700 mb-2">Hva er en formel?</h2>
+      <p class="text-gray-700 leading-relaxed">
+        En <strong>formel</strong> er en matematisk sammenheng mellom to eller flere variabler.
+        Den forteller oss <em>hvordan</em> størrelsene henger sammen.
+      </p>
+      <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="bg-blue-50 rounded-lg p-3 border border-blue-100">
+          <p class="font-mono text-blue-800 text-lg font-bold">A = l · b</p>
+          <p class="text-sm text-gray-600 mt-1">Areal av rektangel: areal er lik lengde ganger bredde</p>
+        </div>
+        <div class="bg-blue-50 rounded-lg p-3 border border-blue-100">
+          <p class="font-mono text-blue-800 text-lg font-bold">s = v · t</p>
+          <p class="text-sm text-gray-600 mt-1">Strekning = fart ganger tid</p>
+        </div>
+        <div class="bg-blue-50 rounded-lg p-3 border border-blue-100">
+          <p class="font-mono text-blue-800 text-lg font-bold">U = R · I</p>
+          <p class="text-sm text-gray-600 mt-1">Ohms lov: spenning = motstand × strøm</p>
+        </div>
+        <div class="bg-blue-50 rounded-lg p-3 border border-blue-100">
+          <p class="font-mono text-blue-800 text-lg font-bold">C = °F − 32) · 5/9</p>
+          <p class="text-sm text-gray-600 mt-1">Fahrenheit til Celsius</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="text-xl font-bold text-blue-700 mb-2">Regelen: samme operasjon på begge sider</h2>
+      <p class="text-gray-700 leading-relaxed">
+        Når vi løser en formel for en variabel, bruker vi regelen om at vi kan gjøre
+        <strong>samme operasjon på begge sider</strong> av likhetstegnet uten at likheten brytes.
+      </p>
+      <div class="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <p class="font-semibold text-yellow-800 mb-2">Eksempel: Løs for <em>v</em> i formelen <code class="bg-yellow-100 px-1 rounded">s = v · t</code></p>
+        <div class="space-y-2 text-gray-800">
+          <div class="step-line pl-4 py-1">
+            <span class="font-mono">s = v · t</span>
+            <span class="text-gray-500 ml-2 text-sm">– utgangspunkt</span>
+          </div>
+          <div class="step-line pl-4 py-1">
+            <span class="font-mono">s / t = v · t / t</span>
+            <span class="text-gray-500 ml-2 text-sm">– del begge sider på <em>t</em></span>
+          </div>
+          <div class="step-line pl-4 py-1">
+            <span class="font-mono">v = s / t</span>
+            <span class="text-gray-500 ml-2 text-sm">– ferdig!</span>
+          </div>
+        </div>
+      </div>
+      <p class="text-gray-700 mt-3 leading-relaxed">
+        Nøkkelen er å <strong>isolere variabelen</strong> vi ønsker å finne på én side.
+        Vi bruker inverse operasjoner: addisjon motvirkes av subtraksjon, multiplikasjon
+        motvirkes av divisjon, og kvadrering motvirkes av kvadratrot.
+      </p>
+    </section>
+
+    <section>
+      <h2 class="text-xl font-bold text-blue-700 mb-2">Tips til omforming</h2>
+      <ul class="list-disc list-inside space-y-2 text-gray-700">
+        <li>Finn ut hvilken variabel du vil løse for.</li>
+        <li>Bruk inverse operasjoner for å flytte alt annet til den andre siden.</li>
+        <li>Utfør alltid <em>samme operasjon</em> på begge sider.</li>
+        <li>Sjekk svaret ditt ved å sette inn tall og se om formelen stemmer.</li>
+      </ul>
+    </section>
+
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- TAB 2 – FORMELREGNING                                        -->
+  <!-- ============================================================ -->
+  <div id="panel-regning" class="bg-white rounded-b-lg shadow-sm p-6 hidden">
+
+    <h2 class="text-xl font-bold text-blue-700 mb-1">Formelregning</h2>
+    <p class="text-gray-500 text-sm mb-4">Velg en formel, fyll inn de kjente verdiene, og beregn den ukjente.</p>
+
+    <!-- FORMELKORT-GRID -->
+    <div id="formel-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+    </div>
+
+    <!-- KALKULATORPANEL -->
+    <div id="kalkulator-panel" class="hidden">
+      <hr class="my-4 border-blue-100" />
+      <h3 id="kalk-tittel" class="font-bold text-blue-800 text-lg mb-1"></h3>
+      <p id="kalk-formel-vis" class="font-mono text-blue-600 mb-3 text-base"></p>
+      <p id="kalk-beskrivelse" class="text-gray-600 text-sm mb-4"></p>
+
+      <div id="kalk-inputs" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4"></div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Variabel å beregne</label>
+        <select id="kalk-solve-for" class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-blue-300">
+        </select>
+      </div>
+
+      <button onclick="beregnFormel()"
+        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow transition focus:outline-none focus:ring-2 focus:ring-blue-300">
+        Beregn
+      </button>
+
+      <div id="kalk-resultat" class="mt-4 hidden p-4 rounded-lg"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- TAB 3 – OMFORMING                                            -->
+  <!-- ============================================================ -->
+  <div id="panel-omforming" class="bg-white rounded-b-lg shadow-sm p-6 hidden">
+
+    <h2 class="text-xl font-bold text-blue-700 mb-1">Omforming av formler</h2>
+    <p class="text-gray-500 text-sm mb-4">Velg en formel og se hvordan den skrives om for å løse for en annen variabel.</p>
+
+    <!-- FORMELVELGER -->
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700 mb-1">Velg formel</label>
+      <select id="omf-formel-select" onchange="oppdaterOmforming()"
+        class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-blue-300">
+      </select>
+    </div>
+
+    <div id="omf-panel" class="hidden">
+      <p id="omf-original" class="font-mono text-blue-700 text-base mb-3"></p>
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Løs for variabel</label>
+        <div id="omf-var-buttons" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <div id="omf-resultat" class="hidden"></div>
+    </div>
+  </div>
+
+</div><!-- /max-w -->
+
+<!-- FOOTER -->
+<footer class="max-w-4xl mx-auto mt-8 px-4 pb-6 text-center text-xs text-gray-400">
+  Matematikk 1P · LK20 · Sinus 1P kap. 7.1–7.3 ·
+  <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-gray-600" target="_blank" rel="noopener">
+    Halison App Studio
+  </a>
+</footer>
+
+<script>
+/* ====================================================================
+   DATADEFINISJON – FORMLER
+   Hvert formel-objekt:
+     id, navn, kategori, formelTekst, beskrivelse, enheter
+     variabler: [{ id, label, enhet, beskrivelse }]
+     beregn: funksjon({ variabel: verdi, ... }, løsFor) → { verdi, uttrykk, steg[] }
+     omform: { varId: { rearranged, steg[] } }
+   ==================================================================== */
+
+const FORMLER = [
+
+  /* ------------------------------------------------------------------ */
+  {
+    id: "rektangel-areal",
+    navn: "Areal av rektangel",
+    kategori: "Geometri",
+    formelTekst: "A = l · b",
+    beskrivelse: "Arealet A av et rektangel er lik lengde l multiplisert med bredde b.",
+    variabler: [
+      { id: "A", label: "Areal (A)", enhet: "cm²" },
+      { id: "l", label: "Lengde (l)", enhet: "cm" },
+      { id: "b", label: "Bredde (b)", enhet: "cm" },
+    ],
+    beregn(vals, løsFor) {
+      const { A, l, b } = vals;
+      if (løsFor === "A") {
+        const v = l * b;
+        return {
+          verdi: v,
+          uttrykk: `A = ${l} · ${b}`,
+          steg: [
+            `A = l · b`,
+            `A = ${l} · ${b}`,
+            `A = ${rund(v)} cm²`,
+          ],
+        };
+      }
+      if (løsFor === "l") {
+        const v = A / b;
+        return {
+          verdi: v,
+          uttrykk: `l = ${A} / ${b}`,
+          steg: [
+            `A = l · b   →   l = A / b`,
+            `l = ${A} / ${b}`,
+            `l = ${rund(v)} cm`,
+          ],
+        };
+      }
+      if (løsFor === "b") {
+        const v = A / l;
+        return {
+          verdi: v,
+          uttrykk: `b = ${A} / ${l}`,
+          steg: [
+            `A = l · b   →   b = A / l`,
+            `b = ${A} / ${l}`,
+            `b = ${rund(v)} cm`,
+          ],
+        };
+      }
+    },
+    omform: {
+      A: {
+        rearranged: "A = l · b",
+        steg: [
+          "A = l · b  (utgangspunkt – allerede løst for A)",
+        ],
+      },
+      l: {
+        rearranged: "l = A / b",
+        steg: [
+          "A = l · b",
+          "Del begge sider på b:   A / b = l · b / b",
+          "l = A / b",
+        ],
+      },
+      b: {
+        rearranged: "b = A / l",
+        steg: [
+          "A = l · b",
+          "Del begge sider på l:   A / l = l · b / l",
+          "b = A / l",
+        ],
+      },
+    },
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    id: "rektangel-omkrets",
+    navn: "Omkrets av rektangel",
+    kategori: "Geometri",
+    formelTekst: "O = 2·(l + b)",
+    beskrivelse: "Omkretsen O av et rektangel er summen av alle fire sider.",
+    variabler: [
+      { id: "O", label: "Omkrets (O)", enhet: "cm" },
+      { id: "l", label: "Lengde (l)", enhet: "cm" },
+      { id: "b", label: "Bredde (b)", enhet: "cm" },
+    ],
+    beregn(vals, løsFor) {
+      const { O, l, b } = vals;
+      if (løsFor === "O") {
+        const v = 2 * (l + b);
+        return {
+          verdi: v,
+          uttrykk: `O = 2·(${l} + ${b})`,
+          steg: [
+            `O = 2·(l + b)`,
+            `O = 2·(${l} + ${b})`,
+            `O = 2·${l + b}`,
+            `O = ${rund(v)} cm`,
+          ],
+        };
+      }
+      if (løsFor === "l") {
+        const v = O / 2 - b;
+        return {
+          verdi: v,
+          uttrykk: `l = ${O}/2 − ${b}`,
+          steg: [
+            `O = 2·(l + b)   →   O/2 = l + b   →   l = O/2 − b`,
+            `l = ${O}/2 − ${b}`,
+            `l = ${O / 2} − ${b}`,
+            `l = ${rund(v)} cm`,
+          ],
+        };
+      }
+      if (løsFor === "b") {
+        const v = O / 2 - l;
+        return {
+          verdi: v,
+          uttrykk: `b = ${O}/2 − ${l}`,
+          steg: [
+            `O = 2·(l + b)   →   b = O/2 − l`,
+            `b = ${O}/2 − ${l}`,
+            `b = ${rund(v)} cm`,
+          ],
+        };
+      }
+    },
+    omform: {
+      O: {
+        rearranged: "O = 2·(l + b)",
+        steg: ["O = 2·(l + b)  (utgangspunkt)"],
+      },
+      l: {
+        rearranged: "l = O/2 − b",
+        steg: [
+          "O = 2·(l + b)",
+          "Del begge sider på 2:   O/2 = l + b",
+          "Trekk fra b på begge sider:   O/2 − b = l",
+          "l = O/2 − b",
+        ],
+      },
+      b: {
+        rearranged: "b = O/2 − l",
+        steg: [
+          "O = 2·(l + b)",
+          "Del begge sider på 2:   O/2 = l + b",
+          "Trekk fra l på begge sider:   O/2 − l = b",
+          "b = O/2 − l",
+        ],
+      },
+    },
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    id: "sirkel-areal",
+    navn: "Areal av sirkel",
+    kategori: "Geometri",
+    formelTekst: "A = π · r²",
+    beskrivelse: "Arealet A av en sirkel med radius r.",
+    variabler: [
+      { id: "A", label: "Areal (A)", enhet: "cm²" },
+      { id: "r", label: "Radius (r)", enhet: "cm" },
+    ],
+    beregn(vals, løsFor) {
+      const { A, r } = vals;
+      if (løsFor === "A") {
+        const v = Math.PI * r * r;
+        return {
+          verdi: v,
+          uttrykk: `A = π · ${r}²`,
+          steg: [
+            `A = π · r²`,
+            `A = π · ${r}²`,
+            `A = π · ${r * r}`,
+            `A ≈ ${rund(v)} cm²`,
+          ],
+        };
+      }
+      if (løsFor === "r") {
+        const v = Math.sqrt(A / Math.PI);
+        return {
+          verdi: v,
+          uttrykk: `r = √(${A} / π)`,
+          steg: [
+            `A = π · r²   →   r² = A/π   →   r = √(A/π)`,
+            `r = √(${A} / π)`,
+            `r = √(${rund(A / Math.PI, 4)})`,
+            `r ≈ ${rund(v)} cm`,
+          ],
+        };
+      }
+    },
+    omform: {
+      A: {
+        rearranged: "A = π · r²",
+        steg: ["A = π · r²  (utgangspunkt)"],
+      },
+      r: {
+        rearranged: "r = √(A / π)",
+        steg: [
+          "A = π · r²",
+          "Del begge sider på π:   A/π = r²",
+          "Ta kvadratroten av begge sider:   √(A/π) = r",
+          "r = √(A / π)",
+        ],
+      },
+    },
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    id: "sirkel-omkrets",
+    navn: "Omkrets av sirkel",
+    kategori: "Geometri",
+    formelTekst: "O = 2 · π · r",
+    beskrivelse: "Omkretsen (periferien) av en sirkel med radius r.",
+    variabler: [
+      { id: "O", label: "Omkrets (O)", enhet: "cm" },
+      { id: "r", label: "Radius (r)", enhet: "cm" },
+    ],
+    beregn(vals, løsFor) {
+      const { O, r } = vals;
+      if (løsFor === "O") {
+        const v = 2 * Math.PI * r;
+        return {
+          verdi: v,
+          uttrykk: `O = 2 · π · ${r}`,
+          steg: [
+            `O = 2 · π · r`,
+            `O = 2 · π · ${r}`,
+            `O ≈ ${rund(v)} cm`,
+          ],
+        };
+      }
+      if (løsFor === "r") {
+        const v = O / (2 * Math.PI);
+        return {
+          verdi: v,
+          uttrykk: `r = ${O} / (2π)`,
+          steg: [
+            `O = 2πr   →   r = O / (2π)`,
+            `r = ${O} / (2 · π)`,
+            `r ≈ ${rund(v)} cm`,
+          ],
+        };
+      }
+    },
+    omform: {
+      O: {
+        rearranged: "O = 2 · π · r",
+        steg: ["O = 2πr  (utgangspunkt)"],
+      },
+      r: {
+        rearranged: "r = O / (2π)",
+        steg: [
+          "O = 2 · π · r",
+          "Del begge sider på 2π:   O / (2π) = r",
+          "r = O / (2π)",
+        ],
+      },
+    },
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    id: "fart",
+    navn: "Strekning, fart og tid",
+    kategori: "Fysikk",
+    formelTekst: "s = v · t",
+    beskrivelse: "Tilbakelagt strekning s er lik fart v multiplisert med tid t.",
+    variabler: [
+      { id: "s", label: "Strekning (s)", enhet: "km" },
+      { id: "v", label: "Fart (v)", enhet: "km/t" },
+      { id: "t", label: "Tid (t)", enhet: "t" },
+    ],
+    beregn(vals, løsFor) {
+      const { s, v, t } = vals;
+      if (løsFor === "s") {
+        const res = v * t;
+        return {
+          verdi: res,
+          uttrykk: `s = ${v} · ${t}`,
+          steg: [`s = v · t`, `s = ${v} · ${t}`, `s = ${rund(res)} km`],
+        };
+      }
+      if (løsFor === "v") {
+        const res = s / t;
+        return {
+          verdi: res,
+          uttrykk: `v = ${s} / ${t}`,
+          steg: [
+            `s = v · t   →   v = s / t`,
+            `v = ${s} / ${t}`,
+            `v = ${rund(res)} km/t`,
+          ],
+        };
+      }
+      if (løsFor === "t") {
+        const res = s / v;
+        return {
+          verdi: res,
+          uttrykk: `t = ${s} / ${v}`,
+          steg: [
+            `s = v · t   →   t = s / v`,
+            `t = ${s} / ${v}`,
+            `t = ${rund(res)} t`,
+          ],
+        };
+      }
+    },
+    omform: {
+      s: {
+        rearranged: "s = v · t",
+        steg: ["s = v · t  (utgangspunkt)"],
+      },
+      v: {
+        rearranged: "v = s / t",
+        steg: [
+          "s = v · t",
+          "Del begge sider på t:   s/t = v",
+          "v = s / t",
+        ],
+      },
+      t: {
+        rearranged: "t = s / v",
+        steg: [
+          "s = v · t",
+          "Del begge sider på v:   s/v = t",
+          "t = s / v",
+        ],
+      },
+    },
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    id: "ohm",
+    navn: "Ohms lov",
+    kategori: "Fysikk",
+    formelTekst: "U = R · I",
+    beskrivelse: "Spenning U (volt) er lik motstand R (ohm) multiplisert med strøm I (ampere).",
+    variabler: [
+      { id: "U", label: "Spenning (U)", enhet: "V" },
+      { id: "R", label: "Motstand (R)", enhet: "Ω" },
+      { id: "I", label: "Strøm (I)", enhet: "A" },
+    ],
+    beregn(vals, løsFor) {
+      const { U, R, I } = vals;
+      if (løsFor === "U") {
+        const v = R * I;
+        return {
+          verdi: v,
+          uttrykk: `U = ${R} · ${I}`,
+          steg: [`U = R · I`, `U = ${R} · ${I}`, `U = ${rund(v)} V`],
+        };
+      }
+      if (løsFor === "R") {
+        const v = U / I;
+        return {
+          verdi: v,
+          uttrykk: `R = ${U} / ${I}`,
+          steg: [
+            `U = R · I   →   R = U / I`,
+            `R = ${U} / ${I}`,
+            `R = ${rund(v)} Ω`,
+          ],
+        };
+      }
+      if (løsFor === "I") {
+        const v = U / R;
+        return {
+          verdi: v,
+          uttrykk: `I = ${U} / ${R}`,
+          steg: [
+            `U = R · I   →   I = U / R`,
+            `I = ${U} / ${R}`,
+            `I = ${rund(v)} A`,
+          ],
+        };
+      }
+    },
+    omform: {
+      U: {
+        rearranged: "U = R · I",
+        steg: ["U = R · I  (utgangspunkt)"],
+      },
+      R: {
+        rearranged: "R = U / I",
+        steg: [
+          "U = R · I",
+          "Del begge sider på I:   U/I = R",
+          "R = U / I",
+        ],
+      },
+      I: {
+        rearranged: "I = U / R",
+        steg: [
+          "U = R · I",
+          "Del begge sider på R:   U/R = I",
+          "I = U / R",
+        ],
+      },
+    },
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    id: "effekt",
+    navn: "Effekt (elektrisitet)",
+    kategori: "Fysikk",
+    formelTekst: "P = U · I",
+    beskrivelse: "Elektrisk effekt P (watt) er spenning U (volt) ganget med strøm I (ampere).",
+    variabler: [
+      { id: "P", label: "Effekt (P)", enhet: "W" },
+      { id: "U", label: "Spenning (U)", enhet: "V" },
+      { id: "I", label: "Strøm (I)", enhet: "A" },
+    ],
+    beregn(vals, løsFor) {
+      const { P, U, I } = vals;
+      if (løsFor === "P") {
+        const v = U * I;
+        return {
+          verdi: v,
+          uttrykk: `P = ${U} · ${I}`,
+          steg: [`P = U · I`, `P = ${U} · ${I}`, `P = ${rund(v)} W`],
+        };
+      }
+      if (løsFor === "U") {
+        const v = P / I;
+        return {
+          verdi: v,
+          uttrykk: `U = ${P} / ${I}`,
+          steg: [
+            `P = U · I   →   U = P / I`,
+            `U = ${P} / ${I}`,
+            `U = ${rund(v)} V`,
+          ],
+        };
+      }
+      if (løsFor === "I") {
+        const v = P / U;
+        return {
+          verdi: v,
+          uttrykk: `I = ${P} / ${U}`,
+          steg: [
+            `P = U · I   →   I = P / U`,
+            `I = ${P} / ${U}`,
+            `I = ${rund(v)} A`,
+          ],
+        };
+      }
+    },
+    omform: {
+      P: {
+        rearranged: "P = U · I",
+        steg: ["P = U · I  (utgangspunkt)"],
+      },
+      U: {
+        rearranged: "U = P / I",
+        steg: [
+          "P = U · I",
+          "Del begge sider på I:   P/I = U",
+          "U = P / I",
+        ],
+      },
+      I: {
+        rearranged: "I = P / U",
+        steg: [
+          "P = U · I",
+          "Del begge sider på U:   P/U = I",
+          "I = P / U",
+        ],
+      },
+    },
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    id: "temperatur",
+    navn: "Fahrenheit til Celsius",
+    kategori: "Hverdagsformler",
+    formelTekst: "C = (F − 32) · 5/9",
+    beskrivelse: "Omregning fra Fahrenheit F til Celsius C.",
+    variabler: [
+      { id: "C", label: "Celsius (C)", enhet: "°C" },
+      { id: "F", label: "Fahrenheit (F)", enhet: "°F" },
+    ],
+    beregn(vals, løsFor) {
+      const { C, F } = vals;
+      if (løsFor === "C") {
+        const v = (F - 32) * 5 / 9;
+        return {
+          verdi: v,
+          uttrykk: `C = (${F} − 32) · 5/9`,
+          steg: [
+            `C = (F − 32) · 5/9`,
+            `C = (${F} − 32) · 5/9`,
+            `C = ${rund(F - 32)} · 5/9`,
+            `C = ${rund((F - 32) * 5 / 9)} °C`,
+          ],
+        };
+      }
+      if (løsFor === "F") {
+        const v = C * 9 / 5 + 32;
+        return {
+          verdi: v,
+          uttrykk: `F = ${C} · 9/5 + 32`,
+          steg: [
+            `C = (F − 32) · 5/9   →   F = C · 9/5 + 32`,
+            `F = ${C} · 9/5 + 32`,
+            `F = ${rund(C * 9 / 5)} + 32`,
+            `F = ${rund(v)} °F`,
+          ],
+        };
+      }
+    },
+    omform: {
+      C: {
+        rearranged: "C = (F − 32) · 5/9",
+        steg: ["C = (F − 32) · 5/9  (utgangspunkt)"],
+      },
+      F: {
+        rearranged: "F = C · 9/5 + 32",
+        steg: [
+          "C = (F − 32) · 5/9",
+          "Gang begge sider med 9/5:   C · 9/5 = F − 32",
+          "Legg til 32 på begge sider:   C · 9/5 + 32 = F",
+          "F = C · 9/5 + 32",
+        ],
+      },
+    },
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    id: "densitet",
+    navn: "Massetetthet (densitet)",
+    kategori: "Fysikk",
+    formelTekst: "ρ = m / V",
+    beskrivelse: "Massetetthet ρ (kg/m³) er masse m delt på volum V.",
+    variabler: [
+      { id: "rho", label: "Tetthet (ρ)", enhet: "kg/m³" },
+      { id: "m", label: "Masse (m)", enhet: "kg" },
+      { id: "V", label: "Volum (V)", enhet: "m³" },
+    ],
+    beregn(vals, løsFor) {
+      const { rho, m, V } = vals;
+      if (løsFor === "rho") {
+        const v = m / V;
+        return {
+          verdi: v,
+          uttrykk: `ρ = ${m} / ${V}`,
+          steg: [`ρ = m / V`, `ρ = ${m} / ${V}`, `ρ = ${rund(v)} kg/m³`],
+        };
+      }
+      if (løsFor === "m") {
+        const v = rho * V;
+        return {
+          verdi: v,
+          uttrykk: `m = ${rho} · ${V}`,
+          steg: [
+            `ρ = m / V   →   m = ρ · V`,
+            `m = ${rho} · ${V}`,
+            `m = ${rund(v)} kg`,
+          ],
+        };
+      }
+      if (løsFor === "V") {
+        const v = m / rho;
+        return {
+          verdi: v,
+          uttrykk: `V = ${m} / ${rho}`,
+          steg: [
+            `ρ = m / V   →   V = m / ρ`,
+            `V = ${m} / ${rho}`,
+            `V = ${rund(v)} m³`,
+          ],
+        };
+      }
+    },
+    omform: {
+      rho: {
+        rearranged: "ρ = m / V",
+        steg: ["ρ = m / V  (utgangspunkt)"],
+      },
+      m: {
+        rearranged: "m = ρ · V",
+        steg: [
+          "ρ = m / V",
+          "Gang begge sider med V:   ρ · V = m",
+          "m = ρ · V",
+        ],
+      },
+      V: {
+        rearranged: "V = m / ρ",
+        steg: [
+          "ρ = m / V",
+          "Gang begge sider med V:   ρ · V = m",
+          "Del begge sider på ρ:   V = m / ρ",
+          "V = m / ρ",
+        ],
+      },
+    },
+  },
+
+  /* ------------------------------------------------------------------ */
+  {
+    id: "prosentandel",
+    navn: "Prosentandel",
+    kategori: "Hverdagsformler",
+    formelTekst: "p = (D / H) · 100",
+    beskrivelse: "Prosentandelen p er lik delverdi D delt på helhet H, ganget med 100.",
+    variabler: [
+      { id: "p", label: "Prosent (p)", enhet: "%" },
+      { id: "D", label: "Delverdi (D)", enhet: "" },
+      { id: "H", label: "Helhet (H)", enhet: "" },
+    ],
+    beregn(vals, løsFor) {
+      const { p, D, H } = vals;
+      if (løsFor === "p") {
+        const v = (D / H) * 100;
+        return {
+          verdi: v,
+          uttrykk: `p = (${D} / ${H}) · 100`,
+          steg: [
+            `p = (D / H) · 100`,
+            `p = (${D} / ${H}) · 100`,
+            `p = ${rund(D / H, 4)} · 100`,
+            `p = ${rund(v)} %`,
+          ],
+        };
+      }
+      if (løsFor === "D") {
+        const v = (p / 100) * H;
+        return {
+          verdi: v,
+          uttrykk: `D = (${p} / 100) · ${H}`,
+          steg: [
+            `p = (D / H) · 100   →   D = (p/100) · H`,
+            `D = (${p} / 100) · ${H}`,
+            `D = ${rund(p / 100, 4)} · ${H}`,
+            `D = ${rund(v)}`,
+          ],
+        };
+      }
+      if (løsFor === "H") {
+        const v = D / (p / 100);
+        return {
+          verdi: v,
+          uttrykk: `H = ${D} / (${p}/100)`,
+          steg: [
+            `p = (D / H) · 100   →   H = D / (p/100)`,
+            `H = ${D} / (${p}/100)`,
+            `H = ${D} / ${rund(p / 100, 4)}`,
+            `H = ${rund(v)}`,
+          ],
+        };
+      }
+    },
+    omform: {
+      p: {
+        rearranged: "p = (D / H) · 100",
+        steg: ["p = (D / H) · 100  (utgangspunkt)"],
+      },
+      D: {
+        rearranged: "D = (p / 100) · H",
+        steg: [
+          "p = (D / H) · 100",
+          "Del begge sider på 100:   p/100 = D / H",
+          "Gang begge sider med H:   (p/100) · H = D",
+          "D = (p / 100) · H",
+        ],
+      },
+      H: {
+        rearranged: "H = D / (p / 100)",
+        steg: [
+          "p = (D / H) · 100",
+          "Del begge sider på 100:   p/100 = D / H",
+          "Gang begge sider med H:   (p/100) · H = D",
+          "Del begge sider på p/100:   H = D / (p/100)",
+          "H = D / (p / 100)",
+        ],
+      },
+    },
+  },
+
+];
+
+/* ====================================================================
+   HJELPEFUNKSJONER
+   ==================================================================== */
+
+function rund(x, desimaler = 4) {
+  const faktor = Math.pow(10, desimaler);
+  return Math.round(x * faktor) / faktor;
+}
+
+function kategoriFarge(kat) {
+  const kart = {
+    "Geometri": "bg-green-100 text-green-800",
+    "Fysikk": "bg-purple-100 text-purple-800",
+    "Hverdagsformler": "bg-orange-100 text-orange-800",
+  };
+  return kart[kat] || "bg-gray-100 text-gray-700";
+}
+
+/* ====================================================================
+   TAB-NAVIGASJON
+   ==================================================================== */
+
+function visTab(navn) {
+  ["forklaring", "regning", "omforming"].forEach(t => {
+    document.getElementById("panel-" + t).classList.add("hidden");
+    document.getElementById("tab-" + t).className = "tab-inactive px-5 py-3 text-sm transition focus:outline-none";
+  });
+  document.getElementById("panel-" + navn).classList.remove("hidden");
+  document.getElementById("tab-" + navn).className = "tab-active px-5 py-3 text-sm transition focus:outline-none";
+}
+
+/* ====================================================================
+   FORMELREGNING – INITIALISERING
+   ==================================================================== */
+
+let valgtFormelId = null;
+
+function byggFormelGrid() {
+  const grid = document.getElementById("formel-grid");
+  grid.innerHTML = "";
+  FORMLER.forEach(f => {
+    const div = document.createElement("div");
+    div.id = "kort-" + f.id;
+    div.className = "formula-card border-2 border-gray-200 rounded-xl p-4 bg-white";
+    div.onclick = () => velgFormel(f.id);
+    div.innerHTML = `
+      <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${kategoriFarge(f.kategori)} mb-2 inline-block">${f.kategori}</span>
+      <p class="font-bold text-gray-800 text-sm">${f.navn}</p>
+      <p class="font-mono text-blue-600 text-base mt-1">${f.formelTekst}</p>
+      <p class="text-gray-500 text-xs mt-1 leading-snug">${f.beskrivelse}</p>
+    `;
+    grid.appendChild(div);
+  });
+}
+
+function velgFormel(id) {
+  // Fjern markering fra alle
+  FORMLER.forEach(f => {
+    const k = document.getElementById("kort-" + f.id);
+    if (k) k.className = "formula-card border-2 border-gray-200 rounded-xl p-4 bg-white";
+  });
+
+  valgtFormelId = id;
+  const k = document.getElementById("kort-" + id);
+  if (k) k.className = "formula-card selected border-2 rounded-xl p-4";
+
+  const f = FORMLER.find(x => x.id === id);
+  if (!f) return;
+
+  // Tittel og formel
+  document.getElementById("kalk-tittel").textContent = f.navn;
+  document.getElementById("kalk-formel-vis").textContent = f.formelTekst;
+  document.getElementById("kalk-beskrivelse").textContent = f.beskrivelse;
+
+  // Inputs
+  const inputDiv = document.getElementById("kalk-inputs");
+  inputDiv.innerHTML = "";
+  f.variabler.forEach(v => {
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `
+      <label class="block text-sm font-medium text-gray-700 mb-1">${v.label}${v.enhet ? " [" + v.enhet + "]" : ""}</label>
+      <input type="number" id="inp-${v.id}" step="any" placeholder="Skriv inn..."
+        class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-300" />
+    `;
+    inputDiv.appendChild(wrap);
+  });
+
+  // Løs-for-meny
+  const sel = document.getElementById("kalk-solve-for");
+  sel.innerHTML = "";
+  f.variabler.forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v.id;
+    opt.textContent = v.label;
+    sel.appendChild(opt);
+  });
+
+  // Skjul gammel resultat
+  const res = document.getElementById("kalk-resultat");
+  res.classList.add("hidden");
+  res.textContent = "";
+
+  document.getElementById("kalkulator-panel").classList.remove("hidden");
+  document.getElementById("kalk-resultat").classList.add("hidden");
+}
+
+/* ====================================================================
+   BEREGN-HANDLING
+   ==================================================================== */
+
+function beregnFormel() {
+  if (!valgtFormelId) return;
+  const f = FORMLER.find(x => x.id === valgtFormelId);
+  const løsFor = document.getElementById("kalk-solve-for").value;
+  const resDiv = document.getElementById("kalk-resultat");
+
+  // Les inn verdier
+  const vals = {};
+  let manglerInput = false;
+  f.variabler.forEach(v => {
+    const el = document.getElementById("inp-" + v.id);
+    if (v.id === løsFor) {
+      vals[v.id] = null; // skal beregnes
+    } else {
+      const parsed = parseFloat(el.value.replace(",", "."));
+      if (isNaN(parsed)) {
+        manglerInput = true;
+      } else {
+        vals[v.id] = parsed;
+      }
+    }
+  });
+
+  if (manglerInput) {
+    resDiv.className = "mt-4 p-4 rounded-lg error-box";
+    resDiv.innerHTML = "<strong>Feil:</strong> Fyll inn alle kjente verdier.";
+    resDiv.classList.remove("hidden");
+    return;
+  }
+
+  // Sjekk divisjon på null
+  try {
+    const svar = f.beregn(vals, løsFor);
+    if (svar === undefined || svar === null) throw new Error("Ugyldig beregning");
+    if (!isFinite(svar.verdi)) throw new Error("Divisjon på null eller ugyldig operasjon.");
+
+    const løsVar = f.variabler.find(v => v.id === løsFor);
+    resDiv.className = "mt-4 p-4 rounded-lg result-box";
+
+    const stegHtml = svar.steg.map(s =>
+      `<div class="step-line pl-3 py-1 my-1 font-mono text-sm text-gray-700">${escHtml(s)}</div>`
+    ).join("");
+
+    resDiv.innerHTML = `
+      <p class="font-semibold text-green-800 mb-2">Løsning for ${løsVar.label}:</p>
+      ${stegHtml}
+      <p class="mt-3 text-lg font-bold text-green-900">
+        ${løsVar.id} = ${rund(svar.verdi)} ${løsVar.enhet || ""}
+      </p>
+    `;
+    resDiv.classList.remove("hidden");
+  } catch (e) {
+    resDiv.className = "mt-4 p-4 rounded-lg error-box";
+    resDiv.innerHTML = `<strong>Feil:</strong> ${escHtml(e.message)}`;
+    resDiv.classList.remove("hidden");
+  }
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+/* ====================================================================
+   OMFORMING – INITIALISERING OG INTERAKSJON
+   ==================================================================== */
+
+let omfValgtVar = null;
+let omfValgtFormelId = null;
+
+function byggOmformingSelect() {
+  const sel = document.getElementById("omf-formel-select");
+  sel.innerHTML = "";
+  FORMLER.forEach(f => {
+    const opt = document.createElement("option");
+    opt.value = f.id;
+    opt.textContent = `${f.navn}  (${f.formelTekst})`;
+    sel.appendChild(opt);
+  });
+}
+
+function oppdaterOmforming() {
+  const id = document.getElementById("omf-formel-select").value;
+  omfValgtFormelId = id;
+  omfValgtVar = null;
+
+  const f = FORMLER.find(x => x.id === id);
+  if (!f) return;
+
+  document.getElementById("omf-original").textContent = "Originalformel: " + f.formelTekst;
+
+  // Bygg variabelknapper
+  const btnDiv = document.getElementById("omf-var-buttons");
+  btnDiv.innerHTML = "";
+  f.variabler.forEach(v => {
+    const btn = document.createElement("button");
+    btn.id = "omf-btn-" + v.id;
+    btn.textContent = "Løs for " + v.id;
+    btn.title = v.label;
+    btn.onclick = () => velgOmformVar(v.id);
+    btn.className = "px-4 py-2 rounded-lg text-sm font-semibold border-2 border-blue-300 text-blue-700 bg-white hover:bg-blue-50 transition focus:outline-none focus:ring-2 focus:ring-blue-300";
+    btnDiv.appendChild(btn);
+  });
+
+  document.getElementById("omf-resultat").classList.add("hidden");
+  document.getElementById("omf-panel").classList.remove("hidden");
+}
+
+function velgOmformVar(varId) {
+  omfValgtVar = varId;
+  const f = FORMLER.find(x => x.id === omfValgtFormelId);
+  if (!f) return;
+
+  // Oppdater knappfarge
+  f.variabler.forEach(v => {
+    const btn = document.getElementById("omf-btn-" + v.id);
+    if (!btn) return;
+    if (v.id === varId) {
+      btn.className = "px-4 py-2 rounded-lg text-sm font-semibold border-2 border-blue-600 text-white bg-blue-600 transition focus:outline-none focus:ring-2 focus:ring-blue-400";
+    } else {
+      btn.className = "px-4 py-2 rounded-lg text-sm font-semibold border-2 border-blue-300 text-blue-700 bg-white hover:bg-blue-50 transition focus:outline-none focus:ring-2 focus:ring-blue-300";
+    }
+  });
+
+  const omfData = f.omform[varId];
+  if (!omfData) return;
+
+  const stegHtml = omfData.steg.map((s, i) => `
+    <div class="flex items-start gap-2 mb-2">
+      <span class="bg-blue-100 text-blue-700 rounded-full w-6 h-6 flex-shrink-0 flex items-center justify-center text-xs font-bold">${i + 1}</span>
+      <span class="font-mono text-sm text-gray-800">${escHtml(s)}</span>
+    </div>
+  `).join("");
+
+  // Eksempelverdi-beregning
+  let eksempelHtml = "";
+  try {
+    const eksVerdier = {};
+    const eksEnheter = {};
+    const ersteVerdier = { A: 12, l: 4, b: 3, O: 20, r: 5, s: 150, v: 60, t: 2.5, U: 12, R: 4, I: 3, P: 60, rho: 1000, m: 8, V: 0.008, C: 37, F: 98.6, p: 25, D: 50, H: 200 };
+    f.variabler.forEach(v => {
+      eksEnheter[v.id] = v.enhet;
+      if (v.id !== varId) {
+        eksVerdier[v.id] = ersteVerdier[v.id] !== undefined ? ersteVerdier[v.id] : 10;
+      }
+    });
+    const svar = f.beregn(eksVerdier, varId);
+    if (svar && isFinite(svar.verdi)) {
+      const løsVar = f.variabler.find(v => v.id === varId);
+      const kjenteTekst = f.variabler
+        .filter(v => v.id !== varId)
+        .map(v => `${v.id} = ${eksVerdier[v.id]} ${v.enhet || ""}`)
+        .join(", ");
+      eksempelHtml = `
+        <div class="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p class="text-sm font-semibold text-yellow-800 mb-2">Eksempel med tall</p>
+          <p class="text-xs text-gray-600 mb-2">Gitt: ${escHtml(kjenteTekst)}</p>
+          ${svar.steg.map(s => `<div class="step-line pl-3 py-1 font-mono text-sm text-gray-700">${escHtml(s)}</div>`).join("")}
+          <p class="mt-2 font-bold text-yellow-900">${løsVar.id} = ${rund(svar.verdi)} ${løsVar.enhet || ""}</p>
+        </div>
+      `;
+    }
+  } catch (_) { /* ignorer eksempelfeil */ }
+
+  const resDiv = document.getElementById("omf-resultat");
+  resDiv.className = "bg-blue-50 border border-blue-200 rounded-xl p-4 mt-2";
+  resDiv.innerHTML = `
+    <p class="text-sm font-semibold text-blue-700 mb-1">Omformet formel:</p>
+    <p class="font-mono text-blue-900 text-lg font-bold mb-3">${escHtml(omfData.rearranged)}</p>
+    <p class="text-sm font-semibold text-gray-700 mb-2">Fremgangsmåte (samme operasjon på begge sider):</p>
+    ${stegHtml}
+    ${eksempelHtml}
+  `;
+  resDiv.classList.remove("hidden");
+}
+
+/* ====================================================================
+   INIT
+   ==================================================================== */
+
+document.addEventListener("DOMContentLoaded", () => {
+  byggFormelGrid();
+  byggOmformingSelect();
+  // Vis første omforming automatisk
+  oppdaterOmforming();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<!--
+  Prosentregning — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 1P (LK20): prosentfaktor, prosentvis
+  økning og nedgang, å finne opprinnelig verdi, og merverdiavgift (MVA).
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prosentregning – Matematikk 1P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .tab-active { background-color: #1d4ed8; color: white; }
+    .tab-inactive { background-color: #e2e8f0; color: #374151; }
+    .formula-box { background: #eff6ff; border-left: 4px solid #3b82f6; }
+    .step-box { background: #f0fdf4; border-left: 4px solid #22c55e; }
+    .error-box { background: #fef2f2; border-left: 4px solid #ef4444; }
+    .result-box { background: #fefce8; border-left: 4px solid #eab308; }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-blue-700 text-white shadow-lg">
+    <div class="max-w-4xl mx-auto px-4 py-5">
+      <h1 class="text-2xl font-bold">Prosentregning</h1>
+      <p class="text-blue-200 text-sm mt-1">Matematikk 1P · LK20 · Sinus kap. 2.1–2.5</p>
+    </div>
+  </header>
+
+  <!-- Tab navigation -->
+  <nav class="bg-white border-b shadow-sm sticky top-0 z-10">
+    <div class="max-w-4xl mx-auto px-4 overflow-x-auto">
+      <div class="flex gap-1 py-2 min-w-max">
+        <button onclick="visTab('faktor')" id="tab-faktor"
+          class="tab-active px-4 py-2 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap">
+          Prosentfaktor
+        </button>
+        <button onclick="visTab('prosent-av')" id="tab-prosent-av"
+          class="tab-inactive px-4 py-2 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap">
+          Prosent av tall
+        </button>
+        <button onclick="visTab('ny-verdi')" id="tab-ny-verdi"
+          class="tab-inactive px-4 py-2 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap">
+          Ny verdi
+        </button>
+        <button onclick="visTab('original')" id="tab-original"
+          class="tab-inactive px-4 py-2 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap">
+          Opprinnelig verdi
+        </button>
+        <button onclick="visTab('mva')" id="tab-mva"
+          class="tab-inactive px-4 py-2 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap">
+          MVA
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-4xl mx-auto px-4 py-8">
+
+    <!-- ===== TAB: PROSENTFAKTOR ===== -->
+    <section id="seksjon-faktor" class="space-y-6">
+      <div class="bg-white rounded-xl shadow p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-3">Hva er prosentfaktor?</h2>
+        <p class="text-gray-600 mb-4">
+          En <strong>prosentfaktor</strong> (vekstfaktor) lar deg gjøre en prosentvis endring med én enkelt
+          multiplikasjon. I stedet for å beregne endringen separat og så legge den til eller trekke den fra,
+          multipliserer du rett og slett med faktoren.
+        </p>
+        <div class="formula-box rounded-lg p-4 mb-4">
+          <p class="font-mono text-sm text-blue-800">
+            Økning på p %  →  faktor = 1 + p/100<br>
+            Nedgang på p %  →  faktor = 1 − p/100<br>
+            p % av noe  →  faktor = p/100
+          </p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-4 mb-6">
+          <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+            <div class="text-3xl font-bold text-green-700">1,20</div>
+            <div class="text-sm text-green-600 mt-1">Økning på 20 %</div>
+            <div class="text-xs text-gray-500 mt-1">1 + 20/100 = 1,20</div>
+          </div>
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+            <div class="text-3xl font-bold text-red-700">0,80</div>
+            <div class="text-sm text-red-600 mt-1">Nedgang på 20 %</div>
+            <div class="text-xs text-gray-500 mt-1">1 − 20/100 = 0,80</div>
+          </div>
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+            <div class="text-3xl font-bold text-blue-700">0,25</div>
+            <div class="text-sm text-blue-600 mt-1">25 % av et tall</div>
+            <div class="text-xs text-gray-500 mt-1">25/100 = 0,25</div>
+          </div>
+        </div>
+
+        <h3 class="text-lg font-semibold text-gray-700 mb-3">Finn prosentfaktoren selv</h3>
+        <div class="bg-gray-50 rounded-lg p-4 space-y-4">
+          <div class="flex flex-wrap gap-3 items-end">
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Type</label>
+              <select id="faktor-type" onchange="beregnFaktor()"
+                class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <option value="okning">Økning på</option>
+                <option value="nedgang">Nedgang på</option>
+                <option value="andel">Andel (p % av)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Prosent (%)</label>
+              <input type="number" id="faktor-prosent" value="25" min="0" max="1000" step="0.01"
+                oninput="beregnFaktor()"
+                class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-28 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+          </div>
+          <div id="faktor-resultat" class="result-box rounded-lg p-4 hidden">
+            <p class="font-semibold text-yellow-800" id="faktor-resultat-tekst"></p>
+            <p class="text-sm text-yellow-700 mt-1" id="faktor-forklaring"></p>
+          </div>
+          <div id="faktor-feil" class="error-box rounded-lg p-3 hidden">
+            <p class="text-red-700 text-sm" id="faktor-feil-tekst"></p>
+          </div>
+        </div>
+
+        <h3 class="text-lg font-semibold text-gray-700 mt-6 mb-3">Eksempler fra dagliglivet</h3>
+        <div class="space-y-3">
+          <div class="bg-gray-50 rounded-lg p-4">
+            <p class="font-medium text-gray-700">Rabatt i butikk</p>
+            <p class="text-sm text-gray-500 mt-1">
+              En jakke koster 1 200 kr. Den settes ned 30 %. Vekstfaktoren er 1 − 30/100 = <strong>0,70</strong>.
+              Ny pris: 1 200 × 0,70 = <strong>840 kr</strong>.
+            </p>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-4">
+            <p class="font-medium text-gray-700">Lønnstillegg</p>
+            <p class="text-sm text-gray-500 mt-1">
+              Du tjener 42 000 kr/mnd og får 3,5 % lønnstillegg. Vekstfaktoren er 1 + 3,5/100 = <strong>1,035</strong>.
+              Ny lønn: 42 000 × 1,035 = <strong>43 470 kr</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== TAB: HVOR MANGE PROSENT ER A AV B ===== -->
+    <section id="seksjon-prosent-av" class="space-y-6 hidden">
+      <div class="bg-white rounded-xl shadow p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-2">Hvor mange prosent er A av B?</h2>
+        <p class="text-gray-600 mb-4">
+          Du vil finne ut hvilken prosentandel ett tall utgjør av et annet. Typisk spørsmål:
+          «Hvor mange prosent er 45 kr av 180 kr?»
+        </p>
+        <div class="formula-box rounded-lg p-4 mb-6">
+          <p class="text-blue-800 font-semibold text-sm mb-1">Formel:</p>
+          <p class="font-mono text-blue-700">p = (A / B) × 100</p>
+          <p class="text-xs text-blue-600 mt-1">Der A er delverdi og B er helverdi (100 %)</p>
+        </div>
+
+        <div class="bg-gray-50 rounded-lg p-5 space-y-4">
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">
+                A – delverdi (kr eller annet)
+              </label>
+              <input type="number" id="pa-a" placeholder="f.eks. 45" min="0" step="0.01"
+                oninput="beregnProsentAv()"
+                class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">
+                B – helverdi / 100 % (kr eller annet)
+              </label>
+              <input type="number" id="pa-b" placeholder="f.eks. 180" min="0.01" step="0.01"
+                oninput="beregnProsentAv()"
+                class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+          </div>
+
+          <div id="pa-resultat" class="hidden space-y-3">
+            <div class="result-box rounded-lg p-4">
+              <p class="font-bold text-yellow-800 text-lg" id="pa-svar"></p>
+            </div>
+            <div class="step-box rounded-lg p-4">
+              <p class="font-semibold text-green-800 mb-2">Utregning steg for steg:</p>
+              <ol class="text-sm text-green-700 space-y-1 list-decimal list-inside" id="pa-steg"></ol>
+            </div>
+          </div>
+          <div id="pa-feil" class="error-box rounded-lg p-3 hidden">
+            <p class="text-red-700 text-sm" id="pa-feil-tekst"></p>
+          </div>
+        </div>
+
+        <h3 class="text-lg font-semibold text-gray-700 mt-6 mb-3">Prøv disse eksemplene</h3>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <button onclick="settEksempelPA(45, 180)"
+            class="text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 transition-colors">
+            <p class="text-sm font-medium text-blue-800">Rabatt i matbutikk</p>
+            <p class="text-xs text-blue-600">A = 45 kr, B = 180 kr</p>
+          </button>
+          <button onclick="settEksempelPA(360, 1200)"
+            class="text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 transition-colors">
+            <p class="text-sm font-medium text-blue-800">Spart på jakkesalg</p>
+            <p class="text-xs text-blue-600">A = 360 kr, B = 1 200 kr</p>
+          </button>
+          <button onclick="settEksempelPA(1470, 42000)"
+            class="text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 transition-colors">
+            <p class="text-sm font-medium text-blue-800">Lønnstillegg</p>
+            <p class="text-xs text-blue-600">A = 1 470 kr, B = 42 000 kr</p>
+          </button>
+          <button onclick="settEksempelPA(85, 500)"
+            class="text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 transition-colors">
+            <p class="text-sm font-medium text-blue-800">Bensinforbruk</p>
+            <p class="text-xs text-blue-600">A = 85 kr, B = 500 kr</p>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== TAB: NY VERDI ETTER ØKNING/NEDGANG ===== -->
+    <section id="seksjon-ny-verdi" class="space-y-6 hidden">
+      <div class="bg-white rounded-xl shadow p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-2">Finn ny verdi etter prosentvis endring</h2>
+        <p class="text-gray-600 mb-4">
+          Bruk prosentfaktoren til å beregne ny pris eller verdi etter en økning eller nedgang.
+        </p>
+        <div class="formula-box rounded-lg p-4 mb-6 space-y-1">
+          <p class="text-blue-800 font-semibold text-sm mb-1">Formel:</p>
+          <p class="font-mono text-blue-700">Ny verdi = Gammel verdi × vekstfaktor</p>
+          <p class="font-mono text-blue-600 text-sm">Vekstfaktor (økning) = 1 + p/100</p>
+          <p class="font-mono text-blue-600 text-sm">Vekstfaktor (nedgang) = 1 − p/100</p>
+        </div>
+
+        <div class="bg-gray-50 rounded-lg p-5 space-y-4">
+          <div class="grid sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Gammel verdi (kr)</label>
+              <input type="number" id="nv-gammel" placeholder="f.eks. 1200" min="0" step="0.01"
+                oninput="beregnNyVerdi()"
+                class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Prosent (%)</label>
+              <input type="number" id="nv-prosent" placeholder="f.eks. 20" min="0" max="1000" step="0.01"
+                oninput="beregnNyVerdi()"
+                class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Retning</label>
+              <select id="nv-retning" onchange="beregnNyVerdi()"
+                class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <option value="okning">Økning</option>
+                <option value="nedgang">Nedgang</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="nv-resultat" class="hidden space-y-3">
+            <div class="result-box rounded-lg p-4">
+              <p class="font-bold text-yellow-800 text-lg" id="nv-svar"></p>
+            </div>
+            <div class="step-box rounded-lg p-4">
+              <p class="font-semibold text-green-800 mb-2">Utregning steg for steg:</p>
+              <ol class="text-sm text-green-700 space-y-1 list-decimal list-inside" id="nv-steg"></ol>
+            </div>
+          </div>
+          <div id="nv-feil" class="error-box rounded-lg p-3 hidden">
+            <p class="text-red-700 text-sm" id="nv-feil-tekst"></p>
+          </div>
+        </div>
+
+        <h3 class="text-lg font-semibold text-gray-700 mt-6 mb-3">Prøv disse eksemplene</h3>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <button onclick="settEksempelNV(1200, 30, 'nedgang')"
+            class="text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 transition-colors">
+            <p class="text-sm font-medium text-blue-800">Salg på jakke</p>
+            <p class="text-xs text-blue-600">1 200 kr, nedgang 30 %</p>
+          </button>
+          <button onclick="settEksempelNV(42000, 3.5, 'okning')"
+            class="text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 transition-colors">
+            <p class="text-sm font-medium text-blue-800">Lønnstillegg</p>
+            <p class="text-xs text-blue-600">42 000 kr/mnd, økning 3,5 %</p>
+          </button>
+          <button onclick="settEksempelNV(350000, 12, 'okning')"
+            class="text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 transition-colors">
+            <p class="text-sm font-medium text-blue-800">Boligverdi stiger</p>
+            <p class="text-xs text-blue-600">350 000 kr, økning 12 %</p>
+          </button>
+          <button onclick="settEksempelNV(25000, 15, 'nedgang')"
+            class="text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 transition-colors">
+            <p class="text-sm font-medium text-blue-800">Bruktbil synker i verdi</p>
+            <p class="text-xs text-blue-600">25 000 kr, nedgang 15 %</p>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== TAB: OPPRINNELIG VERDI ===== -->
+    <section id="seksjon-original" class="space-y-6 hidden">
+      <div class="bg-white rounded-xl shadow p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-2">Finn opprinnelig verdi</h2>
+        <p class="text-gray-600 mb-4">
+          Du kjenner verdien <em>etter</em> en prosentvis endring, og vil finne verdien <em>før</em> endringen.
+          Løsningen er å dele på prosentfaktoren.
+        </p>
+        <div class="formula-box rounded-lg p-4 mb-6 space-y-1">
+          <p class="text-blue-800 font-semibold text-sm mb-1">Formel:</p>
+          <p class="font-mono text-blue-700">Opprinnelig verdi = Ny verdi ÷ vekstfaktor</p>
+          <p class="text-xs text-blue-600 mt-1">
+            Vekstfaktor (økning p %) = 1 + p/100 &nbsp;|&nbsp; Vekstfaktor (nedgang p %) = 1 − p/100
+          </p>
+        </div>
+
+        <div class="bg-gray-50 rounded-lg p-5 space-y-4">
+          <div class="grid sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Kjent (ny) verdi (kr)</label>
+              <input type="number" id="ov-ny" placeholder="f.eks. 840" min="0" step="0.01"
+                oninput="beregnOriginalVerdi()"
+                class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Prosent (%)</label>
+              <input type="number" id="ov-prosent" placeholder="f.eks. 30" min="0" max="99.99" step="0.01"
+                oninput="beregnOriginalVerdi()"
+                class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Endringen var</label>
+              <select id="ov-retning" onchange="beregnOriginalVerdi()"
+                class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <option value="okning">En økning</option>
+                <option value="nedgang">En nedgang</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="ov-resultat" class="hidden space-y-3">
+            <div class="result-box rounded-lg p-4">
+              <p class="font-bold text-yellow-800 text-lg" id="ov-svar"></p>
+            </div>
+            <div class="step-box rounded-lg p-4">
+              <p class="font-semibold text-green-800 mb-2">Utregning steg for steg:</p>
+              <ol class="text-sm text-green-700 space-y-1 list-decimal list-inside" id="ov-steg"></ol>
+            </div>
+          </div>
+          <div id="ov-feil" class="error-box rounded-lg p-3 hidden">
+            <p class="text-red-700 text-sm" id="ov-feil-tekst"></p>
+          </div>
+        </div>
+
+        <h3 class="text-lg font-semibold text-gray-700 mt-6 mb-3">Prøv disse eksemplene</h3>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <button onclick="settEksempelOV(840, 30, 'nedgang')"
+            class="text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 transition-colors">
+            <p class="text-sm font-medium text-blue-800">Jakke etter 30 % rabatt</p>
+            <p class="text-xs text-blue-600">Ny pris = 840 kr, nedgang 30 %</p>
+          </button>
+          <button onclick="settEksempelOV(43470, 3.5, 'okning')"
+            class="text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 transition-colors">
+            <p class="text-sm font-medium text-blue-800">Lønn etter 3,5 % tillegg</p>
+            <p class="text-xs text-blue-600">Ny lønn = 43 470 kr, økning 3,5 %</p>
+          </button>
+          <button onclick="settEksempelOV(392000, 12, 'okning')"
+            class="text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 transition-colors">
+            <p class="text-sm font-medium text-blue-800">Bolig etter 12 % prisvekst</p>
+            <p class="text-xs text-blue-600">Ny verdi = 392 000 kr, økning 12 %</p>
+          </button>
+          <button onclick="settEksempelOV(21250, 15, 'nedgang')"
+            class="text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 transition-colors">
+            <p class="text-sm font-medium text-blue-800">Bruktbil etter verdifall</p>
+            <p class="text-xs text-blue-600">Ny verdi = 21 250 kr, nedgang 15 %</p>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== TAB: MVA ===== -->
+    <section id="seksjon-mva" class="space-y-6 hidden">
+      <div class="bg-white rounded-xl shadow p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-2">Merverdiavgift (MVA)</h2>
+        <p class="text-gray-600 mb-4">
+          Merverdiavgift (moms) er en statlig avgift som legges på varer og tjenester.
+          Den ordinære satsen i Norge er <strong>25 %</strong>. Noen varer har reduserte satser
+          (matvarer 15 %, persontransport og kino 12 %), men her bruker vi standardsatsen 25 %.
+        </p>
+
+        <div class="grid md:grid-cols-2 gap-4 mb-6">
+          <div class="formula-box rounded-lg p-4">
+            <p class="text-blue-800 font-semibold text-sm mb-2">Legge til MVA (25 %):</p>
+            <p class="font-mono text-blue-700 text-sm">Pris med MVA = Pris uten MVA × 1,25</p>
+            <p class="text-xs text-blue-600 mt-1">Vekstfaktor: 1 + 25/100 = 1,25</p>
+          </div>
+          <div class="formula-box rounded-lg p-4">
+            <p class="text-blue-800 font-semibold text-sm mb-2">Trekke fra MVA (25 %):</p>
+            <p class="font-mono text-blue-700 text-sm">Pris uten MVA = Pris med MVA ÷ 1,25</p>
+            <p class="text-xs text-blue-600 mt-1">NB: del på 1,25 — ikke trekk fra 25 %!</p>
+          </div>
+        </div>
+
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+          <p class="text-amber-800 text-sm font-medium">Vanlig feil:</p>
+          <p class="text-amber-700 text-sm mt-1">
+            Mange tror man finner prisen uten MVA ved å trekke 25 % fra prisen med MVA.
+            Det er <strong>feil</strong>! Eksempel: 250 kr inkl. MVA.
+            Feil metode: 250 − 25 % av 250 = 250 − 62,50 = 187,50 kr (galt).
+            Riktig metode: 250 ÷ 1,25 = <strong>200 kr</strong> (riktig).
+          </p>
+        </div>
+
+        <div class="bg-gray-50 rounded-lg p-5 space-y-4">
+          <div class="flex flex-wrap gap-3 items-center mb-2">
+            <span class="text-sm font-medium text-gray-700">Jeg vil:</span>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="mva-retning" value="legg-til" id="mva-legg-til" checked
+                onchange="beregnMVA()"
+                class="accent-blue-600" />
+              <span class="text-sm text-gray-700">Legge til MVA</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="mva-retning" value="trekk-fra" id="mva-trekk-fra"
+                onchange="beregnMVA()"
+                class="accent-blue-600" />
+              <span class="text-sm text-gray-700">Trekke fra MVA</span>
+            </label>
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1" id="mva-input-label">
+                Pris uten MVA (kr)
+              </label>
+              <input type="number" id="mva-pris" placeholder="f.eks. 200" min="0" step="0.01"
+                oninput="beregnMVA()"
+                class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">MVA-sats (%)</label>
+              <select id="mva-sats" onchange="beregnMVA()"
+                class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <option value="25">25 % (standard)</option>
+                <option value="15">15 % (matvarer)</option>
+                <option value="12">12 % (transport, kino)</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="mva-resultat" class="hidden space-y-3">
+            <div class="result-box rounded-lg p-4">
+              <p class="font-bold text-yellow-800 text-lg" id="mva-svar"></p>
+            </div>
+            <div class="step-box rounded-lg p-4">
+              <p class="font-semibold text-green-800 mb-2">Utregning steg for steg:</p>
+              <ol class="text-sm text-green-700 space-y-1 list-decimal list-inside" id="mva-steg"></ol>
+            </div>
+          </div>
+          <div id="mva-feil" class="error-box rounded-lg p-3 hidden">
+            <p class="text-red-700 text-sm" id="mva-feil-tekst"></p>
+          </div>
+        </div>
+
+        <h3 class="text-lg font-semibold text-gray-700 mt-6 mb-3">Prøv disse eksemplene</h3>
+        <div class="grid sm:grid-cols-2 gap-3">
+          <button onclick="settEksempelMVA(200, 'legg-til', 25)"
+            class="text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 transition-colors">
+            <p class="text-sm font-medium text-blue-800">Tannbørste (legg til MVA)</p>
+            <p class="text-xs text-blue-600">200 kr u/MVA, sats 25 %</p>
+          </button>
+          <button onclick="settEksempelMVA(250, 'trekk-fra', 25)"
+            class="text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 transition-colors">
+            <p class="text-sm font-medium text-blue-800">Tannbørste (trekk fra MVA)</p>
+            <p class="text-xs text-blue-600">250 kr m/MVA, sats 25 %</p>
+          </button>
+          <button onclick="settEksempelMVA(80, 'legg-til', 15)"
+            class="text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 transition-colors">
+            <p class="text-sm font-medium text-blue-800">Matpakke (legg til MVA)</p>
+            <p class="text-xs text-blue-600">80 kr u/MVA, sats 15 %</p>
+          </button>
+          <button onclick="settEksempelMVA(1380, 'trekk-fra', 25)"
+            class="text-left bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 transition-colors">
+            <p class="text-sm font-medium text-blue-800">Reparasjon (trekk fra MVA)</p>
+            <p class="text-xs text-blue-600">1 380 kr m/MVA, sats 25 %</p>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="max-w-4xl mx-auto px-4 py-6 text-center text-xs text-gray-400">
+    Matematikk 1P · LK20 · Sinus kap. 2.1–2.5 · Halison App Studio
+  </footer>
+
+  <script>
+    // ---- Hjelpefunksjoner ----
+
+    function norskTall(n, desimaler) {
+      if (desimaler === undefined) {
+        // Automatisk: vis opp til 4 desimaler, men fjern unødvendige nuller
+        var s = parseFloat(n.toFixed(4)).toString();
+        return s.replace('.', ',');
+      }
+      return n.toFixed(desimaler).replace('.', ',');
+    }
+
+    function norskRund(n) {
+      // For kronebeløp: vis 2 desimaler hvis ikke heltall
+      if (n === Math.floor(n)) {
+        return norskTall(n, 0);
+      }
+      return norskTall(n, 2);
+    }
+
+    // ---- Tab-navigasjon ----
+
+    var faner = ['faktor', 'prosent-av', 'ny-verdi', 'original', 'mva'];
+
+    function visTab(navn) {
+      faner.forEach(function(f) {
+        document.getElementById('seksjon-' + f).classList.add('hidden');
+        var tab = document.getElementById('tab-' + f);
+        tab.className = tab.className.replace('tab-active', 'tab-inactive');
+      });
+      document.getElementById('seksjon-' + navn).classList.remove('hidden');
+      var aktiv = document.getElementById('tab-' + navn);
+      aktiv.className = aktiv.className.replace('tab-inactive', 'tab-active');
+    }
+
+    // ---- Prosentfaktor ----
+
+    function beregnFaktor() {
+      var type = document.getElementById('faktor-type').value;
+      var prosent = parseFloat(document.getElementById('faktor-prosent').value);
+      var resEl = document.getElementById('faktor-resultat');
+      var feilEl = document.getElementById('faktor-feil');
+
+      resEl.classList.add('hidden');
+      feilEl.classList.add('hidden');
+
+      if (isNaN(prosent) || prosent < 0) {
+        document.getElementById('faktor-feil-tekst').textContent = 'Skriv inn et gyldig prosenttall (0 eller høyere).';
+        feilEl.classList.remove('hidden');
+        return;
+      }
+      if (type === 'nedgang' && prosent >= 100) {
+        document.getElementById('faktor-feil-tekst').textContent = 'En nedgang kan ikke være 100 % eller mer (da ville verdien bli 0 eller negativ).';
+        feilEl.classList.remove('hidden');
+        return;
+      }
+
+      var faktor, tekst, forklaring;
+      if (type === 'okning') {
+        faktor = 1 + prosent / 100;
+        tekst = 'Vekstfaktor for økning på ' + norskTall(prosent) + ' %: ' + norskTall(faktor);
+        forklaring = '1 + ' + norskTall(prosent) + '/100 = 1 + ' + norskTall(prosent / 100) + ' = ' + norskTall(faktor);
+      } else if (type === 'nedgang') {
+        faktor = 1 - prosent / 100;
+        tekst = 'Vekstfaktor for nedgang på ' + norskTall(prosent) + ' %: ' + norskTall(faktor);
+        forklaring = '1 − ' + norskTall(prosent) + '/100 = 1 − ' + norskTall(prosent / 100) + ' = ' + norskTall(faktor);
+      } else {
+        faktor = prosent / 100;
+        tekst = norskTall(prosent) + ' % som faktor (andel): ' + norskTall(faktor);
+        forklaring = norskTall(prosent) + '/100 = ' + norskTall(faktor);
+      }
+
+      document.getElementById('faktor-resultat-tekst').textContent = tekst;
+      document.getElementById('faktor-forklaring').textContent = forklaring;
+      resEl.classList.remove('hidden');
+    }
+
+    // ---- Prosent av tall ----
+
+    function beregnProsentAv() {
+      var a = parseFloat(document.getElementById('pa-a').value);
+      var b = parseFloat(document.getElementById('pa-b').value);
+      var resEl = document.getElementById('pa-resultat');
+      var feilEl = document.getElementById('pa-feil');
+
+      resEl.classList.add('hidden');
+      feilEl.classList.add('hidden');
+
+      if (isNaN(a) || isNaN(b)) return;
+
+      if (a < 0 || b <= 0) {
+        document.getElementById('pa-feil-tekst').textContent = 'A må være 0 eller høyere, og B må være større enn 0.';
+        feilEl.classList.remove('hidden');
+        return;
+      }
+
+      var p = (a / b) * 100;
+
+      document.getElementById('pa-svar').textContent =
+        norskRund(a) + ' kr er ' + norskTall(p, 2) + ' % av ' + norskRund(b) + ' kr';
+
+      var stegHtml = [
+        'Sett opp formelen: p = (A / B) × 100',
+        'Sett inn verdiene: p = (' + norskRund(a) + ' / ' + norskRund(b) + ') × 100',
+        'Beregn brøken: ' + norskRund(a) + ' / ' + norskRund(b) + ' = ' + norskTall(a / b),
+        'Multipliser med 100: ' + norskTall(a / b) + ' × 100 = ' + norskTall(p, 2) + ' %'
+      ];
+      document.getElementById('pa-steg').innerHTML =
+        stegHtml.map(function(s) { return '<li>' + s + '</li>'; }).join('');
+
+      resEl.classList.remove('hidden');
+    }
+
+    function settEksempelPA(a, b) {
+      document.getElementById('pa-a').value = a;
+      document.getElementById('pa-b').value = b;
+      beregnProsentAv();
+    }
+
+    // ---- Ny verdi ----
+
+    function beregnNyVerdi() {
+      var gammel = parseFloat(document.getElementById('nv-gammel').value);
+      var prosent = parseFloat(document.getElementById('nv-prosent').value);
+      var retning = document.getElementById('nv-retning').value;
+      var resEl = document.getElementById('nv-resultat');
+      var feilEl = document.getElementById('nv-feil');
+
+      resEl.classList.add('hidden');
+      feilEl.classList.add('hidden');
+
+      if (isNaN(gammel) || isNaN(prosent)) return;
+
+      if (gammel < 0) {
+        document.getElementById('nv-feil-tekst').textContent = 'Gammel verdi må være 0 eller høyere.';
+        feilEl.classList.remove('hidden');
+        return;
+      }
+      if (prosent < 0) {
+        document.getElementById('nv-feil-tekst').textContent = 'Prosenten kan ikke være negativ. Velg retning og skriv positivt tall.';
+        feilEl.classList.remove('hidden');
+        return;
+      }
+      if (retning === 'nedgang' && prosent >= 100) {
+        document.getElementById('nv-feil-tekst').textContent = 'En nedgang kan ikke være 100 % eller mer.';
+        feilEl.classList.remove('hidden');
+        return;
+      }
+
+      var faktor = retning === 'okning' ? 1 + prosent / 100 : 1 - prosent / 100;
+      var ny = gammel * faktor;
+      var endring = Math.abs(ny - gammel);
+      var retningTekst = retning === 'okning' ? 'økning' : 'nedgang';
+      var faktorFormel = retning === 'okning'
+        ? '1 + ' + norskTall(prosent) + '/100 = ' + norskTall(faktor)
+        : '1 − ' + norskTall(prosent) + '/100 = ' + norskTall(faktor);
+
+      document.getElementById('nv-svar').textContent =
+        'Ny verdi: ' + norskRund(ny) + ' kr  (' + retningTekst + ' på ' +
+        norskRund(endring) + ' kr)';
+
+      var stegHtml = [
+        'Finn vekstfaktoren: ' + faktorFormel,
+        'Sett opp formelen: Ny verdi = Gammel verdi × vekstfaktor',
+        'Sett inn verdiene: Ny verdi = ' + norskRund(gammel) + ' × ' + norskTall(faktor),
+        'Beregn: ' + norskRund(gammel) + ' × ' + norskTall(faktor) + ' = ' + norskRund(ny) + ' kr'
+      ];
+      document.getElementById('nv-steg').innerHTML =
+        stegHtml.map(function(s) { return '<li>' + s + '</li>'; }).join('');
+
+      resEl.classList.remove('hidden');
+    }
+
+    function settEksempelNV(gammel, prosent, retning) {
+      document.getElementById('nv-gammel').value = gammel;
+      document.getElementById('nv-prosent').value = prosent;
+      document.getElementById('nv-retning').value = retning;
+      beregnNyVerdi();
+    }
+
+    // ---- Opprinnelig verdi ----
+
+    function beregnOriginalVerdi() {
+      var ny = parseFloat(document.getElementById('ov-ny').value);
+      var prosent = parseFloat(document.getElementById('ov-prosent').value);
+      var retning = document.getElementById('ov-retning').value;
+      var resEl = document.getElementById('ov-resultat');
+      var feilEl = document.getElementById('ov-feil');
+
+      resEl.classList.add('hidden');
+      feilEl.classList.add('hidden');
+
+      if (isNaN(ny) || isNaN(prosent)) return;
+
+      if (ny < 0) {
+        document.getElementById('ov-feil-tekst').textContent = 'Kjent verdi må være 0 eller høyere.';
+        feilEl.classList.remove('hidden');
+        return;
+      }
+      if (prosent < 0 || prosent >= 100) {
+        document.getElementById('ov-feil-tekst').textContent = 'Prosenten må være mellom 0 og 99,99.';
+        feilEl.classList.remove('hidden');
+        return;
+      }
+
+      var faktor = retning === 'okning' ? 1 + prosent / 100 : 1 - prosent / 100;
+      if (faktor === 0) {
+        document.getElementById('ov-feil-tekst').textContent = 'Ugyldig: faktoren kan ikke være null.';
+        feilEl.classList.remove('hidden');
+        return;
+      }
+      var oppr = ny / faktor;
+      var retningTekst = retning === 'okning' ? 'økning' : 'nedgang';
+      var faktorFormel = retning === 'okning'
+        ? '1 + ' + norskTall(prosent) + '/100 = ' + norskTall(faktor)
+        : '1 − ' + norskTall(prosent) + '/100 = ' + norskTall(faktor);
+
+      document.getElementById('ov-svar').textContent =
+        'Opprinnelig verdi: ' + norskRund(oppr) + ' kr';
+
+      var stegHtml = [
+        'Finn vekstfaktoren for ' + retningTekst + 'en: ' + faktorFormel,
+        'Sett opp formelen: Opprinnelig verdi = Kjent verdi ÷ vekstfaktor',
+        'Sett inn verdiene: Opprinnelig verdi = ' + norskRund(ny) + ' ÷ ' + norskTall(faktor),
+        'Beregn: ' + norskRund(ny) + ' ÷ ' + norskTall(faktor) + ' = ' + norskRund(oppr) + ' kr',
+        'Kontroll: ' + norskRund(oppr) + ' × ' + norskTall(faktor) + ' = ' + norskRund(oppr * faktor) + ' kr ✓'
+      ];
+      document.getElementById('ov-steg').innerHTML =
+        stegHtml.map(function(s) { return '<li>' + s + '</li>'; }).join('');
+
+      resEl.classList.remove('hidden');
+    }
+
+    function settEksempelOV(ny, prosent, retning) {
+      document.getElementById('ov-ny').value = ny;
+      document.getElementById('ov-prosent').value = prosent;
+      document.getElementById('ov-retning').value = retning;
+      beregnOriginalVerdi();
+    }
+
+    // ---- MVA ----
+
+    function oppdaterMVALabel() {
+      var retning = document.querySelector('input[name="mva-retning"]:checked').value;
+      var label = document.getElementById('mva-input-label');
+      label.textContent = retning === 'legg-til' ? 'Pris uten MVA (kr)' : 'Pris med MVA (kr)';
+    }
+
+    function beregnMVA() {
+      oppdaterMVALabel();
+      var pris = parseFloat(document.getElementById('mva-pris').value);
+      var sats = parseFloat(document.getElementById('mva-sats').value);
+      var retning = document.querySelector('input[name="mva-retning"]:checked').value;
+      var resEl = document.getElementById('mva-resultat');
+      var feilEl = document.getElementById('mva-feil');
+
+      resEl.classList.add('hidden');
+      feilEl.classList.add('hidden');
+
+      if (isNaN(pris)) return;
+
+      if (pris < 0) {
+        document.getElementById('mva-feil-tekst').textContent = 'Prisen kan ikke være negativ.';
+        feilEl.classList.remove('hidden');
+        return;
+      }
+
+      var faktor = 1 + sats / 100;
+
+      if (retning === 'legg-til') {
+        var medMVA = pris * faktor;
+        var mvaBeloep = medMVA - pris;
+
+        document.getElementById('mva-svar').textContent =
+          'Pris med MVA: ' + norskRund(medMVA) + ' kr  (MVA-beløp: ' + norskRund(mvaBeloep) + ' kr)';
+
+        var stegHtml = [
+          'MVA-satsen er ' + norskTall(sats, 0) + ' %, vekstfaktoren er 1 + ' +
+            norskTall(sats, 0) + '/100 = ' + norskTall(faktor),
+          'Formel: Pris med MVA = Pris uten MVA × vekstfaktor',
+          'Sett inn: ' + norskRund(pris) + ' × ' + norskTall(faktor) + ' = ' + norskRund(medMVA) + ' kr',
+          'MVA-beløpet alene: ' + norskRund(medMVA) + ' − ' + norskRund(pris) + ' = ' + norskRund(mvaBeloep) + ' kr'
+        ];
+        document.getElementById('mva-steg').innerHTML =
+          stegHtml.map(function(s) { return '<li>' + s + '</li>'; }).join('');
+      } else {
+        var utenMVA = pris / faktor;
+        var mvaBeloep2 = pris - utenMVA;
+
+        document.getElementById('mva-svar').textContent =
+          'Pris uten MVA: ' + norskRund(utenMVA) + ' kr  (MVA-beløp: ' + norskRund(mvaBeloep2) + ' kr)';
+
+        var stegHtml2 = [
+          'MVA-satsen er ' + norskTall(sats, 0) + ' %, vekstfaktoren er ' + norskTall(faktor),
+          'Formel: Pris uten MVA = Pris med MVA ÷ vekstfaktor',
+          'Sett inn: ' + norskRund(pris) + ' ÷ ' + norskTall(faktor) + ' = ' + norskRund(utenMVA) + ' kr',
+          'MVA-beløpet alene: ' + norskRund(pris) + ' − ' + norskRund(utenMVA) + ' = ' + norskRund(mvaBeloep2) + ' kr',
+          'Kontroll: ' + norskRund(utenMVA) + ' × ' + norskTall(faktor) + ' = ' + norskRund(utenMVA * faktor) + ' kr ✓'
+        ];
+        document.getElementById('mva-steg').innerHTML =
+          stegHtml2.map(function(s) { return '<li>' + s + '</li>'; }).join('');
+      }
+
+      resEl.classList.remove('hidden');
+    }
+
+    function settEksempelMVA(pris, retning, sats) {
+      document.getElementById(
+        retning === 'legg-til' ? 'mva-legg-til' : 'mva-trekk-fra'
+      ).checked = true;
+      document.getElementById('mva-pris').value = pris;
+      document.getElementById('mva-sats').value = sats;
+      beregnMVA();
+    }
+
+    // ---- Init ----
+    beregnFaktor();
+  </script>
+</body>
+</html>

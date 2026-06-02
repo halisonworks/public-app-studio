@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<!--
+  Likninger — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 1P (LK20): løs førstegradslikninger steg
+  for steg, og potenslikninger.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Likninger – Matematikk 1P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; }
+    .step-box {
+      border-left: 4px solid #6366f1;
+      background: #f5f3ff;
+      padding: 0.5rem 1rem;
+      margin: 0.4rem 0;
+      border-radius: 0 6px 6px 0;
+    }
+    .step-box.check {
+      border-left-color: #22c55e;
+      background: #f0fdf4;
+    }
+    .step-box.result {
+      border-left-color: #f59e0b;
+      background: #fffbeb;
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+    .step-box.error {
+      border-left-color: #ef4444;
+      background: #fef2f2;
+    }
+    .tab-btn {
+      transition: background 0.15s, color 0.15s;
+    }
+    .tab-btn.active {
+      background: #6366f1;
+      color: white;
+    }
+    .input-num {
+      width: 70px;
+      text-align: center;
+      border: 1.5px solid #a5b4fc;
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-size: 1.1rem;
+    }
+    .input-num:focus {
+      outline: none;
+      border-color: #6366f1;
+    }
+    .fraction {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      vertical-align: middle;
+      line-height: 1.1;
+      margin: 0 2px;
+    }
+    .fraction .num { border-bottom: 1.5px solid #374151; padding: 0 3px; }
+    .fraction .den { padding: 0 3px; }
+    .example-btn {
+      font-size: 0.8rem;
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 1.5px solid #a5b4fc;
+      color: #4f46e5;
+      background: white;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .example-btn:hover { background: #ede9fe; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-4">
+
+  <div class="max-w-2xl mx-auto">
+
+    <!-- Header -->
+    <div class="text-center mb-6">
+      <h1 class="text-3xl font-bold text-indigo-700">Likninger</h1>
+      <p class="text-gray-500 mt-1 text-sm">Matematikk 1P · Kap. 1.7–1.8 · LK20</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-6 justify-center">
+      <button class="tab-btn active px-5 py-2 rounded-full font-semibold border border-indigo-300 text-sm" id="tab-linear" onclick="switchTab('linear')">
+        Førstegradslikninger
+      </button>
+      <button class="tab-btn px-5 py-2 rounded-full font-semibold border border-indigo-300 text-sm text-indigo-600" id="tab-power" onclick="switchTab('power')">
+        Potenslikninger
+      </button>
+    </div>
+
+    <!-- === FØRSTEGRADSLIKNINGER === -->
+    <div id="panel-linear">
+      <div class="bg-white rounded-2xl shadow-md p-6 mb-4">
+        <h2 class="text-lg font-bold text-indigo-700 mb-1">Førstegradslikninger</h2>
+        <p class="text-gray-500 text-sm mb-4">Skriv inn koeffisienter for <span class="font-mono font-semibold text-indigo-600">ax + b = cx + d</span></p>
+
+        <!-- Examples -->
+        <div class="flex flex-wrap gap-2 mb-4 items-center">
+          <span class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Eksempler:</span>
+          <button class="example-btn" onclick="setLinear(3,5,1,13)">3x + 5 = x + 13</button>
+          <button class="example-btn" onclick="setLinear(2,-4,5,8)">2x − 4 = 5x + 8</button>
+          <button class="example-btn" onclick="setLinear(1,0,0,7)">x = 7</button>
+          <button class="example-btn" onclick="setLinear(4,3,-2,17)">4x + 3 = −2x + 17</button>
+          <button class="example-btn" onclick="setLinear(1,6,3,2)">x + 6 = 3x + 2</button>
+        </div>
+
+        <!-- Equation builder -->
+        <div class="flex flex-wrap items-center gap-2 mb-5 justify-center text-xl font-mono">
+          <input class="input-num" id="la" type="number" value="3" step="any" />
+          <span class="text-gray-600">x</span>
+          <span class="text-gray-400">+</span>
+          <input class="input-num" id="lb" type="number" value="5" step="any" />
+          <span class="text-gray-400">=</span>
+          <input class="input-num" id="lc" type="number" value="1" step="any" />
+          <span class="text-gray-600">x</span>
+          <span class="text-gray-400">+</span>
+          <input class="input-num" id="ld" type="number" value="13" step="any" />
+        </div>
+
+        <div class="flex justify-center">
+          <button onclick="solveLinear()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-2.5 rounded-xl text-base transition-colors shadow">
+            Løs likningen
+          </button>
+        </div>
+      </div>
+
+      <!-- Linear solution output -->
+      <div id="linear-output" class="hidden bg-white rounded-2xl shadow-md p-6"></div>
+    </div>
+
+    <!-- === POTENSLIKNINGER === -->
+    <div id="panel-power" class="hidden">
+      <div class="bg-white rounded-2xl shadow-md p-6 mb-4">
+        <h2 class="text-lg font-bold text-indigo-700 mb-1">Potenslikninger</h2>
+        <p class="text-gray-500 text-sm mb-4">Skriv inn eksponent og høyreside for <span class="font-mono font-semibold text-indigo-600">xⁿ = k</span></p>
+
+        <!-- Examples -->
+        <div class="flex flex-wrap gap-2 mb-4 items-center">
+          <span class="text-xs text-gray-400 font-semibold uppercase tracking-wide">Eksempler:</span>
+          <button class="example-btn" onclick="setPower(2,25)">x² = 25</button>
+          <button class="example-btn" onclick="setPower(3,8)">x³ = 8</button>
+          <button class="example-btn" onclick="setPower(2,-9)">x² = −9</button>
+          <button class="example-btn" onclick="setPower(4,81)">x⁴ = 81</button>
+          <button class="example-btn" onclick="setPower(3,-27)">x³ = −27</button>
+          <button class="example-btn" onclick="setPower(5,32)">x⁵ = 32</button>
+        </div>
+
+        <!-- Power equation builder -->
+        <div class="flex flex-wrap items-center gap-3 mb-5 justify-center text-xl font-mono">
+          <span class="text-gray-600">x</span>
+          <span class="text-gray-400 text-base">med eksponent</span>
+          <input class="input-num" id="pn" type="number" value="2" min="1" max="20" step="1" />
+          <span class="text-gray-400">=</span>
+          <input class="input-num" id="pk" type="number" value="25" step="any" />
+        </div>
+
+        <div class="flex justify-center">
+          <button onclick="solvePower()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-2.5 rounded-xl text-base transition-colors shadow">
+            Løs likningen
+          </button>
+        </div>
+      </div>
+
+      <!-- Power solution output -->
+      <div id="power-output" class="hidden bg-white rounded-2xl shadow-md p-6"></div>
+    </div>
+
+    <p class="text-center text-xs text-gray-300 mt-8">Halison App Studio · Matematikk 1P · LK20</p>
+  </div>
+
+  <script>
+    // ─── Utility ─────────────────────────────────────────────────────────────
+
+    function gcd(a, b) {
+      a = Math.abs(Math.round(a));
+      b = Math.abs(Math.round(b));
+      if (b === 0) return a;
+      return gcd(b, a % b);
+    }
+
+    // Return a simplified fraction as {num, den} or integer
+    function simplify(num, den) {
+      if (den === 0) return null; // division by zero
+      if (num === 0) return { num: 0, den: 1 };
+      const sign = (num < 0) !== (den < 0) ? -1 : 1;
+      num = Math.abs(num);
+      den = Math.abs(den);
+      const g = gcd(num, den);
+      return { num: sign * (num / g), den: den / g };
+    }
+
+    // Format a fraction as HTML – whole number if denominator == 1
+    function fracHTML(frac) {
+      if (!frac) return '<span class="text-red-500">udefinert</span>';
+      if (frac.den === 1) return `<strong>${frac.num}</strong>`;
+      return `<span class="fraction"><span class="num">${frac.num}</span><span class="den">${frac.den}</span></span>`;
+    }
+
+    // Format fraction as plain text
+    function fracText(frac) {
+      if (!frac) return 'udefinert';
+      if (frac.den === 1) return String(frac.num);
+      return `${frac.num}/${frac.den}`;
+    }
+
+    // Decimal value of fraction
+    function fracVal(frac) {
+      if (!frac) return NaN;
+      return frac.num / frac.den;
+    }
+
+    // Format a coefficient for display in an expression, e.g. -3x or +5
+    function coefStr(c, varName, first) {
+      if (c === 0) return '';
+      const sign = c < 0 ? '−' : (first ? '' : '+');
+      const abs = Math.abs(c);
+      if (varName) {
+        const coefPart = abs === 1 ? '' : abs;
+        return `${sign}${coefPart}${varName}`;
+      }
+      return `${sign}${abs}`;
+    }
+
+    // Render a whole expression ax + b
+    function exprHTML(a, b, varName) {
+      varName = varName || 'x';
+      let parts = [];
+      if (a !== 0) {
+        const absA = Math.abs(a);
+        const signA = a < 0 ? '−' : '';
+        const coefPart = absA === 1 ? '' : absA;
+        parts.push(`${signA}${coefPart}<em>${varName}</em>`);
+      }
+      if (b !== 0) {
+        if (parts.length === 0) {
+          parts.push(String(b));
+        } else {
+          parts.push(b < 0 ? ` − ${Math.abs(b)}` : ` + ${b}`);
+        }
+      }
+      if (parts.length === 0) return '0';
+      return parts.join('');
+    }
+
+    // ─── Tab switching ────────────────────────────────────────────────────────
+
+    function switchTab(name) {
+      ['linear', 'power'].forEach(t => {
+        document.getElementById('panel-' + t).classList.toggle('hidden', t !== name);
+        const btn = document.getElementById('tab-' + t);
+        btn.classList.toggle('active', t === name);
+        btn.classList.toggle('text-indigo-600', t !== name);
+      });
+    }
+
+    // ─── Linear equation helpers ──────────────────────────────────────────────
+
+    function setLinear(a, b, c, d) {
+      document.getElementById('la').value = a;
+      document.getElementById('lb').value = b;
+      document.getElementById('lc').value = c;
+      document.getElementById('ld').value = d;
+      document.getElementById('linear-output').classList.add('hidden');
+    }
+
+    function step(html, type) {
+      const cls = type === 'result' ? 'step-box result'
+                : type === 'check'  ? 'step-box check'
+                : type === 'error'  ? 'step-box error'
+                : 'step-box';
+      return `<div class="${cls}">${html}</div>`;
+    }
+
+    function solveLinear() {
+      const a = parseFloat(document.getElementById('la').value);
+      const b = parseFloat(document.getElementById('lb').value);
+      const c = parseFloat(document.getElementById('lc').value);
+      const d = parseFloat(document.getElementById('ld').value);
+
+      const out = document.getElementById('linear-output');
+      out.classList.remove('hidden');
+
+      if ([a, b, c, d].some(isNaN)) {
+        out.innerHTML = step('Fyll inn gyldige tall for alle koeffisienter.', 'error');
+        return;
+      }
+
+      // ax + b = cx + d
+      let html = `<h3 class="font-bold text-indigo-700 text-lg mb-3">Løsning steg for steg</h3>`;
+
+      // Step 0: write the equation
+      html += step(`<strong>Likningen:</strong> ${exprHTML(a, b)} = ${exprHTML(c, d)}`);
+
+      // Step 1: move x-terms to left (subtract cx from both sides)
+      const xCoefLeft = a - c; // coefficient of x after moving
+      if (c !== 0) {
+        const subExpr = c < 0
+          ? `Legg til ${Math.abs(c)}x på begge sider`
+          : `Trekk fra ${Math.abs(c)}x på begge sider`;
+        html += step(`<strong>Steg 1 – Samle <em>x</em>-leddene:</strong> ${subExpr}<br>
+          ${exprHTML(a, b)} ${c < 0 ? '+' : '−'} ${Math.abs(c)}x = ${exprHTML(c, d)} ${c < 0 ? '+' : '−'} ${Math.abs(c)}x<br>
+          ⟹ ${exprHTML(xCoefLeft, b)} = ${d}`);
+      } else {
+        html += step(`<strong>Steg 1 – Samle <em>x</em>-leddene:</strong> Ingen <em>x</em> på høyre side – allerede samlet.<br>
+          ${exprHTML(xCoefLeft, b)} = ${d}`);
+      }
+
+      // Step 2: move constant to right (subtract b from both sides)
+      const rhs = d - b;
+      if (b !== 0) {
+        const subExpr2 = b < 0
+          ? `Legg til ${Math.abs(b)} på begge sider`
+          : `Trekk fra ${Math.abs(b)} fra begge sider`;
+        html += step(`<strong>Steg 2 – Flytt tallene til høyre:</strong> ${subExpr2}<br>
+          ${exprHTML(xCoefLeft, b)} ${b < 0 ? '+' : '−'} ${Math.abs(b)} = ${d} ${b < 0 ? '+' : '−'} ${Math.abs(b)}<br>
+          ⟹ ${exprHTML(xCoefLeft, 0)} = ${rhs}`);
+      } else {
+        html += step(`<strong>Steg 2 – Flytt tallene til høyre:</strong> Ingen konstantledd på venstre side – ingenting å flytte.<br>
+          ${exprHTML(xCoefLeft, 0)} = ${rhs}`);
+      }
+
+      // Step 3: divide or handle special cases
+      if (xCoefLeft === 0) {
+        if (rhs === 0) {
+          html += step(`<strong>Steg 3:</strong> Vi får 0 = 0 &rarr; <em>alle reelle tall</em> er løsning (likningen er alltid sann).`, 'result');
+          out.innerHTML = html;
+          return;
+        } else {
+          html += step(`<strong>Steg 3:</strong> Vi får 0 = ${rhs} &rarr; <em>ingen løsning</em> (likningen er aldri sann).`, 'error');
+          out.innerHTML = html;
+          return;
+        }
+      }
+
+      const xFrac = simplify(rhs, xCoefLeft);
+      const xVal = fracVal(xFrac);
+
+      html += step(`<strong>Steg 3 – Del på koeffisienten til <em>x</em>:</strong> Del begge sider på ${xCoefLeft}<br>
+        x = ${rhs} ÷ ${xCoefLeft} = ${fracHTML(xFrac)}`);
+
+      // Result
+      html += step(`<strong>Svar:</strong> x = ${fracHTML(xFrac)}${xFrac.den !== 1 ? ` ≈ ${xVal.toFixed(4)}` : ''}`, 'result');
+
+      // Prøve (check)
+      const lhs_check = a * xVal + b;
+      const rhs_check = c * xVal + d;
+      const ok = Math.abs(lhs_check - rhs_check) < 1e-9;
+      const xDisp = xFrac.den === 1 ? xFrac.num : fracText(xFrac);
+      html += `<div class="mt-4">
+        <h4 class="font-semibold text-green-700 mb-1">Prøve (sett inn x = ${xDisp}):</h4>`;
+      html += step(`Venstre side: ${a} · ${xDisp} + ${b} = ${a * xVal + b}
+        <br>Høyre side: ${c} · ${xDisp} + ${d} = ${c * xVal + d}
+        <br>${ok ? '✔ Venstre side = høyre side. Svaret er riktig!' : '✗ Noe gikk galt – sjekk beregningene.'}`, 'check');
+      html += '</div>';
+
+      out.innerHTML = html;
+    }
+
+    // ─── Power equation helpers ───────────────────────────────────────────────
+
+    function setPower(n, k) {
+      document.getElementById('pn').value = n;
+      document.getElementById('pk').value = k;
+      document.getElementById('power-output').classList.add('hidden');
+    }
+
+    const SUPERSCRIPTS = ['⁰','¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹'];
+    function toSuperscript(n) {
+      return String(n).split('').map(d => SUPERSCRIPTS[parseInt(d)] || d).join('');
+    }
+
+    function solvePower() {
+      const n = parseInt(document.getElementById('pn').value);
+      const k = parseFloat(document.getElementById('pk').value);
+
+      const out = document.getElementById('power-output');
+      out.classList.remove('hidden');
+
+      if (isNaN(n) || isNaN(k) || n < 1) {
+        out.innerHTML = step('Fyll inn gyldige tall. Eksponenten må være et positivt heltall.', 'error');
+        return;
+      }
+
+      let html = `<h3 class="font-bold text-indigo-700 text-lg mb-3">Løsning steg for steg</h3>`;
+
+      // Show the equation
+      html += step(`<strong>Likningen:</strong> x${toSuperscript(n)} = ${k}`);
+
+      const isEven = n % 2 === 0;
+
+      if (isEven && k < 0) {
+        // No real solution
+        html += step(`<strong>Steg 1:</strong> Eksponenten ${n} er partall, og høyresiden k = ${k} < 0.`);
+        html += step(`Et partallspotens av et reelt tall er alltid ≥ 0.<br>
+          Derfor har likningen <strong>ingen reell løsning</strong>.`, 'error');
+        out.innerHTML = html;
+        return;
+      }
+
+      if (k === 0) {
+        html += step(`<strong>Steg 1:</strong> k = 0, så x${toSuperscript(n)} = 0<br>⟹ x = 0`);
+        html += step(`<strong>Svar:</strong> x = 0`, 'result');
+        html += `<div class="mt-4"><h4 class="font-semibold text-green-700 mb-1">Prøve:</h4>`;
+        html += step(`Venstre side: 0${toSuperscript(n)} = 0 = høyre side. ✔`, 'check');
+        html += '</div>';
+        out.innerHTML = html;
+        return;
+      }
+
+      // General case
+      html += step(`<strong>Steg 1 – Ta ${n}. roten av begge sider:</strong><br>
+        x${toSuperscript(n)} = ${k}<br>
+        ⟹ x = ${k < 0 ? '' : ''}${isEven ? '±' : ''}${n === 2 ? '√' : `${n}√`}(${k})`);
+
+      if (isEven) {
+        html += step(`Siden eksponenten er partall (${n}), gir vi <strong>to løsninger</strong>: én positiv og én negativ.`);
+      } else {
+        html += step(`Siden eksponenten er oddetall (${n}), er det <strong>én løsning</strong> (kan være negativ).`);
+      }
+
+      const root = Math.pow(Math.abs(k), 1 / n);
+      const rootSigned = k < 0 ? -root : root; // for odd n, negative k gives negative root
+
+      // Try to detect nice integer/fraction roots
+      function niceRoot(val, k, n) {
+        // Check integers up to 1000
+        for (let i = 0; i <= 1000; i++) {
+          if (Math.abs(Math.pow(i, n) - Math.abs(k)) < 1e-9) return i;
+        }
+        return null;
+      }
+
+      const niceVal = niceRoot(root, k, n);
+
+      if (isEven) {
+        // Two solutions: ±root
+        if (niceVal !== null) {
+          html += step(`<strong>Steg 2 – Nøyaktig verdi:</strong><br>
+            x₁ = +${niceVal}&nbsp;&nbsp;&nbsp;x₂ = −${niceVal}`, 'result');
+          // Check
+          html += `<div class="mt-4"><h4 class="font-semibold text-green-700 mb-1">Prøve:</h4>`;
+          html += step(`x₁ = ${niceVal}: (${niceVal})${toSuperscript(n)} = ${Math.pow(niceVal, n)} = ${k} ✔<br>
+            x₂ = −${niceVal}: (−${niceVal})${toSuperscript(n)} = ${Math.pow(-niceVal, n)} = ${k} ✔`, 'check');
+          html += '</div>';
+        } else {
+          const approx = root.toFixed(6);
+          html += step(`<strong>Steg 2 – Tilnærmet verdi (ingen eksakt heltallsrot):</strong><br>
+            x₁ = +${n === 2 ? '√' : `${n}√`}(${k}) ≈ +${approx}<br>
+            x₂ = −${n === 2 ? '√' : `${n}√`}(${k}) ≈ −${approx}`, 'result');
+          // Check
+          html += `<div class="mt-4"><h4 class="font-semibold text-green-700 mb-1">Prøve:</h4>`;
+          const check1 = Math.pow(root, n);
+          const check2 = Math.pow(-root, n);
+          html += step(`x₁ ≈ ${approx}: (${approx})${toSuperscript(n)} ≈ ${check1.toFixed(6)} ≈ ${k} ✔<br>
+            x₂ ≈ −${approx}: (−${approx})${toSuperscript(n)} ≈ ${check2.toFixed(6)} ≈ ${k} ✔`, 'check');
+          html += '</div>';
+        }
+      } else {
+        // Odd n – one solution
+        const actualRoot = k < 0 ? -Math.pow(-k, 1 / n) : Math.pow(k, 1 / n);
+        if (niceVal !== null) {
+          const signedNice = k < 0 ? -niceVal : niceVal;
+          html += step(`<strong>Steg 2 – Nøyaktig verdi:</strong><br>
+            x = ${signedNice}`, 'result');
+          html += `<div class="mt-4"><h4 class="font-semibold text-green-700 mb-1">Prøve:</h4>`;
+          const check = Math.pow(signedNice, n);
+          html += step(`(${signedNice})${toSuperscript(n)} = ${check} = ${k} ✔`, 'check');
+          html += '</div>';
+        } else {
+          const approx = actualRoot.toFixed(6);
+          html += step(`<strong>Steg 2 – Tilnærmet verdi:</strong><br>
+            x = ${n}√(${k}) ≈ ${approx}`, 'result');
+          html += `<div class="mt-4"><h4 class="font-semibold text-green-700 mb-1">Prøve:</h4>`;
+          const check = Math.pow(parseFloat(approx), n);
+          html += step(`(${approx})${toSuperscript(n)} ≈ ${check.toFixed(6)} ≈ ${k} ✔`, 'check');
+          html += '</div>';
+        }
+      }
+
+      out.innerHTML = html;
+    }
+
+    // ─── Init ─────────────────────────────────────────────────────────────────
+    document.getElementById('la').addEventListener('keydown', function(e){ if(e.key==='Enter') solveLinear(); });
+    document.getElementById('lb').addEventListener('keydown', function(e){ if(e.key==='Enter') solveLinear(); });
+    document.getElementById('lc').addEventListener('keydown', function(e){ if(e.key==='Enter') solveLinear(); });
+    document.getElementById('ld').addEventListener('keydown', function(e){ if(e.key==='Enter') solveLinear(); });
+    document.getElementById('pn').addEventListener('keydown', function(e){ if(e.key==='Enter') solvePower(); });
+    document.getElementById('pk').addEventListener('keydown', function(e){ if(e.key==='Enter') solvePower(); });
+  </script>
+</body>
+</html>

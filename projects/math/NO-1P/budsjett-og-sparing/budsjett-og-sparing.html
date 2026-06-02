@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<!--
+  Budsjett og sparing — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 1P (LK20): sett opp et budsjett, og regn
+  ut sparing med renters rente over tid.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Budsjett og sparing – Matematikk 1P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .tab-active { border-bottom: 3px solid #2563eb; color: #2563eb; font-weight: 600; }
+    .tab-inactive { border-bottom: 3px solid transparent; color: #6b7280; }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
+    .row-enter { animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+    .bar-label { font-size: 10px; }
+    .chart-tooltip { pointer-events: none; }
+    svg text { font-family: inherit; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xl font-bold select-none">1P</div>
+      <div>
+        <h1 class="text-xl font-bold text-gray-900 leading-tight">Budsjett og sparing</h1>
+        <p class="text-xs text-gray-500">Matematikk 1P · LK20 · Kap. 5.4–5.5</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="bg-white border-b border-gray-200">
+    <div class="max-w-4xl mx-auto px-4 flex gap-0">
+      <button id="tab-budsjett" onclick="switchTab('budsjett')"
+        class="px-6 py-3 text-sm transition-colors tab-active" aria-selected="true" role="tab">
+        📋 Budsjett
+      </button>
+      <button id="tab-sparing" onclick="switchTab('sparing')"
+        class="px-6 py-3 text-sm transition-colors tab-inactive" aria-selected="false" role="tab">
+        💰 Sparing med renters rente
+      </button>
+    </div>
+  </div>
+
+  <main class="max-w-4xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- ======================== BUDSJETT TAB ======================== -->
+    <section id="panel-budsjett" role="tabpanel">
+
+      <div class="grid md:grid-cols-2 gap-6">
+
+        <!-- Inntekter -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="bg-green-50 border-b border-green-100 px-5 py-3 flex items-center justify-between">
+            <h2 class="font-semibold text-green-800">Inntekter</h2>
+            <button onclick="addRow('inntekter')"
+              class="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-full transition-colors">
+              + Legg til
+            </button>
+          </div>
+          <div class="p-4 space-y-2" id="inntekter-list"></div>
+          <div class="border-t border-green-100 px-5 py-3 flex justify-between items-center bg-green-50">
+            <span class="text-sm font-medium text-green-800">Sum inntekter</span>
+            <span class="font-bold text-green-700 text-base" id="sum-inntekter">0 kr</span>
+          </div>
+        </div>
+
+        <!-- Utgifter -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div class="bg-red-50 border-b border-red-100 px-5 py-3 flex items-center justify-between">
+            <h2 class="font-semibold text-red-800">Utgifter</h2>
+            <button onclick="addRow('utgifter')"
+              class="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-full transition-colors">
+              + Legg til
+            </button>
+          </div>
+          <div class="p-4 space-y-2" id="utgifter-list"></div>
+          <div class="border-t border-red-100 px-5 py-3 flex justify-between items-center bg-red-50">
+            <span class="text-sm font-medium text-red-800">Sum utgifter</span>
+            <span class="font-bold text-red-600 text-base" id="sum-utgifter">0 kr</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resultat -->
+      <div id="resultat-box"
+        class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <p class="text-sm text-gray-500 mb-1">Resultat (inntekter − utgifter)</p>
+          <p id="resultat-label" class="text-2xl font-bold text-gray-800">0 kr</p>
+          <p id="resultat-status" class="text-sm mt-1 text-gray-500">Fyll inn inntekter og utgifter</p>
+        </div>
+        <div class="w-full sm:w-auto">
+          <svg id="budsjett-chart" width="260" height="110" viewBox="0 0 260 110" class="block mx-auto"></svg>
+        </div>
+      </div>
+
+      <!-- Forklaringsboks -->
+      <div class="bg-blue-50 border border-blue-100 rounded-xl px-5 py-4 text-sm text-blue-900 space-y-1">
+        <p class="font-semibold">Hva er et budsjett?</p>
+        <p>Et budsjett er en plan over forventede <span class="font-medium">inntekter</span> (penger inn) og <span class="font-medium">utgifter</span> (penger ut) i en periode.</p>
+        <p class="mt-1">
+          <span class="font-mono bg-blue-100 px-1 rounded">Resultat = Sum inntekter − Sum utgifter</span>
+        </p>
+        <p class="mt-1">Et positivt resultat kalles <strong>overskudd</strong>; et negativt resultat kalles <strong>underskudd</strong>.</p>
+      </div>
+    </section>
+
+    <!-- ======================== SPARING TAB ======================== -->
+    <section id="panel-sparing" role="tabpanel" class="hidden space-y-6">
+
+      <!-- Formel-info -->
+      <div class="bg-blue-50 border border-blue-100 rounded-xl px-5 py-4 text-sm text-blue-900 space-y-2">
+        <p class="font-semibold">Renters rente – formel</p>
+        <p>
+          Startbeløp <em>K₀</em>, fast innskudd <em>d</em> per periode, rente <em>r</em> per periode:
+        </p>
+        <p class="font-mono bg-blue-100 px-2 py-1 rounded text-xs">
+          Kₙ = K₀ · (1 + r)ⁿ + d · [(1 + r)ⁿ − 1] / r
+        </p>
+        <p class="text-xs text-blue-700">
+          Rente tilskrives én gang per år. Det månedlige innskuddet akkumuleres og tilskrives rente ved årets slutt
+          (annuitetsbetraktning forenklet til årsmodell; se kap. 5.5).
+        </p>
+      </div>
+
+      <!-- Input-panel -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h2 class="font-semibold text-gray-800 mb-4">Spareparametere</h2>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="s-start">Startbeløp (kr)</label>
+            <input id="s-start" type="number" min="0" step="100" value="5000"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              oninput="computeSparing()" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="s-deposit">
+              Fast innskudd per
+              <select id="s-period" onchange="computeSparing()"
+                class="border border-gray-300 rounded px-1 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 ml-1">
+                <option value="month">måned</option>
+                <option value="year">år</option>
+              </select>
+              (kr)
+            </label>
+            <input id="s-deposit" type="number" min="0" step="100" value="500"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              oninput="computeSparing()" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="s-rate">Nominell rente (% per år)</label>
+            <input id="s-rate" type="number" min="0.1" max="30" step="0.1" value="4.0"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              oninput="computeSparing()" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="s-years">Antall år</label>
+            <input id="s-years" type="number" min="1" max="50" step="1" value="10"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              oninput="computeSparing()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Resultat-kort -->
+      <div class="grid sm:grid-cols-3 gap-4">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+          <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Sluttbeløp</p>
+          <p id="s-slutt" class="text-2xl font-bold text-blue-700">–</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+          <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Totalt innskutt</p>
+          <p id="s-innsk" class="text-2xl font-bold text-gray-700">–</p>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+          <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Herav renter</p>
+          <p id="s-renter" class="text-2xl font-bold text-green-600">–</p>
+        </div>
+      </div>
+
+      <!-- Vekst-diagram -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <h3 class="font-semibold text-gray-700 mb-3 text-sm">Saldoutvikling over tid</h3>
+        <div class="overflow-x-auto">
+          <svg id="sparing-chart" width="100%" height="280" viewBox="0 0 700 280" preserveAspectRatio="xMidYMid meet" class="block"></svg>
+        </div>
+        <div class="flex gap-6 mt-3 text-xs text-gray-500 justify-center">
+          <span class="flex items-center gap-1"><span class="inline-block w-4 h-3 rounded" style="background:#2563eb"></span>Totalt (med renter)</span>
+          <span class="flex items-center gap-1"><span class="inline-block w-4 h-3 rounded" style="background:#d1fae5;border:1px solid #34d399"></span>Totalt innskutt</span>
+        </div>
+      </div>
+
+      <!-- Tabell -->
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="border-b border-gray-100 px-5 py-3">
+          <h3 class="font-semibold text-gray-700 text-sm">År-for-år tabell</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+              <tr>
+                <th class="px-4 py-2 text-left">År</th>
+                <th class="px-4 py-2 text-right">Innskutt dette år</th>
+                <th class="px-4 py-2 text-right">Renter dette år</th>
+                <th class="px-4 py-2 text-right">Saldo</th>
+              </tr>
+            </thead>
+            <tbody id="sparing-table" class="divide-y divide-gray-50"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="max-w-4xl mx-auto px-4 py-6 text-center text-xs text-gray-400">
+    Matematikk 1P · LK20 · Sinus 1P kap. 5.4–5.5 ·
+    <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-gray-600" target="_blank" rel="noopener">Halison App Studio</a>
+  </footer>
+
+<script>
+/* ─── TAB SWITCHING ─────────────────────────────────────────── */
+function switchTab(tab) {
+  ['budsjett', 'sparing'].forEach(t => {
+    document.getElementById('panel-' + t).classList.toggle('hidden', t !== tab);
+    const btn = document.getElementById('tab-' + t);
+    btn.classList.toggle('tab-active', t === tab);
+    btn.classList.toggle('tab-inactive', t !== tab);
+    btn.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+  });
+}
+
+/* ─── FORMATERING ───────────────────────────────────────────── */
+function fmtKr(n) {
+  return new Intl.NumberFormat('nb-NO', { maximumFractionDigits: 0 }).format(Math.round(n)) + ' kr';
+}
+
+/* ─── BUDSJETT ──────────────────────────────────────────────── */
+const DEFAULT_DATA = {
+  inntekter: [
+    { label: 'Lønn (deltidsjobb)', amount: 4800 },
+    { label: 'Lommepenger fra foreldre', amount: 1000 },
+    { label: 'Barnebidrag / støtte', amount: 500 }
+  ],
+  utgifter: [
+    { label: 'Mat og dagligvarer', amount: 1800 },
+    { label: 'Kollektivtransport', amount: 600 },
+    { label: 'Mobil og abonnementer', amount: 399 },
+    { label: 'Klær og fritid', amount: 800 },
+    { label: 'Sparing (overføring)', amount: 700 }
+  ]
+};
+
+function loadBudsjettData() {
+  try {
+    const raw = localStorage.getItem('budsjett_1p');
+    if (raw) return JSON.parse(raw);
+  } catch (_) {}
+  return JSON.parse(JSON.stringify(DEFAULT_DATA));
+}
+
+function saveBudsjettData() {
+  try { localStorage.setItem('budsjett_1p', JSON.stringify(budsjettData)); } catch (_) {}
+}
+
+let budsjettData = loadBudsjettData();
+
+function renderBudsjett() {
+  ['inntekter', 'utgifter'].forEach(type => {
+    const list = document.getElementById(type + '-list');
+    list.innerHTML = '';
+    budsjettData[type].forEach((row, idx) => {
+      const isInntekt = type === 'inntekter';
+      const div = document.createElement('div');
+      div.className = 'flex items-center gap-2 row-enter';
+      div.innerHTML = `
+        <input type="text" value="${escHtml(row.label)}"
+          class="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-${isInntekt ? 'green' : 'red'}-300"
+          oninput="updateLabel('${type}', ${idx}, this.value)" placeholder="Beskrivelse" />
+        <input type="number" value="${row.amount}" min="0" step="50"
+          class="w-28 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-${isInntekt ? 'green' : 'red'}-300"
+          oninput="updateAmount('${type}', ${idx}, this.value)" />
+        <span class="text-xs text-gray-400 w-4">kr</span>
+        <button onclick="removeRow('${type}', ${idx})"
+          class="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none" title="Slett rad">×</button>
+      `;
+      list.appendChild(div);
+    });
+  });
+  updateBudsjettTotals();
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function addRow(type) {
+  budsjettData[type].push({ label: '', amount: 0 });
+  saveBudsjettData();
+  renderBudsjett();
+  // Focus the new label input
+  const list = document.getElementById(type + '-list');
+  const inputs = list.querySelectorAll('input[type="text"]');
+  if (inputs.length) inputs[inputs.length - 1].focus();
+}
+
+function removeRow(type, idx) {
+  budsjettData[type].splice(idx, 1);
+  saveBudsjettData();
+  renderBudsjett();
+}
+
+function updateLabel(type, idx, val) {
+  budsjettData[type][idx].label = val;
+  saveBudsjettData();
+  updateBudsjettTotals();
+}
+
+function updateAmount(type, idx, val) {
+  budsjettData[type][idx].amount = parseFloat(val) || 0;
+  saveBudsjettData();
+  updateBudsjettTotals();
+}
+
+function updateBudsjettTotals() {
+  const sumI = budsjettData.inntekter.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+  const sumU = budsjettData.utgifter.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+  const res = sumI - sumU;
+
+  document.getElementById('sum-inntekter').textContent = fmtKr(sumI);
+  document.getElementById('sum-utgifter').textContent = fmtKr(sumU);
+  document.getElementById('resultat-label').textContent = fmtKr(res);
+
+  const box = document.getElementById('resultat-box');
+  const lbl = document.getElementById('resultat-label');
+  const status = document.getElementById('resultat-status');
+
+  if (res > 0) {
+    lbl.className = 'text-2xl font-bold text-green-700';
+    status.textContent = '✔ Overskudd – du har penger til overs!';
+    status.className = 'text-sm mt-1 text-green-600';
+  } else if (res < 0) {
+    lbl.className = 'text-2xl font-bold text-red-600';
+    status.textContent = '⚠ Underskudd – utgiftene er større enn inntektene.';
+    status.className = 'text-sm mt-1 text-red-500';
+  } else {
+    lbl.className = 'text-2xl font-bold text-gray-700';
+    status.textContent = 'Balanse – inntekter og utgifter er like store.';
+    status.className = 'text-sm mt-1 text-gray-500';
+  }
+
+  drawBudsjettChart(sumI, sumU);
+}
+
+function drawBudsjettChart(sumI, sumU) {
+  const svg = document.getElementById('budsjett-chart');
+  const W = 260, H = 110, PAD = 30, BAR_W = 60, GAP = 30;
+  const maxVal = Math.max(sumI, sumU, 1);
+  const avail = H - PAD - 10;
+
+  const hI = Math.round((sumI / maxVal) * avail);
+  const hU = Math.round((sumU / maxVal) * avail);
+
+  const xI = (W / 2) - BAR_W - GAP / 2;
+  const xU = (W / 2) + GAP / 2;
+  const base = H - PAD;
+
+  svg.innerHTML = `
+    <rect x="${xI}" y="${base - hI}" width="${BAR_W}" height="${hI}" rx="4" fill="#4ade80"/>
+    <rect x="${xU}" y="${base - hU}" width="${BAR_W}" height="${hU}" rx="4" fill="${sumU > sumI ? '#f87171' : '#fca5a5'}"/>
+    <line x1="${PAD - 10}" y1="${base}" x2="${W - PAD + 10}" y2="${base}" stroke="#e5e7eb" stroke-width="1"/>
+    <text x="${xI + BAR_W / 2}" y="${H}" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">Inntekter</text>
+    <text x="${xU + BAR_W / 2}" y="${H}" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">Utgifter</text>
+    <text x="${xI + BAR_W / 2}" y="${base - hI - 4}" text-anchor="middle" fill="#166534" font-size="9">${sumI > 0 ? fmtKr(sumI) : ''}</text>
+    <text x="${xU + BAR_W / 2}" y="${base - hU - 4}" text-anchor="middle" fill="#991b1b" font-size="9">${sumU > 0 ? fmtKr(sumU) : ''}</text>
+  `;
+}
+
+/* ─── SPARING ───────────────────────────────────────────────── */
+function computeSparing() {
+  const K0 = parseFloat(document.getElementById('s-start').value) || 0;
+  const depositRaw = parseFloat(document.getElementById('s-deposit').value) || 0;
+  const period = document.getElementById('s-period').value;
+  const rPct = parseFloat(document.getElementById('s-rate').value) || 0;
+  const N = Math.min(Math.max(Math.round(parseFloat(document.getElementById('s-years').value) || 1), 1), 50);
+  const r = rPct / 100;
+
+  // Annual deposit: if monthly, sum 12 months → d_year = deposit * 12
+  const dYear = period === 'month' ? depositRaw * 12 : depositRaw;
+
+  // Build year-by-year arrays
+  // Model: at end of year n, deposit dYear is added, then interest applied.
+  // Kn = K(n-1) * (1+r) + dYear * (1+r)
+  // (deposits made at start of year, earn full year of interest)
+  // This matches: Kn = K0*(1+r)^n + dYear * (1+r) * [(1+r)^n - 1] / r  when r>0
+  // For r=0: Kn = K0 + dYear*n  (handled separately)
+
+  const years = [];
+  const balances = [];
+  const deposited = [];
+  let bal = K0;
+  let totalDeposited = K0;
+
+  for (let n = 1; n <= N; n++) {
+    const interestThisYear = (bal + dYear) * r;
+    bal = bal * (1 + r) + dYear * (1 + r); // deposit at start of year
+    totalDeposited += dYear;
+    years.push(n);
+    balances.push(bal);
+    deposited.push(totalDeposited);
+  }
+
+  const sluttbeløp = N > 0 ? balances[N - 1] : K0;
+  const totInnsk = totalDeposited;
+  const totRenter = sluttbeløp - totInnsk;
+
+  document.getElementById('s-slutt').textContent = fmtKr(sluttbeløp);
+  document.getElementById('s-innsk').textContent = fmtKr(totInnsk);
+  document.getElementById('s-renter').textContent = fmtKr(Math.max(0, totRenter));
+
+  drawSparingChart(years, balances, deposited, K0);
+  fillSparingTable(years, balances, deposited, dYear, r, K0);
+
+  // Persist inputs
+  try {
+    localStorage.setItem('sparing_1p', JSON.stringify({ K0, depositRaw, period, rPct, N }));
+  } catch (_) {}
+}
+
+function drawSparingChart(years, balances, deposited, K0) {
+  const svg = document.getElementById('sparing-chart');
+  const W = 700, H = 280;
+  const PAD = { top: 20, right: 20, bottom: 40, left: 80 };
+  const chartW = W - PAD.left - PAD.right;
+  const chartH = H - PAD.top - PAD.bottom;
+
+  const maxBal = Math.max(...balances, 1);
+  const n = years.length;
+
+  function xOf(i) { return PAD.left + (i / n) * chartW; }
+  function yOf(v) { return PAD.top + chartH - (v / maxBal) * chartH; }
+
+  // Grid lines
+  let grid = '';
+  const ticks = 5;
+  for (let i = 0; i <= ticks; i++) {
+    const v = (maxBal / ticks) * i;
+    const y = yOf(v);
+    grid += `<line x1="${PAD.left}" y1="${y}" x2="${W - PAD.right}" y2="${y}" stroke="#f3f4f6" stroke-width="1"/>`;
+    grid += `<text x="${PAD.left - 8}" y="${y + 4}" text-anchor="end" fill="#9ca3af" font-size="11">${fmtKrShort(v)}</text>`;
+  }
+
+  // X-axis labels (max 10 labels)
+  let xlabels = '';
+  const step = Math.max(1, Math.ceil(n / 10));
+  for (let i = 0; i < n; i += step) {
+    const x = xOf(i + 1);
+    xlabels += `<text x="${x}" y="${H - PAD.bottom + 18}" text-anchor="middle" fill="#9ca3af" font-size="11">År ${years[i]}</text>`;
+  }
+  // Always show last
+  {
+    const x = xOf(n);
+    xlabels += `<text x="${x}" y="${H - PAD.bottom + 18}" text-anchor="middle" fill="#6b7280" font-size="11" font-weight="600">År ${years[n-1]}</text>`;
+  }
+
+  // Area for deposited (stacked)
+  let areaDeposited = `M ${xOf(0)} ${yOf(0)}`;
+  // start at 0 x, y=K0 actually; first point is after year 0
+  // point before year 1 is K0
+  areaDeposited = `M ${xOf(0)} ${yOf(K0)}`;
+  for (let i = 0; i < n; i++) {
+    areaDeposited += ` L ${xOf(i + 1)} ${yOf(deposited[i])}`;
+  }
+  areaDeposited += ` L ${xOf(n)} ${yOf(0)} L ${xOf(0)} ${yOf(0)} Z`;
+
+  // Area for total balance
+  let areaBalance = `M ${xOf(0)} ${yOf(K0)}`;
+  for (let i = 0; i < n; i++) {
+    areaBalance += ` L ${xOf(i + 1)} ${yOf(balances[i])}`;
+  }
+  areaBalance += ` L ${xOf(n)} ${yOf(0)} L ${xOf(0)} ${yOf(0)} Z`;
+
+  // Line for balance
+  let lineBal = `M ${xOf(0)} ${yOf(K0)}`;
+  for (let i = 0; i < n; i++) {
+    lineBal += ` L ${xOf(i + 1)} ${yOf(balances[i])}`;
+  }
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="gradBal" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#2563eb" stop-opacity="0.25"/>
+        <stop offset="100%" stop-color="#2563eb" stop-opacity="0.05"/>
+      </linearGradient>
+    </defs>
+    ${grid}
+    <line x1="${PAD.left}" y1="${PAD.top}" x2="${PAD.left}" y2="${H - PAD.bottom}" stroke="#e5e7eb" stroke-width="1"/>
+    <line x1="${PAD.left}" y1="${H - PAD.bottom}" x2="${W - PAD.right}" y2="${H - PAD.bottom}" stroke="#e5e7eb" stroke-width="1"/>
+    <path d="${areaBalance}" fill="url(#gradBal)"/>
+    <path d="${areaDeposited}" fill="#d1fae5" opacity="0.8"/>
+    <path d="${lineBal}" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${xlabels}
+  `;
+}
+
+function fmtKrShort(v) {
+  if (v >= 1000000) return (v / 1000000).toFixed(1).replace('.', ',') + ' M';
+  if (v >= 1000) return Math.round(v / 1000) + ' k';
+  return Math.round(v) + '';
+}
+
+function fillSparingTable(years, balances, deposited, dYear, r, K0) {
+  const tbody = document.getElementById('sparing-table');
+  tbody.innerHTML = '';
+  let prevBal = K0;
+  years.forEach((yr, i) => {
+    const bal = balances[i];
+    const dep = deposited[i];
+    const interestYear = bal - prevBal - dYear;
+    prevBal = bal;
+    const tr = document.createElement('tr');
+    tr.className = i % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+    tr.innerHTML = `
+      <td class="px-4 py-2 text-gray-700 font-medium">${yr}</td>
+      <td class="px-4 py-2 text-right text-gray-600">${fmtKr(dYear)}</td>
+      <td class="px-4 py-2 text-right text-green-600 font-medium">${fmtKr(Math.max(0, interestYear))}</td>
+      <td class="px-4 py-2 text-right font-bold text-blue-700">${fmtKr(bal)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function loadSparingDefaults() {
+  try {
+    const raw = localStorage.getItem('sparing_1p');
+    if (raw) {
+      const d = JSON.parse(raw);
+      if (d.K0 !== undefined) document.getElementById('s-start').value = d.K0;
+      if (d.depositRaw !== undefined) document.getElementById('s-deposit').value = d.depositRaw;
+      if (d.period) document.getElementById('s-period').value = d.period;
+      if (d.rPct !== undefined) document.getElementById('s-rate').value = d.rPct;
+      if (d.N !== undefined) document.getElementById('s-years').value = d.N;
+    }
+  } catch (_) {}
+}
+
+/* ─── INIT ──────────────────────────────────────────────────── */
+loadSparingDefaults();
+renderBudsjett();
+computeSparing();
+</script>
+</body>
+</html>

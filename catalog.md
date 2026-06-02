@@ -77,7 +77,10 @@ Interactive maths learning tools in Norwegian, organized by level. See
 | | | |
 |---|---|---|
 | [![forhold](projects/math/NO-1P/forhold-og-proporsjonalitet/screenshot.png)](projects/math/NO-1P/forhold-og-proporsjonalitet/) **Forhold og proporsjonalitet** | [![enheter](projects/math/NO-1P/enheter-og-maaling/screenshot.png)](projects/math/NO-1P/enheter-og-maaling/) **Enheter og måling** | [![lønn](projects/math/NO-1P/lonn-og-skatt/screenshot.png)](projects/math/NO-1P/lonn-og-skatt/) **Lønn og skatt** |
-| [![sannsynlighet](projects/math/NO-1P/sannsynlighet/screenshot.png)](projects/math/NO-1P/sannsynlighet/) **Sannsynlighet** | [![geometri1p](projects/math/NO-1P/geometri/screenshot.png)](projects/math/NO-1P/geometri/) **Geometri (1P)** | |
+| [![sannsynlighet](projects/math/NO-1P/sannsynlighet/screenshot.png)](projects/math/NO-1P/sannsynlighet/) **Sannsynlighet** | [![geometri1p](projects/math/NO-1P/geometri/screenshot.png)](projects/math/NO-1P/geometri/) **Geometri (1P)** | [![tallregning](projects/math/NO-1P/tallregning/screenshot.png)](projects/math/NO-1P/tallregning/) **Tallregning** |
+| [![brok](projects/math/NO-1P/brokregning/screenshot.png)](projects/math/NO-1P/brokregning/) **Brøkregning** | [![likninger](projects/math/NO-1P/likninger/screenshot.png)](projects/math/NO-1P/likninger/) **Likninger** | [![prosent1p](projects/math/NO-1P/prosentregning/screenshot.png)](projects/math/NO-1P/prosentregning/) **Prosentregning** |
+| [![formler](projects/math/NO-1P/formler/screenshot.png)](projects/math/NO-1P/formler/) **Formler** | [![budsjett](projects/math/NO-1P/budsjett-og-sparing/screenshot.png)](projects/math/NO-1P/budsjett-og-sparing/) **Budsjett og sparing** | [![laan](projects/math/NO-1P/laan/screenshot.png)](projects/math/NO-1P/laan/) **Serielån og annuitetslån** |
+| [![indeks](projects/math/NO-1P/indeksregning/screenshot.png)](projects/math/NO-1P/indeksregning/) **Indeksregning** | [![sammensatte](projects/math/NO-1P/sammensatte-hendelser/screenshot.png)](projects/math/NO-1P/sammensatte-hendelser/) **Sammensatte hendelser** | |
 
 ### Geometri (fokuserte verktøy, 1P/2P)
 
