@@ -58,6 +58,25 @@ and anyone who wants to make a quick prototype of an app idea.
 | [rubric-grader](projects/educational/rubric-grader/) | Educational | HTML | EN | — |
 | [link-in-bio](projects/creative/link-in-bio/) | Creative | HTML | EN | — |
 
+## Math (Norwegian curriculum · LK20)
+
+Interactive maths learning tools in Norwegian, organized by level. See
+[`projects/math/`](projects/math/).
+
+### Matematikk 2P
+
+| | | |
+|---|---|---|
+| [![prosent](projects/math/NO-2P/prosent-og-prosentpoeng/screenshot.png)](projects/math/NO-2P/prosent-og-prosentpoeng/) **Prosent og prosentpoeng** | [![vekstfaktor](projects/math/NO-2P/vekstfaktor/screenshot.png)](projects/math/NO-2P/vekstfaktor/) **Vekstfaktor** | [![lineære](projects/math/NO-2P/lineaere-funksjoner/screenshot.png)](projects/math/NO-2P/lineaere-funksjoner/) **Lineære funksjoner** |
+| [![statistikk](projects/math/NO-2P/statistikk/screenshot.png)](projects/math/NO-2P/statistikk/) **Statistikk** | [![geometri2p](projects/math/NO-2P/geometri/screenshot.png)](projects/math/NO-2P/geometri/) **Geometri (2P)** | |
+
+### Matematikk 1P
+
+| | | |
+|---|---|---|
+| [![forhold](projects/math/NO-1P/forhold-og-proporsjonalitet/screenshot.png)](projects/math/NO-1P/forhold-og-proporsjonalitet/) **Forhold og proporsjonalitet** | [![enheter](projects/math/NO-1P/enheter-og-maaling/screenshot.png)](projects/math/NO-1P/enheter-og-maaling/) **Enheter og måling** | [![lønn](projects/math/NO-1P/lonn-og-skatt/screenshot.png)](projects/math/NO-1P/lonn-og-skatt/) **Lønn og skatt** |
+| [![sannsynlighet](projects/math/NO-1P/sannsynlighet/screenshot.png)](projects/math/NO-1P/sannsynlighet/) **Sannsynlighet** | [![geometri1p](projects/math/NO-1P/geometri/screenshot.png)](projects/math/NO-1P/geometri/) **Geometri (1P)** | |
+
 ## Categories (prompt add-ons)
 
 Upload one of these to your AI alongside [`prompts/authoring-guide.md`](prompts/authoring-guide.md),
@@ -72,6 +91,7 @@ then write a short prompt. See [`prompts/context/`](prompts/context/).
 | `creative` | marketers, designers, influencers, infographic makers |
 | `game-quiz` | teachers, marketers, presenters |
 | `prototype` | founders, PMs, designers prototyping app ideas |
+| `math` | interactive maths learning tools (Norwegian 1P / 2P) |
 
 ## Validating
 

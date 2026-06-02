@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<!--
+  Geometri (1P) — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 1P (LK20): areal og omkrets, Pytagoras,
+  og volum og overflate — med figurer, formler og kalkulatorer.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geometri — Matematikk 1P</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; }
+  .tab-btn { transition: all 0.2s; }
+  .tab-btn.active { background-color: #2563eb; color: white; }
+  .tab-btn:not(.active):hover { background-color: #dbeafe; color: #1d4ed8; }
+  .shape-btn { transition: all 0.2s; border: 2px solid #e5e7eb; }
+  .shape-btn.active { border-color: #2563eb; background-color: #eff6ff; }
+  .shape-btn:not(.active):hover { border-color: #93c5fd; background-color: #f8fafc; }
+  .formula-box { background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%); border-left: 4px solid #2563eb; }
+  .result-box { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-left: 4px solid #16a34a; }
+  .input-group label { font-weight: 600; color: #374151; font-size: 0.85rem; }
+  input[type=range] { accent-color: #2563eb; }
+  input[type=number] { border: 1.5px solid #d1d5db; border-radius: 6px; padding: 4px 8px; width: 80px; font-size: 0.9rem; }
+  input[type=number]:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px #bfdbfe; }
+  .section-card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  svg text { font-family: 'Segoe UI', system-ui, sans-serif; }
+  .worked { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 16px; font-size: 0.92rem; }
+  .worked span.val { color: #2563eb; font-weight: 700; }
+  .worked span.op { color: #6b7280; }
+  .dim-label { font-size: 11px; fill: #6b7280; }
+  .angle-mark { fill: none; stroke: #ef4444; stroke-width: 1.5; }
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- Header -->
+<header class="bg-gradient-to-r from-blue-700 to-blue-500 text-white shadow-lg">
+  <div class="max-w-5xl mx-auto px-4 py-5">
+    <div class="flex items-center gap-3">
+      <div class="bg-white/20 rounded-xl p-2">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect x="2" y="2" width="12" height="12" rx="2" fill="white" opacity="0.9"/>
+          <circle cx="24" cy="8" r="6" fill="white" opacity="0.7"/>
+          <polygon points="2,30 14,18 26,30" fill="white" opacity="0.8"/>
+          <rect x="18" y="18" width="12" height="12" rx="2" fill="white" opacity="0.6"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight">Geometri — Matematikk 1P</h1>
+        <p class="text-blue-100 text-sm mt-0.5">Interaktivt læremiddel · LK20 · Bokmål</p>
+      </div>
+    </div>
+    <!-- Main tabs -->
+    <div class="flex gap-2 mt-5 flex-wrap">
+      <button class="tab-btn active px-4 py-2 rounded-lg font-semibold text-sm" onclick="showMainTab('tab2d')">📐 Areal og omkrets (2D)</button>
+      <button class="tab-btn px-4 py-2 rounded-lg font-semibold text-sm bg-white/10 text-white" onclick="showMainTab('tabpyth')">📏 Pytagoras</button>
+      <button class="tab-btn px-4 py-2 rounded-lg font-semibold text-sm bg-white/10 text-white" onclick="showMainTab('tab3d')">🧊 Volum og overflate (3D)</button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 py-8">
+
+<!-- ===================== TAB: 2D ===================== -->
+<div id="tab2d" class="main-tab">
+  <div class="mb-6">
+    <h2 class="text-xl font-bold text-gray-800">Areal og omkrets — 2D-figurer</h2>
+    <p class="text-gray-500 text-sm mt-1">Velg en figur, endre målene og se arealet og omkretsen beregnet live.</p>
+  </div>
+
+  <!-- Shape selector -->
+  <div class="flex flex-wrap gap-3 mb-6">
+    <button class="shape-btn active rounded-xl px-4 py-2 text-sm font-semibold" onclick="select2D('kvadrat')">Kvadrat</button>
+    <button class="shape-btn rounded-xl px-4 py-2 text-sm font-semibold" onclick="select2D('rektangel')">Rektangel</button>
+    <button class="shape-btn rounded-xl px-4 py-2 text-sm font-semibold" onclick="select2D('parallellogram')">Parallellogram</button>
+    <button class="shape-btn rounded-xl px-4 py-2 text-sm font-semibold" onclick="select2D('trekant')">Trekant</button>
+    <button class="shape-btn rounded-xl px-4 py-2 text-sm font-semibold" onclick="select2D('trapes')">Trapes</button>
+    <button class="shape-btn rounded-xl px-4 py-2 text-sm font-semibold" onclick="select2D('sirkel')">Sirkel</button>
+  </div>
+
+  <!-- 2D panels -->
+  <div id="panel-kvadrat" class="shape-panel grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="section-card p-5">
+      <h3 class="font-bold text-gray-700 mb-3 text-lg">Kvadrat</h3>
+      <p class="text-gray-500 text-sm mb-4">Et kvadrat har fire like lange sider og fire rette vinkler. Arealet er sidelengden ganget med seg selv, og omkretsen er summen av alle fire sider.</p>
+      <div class="formula-box rounded-lg p-3 mb-4">
+        <div class="text-sm font-semibold text-blue-700 mb-1">Formler:</div>
+        <div class="font-mono text-sm">A = s²</div>
+        <div class="font-mono text-sm">O = 4 · s</div>
+      </div>
+      <div class="flex items-center gap-3 mb-4">
+        <label class="input-group text-sm font-semibold text-gray-700">Sidelengde s:</label>
+        <input type="number" id="kv-s" value="5" min="0.1" max="50" step="0.1" onchange="calc2D()" oninput="calc2D()">
+        <span class="text-gray-500 text-sm">cm</span>
+      </div>
+      <div id="kv-worked" class="worked"></div>
+      <div id="kv-result" class="result-box rounded-lg p-3 mt-3"></div>
+    </div>
+    <div class="section-card p-5 flex flex-col items-center justify-center">
+      <svg id="kv-svg" width="220" height="220" viewBox="0 0 220 220"></svg>
+    </div>
+  </div>
+
+  <div id="panel-rektangel" class="shape-panel hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="section-card p-5">
+      <h3 class="font-bold text-gray-700 mb-3 text-lg">Rektangel</h3>
+      <p class="text-gray-500 text-sm mb-4">Et rektangel har to par parallelle sider med like lange motstående sider og fire rette vinkler.</p>
+      <div class="formula-box rounded-lg p-3 mb-4">
+        <div class="text-sm font-semibold text-blue-700 mb-1">Formler:</div>
+        <div class="font-mono text-sm">A = l · b</div>
+        <div class="font-mono text-sm">O = 2 · (l + b)</div>
+      </div>
+      <div class="flex flex-col gap-2 mb-4">
+        <div class="flex items-center gap-3">
+          <label class="input-group text-sm font-semibold w-24 text-gray-700">Lengde l:</label>
+          <input type="number" id="rek-l" value="8" min="0.1" max="50" step="0.1" onchange="calc2D()" oninput="calc2D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="input-group text-sm font-semibold w-24 text-gray-700">Bredde b:</label>
+          <input type="number" id="rek-b" value="5" min="0.1" max="50" step="0.1" onchange="calc2D()" oninput="calc2D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+      </div>
+      <div id="rek-worked" class="worked"></div>
+      <div id="rek-result" class="result-box rounded-lg p-3 mt-3"></div>
+    </div>
+    <div class="section-card p-5 flex flex-col items-center justify-center">
+      <svg id="rek-svg" width="220" height="220" viewBox="0 0 220 220"></svg>
+    </div>
+  </div>
+
+  <div id="panel-parallellogram" class="shape-panel hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="section-card p-5">
+      <h3 class="font-bold text-gray-700 mb-3 text-lg">Parallellogram</h3>
+      <p class="text-gray-500 text-sm mb-4">Et parallellogram har to par parallelle sider. Arealet regnes med grunnlinje og høyde (ikke skråsiden). Omkretsen er summen av alle fire sider.</p>
+      <div class="formula-box rounded-lg p-3 mb-4">
+        <div class="text-sm font-semibold text-blue-700 mb-1">Formler:</div>
+        <div class="font-mono text-sm">A = g · h</div>
+        <div class="font-mono text-sm">O = 2 · (g + s)</div>
+        <div class="text-xs text-gray-500 mt-1">g = grunnlinje, h = høyde, s = skråside</div>
+      </div>
+      <div class="flex flex-col gap-2 mb-4">
+        <div class="flex items-center gap-3">
+          <label class="input-group text-sm font-semibold w-28 text-gray-700">Grunnlinje g:</label>
+          <input type="number" id="par-g" value="9" min="0.1" max="50" step="0.1" onchange="calc2D()" oninput="calc2D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="input-group text-sm font-semibold w-28 text-gray-700">Høyde h:</label>
+          <input type="number" id="par-h" value="5" min="0.1" max="50" step="0.1" onchange="calc2D()" oninput="calc2D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="input-group text-sm font-semibold w-28 text-gray-700">Skråside s:</label>
+          <input type="number" id="par-s" value="6" min="0.1" max="50" step="0.1" onchange="calc2D()" oninput="calc2D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+      </div>
+      <div id="par-worked" class="worked"></div>
+      <div id="par-result" class="result-box rounded-lg p-3 mt-3"></div>
+    </div>
+    <div class="section-card p-5 flex flex-col items-center justify-center">
+      <svg id="par-svg" width="240" height="220" viewBox="0 0 240 220"></svg>
+    </div>
+  </div>
+
+  <div id="panel-trekant" class="shape-panel hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="section-card p-5">
+      <h3 class="font-bold text-gray-700 mb-3 text-lg">Trekant</h3>
+      <p class="text-gray-500 text-sm mb-4">En trekant har tre sider og tre vinkler. Arealet beregnes som halve grunnlinjen ganger høyden. Omkretsen er summen av alle tre sidene.</p>
+      <div class="formula-box rounded-lg p-3 mb-4">
+        <div class="text-sm font-semibold text-blue-700 mb-1">Formler:</div>
+        <div class="font-mono text-sm">A = ½ · g · h</div>
+        <div class="font-mono text-sm">O = a + b + c</div>
+        <div class="text-xs text-gray-500 mt-1">g = grunnlinje, h = høyde, a/b/c = sider</div>
+      </div>
+      <div class="flex flex-col gap-2 mb-4">
+        <div class="flex items-center gap-3">
+          <label class="input-group text-sm font-semibold w-28 text-gray-700">Grunnlinje g:</label>
+          <input type="number" id="tre-g" value="8" min="0.1" max="50" step="0.1" onchange="calc2D()" oninput="calc2D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="input-group text-sm font-semibold w-28 text-gray-700">Høyde h:</label>
+          <input type="number" id="tre-h" value="5" min="0.1" max="50" step="0.1" onchange="calc2D()" oninput="calc2D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="input-group text-sm font-semibold w-28 text-gray-700">Side a:</label>
+          <input type="number" id="tre-a" value="8" min="0.1" max="50" step="0.1" onchange="calc2D()" oninput="calc2D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="input-group text-sm font-semibold w-28 text-gray-700">Side b:</label>
+          <input type="number" id="tre-b" value="5.83" min="0.1" max="50" step="0.01" onchange="calc2D()" oninput="calc2D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="input-group text-sm font-semibold w-28 text-gray-700">Side c:</label>
+          <input type="number" id="tre-c" value="5.83" min="0.1" max="50" step="0.01" onchange="calc2D()" oninput="calc2D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+      </div>
+      <div id="tre-worked" class="worked"></div>
+      <div id="tre-result" class="result-box rounded-lg p-3 mt-3"></div>
+    </div>
+    <div class="section-card p-5 flex flex-col items-center justify-center">
+      <svg id="tre-svg" width="240" height="220" viewBox="0 0 240 220"></svg>
+    </div>
+  </div>
+
+  <div id="panel-trapes" class="shape-panel hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="section-card p-5">
+      <h3 class="font-bold text-gray-700 mb-3 text-lg">Trapes</h3>
+      <p class="text-gray-500 text-sm mb-4">Et trapes har ett par parallelle sider (kalt a og b). Arealet beregnes som summen av de parallelle sidene delt på 2 ganger høyden.</p>
+      <div class="formula-box rounded-lg p-3 mb-4">
+        <div class="text-sm font-semibold text-blue-700 mb-1">Formler:</div>
+        <div class="font-mono text-sm">A = ½ · (a + b) · h</div>
+        <div class="font-mono text-sm">O = a + b + c + d</div>
+        <div class="text-xs text-gray-500 mt-1">a, b = parallelle sider; h = høyde; c, d = skråsider</div>
+      </div>
+      <div class="flex flex-col gap-2 mb-4">
+        <div class="flex items-center gap-3">
+          <label class="input-group text-sm font-semibold w-28 text-gray-700">Side a (lang):</label>
+          <input type="number" id="trap-a" value="10" min="0.1" max="50" step="0.1" onchange="calc2D()" oninput="calc2D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="input-group text-sm font-semibold w-28 text-gray-700">Side b (kort):</label>
+          <input type="number" id="trap-b" value="6" min="0.1" max="50" step="0.1" onchange="calc2D()" oninput="calc2D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="input-group text-sm font-semibold w-28 text-gray-700">Høyde h:</label>
+          <input type="number" id="trap-h" value="4" min="0.1" max="50" step="0.1" onchange="calc2D()" oninput="calc2D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="input-group text-sm font-semibold w-28 text-gray-700">Skråside c:</label>
+          <input type="number" id="trap-c" value="5" min="0.1" max="50" step="0.1" onchange="calc2D()" oninput="calc2D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="input-group text-sm font-semibold w-28 text-gray-700">Skråside d:</label>
+          <input type="number" id="trap-d" value="5" min="0.1" max="50" step="0.1" onchange="calc2D()" oninput="calc2D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+      </div>
+      <div id="trap-worked" class="worked"></div>
+      <div id="trap-result" class="result-box rounded-lg p-3 mt-3"></div>
+    </div>
+    <div class="section-card p-5 flex flex-col items-center justify-center">
+      <svg id="trap-svg" width="240" height="200" viewBox="0 0 240 200"></svg>
+    </div>
+  </div>
+
+  <div id="panel-sirkel" class="shape-panel hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="section-card p-5">
+      <h3 class="font-bold text-gray-700 mb-3 text-lg">Sirkel</h3>
+      <p class="text-gray-500 text-sm mb-4">En sirkel er mengden av alle punkter med lik avstand (radius r) fra midtpunktet. Omkretsen kalles også periferien eller sirkelomkretsen.</p>
+      <div class="formula-box rounded-lg p-3 mb-4">
+        <div class="text-sm font-semibold text-blue-700 mb-1">Formler:</div>
+        <div class="font-mono text-sm">A = π · r²</div>
+        <div class="font-mono text-sm">O = 2 · π · r</div>
+        <div class="text-xs text-gray-500 mt-1">r = radius, π ≈ 3,14159…</div>
+      </div>
+      <div class="flex items-center gap-3 mb-4">
+        <label class="input-group text-sm font-semibold w-20 text-gray-700">Radius r:</label>
+        <input type="number" id="sir-r" value="6" min="0.1" max="50" step="0.1" onchange="calc2D()" oninput="calc2D()">
+        <span class="text-gray-500 text-sm">cm</span>
+      </div>
+      <div id="sir-worked" class="worked"></div>
+      <div id="sir-result" class="result-box rounded-lg p-3 mt-3"></div>
+    </div>
+    <div class="section-card p-5 flex flex-col items-center justify-center">
+      <svg id="sir-svg" width="220" height="220" viewBox="0 0 220 220"></svg>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TAB: PYTAGORAS ===================== -->
+<div id="tabpyth" class="main-tab hidden">
+  <div class="mb-6">
+    <h2 class="text-xl font-bold text-gray-800">Pytagoras' setning</h2>
+    <p class="text-gray-500 text-sm mt-1">I en <strong>rettvinklet trekant</strong> er kvadratet på hypotenusen lik summen av kvadratene på de to katetene: <span class="font-mono font-semibold text-blue-700">a² + b² = c²</span></p>
+  </div>
+
+  <div class="section-card p-4 mb-5 bg-amber-50 border border-amber-200 rounded-xl">
+    <p class="text-amber-800 text-sm"><strong>Merk:</strong> Pytagoras' setning gjelder <em>kun</em> for rettvinklede trekanter — trekanter med én 90°-vinkel. Hypotenusen (c) er alltid siden <em>motsatt</em> den rette vinkelen og er den lengste siden.</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="section-card p-5">
+      <div class="formula-box rounded-lg p-3 mb-4">
+        <div class="text-sm font-semibold text-blue-700 mb-1">Pytagoras' setning:</div>
+        <div class="font-mono text-base font-bold">a² + b² = c²</div>
+        <div class="text-xs text-gray-500 mt-1">a, b = kateter · c = hypotenuse</div>
+      </div>
+
+      <div class="mb-4">
+        <p class="text-sm font-semibold text-gray-700 mb-2">Hva vil du finne?</p>
+        <div class="flex gap-2 flex-wrap">
+          <button id="pyth-find-c" class="shape-btn active rounded-lg px-3 py-1.5 text-sm font-semibold" onclick="setPythMode('c')">Finn hypotenusen c</button>
+          <button id="pyth-find-a" class="shape-btn rounded-lg px-3 py-1.5 text-sm font-semibold" onclick="setPythMode('a')">Finn kateten a</button>
+          <button id="pyth-find-b" class="shape-btn rounded-lg px-3 py-1.5 text-sm font-semibold" onclick="setPythMode('b')">Finn kateten b</button>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2 mb-4" id="pyth-inputs">
+        <div class="flex items-center gap-3" id="pyth-row-a">
+          <label class="text-sm font-semibold w-24 text-gray-700">Katet a:</label>
+          <input type="number" id="pyth-a" value="3" min="0.01" max="100" step="0.01" onchange="calcPyth()" oninput="calcPyth()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+        <div class="flex items-center gap-3" id="pyth-row-b">
+          <label class="text-sm font-semibold w-24 text-gray-700">Katet b:</label>
+          <input type="number" id="pyth-b" value="4" min="0.01" max="100" step="0.01" onchange="calcPyth()" oninput="calcPyth()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+        <div class="flex items-center gap-3" id="pyth-row-c">
+          <label class="text-sm font-semibold w-24 text-gray-700">Hypotenuse c:</label>
+          <input type="number" id="pyth-c" value="5" min="0.01" max="100" step="0.01" onchange="calcPyth()" oninput="calcPyth()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+      </div>
+
+      <div id="pyth-worked" class="worked mb-3"></div>
+      <div id="pyth-result" class="result-box rounded-lg p-3"></div>
+
+      <!-- Common Pythagorean triples -->
+      <div class="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <p class="text-xs font-semibold text-gray-600 mb-2">Kjente pytagoreiske tripler:</p>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="setPythTriple(3,4,5)" class="text-xs bg-white border border-gray-300 rounded px-2 py-1 hover:bg-blue-50 hover:border-blue-300">3–4–5</button>
+          <button onclick="setPythTriple(5,12,13)" class="text-xs bg-white border border-gray-300 rounded px-2 py-1 hover:bg-blue-50 hover:border-blue-300">5–12–13</button>
+          <button onclick="setPythTriple(8,15,17)" class="text-xs bg-white border border-gray-300 rounded px-2 py-1 hover:bg-blue-50 hover:border-blue-300">8–15–17</button>
+          <button onclick="setPythTriple(7,24,25)" class="text-xs bg-white border border-gray-300 rounded px-2 py-1 hover:bg-blue-50 hover:border-blue-300">7–24–25</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card p-5 flex flex-col items-center justify-center">
+      <svg id="pyth-svg" width="260" height="260" viewBox="0 0 260 260"></svg>
+      <p class="text-xs text-gray-400 mt-2 text-center">Figuren tegnes i skala basert på inntastede verdier</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TAB: 3D ===================== -->
+<div id="tab3d" class="main-tab hidden">
+  <div class="mb-6">
+    <h2 class="text-xl font-bold text-gray-800">Volum og overflate — 3D-figurer</h2>
+    <p class="text-gray-500 text-sm mt-1">Velg en romfigur, endre målene og se volum og overflate beregnet live.</p>
+  </div>
+
+  <!-- 3D Shape selector -->
+  <div class="flex flex-wrap gap-3 mb-6">
+    <button class="shape-btn active rounded-xl px-4 py-2 text-sm font-semibold" onclick="select3D('kasse')">Rett prisme / kasse</button>
+    <button class="shape-btn rounded-xl px-4 py-2 text-sm font-semibold" onclick="select3D('sylinder')">Sylinder</button>
+    <button class="shape-btn rounded-xl px-4 py-2 text-sm font-semibold" onclick="select3D('kule')">Kule</button>
+    <button class="shape-btn rounded-xl px-4 py-2 text-sm font-semibold" onclick="select3D('kjegle')">Kjegle</button>
+    <button class="shape-btn rounded-xl px-4 py-2 text-sm font-semibold" onclick="select3D('pyramide')">Pyramide</button>
+  </div>
+
+  <!-- Kasse -->
+  <div id="panel3d-kasse" class="shape3d-panel grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="section-card p-5">
+      <h3 class="font-bold text-gray-700 mb-3 text-lg">Rett prisme / kasse (rektangulær prisme)</h3>
+      <p class="text-gray-500 text-sm mb-4">En kasse med lengde l, bredde b og høyde h. Alle sideflater er rektangler.</p>
+      <div class="formula-box rounded-lg p-3 mb-4">
+        <div class="text-sm font-semibold text-blue-700 mb-1">Formler:</div>
+        <div class="font-mono text-sm">V = l · b · h</div>
+        <div class="font-mono text-sm">O = 2 · (l·b + l·h + b·h)</div>
+      </div>
+      <div class="flex flex-col gap-2 mb-4">
+        <div class="flex items-center gap-3">
+          <label class="text-sm font-semibold w-24 text-gray-700">Lengde l:</label>
+          <input type="number" id="kas-l" value="6" min="0.1" max="50" step="0.1" onchange="calc3D()" oninput="calc3D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="text-sm font-semibold w-24 text-gray-700">Bredde b:</label>
+          <input type="number" id="kas-b" value="4" min="0.1" max="50" step="0.1" onchange="calc3D()" oninput="calc3D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="text-sm font-semibold w-24 text-gray-700">Høyde h:</label>
+          <input type="number" id="kas-h" value="3" min="0.1" max="50" step="0.1" onchange="calc3D()" oninput="calc3D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+      </div>
+      <div id="kas-worked" class="worked mb-3"></div>
+      <div id="kas-result" class="result-box rounded-lg p-3"></div>
+    </div>
+    <div class="section-card p-5 flex flex-col items-center justify-center">
+      <svg id="kas-svg" width="240" height="220" viewBox="0 0 240 220"></svg>
+    </div>
+  </div>
+
+  <!-- Sylinder -->
+  <div id="panel3d-sylinder" class="shape3d-panel hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="section-card p-5">
+      <h3 class="font-bold text-gray-700 mb-3 text-lg">Sylinder</h3>
+      <p class="text-gray-500 text-sm mb-4">En rett sirkulær sylinder med radius r og høyde h. Overflaten inkluderer to sirkler (topp og bunn) og den rektangulære sidedelen.</p>
+      <div class="formula-box rounded-lg p-3 mb-4">
+        <div class="text-sm font-semibold text-blue-700 mb-1">Formler:</div>
+        <div class="font-mono text-sm">V = π · r² · h</div>
+        <div class="font-mono text-sm">O = 2 · π · r · (r + h)</div>
+      </div>
+      <div class="flex flex-col gap-2 mb-4">
+        <div class="flex items-center gap-3">
+          <label class="text-sm font-semibold w-24 text-gray-700">Radius r:</label>
+          <input type="number" id="syl-r" value="4" min="0.1" max="50" step="0.1" onchange="calc3D()" oninput="calc3D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="text-sm font-semibold w-24 text-gray-700">Høyde h:</label>
+          <input type="number" id="syl-h" value="7" min="0.1" max="50" step="0.1" onchange="calc3D()" oninput="calc3D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+      </div>
+      <div id="syl-worked" class="worked mb-3"></div>
+      <div id="syl-result" class="result-box rounded-lg p-3"></div>
+    </div>
+    <div class="section-card p-5 flex flex-col items-center justify-center">
+      <svg id="syl-svg" width="220" height="240" viewBox="0 0 220 240"></svg>
+    </div>
+  </div>
+
+  <!-- Kule -->
+  <div id="panel3d-kule" class="shape3d-panel hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="section-card p-5">
+      <h3 class="font-bold text-gray-700 mb-3 text-lg">Kule</h3>
+      <p class="text-gray-500 text-sm mb-4">En kule er mengden av alle punkter i rommet med lik avstand (radius r) fra midtpunktet.</p>
+      <div class="formula-box rounded-lg p-3 mb-4">
+        <div class="text-sm font-semibold text-blue-700 mb-1">Formler:</div>
+        <div class="font-mono text-sm">V = 4/3 · π · r³</div>
+        <div class="font-mono text-sm">O = 4 · π · r²</div>
+      </div>
+      <div class="flex items-center gap-3 mb-4">
+        <label class="text-sm font-semibold w-24 text-gray-700">Radius r:</label>
+        <input type="number" id="kul-r" value="5" min="0.1" max="50" step="0.1" onchange="calc3D()" oninput="calc3D()">
+        <span class="text-gray-500 text-sm">cm</span>
+      </div>
+      <div id="kul-worked" class="worked mb-3"></div>
+      <div id="kul-result" class="result-box rounded-lg p-3"></div>
+    </div>
+    <div class="section-card p-5 flex flex-col items-center justify-center">
+      <svg id="kul-svg" width="220" height="220" viewBox="0 0 220 220"></svg>
+    </div>
+  </div>
+
+  <!-- Kjegle -->
+  <div id="panel3d-kjegle" class="shape3d-panel hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="section-card p-5">
+      <h3 class="font-bold text-gray-700 mb-3 text-lg">Kjegle</h3>
+      <p class="text-gray-500 text-sm mb-4">En rett sirkulær kjegle med radius r og høyde h. Slantelengden (s) er den skrå avstandene fra toppen ned til kanten av bunnen.</p>
+      <div class="formula-box rounded-lg p-3 mb-4">
+        <div class="text-sm font-semibold text-blue-700 mb-1">Formler:</div>
+        <div class="font-mono text-sm">V = 1/3 · π · r² · h</div>
+        <div class="font-mono text-sm">O = π · r · (r + s)</div>
+        <div class="font-mono text-sm">s = √(r² + h²)</div>
+        <div class="text-xs text-gray-500 mt-1">s = slantelengde (skrå side)</div>
+      </div>
+      <div class="flex flex-col gap-2 mb-4">
+        <div class="flex items-center gap-3">
+          <label class="text-sm font-semibold w-24 text-gray-700">Radius r:</label>
+          <input type="number" id="kje-r" value="4" min="0.1" max="50" step="0.1" onchange="calc3D()" oninput="calc3D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="text-sm font-semibold w-24 text-gray-700">Høyde h:</label>
+          <input type="number" id="kje-h" value="8" min="0.1" max="50" step="0.1" onchange="calc3D()" oninput="calc3D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+      </div>
+      <div id="kje-worked" class="worked mb-3"></div>
+      <div id="kje-result" class="result-box rounded-lg p-3"></div>
+    </div>
+    <div class="section-card p-5 flex flex-col items-center justify-center">
+      <svg id="kje-svg" width="220" height="240" viewBox="0 0 220 240"></svg>
+    </div>
+  </div>
+
+  <!-- Pyramide -->
+  <div id="panel3d-pyramide" class="shape3d-panel hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="section-card p-5">
+      <h3 class="font-bold text-gray-700 mb-3 text-lg">Rett pyramide (kvadratisk grunnflate)</h3>
+      <p class="text-gray-500 text-sm mb-4">En rett pyramide med kvadratisk grunnflate (sidelengde a) og høyde h. Spissen er rett over midtpunktet i bunnen.</p>
+      <div class="formula-box rounded-lg p-3 mb-4">
+        <div class="text-sm font-semibold text-blue-700 mb-1">Formler:</div>
+        <div class="font-mono text-sm">V = 1/3 · a² · h</div>
+        <div class="font-mono text-sm">O = a² + 2 · a · s</div>
+        <div class="font-mono text-sm">s = √(h² + (a/2)²)</div>
+        <div class="text-xs text-gray-500 mt-1">a = sidelengde i bunnen, s = slantelengde (trekantens høyde)</div>
+      </div>
+      <div class="flex flex-col gap-2 mb-4">
+        <div class="flex items-center gap-3">
+          <label class="text-sm font-semibold w-28 text-gray-700">Grunnside a:</label>
+          <input type="number" id="pyr-a" value="6" min="0.1" max="50" step="0.1" onchange="calc3D()" oninput="calc3D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="text-sm font-semibold w-28 text-gray-700">Høyde h:</label>
+          <input type="number" id="pyr-h" value="8" min="0.1" max="50" step="0.1" onchange="calc3D()" oninput="calc3D()">
+          <span class="text-gray-500 text-sm">cm</span>
+        </div>
+      </div>
+      <div id="pyr-worked" class="worked mb-3"></div>
+      <div id="pyr-result" class="result-box rounded-lg p-3"></div>
+    </div>
+    <div class="section-card p-5 flex flex-col items-center justify-center">
+      <svg id="pyr-svg" width="240" height="240" viewBox="0 0 240 240"></svg>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- Footer -->
+<footer class="text-center text-gray-400 text-xs py-6 mt-8 border-t border-gray-200">
+  Geometri — Matematikk 1P (LK20) &middot; Halison App Studio &middot;
+  <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-blue-500" target="_blank">github.com/halisonworks/public-app-studio</a>
+</footer>
+
+<script>
+// ===================== STATE =====================
+const LS = window.localStorage;
+let current2D = 'kvadrat';
+let current3D = 'kasse';
+let pythMode = 'c'; // which side to find
+
+function sv(key, val) { try { LS.setItem(key, val); } catch(e){} }
+function gv(key, def) { try { const v = LS.getItem(key); return v !== null ? v : def; } catch(e){ return def; } }
+
+function r(n, d=2) {
+  if (!isFinite(n)) return '—';
+  return +n.toFixed(d);
+}
+
+// ===================== TABS =====================
+function showMainTab(id) {
+  document.querySelectorAll('.main-tab').forEach(t => t.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.remove('active');
+    b.classList.add('bg-white/10', 'text-white');
+  });
+  const btns = document.querySelectorAll('.tab-btn');
+  const map = {'tab2d': 0, 'tabpyth': 1, 'tab3d': 2};
+  btns[map[id]].classList.add('active');
+  btns[map[id]].classList.remove('bg-white/10');
+  if (id === 'tab2d') calc2D();
+  if (id === 'tabpyth') calcPyth();
+  if (id === 'tab3d') calc3D();
+}
+
+// ===================== 2D SHAPES =====================
+function select2D(shape) {
+  current2D = shape;
+  sv('geo_2d_shape', shape);
+  document.querySelectorAll('.shape-panel').forEach(p => p.classList.add('hidden'));
+  document.getElementById('panel-' + shape).classList.remove('hidden');
+  document.querySelectorAll('#tab2d .shape-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  calc2D();
+}
+
+function calc2D() {
+  const s = current2D;
+  if (s === 'kvadrat') calcKvadrat();
+  else if (s === 'rektangel') calcRektangel();
+  else if (s === 'parallellogram') calcParallellogram();
+  else if (s === 'trekant') calcTrekant();
+  else if (s === 'trapes') calcTrapes();
+  else if (s === 'sirkel') calcSirkel();
+}
+
+function getVal(id, fallback) {
+  const v = parseFloat(document.getElementById(id).value);
+  return (isNaN(v) || v <= 0) ? fallback : v;
+}
+
+// --- Kvadrat ---
+function calcKvadrat() {
+  const s = getVal('kv-s', 5);
+  sv('geo_kv_s', s);
+  const A = s * s;
+  const O = 4 * s;
+  document.getElementById('kv-worked').innerHTML =
+    `<strong>Utregning:</strong><br>
+     A = s² = <span class="val">${s}</span>² = <span class="val">${r(A)}</span> cm²<br>
+     O = 4 · s = 4 · <span class="val">${s}</span> = <span class="val">${r(O)}</span> cm`;
+  document.getElementById('kv-result').innerHTML =
+    `<span class="font-bold text-green-700">Areal: ${r(A)} cm²</span> &nbsp;|&nbsp; <span class="font-bold text-green-700">Omkrets: ${r(O)} cm</span>`;
+  drawKvadrat(s);
+}
+
+function drawKvadrat(s) {
+  const svg = document.getElementById('kv-svg');
+  const maxS = 160;
+  const pad = 30;
+  const sc = Math.min(maxS / s, 18);
+  const size = s * sc;
+  const x = (220 - size) / 2;
+  const y = (220 - size) / 2;
+  svg.innerHTML = `
+    <rect x="${x}" y="${y}" width="${size}" height="${size}" fill="#dbeafe" stroke="#2563eb" stroke-width="2.5" rx="2"/>
+    <text x="${x + size/2}" y="${y - 8}" text-anchor="middle" class="dim-label" font-size="12" fill="#2563eb">s = ${s} cm</text>
+    <text x="${x - 8}" y="${y + size/2}" text-anchor="end" dominant-baseline="middle" class="dim-label" font-size="12" fill="#2563eb">s</text>
+    <line x1="${x}" y1="${y+size+10}" x2="${x+size}" y2="${y+size+10}" stroke="#94a3b8" stroke-width="1" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <text x="${x+size/2}" y="${y+size+22}" text-anchor="middle" font-size="10" fill="#64748b">${r(size,0)} px ↔ ${s} cm</text>
+    ${cornerMark(x,y+size,8)} ${cornerMark(x+size,y+size,8,true)} ${cornerMark(x+size,y,8,false,true)}
+  `;
+}
+
+function cornerMark(cx, cy, sz, flipX=false, flipY=false) {
+  const dx = flipX ? -sz : sz;
+  const dy = flipY ? sz : -sz;
+  return `<polyline points="${cx+dx},${cy} ${cx},${cy} ${cx},${cy+dy}" fill="none" stroke="#94a3b8" stroke-width="1.5"/>`;
+}
+
+// --- Rektangel ---
+function calcRektangel() {
+  const l = getVal('rek-l', 8);
+  const b = getVal('rek-b', 5);
+  sv('geo_rek_l', l); sv('geo_rek_b', b);
+  const A = l * b;
+  const O = 2 * (l + b);
+  document.getElementById('rek-worked').innerHTML =
+    `<strong>Utregning:</strong><br>
+     A = l · b = <span class="val">${l}</span> · <span class="val">${b}</span> = <span class="val">${r(A)}</span> cm²<br>
+     O = 2 · (l + b) = 2 · (<span class="val">${l}</span> + <span class="val">${b}</span>) = 2 · ${r(l+b)} = <span class="val">${r(O)}</span> cm`;
+  document.getElementById('rek-result').innerHTML =
+    `<span class="font-bold text-green-700">Areal: ${r(A)} cm²</span> &nbsp;|&nbsp; <span class="font-bold text-green-700">Omkrets: ${r(O)} cm</span>`;
+  drawRektangel(l, b);
+}
+
+function drawRektangel(l, b) {
+  const svg = document.getElementById('rek-svg');
+  const maxW = 170, maxH = 140;
+  const sc = Math.min(maxW / l, maxH / b, 20);
+  const W = l * sc, H = b * sc;
+  const x = (220 - W) / 2, y = (220 - H) / 2;
+  svg.innerHTML = `
+    <rect x="${x}" y="${y}" width="${W}" height="${H}" fill="#e0f2fe" stroke="#0284c7" stroke-width="2.5" rx="2"/>
+    <text x="${x+W/2}" y="${y-8}" text-anchor="middle" font-size="12" fill="#0284c7">l = ${l} cm</text>
+    <text x="${x-8}" y="${y+H/2}" text-anchor="end" dominant-baseline="middle" font-size="12" fill="#0284c7">b = ${b} cm</text>
+    ${cornerMark(x,y+H,8)} ${cornerMark(x+W,y+H,8,true)} ${cornerMark(x+W,y,8,false,true)} ${cornerMark(x,y,8,false,false,true)}
+  `;
+}
+
+// --- Parallellogram ---
+function calcParallellogram() {
+  const g = getVal('par-g', 9);
+  const h = getVal('par-h', 5);
+  const s = getVal('par-s', 6);
+  sv('geo_par_g',g); sv('geo_par_h',h); sv('geo_par_s',s);
+  const A = g * h;
+  const O = 2 * (g + s);
+  document.getElementById('par-worked').innerHTML =
+    `<strong>Utregning:</strong><br>
+     A = g · h = <span class="val">${g}</span> · <span class="val">${h}</span> = <span class="val">${r(A)}</span> cm²<br>
+     O = 2 · (g + s) = 2 · (<span class="val">${g}</span> + <span class="val">${s}</span>) = <span class="val">${r(O)}</span> cm`;
+  document.getElementById('par-result').innerHTML =
+    `<span class="font-bold text-green-700">Areal: ${r(A)} cm²</span> &nbsp;|&nbsp; <span class="font-bold text-green-700">Omkrets: ${r(O)} cm</span>`;
+  drawParallellogram(g, h, s);
+}
+
+function drawParallellogram(g, h, s) {
+  const svg = document.getElementById('par-svg');
+  const maxW = 180, maxH = 130;
+  const sc = Math.min(maxW / (g + h * 0.6), maxH / h, 15);
+  const G = g * sc, H = h * sc;
+  const offset = Math.min(H * 0.6, G * 0.4);
+  const pad = 30;
+  const x0 = pad + offset, y0 = pad;
+  const pts = `${x0},${y0} ${x0+G},${y0} ${x0+G-offset},${y0+H} ${x0-offset},${y0+H}`;
+  svg.innerHTML = `
+    <polygon points="${pts}" fill="#fef3c7" stroke="#d97706" stroke-width="2.5"/>
+    <line x1="${x0-offset}" y1="${y0+H}" x2="${x0-offset}" y2="${y0}" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <text x="${x0 + G/2 - offset/2}" y="${y0+H+16}" text-anchor="middle" font-size="12" fill="#d97706">g = ${g} cm</text>
+    <text x="${x0-offset-14}" y="${y0+H/2}" text-anchor="middle" font-size="11" fill="#ef4444">h = ${h}</text>
+    <text x="${x0+G+(15)}" y="${y0+H/2}" text-anchor="start" font-size="11" fill="#6b7280">s = ${s} cm</text>
+  `;
+}
+
+// --- Trekant ---
+function calcTrekant() {
+  const g = getVal('tre-g', 8);
+  const h = getVal('tre-h', 5);
+  const a = getVal('tre-a', 8);
+  const b = getVal('tre-b', 5.83);
+  const c = getVal('tre-c', 5.83);
+  sv('geo_tre_g',g); sv('geo_tre_h',h);
+  const A = 0.5 * g * h;
+  const O = a + b + c;
+  document.getElementById('tre-worked').innerHTML =
+    `<strong>Utregning:</strong><br>
+     A = ½ · g · h = ½ · <span class="val">${g}</span> · <span class="val">${h}</span> = <span class="val">${r(A)}</span> cm²<br>
+     O = a + b + c = <span class="val">${a}</span> + <span class="val">${b}</span> + <span class="val">${c}</span> = <span class="val">${r(O)}</span> cm`;
+  document.getElementById('tre-result').innerHTML =
+    `<span class="font-bold text-green-700">Areal: ${r(A)} cm²</span> &nbsp;|&nbsp; <span class="font-bold text-green-700">Omkrets: ${r(O)} cm</span>`;
+  drawTrekant(g, h);
+}
+
+function drawTrekant(g, h) {
+  const svg = document.getElementById('tre-svg');
+  const sc = Math.min(170 / g, 140 / h, 20);
+  const G = g * sc, H = h * sc;
+  const pad = 25;
+  const bx = (240 - G) / 2;
+  const by = pad + H;
+  const tx = bx + G * 0.5;
+  const ty = pad;
+  svg.innerHTML = `
+    <polygon points="${bx},${by} ${bx+G},${by} ${tx},${ty}" fill="#dcfce7" stroke="#16a34a" stroke-width="2.5"/>
+    <line x1="${tx}" y1="${ty}" x2="${tx}" y2="${by}" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <text x="${bx+G/2}" y="${by+16}" text-anchor="middle" font-size="12" fill="#16a34a">g = ${g} cm</text>
+    <text x="${tx+8}" y="${(ty+by)/2}" font-size="11" fill="#ef4444">h = ${h} cm</text>
+  `;
+}
+
+// --- Trapes ---
+function calcTrapes() {
+  const a = getVal('trap-a', 10);
+  const b = getVal('trap-b', 6);
+  const h = getVal('trap-h', 4);
+  const c = getVal('trap-c', 5);
+  const d = getVal('trap-d', 5);
+  sv('geo_trap_a',a); sv('geo_trap_b',b); sv('geo_trap_h',h);
+  const A = 0.5 * (a + b) * h;
+  const O = a + b + c + d;
+  document.getElementById('trap-worked').innerHTML =
+    `<strong>Utregning:</strong><br>
+     A = ½ · (a + b) · h = ½ · (<span class="val">${a}</span> + <span class="val">${b}</span>) · <span class="val">${h}</span> = ½ · ${a+b} · ${h} = <span class="val">${r(A)}</span> cm²<br>
+     O = a + b + c + d = <span class="val">${a}</span> + <span class="val">${b}</span> + <span class="val">${c}</span> + <span class="val">${d}</span> = <span class="val">${r(O)}</span> cm`;
+  document.getElementById('trap-result').innerHTML =
+    `<span class="font-bold text-green-700">Areal: ${r(A)} cm²</span> &nbsp;|&nbsp; <span class="font-bold text-green-700">Omkrets: ${r(O)} cm</span>`;
+  drawTrapes(a, b, h);
+}
+
+function drawTrapes(a, b, h) {
+  const svg = document.getElementById('trap-svg');
+  const sc = Math.min(170 / a, 120 / h, 15);
+  const A = a * sc, B = b * sc, H = h * sc;
+  const padX = 25, padY = 20;
+  const offset = (A - B) / 2;
+  const x1 = padX, y1 = padY + H;
+  const x2 = padX + A, y2 = padY + H;
+  const x3 = padX + offset + B, y3 = padY;
+  const x4 = padX + offset, y4 = padY;
+  svg.innerHTML = `
+    <polygon points="${x1},${y1} ${x2},${y2} ${x3},${y3} ${x4},${y4}" fill="#fae8ff" stroke="#a855f7" stroke-width="2.5"/>
+    <line x1="${x4}" y1="${y4}" x2="${x4}" y2="${y1}" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <text x="${(x1+x2)/2}" y="${y1+16}" text-anchor="middle" font-size="12" fill="#a855f7">a = ${a} cm</text>
+    <text x="${(x3+x4)/2}" y="${y4-6}" text-anchor="middle" font-size="12" fill="#a855f7">b = ${b} cm</text>
+    <text x="${x4-14}" y="${(y1+y4)/2}" text-anchor="end" font-size="11" fill="#ef4444">h = ${h}</text>
+  `;
+}
+
+// --- Sirkel ---
+function calcSirkel() {
+  const rr = getVal('sir-r', 6);
+  sv('geo_sir_r', rr);
+  const A = Math.PI * rr * rr;
+  const O = 2 * Math.PI * rr;
+  document.getElementById('sir-worked').innerHTML =
+    `<strong>Utregning:</strong><br>
+     A = π · r² = π · <span class="val">${rr}</span>² = π · ${rr*rr} ≈ <span class="val">${r(A)}</span> cm²<br>
+     O = 2 · π · r = 2 · π · <span class="val">${rr}</span> ≈ <span class="val">${r(O)}</span> cm`;
+  document.getElementById('sir-result').innerHTML =
+    `<span class="font-bold text-green-700">Areal: ${r(A)} cm²</span> &nbsp;|&nbsp; <span class="font-bold text-green-700">Omkrets: ${r(O)} cm</span>`;
+  drawSirkel(rr);
+}
+
+function drawSirkel(rr) {
+  const svg = document.getElementById('sir-svg');
+  const maxR = 90;
+  const sc = Math.min(maxR / rr, 15);
+  const R = rr * sc;
+  const cx = 110, cy = 110;
+  svg.innerHTML = `
+    <circle cx="${cx}" cy="${cy}" r="${R}" fill="#fce7f3" stroke="#db2777" stroke-width="2.5"/>
+    <line x1="${cx}" y1="${cy}" x2="${cx+R}" y2="${cy}" stroke="#2563eb" stroke-width="2" stroke-dasharray="4,2"/>
+    <circle cx="${cx}" cy="${cy}" r="3" fill="#2563eb"/>
+    <text x="${cx + R/2}" y="${cy - 7}" text-anchor="middle" font-size="12" fill="#2563eb">r = ${rr} cm</text>
+    <text x="${cx}" y="${cy+R+18}" text-anchor="middle" font-size="11" fill="#db2777">diameter = ${r(2*rr)} cm</text>
+  `;
+}
+
+// ===================== PYTAGORAS =====================
+function setPythMode(mode) {
+  pythMode = mode;
+  sv('geo_pyth_mode', mode);
+  document.querySelectorAll('#tabpyth .shape-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('pyth-find-' + mode).classList.add('active');
+
+  const rowA = document.getElementById('pyth-row-a');
+  const rowB = document.getElementById('pyth-row-b');
+  const rowC = document.getElementById('pyth-row-c');
+
+  if (mode === 'c') {
+    rowA.querySelector('label').textContent = 'Katet a:';
+    rowB.querySelector('label').textContent = 'Katet b:';
+    rowC.style.display = 'none';
+    rowA.style.display = '';
+    rowB.style.display = '';
+  } else if (mode === 'a') {
+    rowA.style.display = 'none';
+    rowB.querySelector('label').textContent = 'Katet b:';
+    rowC.style.display = '';
+    rowC.querySelector('label').textContent = 'Hypotenuse c:';
+    rowB.style.display = '';
+  } else if (mode === 'b') {
+    rowB.style.display = 'none';
+    rowA.querySelector('label').textContent = 'Katet a:';
+    rowA.style.display = '';
+    rowC.style.display = '';
+    rowC.querySelector('label').textContent = 'Hypotenuse c:';
+  }
+  calcPyth();
+}
+
+function calcPyth() {
+  let a = parseFloat(document.getElementById('pyth-a').value);
+  let b = parseFloat(document.getElementById('pyth-b').value);
+  let c = parseFloat(document.getElementById('pyth-c').value);
+
+  if (pythMode === 'c') {
+    if (isNaN(a) || a <= 0) a = 3;
+    if (isNaN(b) || b <= 0) b = 4;
+    const cCalc = Math.sqrt(a*a + b*b);
+    document.getElementById('pyth-worked').innerHTML =
+      `<strong>Finner hypotenusen c:</strong><br>
+       c² = a² + b²<br>
+       c² = <span class="val">${a}</span>² + <span class="val">${b}</span>²<br>
+       c² = ${r(a*a)} + ${r(b*b)} = ${r(a*a + b*b)}<br>
+       c = √${r(a*a + b*b)} ≈ <span class="val">${r(cCalc, 4)}</span> cm`;
+    document.getElementById('pyth-result').innerHTML =
+      `<span class="font-bold text-green-700">Hypotenusen c = ${r(cCalc, 4)} cm</span>`;
+    drawPyth(a, b, cCalc, 'c');
+  } else if (pythMode === 'a') {
+    if (isNaN(b) || b <= 0) b = 4;
+    if (isNaN(c) || c <= 0) c = 5;
+    if (c <= b) {
+      document.getElementById('pyth-worked').innerHTML = `<span class="text-red-500">Hypotenusen c må være større enn kateten b!</span>`;
+      document.getElementById('pyth-result').innerHTML = '';
+      return;
+    }
+    const aCalc = Math.sqrt(c*c - b*b);
+    document.getElementById('pyth-worked').innerHTML =
+      `<strong>Finner kateten a:</strong><br>
+       a² = c² − b²<br>
+       a² = <span class="val">${c}</span>² − <span class="val">${b}</span>²<br>
+       a² = ${r(c*c)} − ${r(b*b)} = ${r(c*c - b*b)}<br>
+       a = √${r(c*c - b*b)} ≈ <span class="val">${r(aCalc, 4)}</span> cm`;
+    document.getElementById('pyth-result').innerHTML =
+      `<span class="font-bold text-green-700">Kateten a = ${r(aCalc, 4)} cm</span>`;
+    drawPyth(aCalc, b, c, 'a');
+  } else if (pythMode === 'b') {
+    if (isNaN(a) || a <= 0) a = 3;
+    if (isNaN(c) || c <= 0) c = 5;
+    if (c <= a) {
+      document.getElementById('pyth-worked').innerHTML = `<span class="text-red-500">Hypotenusen c må være større enn kateten a!</span>`;
+      document.getElementById('pyth-result').innerHTML = '';
+      return;
+    }
+    const bCalc = Math.sqrt(c*c - a*a);
+    document.getElementById('pyth-worked').innerHTML =
+      `<strong>Finner kateten b:</strong><br>
+       b² = c² − a²<br>
+       b² = <span class="val">${c}</span>² − <span class="val">${a}</span>²<br>
+       b² = ${r(c*c)} − ${r(a*a)} = ${r(c*c - a*a)}<br>
+       b = √${r(c*c - a*a)} ≈ <span class="val">${r(bCalc, 4)}</span> cm`;
+    document.getElementById('pyth-result').innerHTML =
+      `<span class="font-bold text-green-700">Kateten b = ${r(bCalc, 4)} cm</span>`;
+    drawPyth(a, bCalc, c, 'b');
+  }
+}
+
+function drawPyth(a, b, c, found) {
+  const svg = document.getElementById('pyth-svg');
+  const W = 260, H = 260;
+  const pad = 32;
+  const maxDim = Math.max(a, b);
+  const sc = Math.min((W - 2*pad) / a, (H - 2*pad) / b, 20);
+  const A = a * sc, B = b * sc;
+  // right angle at bottom-left
+  const bx = pad, by = H - pad;
+  const ax = bx + A, ay = by;         // bottom-right
+  const cx2 = bx, cy2 = by - B;      // top-left
+  const highlightColor = found === 'c' ? '#ef4444' : found === 'a' ? '#2563eb' : '#16a34a';
+  const colA = found === 'a' ? '#2563eb' : '#374151';
+  const colB = found === 'b' ? '#16a34a' : '#374151';
+  const colC = found === 'c' ? '#ef4444' : '#374151';
+  const sqSize = Math.min(14, A*0.3, B*0.3);
+  svg.innerHTML = `
+    <polygon points="${bx},${by} ${ax},${ay} ${cx2},${cy2}" fill="#f8fafc" stroke="#374151" stroke-width="2"/>
+    <!-- right angle mark -->
+    <polyline points="${bx+sqSize},${by} ${bx+sqSize},${by-sqSize} ${bx},${by-sqSize}" fill="none" stroke="#6b7280" stroke-width="1.5"/>
+    <!-- side a label (bottom) -->
+    <line x1="${bx}" y1="${by+14}" x2="${ax}" y2="${by+14}" stroke="${colA}" stroke-width="1.5"/>
+    <text x="${(bx+ax)/2}" y="${by+26}" text-anchor="middle" font-size="13" fill="${colA}" font-weight="${found==='a'?'bold':'normal'}">a = ${r(a,3)} cm</text>
+    <!-- side b label (left) -->
+    <line x1="${bx-14}" y1="${by}" x2="${bx-14}" y2="${cy2}" stroke="${colB}" stroke-width="1.5"/>
+    <text x="${bx-20}" y="${(by+cy2)/2}" text-anchor="end" dominant-baseline="middle" font-size="13" fill="${colB}" font-weight="${found==='b'?'bold':'normal'}">b = ${r(b,3)} cm</text>
+    <!-- hypotenuse c -->
+    <line x1="${ax}" y1="${ay}" x2="${cx2}" y2="${cy2}" stroke="${colC}" stroke-width="${found==='c'?3:2}"/>
+    <text x="${(ax+cx2)/2+14}" y="${(ay+cy2)/2}" text-anchor="start" dominant-baseline="middle" font-size="13" fill="${colC}" font-weight="${found==='c'?'bold':'normal'}">c = ${r(c,3)} cm</text>
+    <!-- squares illustration -->
+    <text x="${W/2}" y="${H-6}" text-anchor="middle" font-size="10" fill="#94a3b8">a² + b² = c²</text>
+  `;
+}
+
+function setPythTriple(a, b, c) {
+  document.getElementById('pyth-a').value = a;
+  document.getElementById('pyth-b').value = b;
+  document.getElementById('pyth-c').value = c;
+  setPythMode('c');
+}
+
+// ===================== 3D SHAPES =====================
+function select3D(shape) {
+  current3D = shape;
+  sv('geo_3d_shape', shape);
+  document.querySelectorAll('.shape3d-panel').forEach(p => p.classList.add('hidden'));
+  document.getElementById('panel3d-' + shape).classList.remove('hidden');
+  document.querySelectorAll('#tab3d .shape-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  calc3D();
+}
+
+function calc3D() {
+  const s = current3D;
+  if (s === 'kasse') calcKasse();
+  else if (s === 'sylinder') calcSylinder();
+  else if (s === 'kule') calcKule();
+  else if (s === 'kjegle') calcKjegle();
+  else if (s === 'pyramide') calcPyramide();
+}
+
+// --- Kasse ---
+function calcKasse() {
+  const l = getVal('kas-l', 6);
+  const b = getVal('kas-b', 4);
+  const h = getVal('kas-h', 3);
+  sv('geo_kas_l',l); sv('geo_kas_b',b); sv('geo_kas_h',h);
+  const V = l * b * h;
+  const O = 2 * (l*b + l*h + b*h);
+  document.getElementById('kas-worked').innerHTML =
+    `<strong>Utregning:</strong><br>
+     V = l · b · h = <span class="val">${l}</span> · <span class="val">${b}</span> · <span class="val">${h}</span> = <span class="val">${r(V)}</span> cm³<br>
+     O = 2·(l·b + l·h + b·h)<br>
+     &nbsp;&nbsp;= 2·(${l}·${b} + ${l}·${h} + ${b}·${h})<br>
+     &nbsp;&nbsp;= 2·(${r(l*b)} + ${r(l*h)} + ${r(b*h)}) = <span class="val">${r(O)}</span> cm²`;
+  document.getElementById('kas-result').innerHTML =
+    `<span class="font-bold text-green-700">Volum: ${r(V)} cm³</span> &nbsp;|&nbsp; <span class="font-bold text-green-700">Overflate: ${r(O)} cm²</span>`;
+  drawKasse(l, b, h);
+}
+
+function drawKasse(l, b, h) {
+  const svg = document.getElementById('kas-svg');
+  const sc = Math.min(110/l, 90/h, 90/b, 15);
+  const W = l*sc, H = h*sc, D = b*sc*0.5;
+  const ox = 40, oy = 160;
+  // front face
+  const f = `${ox},${oy} ${ox+W},${oy} ${ox+W},${oy-H} ${ox},${oy-H}`;
+  // top face
+  const t = `${ox},${oy-H} ${ox+W},${oy-H} ${ox+W+D*0.7},${oy-H-D*0.5} ${ox+D*0.7},${oy-H-D*0.5}`;
+  // right face
+  const rr2 = `${ox+W},${oy} ${ox+W+D*0.7},${oy-D*0.5} ${ox+W+D*0.7},${oy-H-D*0.5} ${ox+W},${oy-H}`;
+  svg.innerHTML = `
+    <polygon points="${f}" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+    <polygon points="${t}" fill="#bfdbfe" stroke="#2563eb" stroke-width="2"/>
+    <polygon points="${rr2}" fill="#93c5fd" stroke="#2563eb" stroke-width="2"/>
+    <text x="${ox+W/2}" y="${oy+15}" text-anchor="middle" font-size="11" fill="#2563eb">l = ${l} cm</text>
+    <text x="${ox-8}" y="${oy-H/2}" text-anchor="end" dominant-baseline="middle" font-size="11" fill="#1d4ed8">h = ${h} cm</text>
+    <text x="${ox+W+D*0.7+8}" y="${oy-D*0.25-H/2}" font-size="11" fill="#1e40af">b = ${b} cm</text>
+  `;
+}
+
+// --- Sylinder ---
+function calcSylinder() {
+  const rr = getVal('syl-r', 4);
+  const h = getVal('syl-h', 7);
+  sv('geo_syl_r',rr); sv('geo_syl_h',h);
+  const V = Math.PI * rr * rr * h;
+  const O = 2 * Math.PI * rr * (rr + h);
+  document.getElementById('syl-worked').innerHTML =
+    `<strong>Utregning:</strong><br>
+     V = π · r² · h = π · <span class="val">${rr}</span>² · <span class="val">${h}</span> = π · ${rr*rr} · ${h} ≈ <span class="val">${r(V)}</span> cm³<br>
+     O = 2 · π · r · (r + h)<br>
+     &nbsp;&nbsp;= 2 · π · <span class="val">${rr}</span> · (${rr} + ${h})<br>
+     &nbsp;&nbsp;= 2π · ${rr} · ${rr+h} ≈ <span class="val">${r(O)}</span> cm²`;
+  document.getElementById('syl-result').innerHTML =
+    `<span class="font-bold text-green-700">Volum: ${r(V)} cm³</span> &nbsp;|&nbsp; <span class="font-bold text-green-700">Overflate: ${r(O)} cm²</span>`;
+  drawSylinder(rr, h);
+}
+
+function drawSylinder(rr, h) {
+  const svg = document.getElementById('syl-svg');
+  const sc = Math.min(70/rr, 150/h, 15);
+  const R = rr*sc, H = h*sc;
+  const cx = 110, topY = 25, botY = topY + H;
+  const ry = R * 0.3;
+  svg.innerHTML = `
+    <!-- body -->
+    <rect x="${cx-R}" y="${topY}" width="${R*2}" height="${H}" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+    <!-- bottom ellipse -->
+    <ellipse cx="${cx}" cy="${botY}" rx="${R}" ry="${ry}" fill="#fde68a" stroke="#d97706" stroke-width="2"/>
+    <!-- top ellipse -->
+    <ellipse cx="${cx}" cy="${topY}" rx="${R}" ry="${ry}" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+    <!-- radius line -->
+    <line x1="${cx}" y1="${topY}" x2="${cx+R}" y2="${topY}" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <text x="${cx+R/2}" y="${topY-7}" text-anchor="middle" font-size="11" fill="#2563eb">r = ${rr}</text>
+    <!-- height line -->
+    <line x1="${cx+R+10}" y1="${topY}" x2="${cx+R+10}" y2="${botY}" stroke="#6b7280" stroke-width="1.5"/>
+    <text x="${cx+R+20}" y="${topY+H/2}" dominant-baseline="middle" font-size="11" fill="#374151">h = ${h}</text>
+  `;
+}
+
+// --- Kule ---
+function calcKule() {
+  const rr = getVal('kul-r', 5);
+  sv('geo_kul_r',rr);
+  const V = (4/3) * Math.PI * rr * rr * rr;
+  const O = 4 * Math.PI * rr * rr;
+  document.getElementById('kul-worked').innerHTML =
+    `<strong>Utregning:</strong><br>
+     V = 4/3 · π · r³ = 4/3 · π · <span class="val">${rr}</span>³<br>
+     &nbsp;&nbsp;= 4/3 · π · ${rr*rr*rr} ≈ <span class="val">${r(V)}</span> cm³<br>
+     O = 4 · π · r² = 4 · π · <span class="val">${rr}</span>²<br>
+     &nbsp;&nbsp;= 4π · ${rr*rr} ≈ <span class="val">${r(O)}</span> cm²`;
+  document.getElementById('kul-result').innerHTML =
+    `<span class="font-bold text-green-700">Volum: ${r(V)} cm³</span> &nbsp;|&nbsp; <span class="font-bold text-green-700">Overflate: ${r(O)} cm²</span>`;
+  drawKule(rr);
+}
+
+function drawKule(rr) {
+  const svg = document.getElementById('kul-svg');
+  const maxR = 88;
+  const sc = Math.min(maxR/rr, 16);
+  const R = rr*sc;
+  const cx = 110, cy = 110;
+  const ry = R * 0.3;
+  svg.innerHTML = `
+    <defs>
+      <radialGradient id="sphereGrad" cx="35%" cy="35%" r="65%">
+        <stop offset="0%" stop-color="#e0f2fe"/>
+        <stop offset="100%" stop-color="#0284c7"/>
+      </radialGradient>
+    </defs>
+    <circle cx="${cx}" cy="${cy}" r="${R}" fill="url(#sphereGrad)" stroke="#0284c7" stroke-width="2"/>
+    <!-- equator ellipse -->
+    <ellipse cx="${cx}" cy="${cy}" rx="${R}" ry="${ry}" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-dasharray="5,3"/>
+    <!-- radius -->
+    <line x1="${cx}" y1="${cy}" x2="${cx+R}" y2="${cy}" stroke="white" stroke-width="1.5"/>
+    <text x="${cx+R/2}" y="${cy-6}" text-anchor="middle" font-size="12" fill="white" font-weight="bold">r = ${rr} cm</text>
+    <circle cx="${cx}" cy="${cy}" r="3" fill="white"/>
+  `;
+}
+
+// --- Kjegle ---
+function calcKjegle() {
+  const rr = getVal('kje-r', 4);
+  const h = getVal('kje-h', 8);
+  sv('geo_kje_r',rr); sv('geo_kje_h',h);
+  const slant = Math.sqrt(rr*rr + h*h);
+  const V = (1/3) * Math.PI * rr * rr * h;
+  const O = Math.PI * rr * (rr + slant);
+  document.getElementById('kje-worked').innerHTML =
+    `<strong>Utregning:</strong><br>
+     s = √(r² + h²) = √(${rr}² + ${h}²) = √${r(rr*rr+h*h)} ≈ <span class="val">${r(slant,3)}</span> cm<br>
+     V = 1/3 · π · r² · h = 1/3 · π · <span class="val">${rr}</span>² · <span class="val">${h}</span> ≈ <span class="val">${r(V)}</span> cm³<br>
+     O = π · r · (r + s) = π · ${rr} · (${rr} + ${r(slant,3)}) ≈ <span class="val">${r(O)}</span> cm²`;
+  document.getElementById('kje-result').innerHTML =
+    `<span class="font-bold text-green-700">Volum: ${r(V)} cm³</span> &nbsp;|&nbsp; <span class="font-bold text-green-700">Overflate: ${r(O)} cm²</span>`;
+  drawKjegle(rr, h);
+}
+
+function drawKjegle(rr, h) {
+  const svg = document.getElementById('kje-svg');
+  const sc = Math.min(80/rr, 150/h, 14);
+  const R = rr*sc, H = h*sc;
+  const cx = 110, tipY = 25, botY = tipY + H;
+  const ry = R * 0.25;
+  svg.innerHTML = `
+    <!-- side lines -->
+    <line x1="${cx-R}" y1="${botY}" x2="${cx}" y2="${tipY}" stroke="#7c3aed" stroke-width="2"/>
+    <line x1="${cx+R}" y1="${botY}" x2="${cx}" y2="${tipY}" stroke="#7c3aed" stroke-width="2"/>
+    <!-- base ellipse bottom half -->
+    <path d="M ${cx-R} ${botY} A ${R} ${ry} 0 0 0 ${cx+R} ${botY}" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
+    <path d="M ${cx-R} ${botY} A ${R} ${ry} 0 0 1 ${cx+R} ${botY}" fill="#ddd6fe" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <!-- fill body -->
+    <polygon points="${cx},${tipY} ${cx-R},${botY} ${cx+R},${botY}" fill="#ede9fe" opacity="0.5"/>
+    <!-- radius -->
+    <line x1="${cx}" y1="${botY}" x2="${cx+R}" y2="${botY}" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="3,2"/>
+    <text x="${cx+R/2}" y="${botY+15}" text-anchor="middle" font-size="11" fill="#2563eb">r = ${rr}</text>
+    <!-- height -->
+    <line x1="${cx+R+10}" y1="${tipY}" x2="${cx+R+10}" y2="${botY}" stroke="#6b7280" stroke-width="1.5"/>
+    <text x="${cx+R+20}" y="${tipY+H/2}" dominant-baseline="middle" font-size="11" fill="#374151">h = ${h}</text>
+  `;
+}
+
+// --- Pyramide ---
+function calcPyramide() {
+  const a = getVal('pyr-a', 6);
+  const h = getVal('pyr-h', 8);
+  sv('geo_pyr_a',a); sv('geo_pyr_h',h);
+  const slant = Math.sqrt(h*h + (a/2)*(a/2));
+  const V = (1/3) * a * a * h;
+  const O = a*a + 2*a*slant;
+  document.getElementById('pyr-worked').innerHTML =
+    `<strong>Utregning:</strong><br>
+     s = √(h² + (a/2)²) = √(${h}² + ${a/2}²) = √${r(h*h+(a/2)*(a/2))} ≈ <span class="val">${r(slant,3)}</span> cm<br>
+     V = 1/3 · a² · h = 1/3 · <span class="val">${a}</span>² · <span class="val">${h}</span> = 1/3 · ${r(a*a)} · ${h} ≈ <span class="val">${r(V)}</span> cm³<br>
+     O = a² + 2·a·s = ${r(a*a)} + 2·${a}·${r(slant,3)} ≈ <span class="val">${r(O)}</span> cm²`;
+  document.getElementById('pyr-result').innerHTML =
+    `<span class="font-bold text-green-700">Volum: ${r(V)} cm³</span> &nbsp;|&nbsp; <span class="font-bold text-green-700">Overflate: ${r(O)} cm²</span>`;
+  drawPyramide(a, h);
+}
+
+function drawPyramide(a, h) {
+  const svg = document.getElementById('pyr-svg');
+  const sc = Math.min(130/a, 140/h, 16);
+  const A = a*sc, H = h*sc;
+  const cx = 120, tipY = 20, baseY = tipY + H;
+  const iso = A * 0.45;
+  // base: parallelogram representing square base
+  const blx = cx - A/2, bly = baseY;
+  const brx = cx + A/2, bry = baseY;
+  const tlx = blx + iso*0.5, tly = bly - iso*0.35;
+  const trx = brx + iso*0.5, try2 = bry - iso*0.35;
+  svg.innerHTML = `
+    <!-- base -->
+    <polygon points="${blx},${bly} ${brx},${bry} ${trx},${try2} ${tlx},${tly}" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+    <!-- front left face -->
+    <polygon points="${blx},${bly} ${brx},${bry} ${cx},${tipY}" fill="#fde68a" stroke="#ca8a04" stroke-width="2"/>
+    <!-- front right face -->
+    <polygon points="${brx},${bry} ${trx},${try2} ${cx},${tipY}" fill="#fbbf24" stroke="#ca8a04" stroke-width="2"/>
+    <!-- back face (hint) -->
+    <line x1="${tlx}" y1="${tly}" x2="${cx}" y2="${tipY}" stroke="#ca8a04" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <!-- height line -->
+    <line x1="${cx}" y1="${bly}" x2="${cx}" y2="${tipY}" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <text x="${cx+8}" y="${tipY + H/2}" dominant-baseline="middle" font-size="11" fill="#ef4444">h = ${h}</text>
+    <text x="${(blx+brx)/2}" y="${bly+16}" text-anchor="middle" font-size="11" fill="#ca8a04">a = ${a} cm</text>
+  `;
+}
+
+// ===================== INIT =====================
+function loadSaved() {
+  // load saved values into inputs
+  const restore = (id, key, def) => {
+    const el = document.getElementById(id);
+    if (el) { const v = gv(key, def); if (v !== null) el.value = v; }
+  };
+  restore('kv-s','geo_kv_s',5);
+  restore('rek-l','geo_rek_l',8); restore('rek-b','geo_rek_b',5);
+  restore('par-g','geo_par_g',9); restore('par-h','geo_par_h',5); restore('par-s','geo_par_s',6);
+  restore('tre-g','geo_tre_g',8); restore('tre-h','geo_tre_h',5);
+  restore('trap-a','geo_trap_a',10); restore('trap-b','geo_trap_b',6); restore('trap-h','geo_trap_h',4);
+  restore('sir-r','geo_sir_r',6);
+  restore('kas-l','geo_kas_l',6); restore('kas-b','geo_kas_b',4); restore('kas-h','geo_kas_h',3);
+  restore('syl-r','geo_syl_r',4); restore('syl-h','geo_syl_h',7);
+  restore('kul-r','geo_kul_r',5);
+  restore('kje-r','geo_kje_r',4); restore('kje-h','geo_kje_h',8);
+  restore('pyr-a','geo_pyr_a',6); restore('pyr-h','geo_pyr_h',8);
+}
+
+function init() {
+  loadSaved();
+  // Init 2D
+  calcKvadrat();
+  // Init pyth
+  const pm = gv('geo_pyth_mode', 'c');
+  setPythMode(pm);
+  // Init 3D
+  calcKasse();
+}
+
+init();
+</script>
+</body>
+</html>

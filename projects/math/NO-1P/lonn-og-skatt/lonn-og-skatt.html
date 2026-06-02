@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<!--
+  Lønn og skatt — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 1P (LK20): fra bruttolønn til nettolønn
+  med trekkprosent og feriepenger, med formler og en visuell fordeling.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lønn og skatt — Matematikk 1P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .bar-transition { transition: width 0.5s ease; }
+    input[type=range] { accent-color: #3b82f6; }
+    .formula-box {
+      font-family: 'Courier New', Courier, monospace;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+  <div class="max-w-2xl mx-auto px-4 py-8">
+
+    <!-- Header -->
+    <header class="mb-8">
+      <p class="text-xs font-semibold uppercase tracking-widest text-blue-500 mb-1">Matematikk 1P · LK20</p>
+      <h1 class="text-3xl font-bold text-slate-800">Lønn og skatt</h1>
+      <p class="text-slate-500 mt-1 text-sm">Beregn nettolønn fra bruttolønn, trekkprosent og feriepenger.</p>
+    </header>
+
+    <!-- Input card -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+      <h2 class="text-lg font-semibold text-slate-700 mb-5">Innstillinger</h2>
+
+      <!-- Periode -->
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-slate-600 mb-2">Lønnsperiode</label>
+        <div class="flex gap-3">
+          <button id="btn-maaned"
+            class="flex-1 py-2 rounded-lg border-2 text-sm font-semibold transition-colors"
+            onclick="setPeriode('maaned')">
+            Per måned
+          </button>
+          <button id="btn-aar"
+            class="flex-1 py-2 rounded-lg border-2 text-sm font-semibold transition-colors"
+            onclick="setPeriode('aar')">
+            Per år
+          </button>
+        </div>
+      </div>
+
+      <!-- Bruttolønn -->
+      <div class="mb-5">
+        <label for="bruttolonn" class="block text-sm font-medium text-slate-600 mb-1">
+          Bruttolønn (<span id="periode-label">per måned</span>)
+        </label>
+        <div class="flex items-center gap-3">
+          <input
+            type="range" id="bruttolonn-slider"
+            min="10000" max="150000" step="500"
+            class="flex-1"
+            oninput="syncFromSlider()"
+          />
+          <div class="relative">
+            <input
+              type="number" id="bruttolonn"
+              min="0" max="9999999"
+              class="w-32 border border-slate-300 rounded-lg px-3 py-2 text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              oninput="syncFromInput()"
+            />
+            <span class="absolute right-2 top-2 text-slate-400 text-xs pointer-events-none">kr</span>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-1">Typisk månedslønn i Norge: 35 000 – 65 000 kr</p>
+      </div>
+
+      <!-- Trekkprosent -->
+      <div class="mb-5">
+        <label for="trekkprosent-slider" class="block text-sm font-medium text-slate-600 mb-1">
+          Trekkprosent (skatteprosent)
+        </label>
+        <div class="flex items-center gap-3">
+          <input
+            type="range" id="trekkprosent-slider"
+            min="0" max="60" step="0.5"
+            class="flex-1"
+            oninput="syncTrekkFromSlider()"
+          />
+          <div class="relative">
+            <input
+              type="number" id="trekkprosent"
+              min="0" max="100" step="0.1"
+              class="w-24 border border-slate-300 rounded-lg px-3 py-2 text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              oninput="syncTrekkFromInput()"
+            />
+            <span class="absolute right-2 top-2 text-slate-400 text-xs pointer-events-none">%</span>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-1">Vanlig trekkprosent: 22 – 38 %</p>
+      </div>
+
+      <!-- Feriepenger -->
+      <div class="mb-2">
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-sm font-medium text-slate-600">Feriepenger</label>
+          <button
+            id="toggle-ferie"
+            onclick="toggleFerie()"
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
+            role="switch" aria-checked="false">
+            <span id="toggle-ferie-knob" class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"></span>
+          </button>
+        </div>
+        <div id="ferie-inputs" class="hidden">
+          <div class="flex items-center gap-3 mt-2">
+            <label class="text-sm text-slate-500 flex-1">Feriepengersats</label>
+            <div class="relative">
+              <input
+                type="number" id="feriesats"
+                min="0" max="20" step="0.1" value="10.2"
+                class="w-24 border border-slate-300 rounded-lg px-3 py-2 text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                oninput="beregn()"
+              />
+              <span class="absolute right-2 top-2 text-slate-400 text-xs pointer-events-none">%</span>
+            </div>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">Lovpålagt minimum: 10,2 % (12 % for arbeidstakere over 60 år)</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Resultat card -->
+    <section id="resultat-kort" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+      <h2 class="text-lg font-semibold text-slate-700 mb-5">Beregning</h2>
+
+      <!-- Visuell fordeling -->
+      <div class="mb-6">
+        <div class="flex justify-between text-xs font-medium mb-1">
+          <span class="text-green-600">Nettolønn</span>
+          <span class="text-red-500">Skatt</span>
+        </div>
+        <div class="flex rounded-full overflow-hidden h-8 bg-slate-100">
+          <div id="bar-netto" class="bar-transition bg-green-400 flex items-center justify-center text-xs font-bold text-white" style="width:70%">
+            <span id="bar-netto-label"></span>
+          </div>
+          <div id="bar-skatt" class="bar-transition bg-red-400 flex items-center justify-center text-xs font-bold text-white" style="width:30%">
+            <span id="bar-skatt-label"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Talloversikt -->
+      <div class="space-y-3 mb-6">
+        <div class="flex justify-between items-center py-2 border-b border-slate-100">
+          <span class="text-slate-600 text-sm">Bruttolønn</span>
+          <span id="res-brutto" class="font-semibold text-slate-800">—</span>
+        </div>
+        <div class="flex justify-between items-center py-2 border-b border-slate-100">
+          <span class="text-slate-600 text-sm">Skatt (trekk)</span>
+          <span id="res-skatt" class="font-semibold text-red-500">—</span>
+        </div>
+        <div class="flex justify-between items-center py-2 border-b border-slate-100 bg-green-50 rounded-lg px-2">
+          <span class="text-slate-700 text-sm font-semibold">Nettolønn (utbetalt)</span>
+          <span id="res-netto" class="font-bold text-green-600 text-lg">—</span>
+        </div>
+        <div id="res-aarslonn-rad" class="flex justify-between items-center py-2 border-b border-slate-100 hidden">
+          <span class="text-slate-500 text-sm">Årslønn (brutto)</span>
+          <span id="res-aarslonn" class="font-semibold text-slate-600">—</span>
+        </div>
+        <div id="res-ferie-rad" class="flex justify-between items-center py-2 hidden">
+          <span class="text-slate-500 text-sm">Feriepenger</span>
+          <span id="res-ferie" class="font-semibold text-blue-500">—</span>
+        </div>
+      </div>
+
+      <!-- Formler -->
+      <div class="formula-box bg-slate-50 rounded-xl p-4 border border-slate-200">
+        <p class="text-xs font-semibold uppercase text-slate-400 mb-3 tracking-wider">Formler brukt</p>
+        <div class="space-y-2 text-sm text-slate-700">
+          <div class="flex flex-col gap-0.5">
+            <span class="text-slate-500 text-xs">Skatt:</span>
+            <span>skatt = bruttolønn × trekkprosent / 100</span>
+            <span id="formel-skatt-tall" class="text-slate-500 text-xs"></span>
+          </div>
+          <div class="border-t border-slate-200 pt-2 flex flex-col gap-0.5">
+            <span class="text-slate-500 text-xs">Nettolønn:</span>
+            <span>nettolønn = bruttolønn − skatt</span>
+            <span id="formel-netto-tall" class="text-slate-500 text-xs"></span>
+          </div>
+          <div id="formel-ferie-blokk" class="border-t border-slate-200 pt-2 hidden flex flex-col gap-0.5">
+            <span class="text-slate-500 text-xs">Feriepenger:</span>
+            <span>feriepenger = årslønn × feriesats / 100</span>
+            <span id="formel-ferie-tall" class="text-slate-500 text-xs"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Forklaring -->
+    <section class="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-8">
+      <h2 class="text-base font-semibold text-blue-800 mb-3">Hva betyr disse begrepene?</h2>
+      <dl class="space-y-3 text-sm text-slate-700">
+        <div>
+          <dt class="font-semibold text-slate-800">Bruttolønn</dt>
+          <dd>Den totale lønnen du tjener, <em>før</em> skatt og andre trekk. Dette er beløpet du avtaler med arbeidsgiver.</dd>
+        </div>
+        <div>
+          <dt class="font-semibold text-slate-800">Trekkprosent (skatteprosent)</dt>
+          <dd>Andelen av bruttolønnen som trekkes i skatt. Her bruker vi en forenklet, fast sats. I virkeligheten beregnes norsk inntektsskatt med ulike trinn (trinnskatt), personfradrag og arbeidsgiveravgift — det er mer sammensatt enn én fast prosent.</dd>
+        </div>
+        <div>
+          <dt class="font-semibold text-slate-800">Nettolønn</dt>
+          <dd>Det du faktisk får utbetalt på konto etter at skattetrekket er trukket fra. Nettolønn = bruttolønn − skatt.</dd>
+        </div>
+        <div>
+          <dt class="font-semibold text-slate-800">Feriepenger</dt>
+          <dd>Feriepenger er opptjent lønn fra året <em>før</em>. Arbeidsgiver er lovpålagt å betale minst 10,2 % av feriepengegrunnlaget (årslønn). Feriepengene erstatter vanlig lønn under ferien. Beløpet over er en forenkling basert på brutto årslønn.</dd>
+        </div>
+      </dl>
+    </section>
+
+    <footer class="text-center text-xs text-slate-400 pb-4">
+      Matematikk 1P · LK20 · Halison App Studio
+    </footer>
+
+  </div>
+
+  <script>
+    // ---- State ----
+    var state = {
+      periode: 'maaned',
+      brutto: 45000,
+      trekkprosent: 27,
+      ferieAktivert: false,
+      feriesats: 10.2
+    };
+
+    // ---- Init ----
+    function init() {
+      var saved = null;
+      try { saved = JSON.parse(localStorage.getItem('lonn-skatt-state')); } catch(e) {}
+      if (saved) {
+        if (saved.periode) state.periode = saved.periode;
+        if (typeof saved.brutto === 'number') state.brutto = saved.brutto;
+        if (typeof saved.trekkprosent === 'number') state.trekkprosent = saved.trekkprosent;
+        if (typeof saved.ferieAktivert === 'boolean') state.ferieAktivert = saved.ferieAktivert;
+        if (typeof saved.feriesats === 'number') state.feriesats = saved.feriesats;
+      }
+
+      // Apply to DOM
+      document.getElementById('bruttolonn').value = state.brutto;
+      document.getElementById('bruttolonn-slider').value = Math.min(Math.max(state.brutto, 10000), 150000);
+      document.getElementById('trekkprosent').value = state.trekkprosent;
+      document.getElementById('trekkprosent-slider').value = Math.min(Math.max(state.trekkprosent, 0), 60);
+      document.getElementById('feriesats').value = state.feriesats;
+
+      setPeriode(state.periode, true);
+      if (state.ferieAktivert) {
+        setFerie(true, true);
+      }
+      beregn();
+    }
+
+    // ---- Save ----
+    function saveState() {
+      try { localStorage.setItem('lonn-skatt-state', JSON.stringify(state)); } catch(e) {}
+    }
+
+    // ---- Periode ----
+    function setPeriode(p, skipSave) {
+      state.periode = p;
+      var btnM = document.getElementById('btn-maaned');
+      var btnA = document.getElementById('btn-aar');
+      var lbl = document.getElementById('periode-label');
+
+      if (p === 'maaned') {
+        btnM.className = 'flex-1 py-2 rounded-lg border-2 text-sm font-semibold transition-colors border-blue-500 bg-blue-500 text-white';
+        btnA.className = 'flex-1 py-2 rounded-lg border-2 text-sm font-semibold transition-colors border-slate-200 bg-white text-slate-600 hover:border-blue-300';
+        lbl.textContent = 'per måned';
+        // Update slider range for monthly
+        document.getElementById('bruttolonn-slider').min = 10000;
+        document.getElementById('bruttolonn-slider').max = 150000;
+        document.getElementById('bruttolonn-slider').step = 500;
+      } else {
+        btnA.className = 'flex-1 py-2 rounded-lg border-2 text-sm font-semibold transition-colors border-blue-500 bg-blue-500 text-white';
+        btnM.className = 'flex-1 py-2 rounded-lg border-2 text-sm font-semibold transition-colors border-slate-200 bg-white text-slate-600 hover:border-blue-300';
+        lbl.textContent = 'per år';
+        // Update slider range for yearly
+        document.getElementById('bruttolonn-slider').min = 120000;
+        document.getElementById('bruttolonn-slider').max = 1800000;
+        document.getElementById('bruttolonn-slider').step = 6000;
+      }
+
+      // Clamp slider value to new range
+      var sliderEl = document.getElementById('bruttolonn-slider');
+      var val = parseInt(sliderEl.value, 10);
+      sliderEl.value = Math.min(Math.max(val, parseInt(sliderEl.min, 10)), parseInt(sliderEl.max, 10));
+
+      if (!skipSave) saveState();
+      beregn();
+    }
+
+    // ---- Ferie toggle ----
+    function toggleFerie() {
+      setFerie(!state.ferieAktivert);
+    }
+
+    function setFerie(on, skipSave) {
+      state.ferieAktivert = on;
+      var btn = document.getElementById('toggle-ferie');
+      var knob = document.getElementById('toggle-ferie-knob');
+      var inputs = document.getElementById('ferie-inputs');
+
+      if (on) {
+        btn.className = 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-blue-500';
+        btn.setAttribute('aria-checked', 'true');
+        knob.className = 'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform translate-x-5';
+        inputs.classList.remove('hidden');
+      } else {
+        btn.className = 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-slate-300';
+        btn.setAttribute('aria-checked', 'false');
+        knob.className = 'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform translate-x-1';
+        inputs.classList.add('hidden');
+      }
+
+      if (!skipSave) saveState();
+      beregn();
+    }
+
+    // ---- Slider/Input sync ----
+    function syncFromSlider() {
+      var val = parseInt(document.getElementById('bruttolonn-slider').value, 10);
+      document.getElementById('bruttolonn').value = val;
+      state.brutto = val;
+      saveState();
+      beregn();
+    }
+
+    function syncFromInput() {
+      var val = parseFloat(document.getElementById('bruttolonn').value) || 0;
+      state.brutto = val;
+      var slider = document.getElementById('bruttolonn-slider');
+      slider.value = Math.min(Math.max(val, parseInt(slider.min, 10)), parseInt(slider.max, 10));
+      saveState();
+      beregn();
+    }
+
+    function syncTrekkFromSlider() {
+      var val = parseFloat(document.getElementById('trekkprosent-slider').value);
+      document.getElementById('trekkprosent').value = val;
+      state.trekkprosent = val;
+      saveState();
+      beregn();
+    }
+
+    function syncTrekkFromInput() {
+      var val = parseFloat(document.getElementById('trekkprosent').value) || 0;
+      state.trekkprosent = val;
+      var slider = document.getElementById('trekkprosent-slider');
+      slider.value = Math.min(Math.max(val, 0), 60);
+      saveState();
+      beregn();
+    }
+
+    // ---- Format ----
+    function kr(n) {
+      return n.toLocaleString('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' kr';
+    }
+
+    function pct(n, decimals) {
+      decimals = decimals !== undefined ? decimals : 1;
+      return n.toLocaleString('nb-NO', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) + ' %';
+    }
+
+    // ---- Beregn ----
+    function beregn() {
+      var brutto = parseFloat(document.getElementById('bruttolonn').value) || 0;
+      var trekkpst = parseFloat(document.getElementById('trekkprosent').value) || 0;
+      var feriesats = parseFloat(document.getElementById('feriesats').value) || 0;
+
+      state.brutto = brutto;
+      state.trekkprosent = trekkpst;
+      state.feriesats = feriesats;
+
+      // Beregn skatt og netto
+      var skatt = brutto * trekkpst / 100;
+      var netto = brutto - skatt;
+
+      // Årslønn (brukes alltid i feriepenger-beregning)
+      var aarslonn = state.periode === 'maaned' ? brutto * 12 : brutto;
+      var aarsskatt = state.periode === 'maaned' ? skatt * 12 : skatt;
+      var aarsnetto = state.periode === 'maaned' ? netto * 12 : netto;
+
+      // Feriepenger: beregnes alltid på årslønn (brutto)
+      var feriepenger = aarslonn * feriesats / 100;
+
+      // --- Oppdater visning ---
+
+      document.getElementById('res-brutto').textContent = kr(brutto);
+      document.getElementById('res-skatt').textContent = '− ' + kr(skatt);
+      document.getElementById('res-netto').textContent = kr(netto);
+
+      // Årslønn-rad: vis kun ved månedlig
+      var aarRad = document.getElementById('res-aarslonn-rad');
+      if (state.periode === 'maaned') {
+        aarRad.classList.remove('hidden');
+        document.getElementById('res-aarslonn').textContent = kr(aarslonn);
+      } else {
+        aarRad.classList.add('hidden');
+      }
+
+      // Feriepenger-rad
+      var ferieRad = document.getElementById('res-ferie-rad');
+      var ferieFormelBlokk = document.getElementById('formel-ferie-blokk');
+      if (state.ferieAktivert) {
+        ferieRad.classList.remove('hidden');
+        ferieFormelBlokk.classList.remove('hidden');
+        document.getElementById('res-ferie').textContent = kr(feriepenger);
+        document.getElementById('formel-ferie-tall').textContent =
+          '= ' + kr(aarslonn) + ' × ' + feriesats.toLocaleString('nb-NO') + ' / 100 = ' + kr(feriepenger);
+      } else {
+        ferieRad.classList.add('hidden');
+        ferieFormelBlokk.classList.add('hidden');
+      }
+
+      // Formel-tall
+      document.getElementById('formel-skatt-tall').textContent =
+        '= ' + kr(brutto) + ' × ' + trekkpst.toLocaleString('nb-NO') + ' / 100 = ' + kr(skatt);
+      document.getElementById('formel-netto-tall').textContent =
+        '= ' + kr(brutto) + ' − ' + kr(skatt) + ' = ' + kr(netto);
+
+      // Visuell fordeling
+      var nettoPct = brutto > 0 ? (netto / brutto) * 100 : 70;
+      var skattPct = 100 - nettoPct;
+      nettoPct = Math.max(0, Math.min(100, nettoPct));
+      skattPct = Math.max(0, Math.min(100, skattPct));
+
+      var barNetto = document.getElementById('bar-netto');
+      var barSkatt = document.getElementById('bar-skatt');
+      barNetto.style.width = nettoPct.toFixed(1) + '%';
+      barSkatt.style.width = skattPct.toFixed(1) + '%';
+
+      // Vis prosent i baren (bare om den er stor nok)
+      document.getElementById('bar-netto-label').textContent = nettoPct >= 15 ? pct(nettoPct, 0) : '';
+      document.getElementById('bar-skatt-label').textContent = skattPct >= 10 ? pct(skattPct, 0) : '';
+    }
+
+    // ---- Kjør ----
+    init();
+  </script>
+
+</body>
+</html>

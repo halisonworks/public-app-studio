@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<!--
+  Geometri (2P) — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 2P (LK20): areal og omkrets (også
+  sammensatte figurer), Pytagoras, volum og overflate, og målestokk og formlikhet.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geometri – Matematikk 2P (LK20)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; }
+  .tab-btn { transition: all 0.2s; }
+  .tab-btn.active { background: #1d4ed8; color: white; }
+  .sub-tab-btn { transition: all 0.2s; }
+  .sub-tab-btn.active { background: #2563eb; color: white; }
+  .section-panel { display: none; }
+  .section-panel.active { display: block; }
+  .sub-panel { display: none; }
+  .sub-panel.active { display: block; }
+  input[type="number"], input[type="range"] { accent-color: #2563eb; }
+  .formula-box {
+    background: #eff6ff;
+    border-left: 4px solid #2563eb;
+    font-family: 'Courier New', monospace;
+  }
+  .result-box {
+    background: #f0fdf4;
+    border-left: 4px solid #16a34a;
+  }
+  .example-box {
+    background: #fefce8;
+    border-left: 4px solid #ca8a04;
+  }
+  svg text { user-select: none; }
+  .dim-label { font-size: 12px; fill: #374151; }
+  .shape-fill { fill: #bfdbfe; stroke: #2563eb; stroke-width: 2; }
+  .shape-fill-green { fill: #bbf7d0; stroke: #16a34a; stroke-width: 2; }
+  .shape-fill-yellow { fill: #fef9c3; stroke: #ca8a04; stroke-width: 2; }
+  .shape-fill-red { fill: #fee2e2; stroke: #dc2626; stroke-width: 2; }
+  .angle-mark { fill: none; stroke: #9ca3af; stroke-width: 1.5; }
+  .right-angle { fill: none; stroke: #9ca3af; stroke-width: 1.5; }
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- HEADER -->
+<header class="bg-blue-700 text-white py-4 px-4 shadow-lg">
+  <div class="max-w-5xl mx-auto">
+    <h1 class="text-2xl font-bold">📐 Geometri – Matematikk 2P</h1>
+    <p class="text-blue-200 text-sm mt-1">Interaktivt læremiddel · LK20 · Bokmål</p>
+  </div>
+</header>
+
+<!-- MAIN NAV TABS -->
+<div class="max-w-5xl mx-auto px-4 mt-4">
+  <div class="flex flex-wrap gap-2">
+    <button class="tab-btn active px-4 py-2 rounded-lg font-semibold text-sm bg-gray-200 text-gray-700" data-tab="areal">
+      1. Areal &amp; omkrets
+    </button>
+    <button class="tab-btn px-4 py-2 rounded-lg font-semibold text-sm bg-gray-200 text-gray-700" data-tab="pytagoras">
+      2. Pytagoras
+    </button>
+    <button class="tab-btn px-4 py-2 rounded-lg font-semibold text-sm bg-gray-200 text-gray-700" data-tab="volum">
+      3. Volum &amp; overflate
+    </button>
+    <button class="tab-btn px-4 py-2 rounded-lg font-semibold text-sm bg-gray-200 text-gray-700" data-tab="malestokk">
+      4. Målestokk &amp; formlikhet
+    </button>
+  </div>
+</div>
+
+<main class="max-w-5xl mx-auto px-4 pb-16 mt-4">
+
+<!-- ===================== SECTION 1: AREAL OG OMKRETS ===================== -->
+<div id="sec-areal" class="section-panel active">
+  <div class="bg-white rounded-xl shadow p-5 mb-4">
+    <h2 class="text-xl font-bold text-blue-800 mb-2">Areal og omkrets – 2D-figurer</h2>
+    <p class="text-gray-600 text-sm">
+      Areal (A) er hvor stort et flateinnhold er – måles i cm², m², osv. Omkrets (O) er den totale lengden rundt figuren.
+      Velg en figur under, skriv inn mål, og se resultatet og figuren oppdatere seg.
+    </p>
+  </div>
+
+  <!-- Sub-tabs -->
+  <div class="flex flex-wrap gap-2 mb-4">
+    <button class="sub-tab-btn active px-3 py-1.5 rounded text-sm font-medium bg-gray-100 text-gray-700" data-group="areal" data-sub="kvadrat">Kvadrat</button>
+    <button class="sub-tab-btn px-3 py-1.5 rounded text-sm font-medium bg-gray-100 text-gray-700" data-group="areal" data-sub="rektangel">Rektangel</button>
+    <button class="sub-tab-btn px-3 py-1.5 rounded text-sm font-medium bg-gray-100 text-gray-700" data-group="areal" data-sub="parallellogram">Parallellogram</button>
+    <button class="sub-tab-btn px-3 py-1.5 rounded text-sm font-medium bg-gray-100 text-gray-700" data-group="areal" data-sub="trekant">Trekant</button>
+    <button class="sub-tab-btn px-3 py-1.5 rounded text-sm font-medium bg-gray-100 text-gray-700" data-group="areal" data-sub="trapes">Trapes</button>
+    <button class="sub-tab-btn px-3 py-1.5 rounded text-sm font-medium bg-gray-100 text-gray-700" data-group="areal" data-sub="sirkel">Sirkel</button>
+    <button class="sub-tab-btn px-3 py-1.5 rounded text-sm font-medium bg-gray-100 text-gray-700" data-group="areal" data-sub="sammensatt">Sammensatt figur</button>
+  </div>
+
+  <!-- KVADRAT -->
+  <div id="sub-kvadrat" class="sub-panel active">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow p-5">
+        <h3 class="font-bold text-blue-700 mb-2">Kvadrat</h3>
+        <p class="text-sm text-gray-600 mb-3">Et kvadrat har fire like sider og fire rette vinkler.</p>
+        <div class="formula-box rounded p-3 mb-4 text-sm">
+          A = s²<br>O = 4 · s
+        </div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Side s (cm)</label>
+        <input type="number" id="kv-s" min="1" max="30" value="5" step="0.5"
+          class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateKvadrat()">
+        <input type="range" id="kv-s-r" min="1" max="30" value="5" step="0.5" class="w-full mt-1" oninput="syncRange('kv-s','kv-s-r');updateKvadrat()">
+        <div id="kv-result" class="result-box rounded p-3 mt-4 text-sm"></div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 flex items-center justify-center">
+        <svg id="svg-kvadrat" viewBox="0 0 220 220" width="220" height="220"></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- REKTANGEL -->
+  <div id="sub-rektangel" class="sub-panel">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow p-5">
+        <h3 class="font-bold text-blue-700 mb-2">Rektangel</h3>
+        <p class="text-sm text-gray-600 mb-3">Et rektangel har to par med like sider og fire rette vinkler. Praktisk eksempel: gulvflaten i et rom.</p>
+        <div class="formula-box rounded p-3 mb-4 text-sm">
+          A = l · b<br>O = 2 · (l + b)
+        </div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Lengde l (m)</label>
+        <input type="number" id="rek-l" min="0.5" max="20" value="6" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateRektangel()">
+        <input type="range" id="rek-l-r" min="0.5" max="20" value="6" step="0.5" class="w-full mt-1" oninput="syncRange('rek-l','rek-l-r');updateRektangel()">
+        <label class="block text-sm font-medium text-gray-700 mb-1 mt-3">Bredde b (m)</label>
+        <input type="number" id="rek-b" min="0.5" max="20" value="4" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateRektangel()">
+        <input type="range" id="rek-b-r" min="0.5" max="20" value="4" step="0.5" class="w-full mt-1" oninput="syncRange('rek-b','rek-b-r');updateRektangel()">
+        <div id="rek-result" class="result-box rounded p-3 mt-4 text-sm"></div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 flex items-center justify-center">
+        <svg id="svg-rektangel" viewBox="0 0 260 220" width="260" height="220"></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- PARALLELLOGRAM -->
+  <div id="sub-parallellogram" class="sub-panel">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow p-5">
+        <h3 class="font-bold text-blue-700 mb-2">Parallellogram</h3>
+        <p class="text-sm text-gray-600 mb-3">To par med parallelle sider. Arealet avhenger av grunnlinjen og høyden (ikke skråsiden).</p>
+        <div class="formula-box rounded p-3 mb-4 text-sm">
+          A = g · h<br>O = 2 · (g + s)
+        </div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Grunnlinje g (cm)</label>
+        <input type="number" id="par-g" min="1" max="20" value="8" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateParallellogram()">
+        <input type="range" id="par-g-r" min="1" max="20" value="8" step="0.5" class="w-full mt-1" oninput="syncRange('par-g','par-g-r');updateParallellogram()">
+        <label class="block text-sm font-medium text-gray-700 mb-1 mt-3">Høyde h (cm)</label>
+        <input type="number" id="par-h" min="1" max="15" value="5" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateParallellogram()">
+        <input type="range" id="par-h-r" min="1" max="15" value="5" step="0.5" class="w-full mt-1" oninput="syncRange('par-h','par-h-r');updateParallellogram()">
+        <label class="block text-sm font-medium text-gray-700 mb-1 mt-3">Skråside s (cm)</label>
+        <input type="number" id="par-s" min="1" max="20" value="6" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateParallellogram()">
+        <input type="range" id="par-s-r" min="1" max="20" value="6" step="0.5" class="w-full mt-1" oninput="syncRange('par-s','par-s-r');updateParallellogram()">
+        <div id="par-result" class="result-box rounded p-3 mt-4 text-sm"></div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 flex items-center justify-center">
+        <svg id="svg-parallellogram" viewBox="0 0 260 200" width="260" height="200"></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- TREKANT -->
+  <div id="sub-trekant" class="sub-panel">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow p-5">
+        <h3 class="font-bold text-blue-700 mb-2">Trekant</h3>
+        <p class="text-sm text-gray-600 mb-3">Arealet er halvparten av grunnlinje × høyde. Eks: taket på et hus er ofte trekantet.</p>
+        <div class="formula-box rounded p-3 mb-4 text-sm">
+          A = (g · h) / 2<br>O = a + b + c
+        </div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Grunnlinje g (cm)</label>
+        <input type="number" id="tri-g" min="1" max="20" value="8" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateTrekant()">
+        <input type="range" id="tri-g-r" min="1" max="20" value="8" step="0.5" class="w-full mt-1" oninput="syncRange('tri-g','tri-g-r');updateTrekant()">
+        <label class="block text-sm font-medium text-gray-700 mb-1 mt-3">Høyde h (cm)</label>
+        <input type="number" id="tri-h" min="1" max="20" value="6" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateTrekant()">
+        <input type="range" id="tri-h-r" min="1" max="20" value="6" step="0.5" class="w-full mt-1" oninput="syncRange('tri-h','tri-h-r');updateTrekant()">
+        <div id="tri-result" class="result-box rounded p-3 mt-4 text-sm"></div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 flex items-center justify-center">
+        <svg id="svg-trekant" viewBox="0 0 260 200" width="260" height="200"></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRAPES -->
+  <div id="sub-trapes" class="sub-panel">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow p-5">
+        <h3 class="font-bold text-blue-700 mb-2">Trapes</h3>
+        <p class="text-sm text-gray-600 mb-3">Et trapes har to parallelle sider (a og b) og en høyde h mellom dem. Eks: en trapesformet hage.</p>
+        <div class="formula-box rounded p-3 mb-4 text-sm">
+          A = ((a + b) / 2) · h
+        </div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Parallellside a (cm)</label>
+        <input type="number" id="trap-a" min="1" max="20" value="10" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateTrapes()">
+        <input type="range" id="trap-a-r" min="1" max="20" value="10" step="0.5" class="w-full mt-1" oninput="syncRange('trap-a','trap-a-r');updateTrapes()">
+        <label class="block text-sm font-medium text-gray-700 mb-1 mt-3">Parallellside b (cm)</label>
+        <input type="number" id="trap-b" min="1" max="20" value="6" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateTrapes()">
+        <input type="range" id="trap-b-r" min="1" max="20" value="6" step="0.5" class="w-full mt-1" oninput="syncRange('trap-b','trap-b-r');updateTrapes()">
+        <label class="block text-sm font-medium text-gray-700 mb-1 mt-3">Høyde h (cm)</label>
+        <input type="number" id="trap-h" min="1" max="15" value="4" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateTrapes()">
+        <input type="range" id="trap-h-r" min="1" max="15" value="4" step="0.5" class="w-full mt-1" oninput="syncRange('trap-h','trap-h-r');updateTrapes()">
+        <div id="trap-result" class="result-box rounded p-3 mt-4 text-sm"></div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 flex items-center justify-center">
+        <svg id="svg-trapes" viewBox="0 0 260 200" width="260" height="200"></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIRKEL -->
+  <div id="sub-sirkel" class="sub-panel">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow p-5">
+        <h3 class="font-bold text-blue-700 mb-2">Sirkel</h3>
+        <p class="text-sm text-gray-600 mb-3">En sirkel med radius r. Omkretsen kalles også periferi eller sirkelomkrets (C). Eks: vannpøl, pizzabunn.</p>
+        <div class="formula-box rounded p-3 mb-4 text-sm">
+          A = π · r²<br>O = 2 · π · r<br>Diameter d = 2r
+        </div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Radius r (cm)</label>
+        <input type="number" id="sir-r" min="0.5" max="15" value="5" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateSirkel()">
+        <input type="range" id="sir-r-r" min="0.5" max="15" value="5" step="0.5" class="w-full mt-1" oninput="syncRange('sir-r','sir-r-r');updateSirkel()">
+        <div id="sir-result" class="result-box rounded p-3 mt-4 text-sm"></div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 flex items-center justify-center">
+        <svg id="svg-sirkel" viewBox="0 0 220 220" width="220" height="220"></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAMMENSATT FIGUR -->
+  <div id="sub-sammensatt" class="sub-panel">
+    <div class="bg-white rounded-xl shadow p-5 mb-4">
+      <h3 class="font-bold text-blue-700 mb-2">Sammensatte figurer</h3>
+      <p class="text-sm text-gray-600 mb-3">
+        Mange virkelige former er satt sammen av enklere figurer. Fremgangsmåte:
+        <strong>Del opp → beregn hvert del-areal → summer</strong>.
+      </p>
+      <div class="example-box rounded p-4 mb-4 text-sm">
+        <strong>Praktisk eksempel:</strong> En idrettshall har rektangulær planform med to halvsirkler i endene (en friidrettsbane).
+        Finn total gulvflate og den rektangulære midtdelen separat.
+      </div>
+    </div>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow p-5">
+        <h4 class="font-semibold text-gray-700 mb-3">Rektangel + halvsirkel i hver ende (stadion)</h4>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Lengde rektangel L (m)</label>
+        <input type="number" id="sam-l" min="5" max="100" value="40" step="1" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateSammensatt()">
+        <input type="range" id="sam-l-r" min="5" max="100" value="40" step="1" class="w-full mt-1" oninput="syncRange('sam-l','sam-l-r');updateSammensatt()">
+        <label class="block text-sm font-medium text-gray-700 mb-1 mt-3">Bredde b (m) — også diameter på halvsirklene</label>
+        <input type="number" id="sam-b" min="2" max="50" value="20" step="1" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateSammensatt()">
+        <input type="range" id="sam-b-r" min="2" max="50" value="20" step="1" class="w-full mt-1" oninput="syncRange('sam-b','sam-b-r');updateSammensatt()">
+        <div id="sam-result" class="result-box rounded p-3 mt-4 text-sm"></div>
+        <div id="sam-steps" class="example-box rounded p-3 mt-3 text-sm"></div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 flex items-center justify-center">
+        <svg id="svg-sammensatt" viewBox="0 0 300 200" width="300" height="200"></svg>
+      </div>
+    </div>
+  </div>
+</div><!-- end sec-areal -->
+
+<!-- ===================== SECTION 2: PYTAGORAS ===================== -->
+<div id="sec-pytagoras" class="section-panel">
+  <div class="bg-white rounded-xl shadow p-5 mb-4">
+    <h2 class="text-xl font-bold text-blue-800 mb-2">Pytagoras' setning</h2>
+    <p class="text-sm text-gray-600 mb-2">
+      I en rettvinklet trekant er kvadratet av hypotenusen (den lengste siden, mot den rette vinkelen) lik summen av kvadratene av de to katetene.
+    </p>
+    <div class="formula-box rounded p-3 text-sm">
+      a² + b² = c²<br>
+      <span class="text-gray-500">der c er hypotenusen</span>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-xl shadow p-5 mb-4">
+    <h3 class="font-semibold text-gray-700 mb-3">Velg hva du vil finne:</h3>
+    <div class="flex flex-wrap gap-3 mb-4">
+      <button id="pyth-find-c" onclick="setPythMode('c')"
+        class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white">
+        Finn hypotenusen c
+      </button>
+      <button id="pyth-find-a" onclick="setPythMode('a')"
+        class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 text-gray-700">
+        Finn katet a
+      </button>
+      <button id="pyth-find-b" onclick="setPythMode('b')"
+        class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 text-gray-700">
+        Finn katet b
+      </button>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <div>
+        <div id="pyth-inputs-c">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Katet a (cm)</label>
+          <input type="number" id="pyth-a" min="0.5" max="30" value="3" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updatePytagoras()">
+          <input type="range" id="pyth-a-r" min="0.5" max="30" value="3" step="0.5" class="w-full mt-1 mb-3" oninput="syncRange('pyth-a','pyth-a-r');updatePytagoras()">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Katet b (cm)</label>
+          <input type="number" id="pyth-b" min="0.5" max="30" value="4" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updatePytagoras()">
+          <input type="range" id="pyth-b-r" min="0.5" max="30" value="4" step="0.5" class="w-full mt-1" oninput="syncRange('pyth-b','pyth-b-r');updatePytagoras()">
+        </div>
+        <div id="pyth-inputs-a" style="display:none">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Katet b (cm)</label>
+          <input type="number" id="pyth-ba" min="0.5" max="30" value="4" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updatePytagoras()">
+          <input type="range" id="pyth-ba-r" min="0.5" max="30" value="4" step="0.5" class="w-full mt-1 mb-3" oninput="syncRange('pyth-ba','pyth-ba-r');updatePytagoras()">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Hypotenus c (cm)</label>
+          <input type="number" id="pyth-ca" min="0.5" max="40" value="5" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updatePytagoras()">
+          <input type="range" id="pyth-ca-r" min="0.5" max="40" value="5" step="0.5" class="w-full mt-1" oninput="syncRange('pyth-ca','pyth-ca-r');updatePytagoras()">
+        </div>
+        <div id="pyth-inputs-b" style="display:none">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Katet a (cm)</label>
+          <input type="number" id="pyth-ab" min="0.5" max="30" value="3" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updatePytagoras()">
+          <input type="range" id="pyth-ab-r" min="0.5" max="30" value="3" step="0.5" class="w-full mt-1 mb-3" oninput="syncRange('pyth-ab','pyth-ab-r');updatePytagoras()">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Hypotenus c (cm)</label>
+          <input type="number" id="pyth-cb" min="0.5" max="40" value="5" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updatePytagoras()">
+          <input type="range" id="pyth-cb-r" min="0.5" max="40" value="5" step="0.5" class="w-full mt-1" oninput="syncRange('pyth-cb','pyth-cb-r');updatePytagoras()">
+        </div>
+
+        <div id="pyth-result" class="result-box rounded p-3 mt-4 text-sm"></div>
+        <div id="pyth-worked" class="example-box rounded p-3 mt-3 text-sm"></div>
+      </div>
+      <div class="flex items-center justify-center">
+        <svg id="svg-pytagoras" viewBox="0 0 280 240" width="280" height="240"></svg>
+      </div>
+    </div>
+
+    <div class="mt-5 bg-blue-50 rounded-lg p-4 text-sm">
+      <strong class="text-blue-800">Praktisk eksempel:</strong> En stige er 5 m lang og lener seg mot en vegg slik at bunnen er 2 m fra veggen. Hvor høyt opp på veggen når stigen?<br>
+      h = √(5² − 2²) = √(25 − 4) = √21 ≈ <strong>4,58 m</strong>
+    </div>
+  </div>
+</div><!-- end sec-pytagoras -->
+
+<!-- ===================== SECTION 3: VOLUM OG OVERFLATE ===================== -->
+<div id="sec-volum" class="section-panel">
+  <div class="bg-white rounded-xl shadow p-5 mb-4">
+    <h2 class="text-xl font-bold text-blue-800 mb-2">Volum og overflate – 3D-figurer</h2>
+    <p class="text-sm text-gray-600">
+      Volum (V) måler hvor mye en 3D-figur rommer – i cm³, m³, liter (1 liter = 1 dm³). Overflate (S) er summen av alle flatene.
+    </p>
+  </div>
+
+  <div class="flex flex-wrap gap-2 mb-4">
+    <button class="sub-tab-btn active px-3 py-1.5 rounded text-sm font-medium bg-gray-100 text-gray-700" data-group="volum" data-sub="kasse">Kasse/Prisme</button>
+    <button class="sub-tab-btn px-3 py-1.5 rounded text-sm font-medium bg-gray-100 text-gray-700" data-group="volum" data-sub="sylinder">Sylinder</button>
+    <button class="sub-tab-btn px-3 py-1.5 rounded text-sm font-medium bg-gray-100 text-gray-700" data-group="volum" data-sub="kule">Kule</button>
+    <button class="sub-tab-btn px-3 py-1.5 rounded text-sm font-medium bg-gray-100 text-gray-700" data-group="volum" data-sub="kjegle">Kjegle</button>
+    <button class="sub-tab-btn px-3 py-1.5 rounded text-sm font-medium bg-gray-100 text-gray-700" data-group="volum" data-sub="pyramide">Pyramide</button>
+  </div>
+
+  <!-- KASSE -->
+  <div id="sub-kasse" class="sub-panel active">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow p-5">
+        <h3 class="font-bold text-blue-700 mb-2">Kasse (rektangulært prisme)</h3>
+        <p class="text-sm text-gray-600 mb-3">Eks: en fraktpakke, et rom, en akvarium. Finn volum og totalt overflate.</p>
+        <div class="formula-box rounded p-3 mb-4 text-sm">
+          V = l · b · h<br>S = 2·(l·b + l·h + b·h)
+        </div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Lengde l (cm)</label>
+        <input type="number" id="kas-l" min="1" max="30" value="10" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateKasse()">
+        <input type="range" id="kas-l-r" min="1" max="30" value="10" step="0.5" class="w-full mt-1" oninput="syncRange('kas-l','kas-l-r');updateKasse()">
+        <label class="block text-sm font-medium text-gray-700 mb-1 mt-2">Bredde b (cm)</label>
+        <input type="number" id="kas-b" min="1" max="30" value="6" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateKasse()">
+        <input type="range" id="kas-b-r" min="1" max="30" value="6" step="0.5" class="w-full mt-1" oninput="syncRange('kas-b','kas-b-r');updateKasse()">
+        <label class="block text-sm font-medium text-gray-700 mb-1 mt-2">Høyde h (cm)</label>
+        <input type="number" id="kas-h" min="1" max="30" value="4" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateKasse()">
+        <input type="range" id="kas-h-r" min="1" max="30" value="4" step="0.5" class="w-full mt-1" oninput="syncRange('kas-h','kas-h-r');updateKasse()">
+        <div id="kas-result" class="result-box rounded p-3 mt-4 text-sm"></div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 flex items-center justify-center">
+        <svg id="svg-kasse" viewBox="0 0 260 220" width="260" height="220"></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- SYLINDER -->
+  <div id="sub-sylinder" class="sub-panel">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow p-5">
+        <h3 class="font-bold text-blue-700 mb-2">Sylinder</h3>
+        <p class="text-sm text-gray-600 mb-3">Eks: en sylinderformet tank til vanningsanlegg, en oljefat eller et drikkeglass.</p>
+        <div class="formula-box rounded p-3 mb-4 text-sm">
+          V = π · r² · h<br>S = 2·π·r² + 2·π·r·h<br><span class="text-gray-500">Volum i liter: V (dm³)</span>
+        </div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Radius r (dm)</label>
+        <input type="number" id="syl-r" min="0.1" max="5" value="0.5" step="0.1" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateSylinder()">
+        <input type="range" id="syl-r-r" min="0.1" max="5" value="0.5" step="0.1" class="w-full mt-1" oninput="syncRange('syl-r','syl-r-r');updateSylinder()">
+        <label class="block text-sm font-medium text-gray-700 mb-1 mt-3">Høyde h (dm)</label>
+        <input type="number" id="syl-h" min="0.1" max="20" value="3" step="0.1" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateSylinder()">
+        <input type="range" id="syl-h-r" min="0.1" max="20" value="3" step="0.1" class="w-full mt-1" oninput="syncRange('syl-h','syl-h-r');updateSylinder()">
+        <div id="syl-result" class="result-box rounded p-3 mt-4 text-sm"></div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 flex items-center justify-center">
+        <svg id="svg-sylinder" viewBox="0 0 200 240" width="200" height="240"></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- KULE -->
+  <div id="sub-kule" class="sub-panel">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow p-5">
+        <h3 class="font-bold text-blue-700 mb-2">Kule</h3>
+        <p class="text-sm text-gray-600 mb-3">Eks: en fotball, en orange, en gasslagertank.</p>
+        <div class="formula-box rounded p-3 mb-4 text-sm">
+          V = (4/3) · π · r³<br>S = 4 · π · r²
+        </div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Radius r (cm)</label>
+        <input type="number" id="kul-r" min="0.5" max="20" value="5" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateKule()">
+        <input type="range" id="kul-r-r" min="0.5" max="20" value="5" step="0.5" class="w-full mt-1" oninput="syncRange('kul-r','kul-r-r');updateKule()">
+        <div id="kul-result" class="result-box rounded p-3 mt-4 text-sm"></div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 flex items-center justify-center">
+        <svg id="svg-kule" viewBox="0 0 220 220" width="220" height="220"></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- KJEGLE -->
+  <div id="sub-kjegle" class="sub-panel">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow p-5">
+        <h3 class="font-bold text-blue-700 mb-2">Kjegle</h3>
+        <p class="text-sm text-gray-600 mb-3">Eks: en vaffelkjegle, en trafikkjegle, et telt. Slantelinjens lengde: l = √(r² + h²)</p>
+        <div class="formula-box rounded p-3 mb-4 text-sm">
+          V = (1/3) · π · r² · h<br>S = π·r² + π·r·l<br><span class="text-gray-500">l = √(r² + h²) = slantelinje</span>
+        </div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Radius r (cm)</label>
+        <input type="number" id="kje-r" min="0.5" max="15" value="4" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateKjegle()">
+        <input type="range" id="kje-r-r" min="0.5" max="15" value="4" step="0.5" class="w-full mt-1" oninput="syncRange('kje-r','kje-r-r');updateKjegle()">
+        <label class="block text-sm font-medium text-gray-700 mb-1 mt-3">Høyde h (cm)</label>
+        <input type="number" id="kje-h" min="0.5" max="30" value="9" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateKjegle()">
+        <input type="range" id="kje-h-r" min="0.5" max="30" value="9" step="0.5" class="w-full mt-1" oninput="syncRange('kje-h','kje-h-r');updateKjegle()">
+        <div id="kje-result" class="result-box rounded p-3 mt-4 text-sm"></div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 flex items-center justify-center">
+        <svg id="svg-kjegle" viewBox="0 0 200 240" width="200" height="240"></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- PYRAMIDE -->
+  <div id="sub-pyramide" class="sub-panel">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow p-5">
+        <h3 class="font-bold text-blue-700 mb-2">Pyramide (kvadratisk grunnflate)</h3>
+        <p class="text-sm text-gray-600 mb-3">Eks: pyramidene i Egypt, takspir. Her med kvadratisk bunn med sidelengde a.</p>
+        <div class="formula-box rounded p-3 mb-4 text-sm">
+          V = (1/3) · a² · h<br>S = a² + 4 · (½ · a · l)<br><span class="text-gray-500">l = √(h² + (a/2)²) = slantelinje</span>
+        </div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Sidelengde a (m)</label>
+        <input type="number" id="pyr-a" min="0.5" max="20" value="6" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updatePyramide()">
+        <input type="range" id="pyr-a-r" min="0.5" max="20" value="6" step="0.5" class="w-full mt-1" oninput="syncRange('pyr-a','pyr-a-r');updatePyramide()">
+        <label class="block text-sm font-medium text-gray-700 mb-1 mt-3">Høyde h (m)</label>
+        <input type="number" id="pyr-h" min="0.5" max="30" value="8" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updatePyramide()">
+        <input type="range" id="pyr-h-r" min="0.5" max="30" value="8" step="0.5" class="w-full mt-1" oninput="syncRange('pyr-h','pyr-h-r');updatePyramide()">
+        <div id="pyr-result" class="result-box rounded p-3 mt-4 text-sm"></div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 flex items-center justify-center">
+        <svg id="svg-pyramide" viewBox="0 0 240 240" width="240" height="240"></svg>
+      </div>
+    </div>
+  </div>
+</div><!-- end sec-volum -->
+
+<!-- ===================== SECTION 4: MÅLESTOKK OG FORMLIKHET ===================== -->
+<div id="sec-malestokk" class="section-panel">
+  <div class="bg-white rounded-xl shadow p-5 mb-4">
+    <h2 class="text-xl font-bold text-blue-800 mb-2">Målestokk og formlikhet</h2>
+    <p class="text-sm text-gray-600">
+      Målestokk er forholdet mellom en lengde på et kart/tegning og den tilsvarende virkelige lengden.
+      Formlikhet handler om figurer med samme form men ulike størrelser — alle tilsvarende vinkler er like, og sidene er proporsjonale.
+    </p>
+  </div>
+
+  <div class="flex flex-wrap gap-2 mb-4">
+    <button class="sub-tab-btn active px-3 py-1.5 rounded text-sm font-medium bg-gray-100 text-gray-700" data-group="malestokk" data-sub="kart">Målestokk / kart</button>
+    <button class="sub-tab-btn px-3 py-1.5 rounded text-sm font-medium bg-gray-100 text-gray-700" data-group="malestokk" data-sub="formlikhet">Formlikhet</button>
+  </div>
+
+  <!-- KART -->
+  <div id="sub-kart" class="sub-panel active">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow p-5">
+        <h3 class="font-bold text-blue-700 mb-2">Målestokk og kartberegning</h3>
+        <p class="text-sm text-gray-600 mb-3">
+          Målestokk 1 : n betyr at 1 enhet på tegningen svarer til n enheter i virkeligheten.<br>
+          <strong>Lengde:</strong> Virkelighet = kart × n<br>
+          <strong>Areal:</strong> Areal i virkeligheten = areal på kart × n²
+        </p>
+        <div class="formula-box rounded p-3 mb-4 text-sm">
+          L<sub>virkelighet</sub> = L<sub>kart</sub> · n<br>
+          A<sub>virkelighet</sub> = A<sub>kart</sub> · n²
+        </div>
+
+        <label class="block text-sm font-medium text-gray-700 mb-1">Målestokk 1 : n  (n =)</label>
+        <input type="number" id="mal-n" min="1" max="100000" value="50000" step="1000" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateMalestokk()">
+        <input type="range" id="mal-n-r" min="100" max="100000" value="50000" step="100" class="w-full mt-1" oninput="syncRange('mal-n','mal-n-r');updateMalestokk()">
+
+        <div class="mt-4 border-t pt-4">
+          <p class="text-sm font-semibold text-gray-700 mb-2">Kart → Virkelighet</p>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Kartlengde (cm)</label>
+          <input type="number" id="mal-kl" min="0.1" max="100" value="3.5" step="0.1" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateMalestokk()">
+          <label class="block text-sm font-medium text-gray-700 mb-1 mt-2">Kartareal (cm²)</label>
+          <input type="number" id="mal-ka" min="0.1" max="1000" value="12" step="0.1" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateMalestokk()">
+        </div>
+
+        <div class="mt-4 border-t pt-4">
+          <p class="text-sm font-semibold text-gray-700 mb-2">Virkelighet → Kart</p>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Virkelig lengde (m)</label>
+          <input type="number" id="mal-vl" min="1" max="100000" value="2500" step="10" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateMalestokk()">
+          <label class="block text-sm font-medium text-gray-700 mb-1 mt-2">Virkelig areal (m²)</label>
+          <input type="number" id="mal-va" min="1" max="1e10" value="500000" step="1000" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateMalestokk()">
+        </div>
+
+        <div id="mal-result" class="result-box rounded p-3 mt-4 text-sm"></div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4">
+        <svg id="svg-malestokk" viewBox="0 0 300 260" width="300" height="260"></svg>
+        <div class="example-box rounded p-3 mt-3 text-sm">
+          <strong>Eksempel:</strong> Et kart har målestokk 1 : 50 000. En strek på 3,5 cm tilsvarer 3,5 × 50 000 = 175 000 cm = <strong>1 750 m = 1,75 km</strong> i virkeligheten.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORMLIKHET -->
+  <div id="sub-formlikhet" class="sub-panel">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow p-5">
+        <h3 class="font-bold text-blue-700 mb-2">Formlikhet</h3>
+        <p class="text-sm text-gray-600 mb-3">
+          To figurer er formlike (similære) hvis de har samme form. Da er alle tilsvarende vinkler like og forholdet mellom tilsvarende sider er konstant (skalaforholdet k).
+        </p>
+        <div class="formula-box rounded p-3 mb-4 text-sm">
+          k = side₂ / side₁<br>
+          Areal₂ = Areal₁ · k²<br>
+          Volum₂ = Volum₁ · k³
+        </div>
+        <p class="text-sm font-semibold text-gray-700 mb-2">Trekant 1 (original):</p>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Side a₁ (cm)</label>
+        <input type="number" id="fl-a1" min="1" max="20" value="6" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateFormlikhet()">
+        <label class="block text-sm font-medium text-gray-700 mb-1 mt-2">Side b₁ (cm)</label>
+        <input type="number" id="fl-b1" min="1" max="20" value="8" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateFormlikhet()">
+        <label class="block text-sm font-medium text-gray-700 mb-1 mt-2">Side c₁ (cm)</label>
+        <input type="number" id="fl-c1" min="1" max="20" value="10" step="0.5" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateFormlikhet()">
+        <p class="text-sm font-semibold text-gray-700 mb-2 mt-4">Trekant 2 (formlik):</p>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Skalaforhold k (trekant 2 / trekant 1)</label>
+        <input type="number" id="fl-k" min="0.1" max="5" value="1.5" step="0.1" class="border rounded px-3 py-2 w-full text-sm mb-1" oninput="updateFormlikhet()">
+        <input type="range" id="fl-k-r" min="0.1" max="5" value="1.5" step="0.1" class="w-full mt-1" oninput="syncRange('fl-k','fl-k-r');updateFormlikhet()">
+        <div id="fl-result" class="result-box rounded p-3 mt-4 text-sm"></div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 flex items-center justify-center">
+        <svg id="svg-formlikhet" viewBox="0 0 300 260" width="300" height="260"></svg>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl shadow p-5 mt-4">
+      <h4 class="font-semibold text-blue-700 mb-2">Praktisk eksempel: Skyggemåling</h4>
+      <p class="text-sm text-gray-600 mb-3">En person på 1,8 m kaster en skygge på 2,4 m. Samtidig kaster et tre en skygge på 8 m. Siden personen og treet er formlike trekanter med solen:</p>
+      <div class="formula-box rounded p-3 mb-3 text-sm">
+        k = 8 / 2,4 ≈ 3,33<br>
+        Treets høyde = 1,8 · k ≈ 1,8 · 3,33 ≈ 6 m
+      </div>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Personens høyde (m)</label>
+          <input type="number" id="sky-ph" min="0.5" max="3" value="1.8" step="0.1" class="border rounded px-3 py-2 w-full text-sm" oninput="updateSkyggekalkulator()">
+          <label class="block text-sm font-medium text-gray-700 mb-1 mt-2">Personens skygge (m)</label>
+          <input type="number" id="sky-ps" min="0.1" max="20" value="2.4" step="0.1" class="border rounded px-3 py-2 w-full text-sm" oninput="updateSkyggekalkulator()">
+          <label class="block text-sm font-medium text-gray-700 mb-1 mt-2">Treets skygge (m)</label>
+          <input type="number" id="sky-ts" min="0.1" max="100" value="8" step="0.1" class="border rounded px-3 py-2 w-full text-sm" oninput="updateSkyggekalkulator()">
+          <div id="sky-result" class="result-box rounded p-3 mt-3 text-sm"></div>
+        </div>
+        <div class="flex items-center justify-center">
+          <svg id="svg-skyggekalkulator" viewBox="0 0 280 180" width="280" height="180"></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- end sec-malestokk -->
+
+</main>
+
+<footer class="text-center text-xs text-gray-400 py-6 border-t">
+  Geometri 2P · LK20 · Halison App Studio ·
+  <a href="https://github.com/halisonworks/public-app-studio" class="text-blue-400 hover:underline">github.com/halisonworks/public-app-studio</a>
+</footer>
+
+<script>
+// ============================================================
+// UTILITIES
+// ============================================================
+const R = (n, d = 2) => Math.round(n * 10 ** d) / 10 ** d;
+const π = Math.PI;
+
+function syncRange(numId, rangeId) {
+  const num = document.getElementById(numId);
+  const rng = document.getElementById(rangeId);
+  if (num && rng) {
+    if (document.activeElement === rng) num.value = rng.value;
+    else rng.value = num.value;
+  }
+}
+
+function getVal(id) {
+  const el = document.getElementById(id);
+  if (!el) return 0;
+  return parseFloat(el.value) || 0;
+}
+
+function setSVG(id, content) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = content;
+}
+
+function setHTML(id, html) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = html;
+}
+
+// localStorage helpers
+function saveLS(key, val) {
+  try { localStorage.setItem('geo2p_' + key, val); } catch (e) {}
+}
+function loadLS(key, def) {
+  try {
+    const v = localStorage.getItem('geo2p_' + key);
+    return v !== null ? v : def;
+  } catch (e) { return def; }
+}
+
+// ============================================================
+// TAB NAVIGATION
+// ============================================================
+const mainSections = { areal: 'sec-areal', pytagoras: 'sec-pytagoras', volum: 'sec-volum', malestokk: 'sec-malestokk' };
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    Object.values(mainSections).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('active');
+    });
+    const target = document.getElementById(mainSections[tab]);
+    if (target) target.classList.add('active');
+    saveLS('maintab', tab);
+    triggerAllUpdates();
+  });
+});
+
+document.querySelectorAll('.sub-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const group = btn.dataset.group;
+    document.querySelectorAll(`.sub-tab-btn[data-group="${group}"]`).forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const sub = btn.dataset.sub;
+    // find parent section, hide all sub-panels within it
+    const parentSec = btn.closest('.section-panel') || document.body;
+    parentSec.querySelectorAll('.sub-panel').forEach(p => p.classList.remove('active'));
+    const target = document.getElementById('sub-' + sub);
+    if (target) target.classList.add('active');
+    saveLS('subtab_' + group, sub);
+    triggerAllUpdates();
+  });
+});
+
+// ============================================================
+// SECTION 1: AREAL OG OMKRETS
+// ============================================================
+
+// --- KVADRAT ---
+function updateKvadrat() {
+  const s = getVal('kv-s');
+  syncRange('kv-s', 'kv-s-r');
+  const A = s * s;
+  const O = 4 * s;
+  setHTML('kv-result', `
+    <strong>Beregning:</strong><br>
+    A = s² = ${s}² = <strong>${R(A)} cm²</strong><br>
+    O = 4 · s = 4 · ${s} = <strong>${R(O)} cm</strong>
+  `);
+  const pad = 30, max = 160;
+  const side = Math.min(max, Math.max(20, s * 10));
+  const x0 = (220 - side) / 2, y0 = (220 - side) / 2;
+  setSVG('svg-kvadrat', `
+    <rect x="${x0}" y="${y0}" width="${side}" height="${side}" class="shape-fill"/>
+    <text x="${110}" y="${y0 - 8}" text-anchor="middle" class="dim-label">s = ${s} cm</text>
+    <text x="${110}" y="${y0 + side + 16}" text-anchor="middle" class="dim-label">s = ${s} cm</text>
+    <line x1="${x0-2}" y1="${y0}" x2="${x0-2}" y2="${y0+side}" stroke="#6b7280" stroke-width="1"/>
+    <text x="${x0-8}" y="${y0+side/2}" text-anchor="middle" class="dim-label" transform="rotate(-90,${x0-8},${y0+side/2})">s = ${s}</text>
+  `);
+  saveLS('kv-s', s);
+}
+
+// --- REKTANGEL ---
+function updateRektangel() {
+  const l = getVal('rek-l'), b = getVal('rek-b');
+  syncRange('rek-l', 'rek-l-r'); syncRange('rek-b', 'rek-b-r');
+  const A = l * b, O = 2 * (l + b);
+  setHTML('rek-result', `
+    <strong>Beregning:</strong><br>
+    A = l · b = ${l} · ${b} = <strong>${R(A)} m²</strong><br>
+    O = 2·(l + b) = 2·(${l} + ${b}) = <strong>${R(O)} m</strong>
+  `);
+  const totalW = 220, totalH = 160;
+  const scale = Math.min(totalW / Math.max(l, 0.1), totalH / Math.max(b, 0.1));
+  const w = Math.max(20, Math.min(210, l * scale * 0.85));
+  const h = Math.max(15, Math.min(150, b * scale * 0.85));
+  const x0 = (260 - w) / 2, y0 = (220 - h) / 2;
+  setSVG('svg-rektangel', `
+    <rect x="${x0}" y="${y0}" width="${w}" height="${h}" class="shape-fill"/>
+    <text x="${x0 + w/2}" y="${y0-8}" text-anchor="middle" class="dim-label">l = ${l} m</text>
+    <text x="${x0 + w + 10}" y="${y0 + h/2 + 4}" text-anchor="start" class="dim-label">b = ${b} m</text>
+  `);
+}
+
+// --- PARALLELLOGRAM ---
+function updateParallellogram() {
+  const g = getVal('par-g'), h = getVal('par-h'), s = getVal('par-s');
+  syncRange('par-g', 'par-g-r'); syncRange('par-h', 'par-h-r'); syncRange('par-s', 'par-s-r');
+  const A = g * h, O = 2 * (g + s);
+  setHTML('par-result', `
+    <strong>Beregning:</strong><br>
+    A = g · h = ${g} · ${h} = <strong>${R(A)} cm²</strong><br>
+    O = 2·(g + s) = 2·(${g} + ${s}) = <strong>${R(O)} cm</strong>
+  `);
+  const scaleG = Math.min(180 / Math.max(g, 1), 14);
+  const scaleH = Math.min(120 / Math.max(h, 1), 14);
+  const sc = Math.min(scaleG, scaleH, 10);
+  const gw = g * sc, hh = h * sc;
+  const skew = Math.min(hh * 0.6, 40);
+  const x0 = 30, y0 = 185;
+  const pts = `${x0+skew},${y0-hh} ${x0+skew+gw},${y0-hh} ${x0+gw},${y0} ${x0},${y0}`;
+  setSVG('svg-parallellogram', `
+    <polygon points="${pts}" class="shape-fill"/>
+    <text x="${x0 + skew + gw/2}" y="${y0-hh-8}" text-anchor="middle" class="dim-label">g = ${g} cm</text>
+    <line x1="${x0+skew+gw+5}" y1="${y0-hh}" x2="${x0+gw+5}" y2="${y0}" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3,2"/>
+    <line x1="${x0+skew+gw+12}" y1="${y0-hh}" x2="${x0+skew+gw+12}" y2="${y0-hh+3}" stroke="#9ca3af" stroke-width="1"/>
+    <text x="${x0+gw+skew+20}" y="${y0-hh/2}" class="dim-label">h = ${h}</text>
+    <line x1="${x0}" y1="${y0+5}" x2="${x0+gw}" y2="${y0+5}" stroke="#6b7280" stroke-width="1"/>
+    <text x="${x0 + gw/2}" y="${y0+18}" text-anchor="middle" class="dim-label">g = ${g} cm</text>
+  `);
+}
+
+// --- TREKANT ---
+function updateTrekant() {
+  const g = getVal('tri-g'), h = getVal('tri-h');
+  syncRange('tri-g', 'tri-g-r'); syncRange('tri-h', 'tri-h-r');
+  const A = (g * h) / 2;
+  // Isoceles: compute side lengths approximately for omkrets display
+  const halfG = g / 2;
+  const side = Math.sqrt(halfG * halfG + h * h);
+  const O = g + 2 * side;
+  setHTML('tri-result', `
+    <strong>Beregning:</strong><br>
+    A = (g · h) / 2 = (${g} · ${h}) / 2 = <strong>${R(A)} cm²</strong><br>
+    (Likebent trekant: side ≈ ${R(side)} cm)<br>
+    O ≈ g + 2·side = ${g} + 2·${R(side)} = <strong>${R(O)} cm</strong>
+  `);
+  const sc = Math.min(160 / Math.max(g, 1), 120 / Math.max(h, 1), 12);
+  const gw = g * sc, hh = h * sc;
+  const x0 = (260 - gw) / 2, y0 = 185;
+  const apex_x = x0 + gw / 2, apex_y = y0 - hh;
+  setSVG('svg-trekant', `
+    <polygon points="${x0},${y0} ${x0+gw},${y0} ${apex_x},${apex_y}" class="shape-fill"/>
+    <line x1="${apex_x}" y1="${apex_y}" x2="${apex_x}" y2="${y0}" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <rect x="${apex_x-4}" y="${y0-8}" width="8" height="8" class="right-angle"/>
+    <text x="${apex_x+5}" y="${y0-hh/2}" class="dim-label">h = ${h} cm</text>
+    <text x="${x0 + gw/2}" y="${y0+16}" text-anchor="middle" class="dim-label">g = ${g} cm</text>
+  `);
+}
+
+// --- TRAPES ---
+function updateTrapes() {
+  const a = getVal('trap-a'), b = getVal('trap-b'), h = getVal('trap-h');
+  syncRange('trap-a', 'trap-a-r'); syncRange('trap-b', 'trap-b-r'); syncRange('trap-h', 'trap-h-r');
+  const A = ((a + b) / 2) * h;
+  setHTML('trap-result', `
+    <strong>Beregning:</strong><br>
+    A = ((a + b) / 2) · h<br>
+    = ((${a} + ${b}) / 2) · ${h}<br>
+    = ${R((a+b)/2)} · ${h}<br>
+    = <strong>${R(A)} cm²</strong>
+  `);
+  const sc = Math.min(180 / Math.max(a, 1), 120 / Math.max(h, 1), 12);
+  const aw = a * sc, bw = b * sc, hh = h * sc;
+  const x0 = 20, y0 = 175;
+  const offset = (aw - bw) / 2;
+  setSVG('svg-trapes', `
+    <polygon points="${x0},${y0} ${x0+aw},${y0} ${x0+aw-offset},${y0-hh} ${x0+offset},${y0-hh}" class="shape-fill"/>
+    <text x="${x0 + aw/2}" y="${y0+16}" text-anchor="middle" class="dim-label">a = ${a} cm</text>
+    <text x="${x0+offset + bw/2}" y="${y0-hh-8}" text-anchor="middle" class="dim-label">b = ${b} cm</text>
+    <line x1="${x0+aw+8}" y1="${y0}" x2="${x0+aw+8}" y2="${y0-hh}" stroke="#9ca3af" stroke-width="1"/>
+    <text x="${x0+aw+18}" y="${y0-hh/2+4}" class="dim-label">h=${h}</text>
+  `);
+}
+
+// --- SIRKEL ---
+function updateSirkel() {
+  const r = getVal('sir-r');
+  syncRange('sir-r', 'sir-r-r');
+  const A = π * r * r, O = 2 * π * r, d = 2 * r;
+  setHTML('sir-result', `
+    <strong>Beregning:</strong><br>
+    A = π · r² = π · ${r}² = <strong>${R(A)} cm²</strong><br>
+    O = 2·π·r = 2·π·${r} = <strong>${R(O)} cm</strong><br>
+    Diameter d = 2·${r} = <strong>${R(d)} cm</strong>
+  `);
+  const cx = 110, cy = 110;
+  const maxR = 90;
+  const rv = Math.min(maxR, r * 8);
+  setSVG('svg-sirkel', `
+    <circle cx="${cx}" cy="${cy}" r="${rv}" class="shape-fill"/>
+    <line x1="${cx}" y1="${cy}" x2="${cx+rv}" y2="${cy}" stroke="#2563eb" stroke-width="1.5"/>
+    <text x="${cx + rv/2}" y="${cy-6}" text-anchor="middle" class="dim-label">r = ${r} cm</text>
+    <line x1="${cx-rv}" y1="${cy+rv+15}" x2="${cx+rv}" y2="${cy+rv+15}" stroke="#6b7280" stroke-width="1"/>
+    <text x="${cx}" y="${cy+rv+28}" text-anchor="middle" class="dim-label">d = ${d} cm</text>
+  `);
+}
+
+// --- SAMMENSATT ---
+function updateSammensatt() {
+  const L = getVal('sam-l'), b = getVal('sam-b');
+  syncRange('sam-l', 'sam-l-r'); syncRange('sam-b', 'sam-b-r');
+  const r = b / 2;
+  const A_rek = L * b;
+  const A_2halvsirkler = π * r * r; // to halvsirkler = én hel sirkel
+  const A_total = A_rek + A_2halvsirkler;
+  const O_lang = 2 * L; // de to lange sidene
+  const O_sirkler = 2 * π * r;
+  const O_total = O_lang + O_sirkler;
+  setHTML('sam-result', `
+    <strong>Samlet areal:</strong> <strong>${R(A_total)} m²</strong><br>
+    Samlet omkrets: ${R(O_total)} m
+  `);
+  setHTML('sam-steps', `
+    <strong>Steg-for-steg utregning:</strong><br>
+    1) Rektangel: A₁ = L · b = ${L} · ${b} = ${R(A_rek)} m²<br>
+    2) To halvsirkler = én sirkel med r = b/2 = ${R(r)} m<br>
+       A₂ = π·r² = π·${R(r)}² ≈ ${R(A_2halvsirkler)} m²<br>
+    3) Totalt: A = A₁ + A₂ = ${R(A_rek)} + ${R(A_2halvsirkler)} = <strong>${R(A_total)} m²</strong>
+  `);
+  // Draw the stadium
+  const W = 300, H = 200;
+  const sc = Math.min((W - 60) / Math.max(L + b, 1), (H - 40) / Math.max(b, 1), 5);
+  const rw = L * sc, rh = b * sc;
+  const rad = rh / 2;
+  const x0 = (W - rw - 2*rad) / 2, y0 = (H - rh) / 2;
+  setSVG('svg-sammensatt', `
+    <rect x="${x0+rad}" y="${y0}" width="${rw}" height="${rh}" fill="#bfdbfe" stroke="#2563eb" stroke-width="2"/>
+    <ellipse cx="${x0+rad}" cy="${y0+rh/2}" rx="${rad}" ry="${rh/2}" fill="#bbf7d0" stroke="#16a34a" stroke-width="2"/>
+    <ellipse cx="${x0+rad+rw}" cy="${y0+rh/2}" rx="${rad}" ry="${rh/2}" fill="#bbf7d0" stroke="#16a34a" stroke-width="2"/>
+    <text x="${x0+rad+rw/2}" y="${y0+rh/2+5}" text-anchor="middle" class="dim-label" fill="#1e40af">L=${L}m</text>
+    <text x="${x0+rad+rw/2}" y="${H-8}" text-anchor="middle" class="dim-label">b = ${b} m</text>
+    <text x="${x0+rad/2}" y="${y0+rh/2+5}" text-anchor="middle" class="dim-label" fill="#14532d" font-size="10">½-sirkel</text>
+    <text x="${x0+rad+rw+rad/2}" y="${y0+rh/2+5}" text-anchor="middle" class="dim-label" fill="#14532d" font-size="10">½-sirkel</text>
+  `);
+}
+
+// ============================================================
+// SECTION 2: PYTAGORAS
+// ============================================================
+let pythMode = 'c';
+
+function setPythMode(mode) {
+  pythMode = mode;
+  ['c','a','b'].forEach(m => {
+    const btn = document.getElementById('pyth-find-' + m);
+    const inputs = document.getElementById('pyth-inputs-' + m);
+    if (btn) btn.className = m === mode
+      ? 'px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white'
+      : 'px-4 py-2 rounded-lg text-sm font-medium bg-gray-200 text-gray-700';
+    if (inputs) inputs.style.display = m === mode ? 'block' : 'none';
+  });
+  updatePytagoras();
+}
+
+function updatePytagoras() {
+  let a, b, c, found, worked;
+  if (pythMode === 'c') {
+    a = getVal('pyth-a'); b = getVal('pyth-b');
+    syncRange('pyth-a', 'pyth-a-r'); syncRange('pyth-b', 'pyth-b-r');
+    const c2 = a*a + b*b;
+    c = Math.sqrt(c2);
+    found = c;
+    worked = `a² + b² = c²<br>${a}² + ${b}² = c²<br>${R(a*a)} + ${R(b*b)} = ${R(c2)}<br>c = √${R(c2)} = <strong>${R(c)} cm</strong>`;
+  } else if (pythMode === 'a') {
+    b = getVal('pyth-ba'); c = getVal('pyth-ca');
+    syncRange('pyth-ba', 'pyth-ba-r'); syncRange('pyth-ca', 'pyth-ca-r');
+    const a2 = c*c - b*b;
+    if (a2 <= 0) {
+      setHTML('pyth-result', '<span class="text-red-600">Ugyldig: c må være større enn b!</span>');
+      setHTML('pyth-worked', '');
+      return;
+    }
+    a = Math.sqrt(a2);
+    found = a;
+    worked = `a² = c² − b²<br>${c}² − ${b}² = ${R(a2)}<br>a = √${R(a2)} = <strong>${R(a)} cm</strong>`;
+  } else {
+    a = getVal('pyth-ab'); c = getVal('pyth-cb');
+    syncRange('pyth-ab', 'pyth-ab-r'); syncRange('pyth-cb', 'pyth-cb-r');
+    const b2 = c*c - a*a;
+    if (b2 <= 0) {
+      setHTML('pyth-result', '<span class="text-red-600">Ugyldig: c må være større enn a!</span>');
+      setHTML('pyth-worked', '');
+      return;
+    }
+    b = Math.sqrt(b2);
+    found = b;
+    worked = `b² = c² − a²<br>${c}² − ${a}² = ${R(b2)}<br>b = √${R(b2)} = <strong>${R(b)} cm</strong>`;
+  }
+
+  const findLabel = pythMode === 'c' ? 'Hypotenus c' : (pythMode === 'a' ? 'Katet a' : 'Katet b');
+  setHTML('pyth-result', `<strong>${findLabel} = ${R(found)} cm</strong>`);
+  setHTML('pyth-worked', `<strong>Utregning:</strong><br>${worked}`);
+
+  // Draw triangle
+  if (!a || !b || !c) return;
+  const W = 280, H = 240;
+  const scA = Math.min(180 / Math.max(a, 1), 14);
+  const scB = Math.min(130 / Math.max(b, 1), 14);
+  const sc = Math.min(scA, scB, 10);
+  const aw = a * sc, bh = b * sc;
+  const x0 = 30, y0 = H - 30;
+  const pts_triangle = `${x0},${y0} ${x0+aw},${y0} ${x0+aw},${y0-bh}`;
+  const hyp_x = (x0 + x0 + aw) / 2;
+  const hyp_y = (y0 + y0 - bh) / 2;
+  setSVG('svg-pytagoras', `
+    <polygon points="${pts_triangle}" class="shape-fill"/>
+    <!-- right angle mark -->
+    <polyline points="${x0+aw-10},${y0} ${x0+aw-10},${y0-10} ${x0+aw},${y0-10}" class="right-angle"/>
+    <!-- labels -->
+    <text x="${x0 + aw/2}" y="${y0+18}" text-anchor="middle" class="dim-label" ${pythMode==='c'&&false?'font-weight:bold':''}>a = ${R(a)} cm</text>
+    <text x="${x0+aw+12}" y="${y0-bh/2}" class="dim-label">b = ${R(b)} cm</text>
+    <text x="${hyp_x - 15}" y="${hyp_y - 8}" class="dim-label" fill="#dc2626">c = ${R(c)} cm</text>
+    <!-- squares on sides for visual -->
+    <text x="${x0-20}" y="${y0-bh/2}" text-anchor="middle" class="dim-label" font-size="10" fill="#6b7280">(katet)</text>
+  `);
+}
+
+// ============================================================
+// SECTION 3: VOLUM OG OVERFLATE
+// ============================================================
+
+// --- KASSE ---
+function updateKasse() {
+  const l = getVal('kas-l'), b = getVal('kas-b'), h = getVal('kas-h');
+  syncRange('kas-l', 'kas-l-r'); syncRange('kas-b', 'kas-b-r'); syncRange('kas-h', 'kas-h-r');
+  const V = l * b * h;
+  const S = 2 * (l*b + l*h + b*h);
+  const liter = V / 1000;
+  setHTML('kas-result', `
+    <strong>Beregning:</strong><br>
+    V = l·b·h = ${l}·${b}·${h} = <strong>${R(V)} cm³</strong> (≈ ${R(liter,3)} liter)<br>
+    S = 2·(l·b + l·h + b·h)<br>
+    = 2·(${l}·${b} + ${l}·${h} + ${b}·${h})<br>
+    = 2·(${R(l*b)} + ${R(l*h)} + ${R(b*h)})<br>
+    = <strong>${R(S)} cm²</strong>
+  `);
+  // Isometric-style box
+  const W = 260, H = 220;
+  const sc = Math.min(120/Math.max(l,1), 100/Math.max(b,1), 80/Math.max(h,1), 8);
+  const lw = l*sc, bw = b*sc*0.5, hh = h*sc;
+  const ox = 40 + bw/2, oy = 60 + hh;
+  // Front face
+  const f = `${ox},${oy} ${ox+lw},${oy} ${ox+lw},${oy-hh} ${ox},${oy-hh}`;
+  // Top face
+  const t = `${ox},${oy-hh} ${ox+lw},${oy-hh} ${ox+lw+bw},${oy-hh-bw} ${ox+bw},${oy-hh-bw}`;
+  // Right face
+  const r = `${ox+lw},${oy} ${ox+lw+bw},${oy-bw} ${ox+lw+bw},${oy-hh-bw} ${ox+lw},${oy-hh}`;
+  setSVG('svg-kasse', `
+    <polygon points="${f}" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.5"/>
+    <polygon points="${t}" fill="#93c5fd" stroke="#2563eb" stroke-width="1.5"/>
+    <polygon points="${r}" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+    <text x="${ox + lw/2}" y="${oy+15}" text-anchor="middle" class="dim-label">l = ${l} cm</text>
+    <text x="${ox+lw+bw+5}" y="${oy-bw/2}" class="dim-label">b = ${b} cm</text>
+    <text x="${ox-12}" y="${oy-hh/2}" text-anchor="end" class="dim-label">h = ${h}</text>
+  `);
+}
+
+// --- SYLINDER ---
+function updateSylinder() {
+  const r = getVal('syl-r'), h = getVal('syl-h');
+  syncRange('syl-r', 'syl-r-r'); syncRange('syl-h', 'syl-h-r');
+  const V = π * r * r * h;
+  const S = 2 * π * r * r + 2 * π * r * h;
+  setHTML('syl-result', `
+    <strong>Beregning (dm = 10 cm, 1 dm³ = 1 liter):</strong><br>
+    V = π·r²·h = π·${r}²·${h} = <strong>${R(V)} dm³ = ${R(V)} liter</strong><br>
+    S = 2·π·r² + 2·π·r·h<br>
+    = 2·π·${r}² + 2·π·${r}·${h}<br>
+    = ${R(2*π*r*r)} + ${R(2*π*r*h)}<br>
+    = <strong>${R(S)} dm²</strong>
+  `);
+  const W = 200, H = 240;
+  const sc = Math.min(70/Math.max(r,0.1), 150/Math.max(h,0.1), 20);
+  const rw = r*sc, hh = Math.min(h*sc, 170);
+  const cx = W/2, y0 = 30;
+  setSVG('svg-sylinder', `
+    <!-- body -->
+    <rect x="${cx-rw}" y="${y0+rw/2}" width="${rw*2}" height="${hh}" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.5"/>
+    <!-- bottom ellipse -->
+    <ellipse cx="${cx}" cy="${y0+hh+rw/2}" rx="${rw}" ry="${rw/3}" fill="#93c5fd" stroke="#2563eb" stroke-width="1.5"/>
+    <!-- top ellipse -->
+    <ellipse cx="${cx}" cy="${y0+rw/2}" rx="${rw}" ry="${rw/3}" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+    <line x1="${cx}" y1="${y0+rw/2}" x2="${cx+rw}" y2="${y0+rw/2}" stroke="#2563eb" stroke-width="1.5"/>
+    <text x="${cx + rw/2}" y="${y0+rw/2-6}" text-anchor="middle" class="dim-label">r=${r}dm</text>
+    <line x1="${cx+rw+5}" y1="${y0+rw/2}" x2="${cx+rw+5}" y2="${y0+hh+rw/2}" stroke="#6b7280" stroke-width="1"/>
+    <text x="${cx+rw+18}" y="${y0+hh/2+rw/2}" class="dim-label">h=${h}dm</text>
+  `);
+}
+
+// --- KULE ---
+function updateKule() {
+  const r = getVal('kul-r');
+  syncRange('kul-r', 'kul-r-r');
+  const V = (4/3) * π * r * r * r;
+  const S = 4 * π * r * r;
+  setHTML('kul-result', `
+    <strong>Beregning:</strong><br>
+    V = (4/3)·π·r³ = (4/3)·π·${r}³ = <strong>${R(V)} cm³</strong><br>
+    S = 4·π·r² = 4·π·${r}² = <strong>${R(S)} cm²</strong>
+  `);
+  const cx = 110, cy = 110;
+  const rv = Math.min(90, r * 7);
+  setSVG('svg-kule', `
+    <defs>
+      <radialGradient id="ballGrad" cx="35%" cy="35%" r="60%">
+        <stop offset="0%" stop-color="#dbeafe"/>
+        <stop offset="100%" stop-color="#2563eb"/>
+      </radialGradient>
+    </defs>
+    <circle cx="${cx}" cy="${cy}" r="${rv}" fill="url(#ballGrad)" stroke="#1d4ed8" stroke-width="1.5"/>
+    <ellipse cx="${cx}" cy="${cy}" rx="${rv}" ry="${rv*0.3}" fill="none" stroke="#93c5fd" stroke-width="1" stroke-dasharray="4,3"/>
+    <line x1="${cx}" y1="${cy}" x2="${cx+rv}" y2="${cy}" stroke="#1d4ed8" stroke-width="1.5"/>
+    <text x="${cx + rv/2}" y="${cy-6}" text-anchor="middle" class="dim-label">r = ${r} cm</text>
+  `);
+}
+
+// --- KJEGLE ---
+function updateKjegle() {
+  const r = getVal('kje-r'), h = getVal('kje-h');
+  syncRange('kje-r', 'kje-r-r'); syncRange('kje-h', 'kje-h-r');
+  const l = Math.sqrt(r*r + h*h);
+  const V = (1/3) * π * r * r * h;
+  const S = π * r * r + π * r * l;
+  setHTML('kje-result', `
+    <strong>Beregning:</strong><br>
+    Slantelinje: l = √(r²+h²) = √(${r}²+${h}²) = ${R(l)} cm<br>
+    V = (1/3)·π·r²·h = (1/3)·π·${r}²·${h} = <strong>${R(V)} cm³</strong><br>
+    S = π·r² + π·r·l = π·${r}² + π·${r}·${R(l)}<br>
+    = ${R(π*r*r)} + ${R(π*r*l)} = <strong>${R(S)} cm²</strong>
+  `);
+  const W = 200, H = 240;
+  const sc = Math.min(70/Math.max(r,0.1), 160/Math.max(h,0.1), 15);
+  const rw = r*sc, hh = Math.min(h*sc, 170);
+  const cx = W/2, yt = 25, yb = yt + hh;
+  setSVG('svg-kjegle', `
+    <polygon points="${cx},${yt} ${cx-rw},${yb} ${cx+rw},${yb}" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.5"/>
+    <ellipse cx="${cx}" cy="${yb}" rx="${rw}" ry="${rw/3}" fill="#93c5fd" stroke="#2563eb" stroke-width="1.5"/>
+    <line x1="${cx}" y1="${yb}" x2="${cx+rw}" y2="${yb}" stroke="#1d4ed8" stroke-width="1.5"/>
+    <text x="${cx + rw/2}" y="${yb+14}" text-anchor="middle" class="dim-label">r=${r}cm</text>
+    <line x1="${cx+rw+5}" y1="${yt}" x2="${cx+rw+5}" y2="${yb}" stroke="#6b7280" stroke-width="1"/>
+    <text x="${cx+rw+18}" y="${yt+hh/2}" class="dim-label">h=${h}cm</text>
+  `);
+}
+
+// --- PYRAMIDE ---
+function updatePyramide() {
+  const a = getVal('pyr-a'), h = getVal('pyr-h');
+  syncRange('pyr-a', 'pyr-a-r'); syncRange('pyr-h', 'pyr-h-r');
+  const l = Math.sqrt(h*h + (a/2)*(a/2));
+  const V = (1/3) * a * a * h;
+  const S_base = a * a;
+  const S_lateral = 4 * (0.5 * a * l);
+  const S = S_base + S_lateral;
+  setHTML('pyr-result', `
+    <strong>Beregning:</strong><br>
+    Slantelinje: l = √(h²+(a/2)²) = √(${h}²+${R(a/2)}²) = ${R(l)} m<br>
+    V = (1/3)·a²·h = (1/3)·${a}²·${h} = <strong>${R(V)} m³</strong><br>
+    S = a² + 4·(½·a·l)<br>
+    = ${R(S_base)} + 4·${R(0.5*a*l)} = <strong>${R(S)} m²</strong>
+  `);
+  // Isometric pyramide
+  const W = 240, H = 240;
+  const sc = Math.min(140/Math.max(a,1), 130/Math.max(h,1), 10);
+  const aw = a * sc, ah = h * sc;
+  const skew = aw * 0.35;
+  const cx = W/2, ybase = H - 40;
+  // base rhombus
+  const bx0 = cx - aw/2, by0 = ybase;
+  const base = `${bx0},${by0} ${bx0+aw},${by0} ${bx0+aw+skew},${by0-skew} ${bx0+skew},${by0-skew}`;
+  const apex_x = cx + skew/2, apex_y = ybase - skew/2 - ah;
+  // left face
+  const lf = `${bx0},${by0} ${bx0+skew},${by0-skew} ${apex_x},${apex_y}`;
+  // right face
+  const rf = `${bx0+aw},${by0} ${bx0+aw+skew},${by0-skew} ${apex_x},${apex_y}`;
+  // front face
+  const ff = `${bx0},${by0} ${bx0+aw},${by0} ${apex_x},${apex_y}`;
+  setSVG('svg-pyramide', `
+    <polygon points="${base}" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+    <polygon points="${lf}" fill="#bbf7d0" stroke="#16a34a" stroke-width="1.5"/>
+    <polygon points="${rf}" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.5"/>
+    <polygon points="${ff}" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+    <line x1="${apex_x}" y1="${apex_y}" x2="${cx+skew/2}" y2="${ybase-skew/2}" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4,3"/>
+    <text x="${cx}" y="${ybase+15}" text-anchor="middle" class="dim-label">a = ${a} m</text>
+    <text x="${apex_x+8}" y="${apex_y + ah/2}" class="dim-label">h = ${h} m</text>
+  `);
+}
+
+// ============================================================
+// SECTION 4: MÅLESTOKK OG FORMLIKHET
+// ============================================================
+
+// --- MÅLESTOKK ---
+function updateMalestokk() {
+  const n = getVal('mal-n');
+  syncRange('mal-n', 'mal-n-r');
+  const kl = getVal('mal-kl');
+  const ka = getVal('mal-ka');
+  const vl = getVal('mal-vl');
+  const va = getVal('mal-va');
+
+  // kart -> virkelighet
+  const virkL_cm = kl * n; // cm
+  const virkL_m = virkL_cm / 100;
+  const virkL_km = virkL_m / 1000;
+  const virkA_cm2 = ka * n * n;
+  const virkA_m2 = virkA_cm2 / (100*100);
+  const virkA_km2 = virkA_m2 / 1e6;
+
+  // virkelighet -> kart
+  const kartL_m_cm = (vl / n) * 100; // vl is in meters, n is dimensionless ratio (1cm = n cm real)
+  // Actually: target 1cm on map = n cm in reality = n/100 m
+  // kartL in cm = vl_m / (n/100) / 100 ??? Let's be precise:
+  // 1 cm map = n cm real = n/100 m real
+  // kart_cm = vl_m / (n/100) = vl_m * 100 / n
+  const kartL_cm = (vl * 100) / n;
+  const kartL_mm = kartL_cm * 10;
+  // va in m², 1 cm² map = (n/100)² m² real → kart_cm² = va / (n/100)²
+  const kartA_cm2 = va / Math.pow(n/100, 2);
+
+  setHTML('mal-result', `
+    <strong>Målestokk 1 : ${n.toLocaleString('no')}</strong><br>
+    <em>Kart → Virkelighet:</em><br>
+    ${kl} cm på kart = <strong>${R(virkL_m)} m</strong> (${R(virkL_km,3)} km)<br>
+    ${ka} cm² på kart = <strong>${R(virkA_m2)} m²</strong> (${R(virkA_km2,4)} km²)<br>
+    <em>Virkelighet → Kart:</em><br>
+    ${vl} m i virkeligheten = <strong>${R(kartL_cm,3)} cm</strong> (${R(kartL_mm,2)} mm) på kart<br>
+    ${va.toLocaleString('no')} m² i virkeligheten = <strong>${R(kartA_cm2,2)} cm²</strong> på kart
+  `);
+
+  // Draw scale illustration
+  const W = 300, H = 260;
+  const mapW = 80, mapH = 60;
+  const scale_vis = Math.min(5, n / 10000);
+  const realW = Math.min(200, mapW * 2.5), realH = Math.min(140, mapH * 2.5);
+  setSVG('svg-malestokk', `
+    <!-- Map rectangle -->
+    <rect x="20" y="20" width="${mapW}" height="${mapH}" fill="#bfdbfe" stroke="#2563eb" stroke-width="2"/>
+    <text x="${20+mapW/2}" y="${20+mapH/2+5}" text-anchor="middle" class="dim-label" font-size="10">Kart</text>
+    <text x="${20+mapW/2}" y="${20+mapH+15}" text-anchor="middle" class="dim-label" font-size="10">${kl} cm</text>
+    <!-- Arrow -->
+    <line x1="${20+mapW+10}" y1="${20+mapH/2}" x2="${20+mapW+40}" y2="${20+mapH/2}" stroke="#374151" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="${20+mapW+25}" y="${20+mapH/2-6}" text-anchor="middle" class="dim-label" font-size="10">×${n.toLocaleString('no')}</text>
+    <!-- Real rectangle (scaled visually) -->
+    <rect x="${20+mapW+60}" y="20" width="${Math.max(40, Math.min(100, mapW+30))}" height="${Math.max(30, Math.min(80, mapH+20))}" fill="#bbf7d0" stroke="#16a34a" stroke-width="2"/>
+    <text x="${20+mapW+60+Math.min(100,mapW+30)/2}" y="${20+Math.min(80,mapH+20)/2+5}" text-anchor="middle" class="dim-label" font-size="10">Virkelighet</text>
+    <text x="${20+mapW+60+Math.min(100,mapW+30)/2}" y="${20+Math.min(80,mapH+20)+15}" text-anchor="middle" class="dim-label" font-size="10">${R(virkL_m)} m</text>
+    <!-- Scale bar -->
+    <rect x="20" y="150" width="100" height="14" fill="#f3f4f6" stroke="#6b7280" stroke-width="1"/>
+    <rect x="20" y="150" width="50" height="14" fill="#374151"/>
+    <text x="20" y="178" class="dim-label" font-size="11">0</text>
+    <text x="68" y="178" class="dim-label" font-size="11">${R(virkL_m/2)} m</text>
+    <text x="118" y="178" class="dim-label" font-size="11">${R(virkL_m)} m</text>
+    <text x="20" y="200" class="dim-label" font-size="10">Målestokk 1 : ${n.toLocaleString('no')}</text>
+    <!-- Areal note -->
+    <text x="20" y="225" class="dim-label" fill="#7c3aed" font-size="11">Areal skalerer med n² = ${n.toLocaleString('no')}² = ${(n*n).toLocaleString('no')}</text>
+    <defs>
+      <marker id="arr" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6 Z" fill="#374151"/>
+      </marker>
+    </defs>
+  `);
+}
+
+// --- FORMLIKHET ---
+function updateFormlikhet() {
+  const a1 = getVal('fl-a1'), b1 = getVal('fl-b1'), c1 = getVal('fl-c1');
+  const k = getVal('fl-k');
+  syncRange('fl-k', 'fl-k-r');
+  const a2 = a1 * k, b2 = b1 * k, c2 = c1 * k;
+  // Heron's formula for area of triangle 1
+  const s1 = (a1 + b1 + c1) / 2;
+  const disc1 = s1*(s1-a1)*(s1-b1)*(s1-c1);
+  const A1 = disc1 > 0 ? Math.sqrt(disc1) : 0;
+  const A2 = A1 * k * k;
+  setHTML('fl-result', `
+    <strong>Trekant 2 (k = ${k}):</strong><br>
+    a₂ = a₁·k = ${a1}·${k} = <strong>${R(a2)} cm</strong><br>
+    b₂ = b₁·k = ${b1}·${k} = <strong>${R(b2)} cm</strong><br>
+    c₂ = c₁·k = ${c1}·${k} = <strong>${R(c2)} cm</strong><br>
+    Areal₁ ≈ ${R(A1)} cm²<br>
+    Areal₂ = Areal₁ · k² = ${R(A1)} · ${k}² = <strong>${R(A2)} cm²</strong>
+  `);
+
+  // Draw both triangles side by side (isosceles approximation for display)
+  const W = 300, H = 260;
+  const maxW1 = 90, maxH1 = 70;
+  const sc1 = Math.min(maxW1 / Math.max(b1, 1), maxH1 / Math.max(a1, 1), 8);
+  const sc2 = sc1 * k;
+  // Triangle 1: right triangle approx with sides a1, b1, c1
+  // Use first two sides as legs for display simplicity
+  const leg_a1 = Math.min(a1 * sc1, 80), leg_b1 = Math.min(b1 * sc1, 60);
+  const leg_a2 = Math.min(a2 * sc1, 150), leg_b2 = Math.min(b2 * sc1, 100);
+  const x1 = 20, y1 = 130;
+  const x2 = 160, y2 = 230;
+  setSVG('svg-formlikhet', `
+    <!-- Triangle 1 -->
+    <polygon points="${x1},${y1} ${x1+leg_b1},${y1} ${x1+leg_b1},${y1-leg_a1}" fill="#bfdbfe" stroke="#2563eb" stroke-width="2"/>
+    <text x="${x1 + leg_b1/2}" y="${y1+14}" text-anchor="middle" class="dim-label" fill="#1d4ed8">b₁=${b1}cm</text>
+    <text x="${x1+leg_b1+6}" y="${y1-leg_a1/2}" class="dim-label" fill="#1d4ed8">a₁=${a1}</text>
+    <text x="${x1-5}" y="${y1-leg_a1-5}" class="dim-label" fill="#1d4ed8">Trekant 1</text>
+    <!-- Triangle 2 (scaled) -->
+    <polygon points="${x2},${y2} ${x2+Math.min(leg_b2,120)},${y2} ${x2+Math.min(leg_b2,120)},${y2-Math.min(leg_a2,100)}" fill="#bbf7d0" stroke="#16a34a" stroke-width="2"/>
+    <text x="${x2 + Math.min(leg_b2,120)/2}" y="${y2+14}" text-anchor="middle" class="dim-label" fill="#15803d">b₂=${R(b2)}cm</text>
+    <text x="${x2+Math.min(leg_b2,120)+6}" y="${y2-Math.min(leg_a2,100)/2}" class="dim-label" fill="#15803d">a₂=${R(a2)}</text>
+    <text x="${x2-5}" y="${y2-Math.min(leg_a2,100)-5}" class="dim-label" fill="#15803d">Trekant 2 (k=${k})</text>
+    <!-- k label -->
+    <text x="145" y="80" text-anchor="middle" class="dim-label" fill="#9333ea" font-size="13">k = ${k}</text>
+    <text x="145" y="95" text-anchor="middle" class="dim-label" fill="#9333ea" font-size="11">A₂/A₁ = k² = ${R(k*k)}</text>
+  `);
+}
+
+// --- SKYGGEKALKULATOR ---
+function updateSkyggekalkulator() {
+  const ph = getVal('sky-ph'), ps = getVal('sky-ps'), ts = getVal('sky-ts');
+  if (ps <= 0) { setHTML('sky-result', '<span class="text-red-600">Ugyldig verdi</span>'); return; }
+  const k = ts / ps;
+  const th = ph * k;
+  setHTML('sky-result', `
+    k = tresskygge / personsskygge = ${ts} / ${ps} = ${R(k)}<br>
+    Treets høyde = ${ph} · ${R(k)} = <strong>${R(th)} m</strong>
+  `);
+
+  // Simple diagram
+  const W = 280, H = 180;
+  const ground_y = H - 20;
+  const p_x = 40, p_h = Math.min(80, ph * 12);
+  const t_x = 160, t_h = Math.min(130, th * 8);
+  setSVG('svg-skyggekalkulator', `
+    <!-- ground -->
+    <line x1="0" y1="${ground_y}" x2="${W}" y2="${ground_y}" stroke="#92400e" stroke-width="2"/>
+    <!-- person -->
+    <line x1="${p_x}" y1="${ground_y}" x2="${p_x}" y2="${ground_y - p_h}" stroke="#374151" stroke-width="3"/>
+    <circle cx="${p_x}" cy="${ground_y - p_h - 7}" r="7" fill="#374151"/>
+    <!-- person shadow -->
+    <line x1="${p_x}" y1="${ground_y}" x2="${p_x + Math.min(70, ps*10)}" y2="${ground_y}" stroke="#fbbf24" stroke-width="3"/>
+    <text x="${p_x + Math.min(35, ps*5)}" y="${ground_y+14}" text-anchor="middle" class="dim-label" fill="#92400e">${ps}m</text>
+    <!-- tree -->
+    <line x1="${t_x}" y1="${ground_y}" x2="${t_x}" y2="${ground_y - t_h}" stroke="#15803d" stroke-width="4"/>
+    <polygon points="${t_x},${ground_y - t_h - 25} ${t_x-20},${ground_y - t_h + 5} ${t_x+20},${ground_y - t_h + 5}" fill="#16a34a"/>
+    <!-- tree shadow -->
+    <line x1="${t_x}" y1="${ground_y}" x2="${Math.min(W-10, t_x + Math.min(90, ts*8))}" y2="${ground_y}" stroke="#fbbf24" stroke-width="3"/>
+    <text x="${t_x + Math.min(45, ts*4)}" y="${ground_y+14}" text-anchor="middle" class="dim-label" fill="#92400e">${ts}m</text>
+    <!-- height labels -->
+    <text x="${p_x+10}" y="${ground_y - p_h/2}" class="dim-label" fill="#374151">${ph}m</text>
+    <text x="${t_x+10}" y="${ground_y - t_h/2}" class="dim-label" fill="#15803d">${R(th)}m</text>
+    <!-- sun -->
+    <circle cx="250" cy="20" r="12" fill="#fbbf24"/>
+    <line x1="${p_x}" y1="${ground_y - p_h}" x2="${t_x + Math.min(90, ts*8)}" y2="${ground_y}" stroke="#fde68a" stroke-width="1" stroke-dasharray="4,3"/>
+  `);
+}
+
+// ============================================================
+// TRIGGER ALL UPDATES
+// ============================================================
+function triggerAllUpdates() {
+  updateKvadrat();
+  updateRektangel();
+  updateParallellogram();
+  updateTrekant();
+  updateTrapes();
+  updateSirkel();
+  updateSammensatt();
+  updatePytagoras();
+  updateKasse();
+  updateSylinder();
+  updateKule();
+  updateKjegle();
+  updatePyramide();
+  updateMalestokk();
+  updateFormlikhet();
+  updateSkyggekalkulator();
+}
+
+// ============================================================
+// RESTORE FROM LOCALSTORAGE
+// ============================================================
+function restoreFromLS() {
+  const fields = [
+    ['kv-s', '5'], ['rek-l','6'], ['rek-b','4'],
+    ['par-g','8'], ['par-h','5'], ['par-s','6'],
+    ['tri-g','8'], ['tri-h','6'],
+    ['trap-a','10'], ['trap-b','6'], ['trap-h','4'],
+    ['sir-r','5'],
+    ['sam-l','40'], ['sam-b','20'],
+    ['pyth-a','3'], ['pyth-b','4'], ['pyth-ba','4'], ['pyth-ca','5'], ['pyth-ab','3'], ['pyth-cb','5'],
+    ['kas-l','10'], ['kas-b','6'], ['kas-h','4'],
+    ['syl-r','0.5'], ['syl-h','3'],
+    ['kul-r','5'],
+    ['kje-r','4'], ['kje-h','9'],
+    ['pyr-a','6'], ['pyr-h','8'],
+    ['mal-n','50000'], ['mal-kl','3.5'], ['mal-ka','12'], ['mal-vl','2500'], ['mal-va','500000'],
+    ['fl-a1','6'], ['fl-b1','8'], ['fl-c1','10'], ['fl-k','1.5'],
+    ['sky-ph','1.8'], ['sky-ps','2.4'], ['sky-ts','8']
+  ];
+  fields.forEach(([id, def]) => {
+    const saved = loadLS(id, def);
+    const el = document.getElementById(id);
+    if (el) el.value = saved;
+    // sync range
+    const rng = document.getElementById(id + '-r');
+    if (rng) rng.value = saved;
+  });
+}
+
+// Add save-on-input for localStorage for all number inputs
+document.querySelectorAll('input[type="number"]').forEach(inp => {
+  inp.addEventListener('input', () => {
+    saveLS(inp.id, inp.value);
+  });
+});
+
+// ============================================================
+// INIT
+// ============================================================
+restoreFromLS();
+triggerAllUpdates();
+
+// Restore active tab
+(function() {
+  const tab = loadLS('maintab', 'areal');
+  const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+  if (btn) btn.click();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<!--
+  Forhold og proporsjonalitet — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 1P (LK20): forhold, proporsjonale og
+  omvendt proporsjonale størrelser, og skalering (f.eks. en oppskrift).
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forhold og proporsjonalitet – Matematikk 1P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .tab-active { border-bottom: 3px solid #2563eb; color: #2563eb; font-weight: 700; }
+    .tab-inactive { border-bottom: 3px solid transparent; color: #6b7280; }
+    .tab-inactive:hover { color: #374151; border-bottom-color: #d1d5db; }
+    input[type="number"], input[type="text"] { outline: none; }
+    input[type="number"]:focus, input[type="text"]:focus { ring: 2px; }
+    .result-box { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); }
+    .formula-box { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); }
+    .warning-box { background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); }
+    .ingredient-row:last-child .remove-btn { display: inline-flex; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.25s ease; }
+    .pill { display: inline-block; padding: 2px 10px; border-radius: 9999px; font-size: 0.78rem; font-weight: 600; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- Header -->
+<header class="bg-blue-700 text-white shadow-md">
+  <div class="max-w-3xl mx-auto px-4 py-5">
+    <div class="flex items-center gap-3">
+      <div class="bg-blue-500 rounded-xl p-2 text-2xl select-none">📐</div>
+      <div>
+        <h1 class="text-xl font-bold leading-tight">Forhold og proporsjonalitet</h1>
+        <p class="text-blue-200 text-sm">Matematikk 1P · LK20</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Tab bar -->
+<nav class="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+  <div class="max-w-3xl mx-auto px-4 flex gap-0">
+    <button id="tab-teori" onclick="showTab('teori')"
+      class="px-5 py-3 text-sm transition-colors tab-active" aria-selected="true">
+      📖 Teori
+    </button>
+    <button id="tab-oppskrift" onclick="showTab('oppskrift')"
+      class="px-5 py-3 text-sm transition-colors tab-inactive" aria-selected="false">
+      🍲 Oppskrift
+    </button>
+    <button id="tab-proporsjonalitet" onclick="showTab('proporsjonalitet')"
+      class="px-5 py-3 text-sm transition-colors tab-inactive" aria-selected="false">
+      📊 Proporsjonalitet
+    </button>
+  </div>
+</nav>
+
+<main class="max-w-3xl mx-auto px-4 py-6 space-y-6">
+
+  <!-- ======================== TAB: TEORI ======================== -->
+  <section id="tab-teori-content" class="space-y-5">
+
+    <!-- Begrep: Forhold -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-lg font-bold text-blue-800 mb-3 flex items-center gap-2">
+        <span class="text-2xl">⚖️</span> Hva er et forhold?
+      </h2>
+      <p class="text-gray-700 mb-4">
+        Et <strong>forhold</strong> viser hvor mange ganger en størrelse er av en annen. Forholdet mellom to tall <em>a</em> og <em>b</em> skrives <strong>a : b</strong> og er det samme som brøken <em>a/b</em>.
+      </p>
+      <div class="formula-box rounded-xl p-4 mb-4">
+        <p class="font-mono text-green-800 text-center text-lg font-bold">a : b = a / b</p>
+      </div>
+      <h3 class="font-semibold text-gray-800 mb-2">Eksempler:</h3>
+      <ul class="space-y-2 text-gray-700 text-sm">
+        <li class="flex items-start gap-2">
+          <span class="text-blue-500 mt-0.5">▸</span>
+          <span>I en klasse er det 14 jenter og 12 gutter. Forholdet jenter : gutter = <strong>14 : 12 = 7 : 6</strong> (forenklet ved å dele med 2).</span>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-blue-500 mt-0.5">▸</span>
+          <span>En bilblanding har bensin og olje i forholdet <strong>50 : 1</strong>. Det betyr 50 deler bensin per 1 del olje.</span>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-blue-500 mt-0.5">▸</span>
+          <span>Forholdet 3 : 4 er det samme som brøken 3/4 = 0,75.</span>
+        </li>
+      </ul>
+
+      <!-- Interaktiv forholdskalkulator -->
+      <div class="mt-5 bg-gray-50 rounded-xl p-4 border border-gray-200">
+        <p class="font-semibold text-gray-800 mb-3">Prøv selv: Forenkle et forhold</p>
+        <div class="flex flex-wrap items-center gap-3">
+          <input id="ratio-a" type="number" min="1" value="14"
+            class="w-20 border border-gray-300 rounded-lg px-3 py-2 text-center text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            oninput="calcRatio()" />
+          <span class="text-gray-500 font-bold text-lg">:</span>
+          <input id="ratio-b" type="number" min="1" value="12"
+            class="w-20 border border-gray-300 rounded-lg px-3 py-2 text-center text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            oninput="calcRatio()" />
+          <span class="text-gray-500">=</span>
+          <span id="ratio-result" class="font-bold text-blue-700 text-sm"></span>
+        </div>
+        <p id="ratio-decimal" class="text-xs text-gray-500 mt-2"></p>
+      </div>
+    </div>
+
+    <!-- Begrep: Proporsjonal -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-lg font-bold text-blue-800 mb-3 flex items-center gap-2">
+        <span class="text-2xl">📈</span> Proporsjonale størrelser
+      </h2>
+      <p class="text-gray-700 mb-4">
+        To størrelser <em>x</em> og <em>y</em> er <strong>proporsjonale</strong> (rett proporsjonale) når forholdet <em>y/x</em> alltid er det samme. Konstanten <em>k</em> kalles <strong>forholdstallet</strong>.
+      </p>
+      <div class="formula-box rounded-xl p-4 mb-4">
+        <p class="font-mono text-green-800 text-center text-lg font-bold">y = k · x &nbsp;&nbsp;&nbsp; (k = y/x)</p>
+      </div>
+      <p class="text-gray-700 mb-3 text-sm">Grafen er en rett linje gjennom origo.</p>
+      <h3 class="font-semibold text-gray-800 mb-2">Eksempler:</h3>
+      <ul class="space-y-2 text-gray-700 text-sm">
+        <li class="flex items-start gap-2">
+          <span class="text-green-500 mt-0.5">▸</span>
+          <span>Pris for appelsiner: 1 kg koster 25 kr. 2 kg koster 50 kr. 3 kg koster 75 kr. Forholdstallet k = 25 kr/kg.</span>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-green-500 mt-0.5">▸</span>
+          <span>Fart og strekning ved konstant hastighet: s = 80 · t, der t er tid i timer og k = 80 km/t.</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Begrep: Omvendt proporsjonal -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-lg font-bold text-blue-800 mb-3 flex items-center gap-2">
+        <span class="text-2xl">📉</span> Omvendt proporsjonale størrelser
+      </h2>
+      <p class="text-gray-700 mb-4">
+        To størrelser <em>x</em> og <em>y</em> er <strong>omvendt proporsjonale</strong> når <em>produktet</em> x · y alltid er det samme konstante tallet <em>k</em>. Når den ene øker, minker den andre.
+      </p>
+      <div class="formula-box rounded-xl p-4 mb-4">
+        <p class="font-mono text-green-800 text-center text-lg font-bold">x · y = k &nbsp;&nbsp;&nbsp; (y = k/x)</p>
+      </div>
+      <h3 class="font-semibold text-gray-800 mb-2">Eksempler:</h3>
+      <ul class="space-y-2 text-gray-700 text-sm">
+        <li class="flex items-start gap-2">
+          <span class="orange-500 mt-0.5 text-orange-500">▸</span>
+          <span>Arbeidstempo: 4 arbeidere bruker 6 timer. 8 arbeidere bruker 3 timer. k = 4 × 6 = 24 personTimer.</span>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-orange-500 mt-0.5">▸</span>
+          <span>Fart og tid for samme strekning: v · t = 120 km. 60 km/t → 2 timer; 120 km/t → 1 time.</span>
+        </li>
+      </ul>
+    </div>
+
+  </section>
+
+  <!-- ======================== TAB: OPPSKRIFT ======================== -->
+  <section id="tab-oppskrift-content" class="space-y-5 hidden">
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-lg font-bold text-blue-800 mb-1 flex items-center gap-2">
+        <span class="text-2xl">🍲</span> Oppskrift-skalering
+      </h2>
+      <p class="text-gray-500 text-sm mb-5">
+        Ingrediensene skaleres proporsjonalt. Endre antall porsjoner og se nye mengder med én gang.
+      </p>
+
+      <!-- Kontroller: porsjoner -->
+      <div class="flex flex-wrap gap-6 mb-5">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Opprinnelig for</label>
+          <div class="flex items-center gap-2">
+            <input id="base-persons" type="number" min="1" max="100" value="4"
+              class="w-20 border border-gray-300 rounded-lg px-3 py-2 text-center font-bold text-gray-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              oninput="scaleRecipe()" />
+            <span class="text-gray-600 text-sm">porsjoner</span>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Skal lages for</label>
+          <div class="flex items-center gap-2">
+            <input id="target-persons" type="number" min="1" max="1000" value="10"
+              class="w-20 border border-gray-300 rounded-lg px-3 py-2 text-center font-bold text-blue-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              oninput="scaleRecipe()" />
+            <span class="text-gray-600 text-sm">porsjoner</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Forholdstall info -->
+      <div id="scale-ratio-box" class="result-box rounded-xl p-3 mb-5 text-sm flex items-center gap-3">
+        <span class="text-blue-600 font-bold text-base">Skaleringsfaktor:</span>
+        <span id="scale-ratio-val" class="font-mono font-bold text-blue-800 text-base"></span>
+        <span id="scale-ratio-formula" class="text-blue-500 text-xs"></span>
+      </div>
+
+      <!-- Oppskrift-tittel -->
+      <div class="mb-3">
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Oppskrift</label>
+        <input id="recipe-title" type="text" maxlength="60" value="Kjøttboller i tomatsaus"
+          class="w-full border border-gray-200 rounded-lg px-3 py-2 text-base font-semibold text-gray-800 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+          oninput="saveRecipe()" />
+      </div>
+
+      <!-- Ingredienstabell -->
+      <div class="overflow-x-auto rounded-xl border border-gray-200">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-100 text-gray-500 text-xs uppercase tracking-wide">
+            <tr>
+              <th class="text-left px-4 py-2">Ingrediens</th>
+              <th class="text-right px-4 py-2">Mengde</th>
+              <th class="text-left px-3 py-2">Enhet</th>
+              <th class="text-right px-4 py-2 text-blue-600">Ny mengde</th>
+              <th class="px-2 py-2"></th>
+            </tr>
+          </thead>
+          <tbody id="ingredients-body">
+            <!-- filled by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Legg til ingrediens -->
+      <button onclick="addIngredient()"
+        class="mt-3 flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-semibold px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors">
+        <span class="text-lg">＋</span> Legg til ingrediens
+      </button>
+
+      <!-- Forklaring -->
+      <div class="mt-4 bg-gray-50 rounded-xl p-4 border border-gray-100 text-sm text-gray-600">
+        <p class="font-semibold text-gray-700 mb-1">Hvordan fungerer det?</p>
+        <p>Ny mengde = opprinnelig mengde × (ønsket porsjoner ÷ opprinnelig porsjoner)</p>
+        <p class="font-mono text-green-700 mt-1">y = k · x &nbsp; der k = M/N</p>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ======================== TAB: PROPORSJONALITET ======================== -->
+  <section id="tab-proporsjonalitet-content" class="space-y-5 hidden">
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h2 class="text-lg font-bold text-blue-800 mb-1 flex items-center gap-2">
+        <span class="text-2xl">📊</span> Finn forholdstallet og beregn ny verdi
+      </h2>
+      <p class="text-gray-500 text-sm mb-5">
+        Oppgi ett kjent par (x₁, y₁), velg type proporsjonalitet, og finn y for en ny x-verdi.
+      </p>
+
+      <!-- Toggle: type -->
+      <div class="flex rounded-xl overflow-hidden border border-blue-200 mb-6 w-full max-w-sm">
+        <button id="btn-prop" onclick="setPropType('prop')"
+          class="flex-1 py-2.5 text-sm font-semibold transition-colors bg-blue-600 text-white">
+          📈 Proporsjonal
+        </button>
+        <button id="btn-inv" onclick="setPropType('inv')"
+          class="flex-1 py-2.5 text-sm font-semibold transition-colors bg-white text-gray-500 hover:bg-gray-50">
+          📉 Omvendt prop.
+        </button>
+      </div>
+
+      <!-- Kontekst-eksempel forslag -->
+      <div class="mb-5">
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Velg eksempel</label>
+        <div class="flex flex-wrap gap-2" id="example-buttons">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <!-- Kontekst-labels -->
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">x betyr</label>
+          <input id="label-x" type="text" maxlength="30" placeholder="f.eks. antall kg"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            oninput="calcProp()" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">y betyr</label>
+          <input id="label-y" type="text" maxlength="30" placeholder="f.eks. pris (kr)"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            oninput="calcProp()" />
+        </div>
+      </div>
+
+      <!-- Kjent par -->
+      <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 mb-4">
+        <p class="font-semibold text-gray-700 text-sm mb-3">Kjent par (x₁, y₁)</p>
+        <div class="flex flex-wrap gap-4 items-end">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">x₁</label>
+            <input id="x1" type="number" min="0.0001" step="any" value="3"
+              class="w-24 border border-gray-300 rounded-lg px-3 py-2 text-center font-bold focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              oninput="calcProp()" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">y₁</label>
+            <input id="y1" type="number" min="0.0001" step="any" value="75"
+              class="w-24 border border-gray-300 rounded-lg px-3 py-2 text-center font-bold focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              oninput="calcProp()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Beregn k -->
+      <div id="k-result-box" class="formula-box rounded-xl p-4 mb-4 fade-in hidden">
+        <p class="text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">Forholdstall k</p>
+        <p id="k-formula" class="font-mono text-green-800 font-bold text-base"></p>
+        <p id="k-value" class="font-mono text-green-700 text-sm mt-1"></p>
+      </div>
+
+      <!-- Ny x -->
+      <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 mb-4">
+        <p class="font-semibold text-gray-700 text-sm mb-3">Finn y for ny x-verdi</p>
+        <div class="flex flex-wrap gap-4 items-end">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">x (ny)</label>
+            <input id="x-new" type="number" min="0.0001" step="any" value="7"
+              class="w-24 border border-gray-300 rounded-lg px-3 py-2 text-center font-bold text-blue-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              oninput="calcProp()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Svar -->
+      <div id="prop-result-box" class="result-box rounded-xl p-5 fade-in hidden">
+        <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-2">Resultat</p>
+        <p id="prop-formula-line" class="font-mono text-blue-900 font-bold text-base mb-1"></p>
+        <p id="prop-answer-line" class="text-blue-800 text-sm"></p>
+      </div>
+
+      <!-- Steg-for-steg -->
+      <div id="prop-steps" class="mt-4 bg-yellow-50 rounded-xl p-4 border border-yellow-200 text-sm text-gray-700 hidden">
+        <p class="font-semibold text-yellow-800 mb-2">Fremgangsmåte:</p>
+        <ol id="steps-list" class="list-decimal list-inside space-y-1 text-gray-700"></ol>
+      </div>
+
+    </div>
+
+    <!-- Eksempel-tabell -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <h3 class="font-bold text-gray-700 mb-3 flex items-center gap-2 text-base">
+        <span>🗒️</span> Verdatabell
+      </h3>
+      <p class="text-xs text-gray-500 mb-3">Beregner y for x = 1, 2, 3, ... 8 basert på dine innstillinger.</p>
+      <div class="overflow-x-auto rounded-xl border border-gray-200">
+        <table class="w-full text-sm text-center">
+          <thead class="bg-gray-100 text-gray-500 text-xs uppercase tracking-wide">
+            <tr>
+              <th class="px-3 py-2" id="th-x">x</th>
+              <th class="px-3 py-2" id="th-y">y</th>
+              <th class="px-3 py-2" id="th-product">x · y</th>
+            </tr>
+          </thead>
+          <tbody id="prop-table-body" class="divide-y divide-gray-100">
+          </tbody>
+        </table>
+      </div>
+      <p id="table-note" class="text-xs text-gray-400 mt-2"></p>
+    </div>
+
+  </section>
+
+</main>
+
+<footer class="max-w-3xl mx-auto px-4 py-6 text-center text-xs text-gray-400 border-t border-gray-100 mt-4">
+  Matematikk 1P · LK20 · Halison App Studio ·
+  <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-gray-600">github.com/halisonworks/public-app-studio</a>
+</footer>
+
+<script>
+// =====================================================================
+// UTILITIES
+// =====================================================================
+function gcd(a, b) {
+  a = Math.abs(Math.round(a)); b = Math.abs(Math.round(b));
+  while (b) { let t = b; b = a % b; a = t; }
+  return a;
+}
+
+function fmtNum(n, decimals) {
+  if (n === null || n === undefined || isNaN(n)) return '?';
+  if (Math.abs(n - Math.round(n)) < 0.0001) return String(Math.round(n));
+  return n.toFixed(decimals !== undefined ? decimals : 4).replace(/\.?0+$/, '');
+}
+
+// =====================================================================
+// TAB NAVIGATION
+// =====================================================================
+function showTab(name) {
+  ['teori','oppskrift','proporsjonalitet'].forEach(t => {
+    document.getElementById('tab-' + t + '-content').classList.add('hidden');
+    const btn = document.getElementById('tab-' + t);
+    btn.classList.remove('tab-active');
+    btn.classList.add('tab-inactive');
+    btn.setAttribute('aria-selected', 'false');
+  });
+  document.getElementById('tab-' + name + '-content').classList.remove('hidden');
+  const active = document.getElementById('tab-' + name);
+  active.classList.add('tab-active');
+  active.classList.remove('tab-inactive');
+  active.setAttribute('aria-selected', 'true');
+  localStorage.setItem('mp1_tab', name);
+  if (name === 'oppskrift') scaleRecipe();
+  if (name === 'proporsjonalitet') { buildExampleButtons(); calcProp(); }
+}
+
+// =====================================================================
+// TEORI: Forholdskalkulator
+// =====================================================================
+function calcRatio() {
+  const a = parseFloat(document.getElementById('ratio-a').value);
+  const b = parseFloat(document.getElementById('ratio-b').value);
+  const res = document.getElementById('ratio-result');
+  const dec = document.getElementById('ratio-decimal');
+  if (!a || !b || a <= 0 || b <= 0) {
+    res.textContent = '—'; dec.textContent = ''; return;
+  }
+  const g = gcd(a, b);
+  const sa = Math.round(a/g), sb = Math.round(b/g);
+  if (sa === a && sb === b) {
+    res.textContent = a + ' : ' + b + ' (kan ikke forenkles)';
+  } else {
+    res.textContent = a + ' : ' + b + ' = ' + sa + ' : ' + sb;
+  }
+  const frac = a / b;
+  dec.textContent = 'Som desimaltall: ' + fmtNum(frac, 4) + '  |  ' + a + '/' + b + ' ≈ ' + frac.toFixed(4);
+}
+calcRatio();
+
+// =====================================================================
+// OPPSKRIFT-SKALERING
+// =====================================================================
+const DEFAULT_INGREDIENTS = [
+  { name: 'Kjøttdeig', amount: 600, unit: 'g' },
+  { name: 'Løk', amount: 1, unit: 'stk' },
+  { name: 'Egg', amount: 1, unit: 'stk' },
+  { name: 'Breadcrumbs', amount: 3, unit: 'ss' },
+  { name: 'Hermetiske tomater', amount: 400, unit: 'g' },
+  { name: 'Kremfløte', amount: 1.5, unit: 'dl' },
+  { name: 'Hvitløksfedd', amount: 2, unit: 'stk' },
+];
+
+function loadRecipe() {
+  try {
+    const stored = localStorage.getItem('mp1_recipe');
+    if (stored) return JSON.parse(stored);
+  } catch(e) {}
+  return JSON.parse(JSON.stringify(DEFAULT_INGREDIENTS));
+}
+
+function saveRecipe() {
+  const rows = getIngredientRows();
+  localStorage.setItem('mp1_recipe', JSON.stringify(rows));
+  localStorage.setItem('mp1_recipe_title', document.getElementById('recipe-title').value);
+}
+
+function getIngredientRows() {
+  const rows = [];
+  document.querySelectorAll('#ingredients-body tr').forEach(tr => {
+    const nameInput = tr.querySelector('.ing-name');
+    const amountInput = tr.querySelector('.ing-amount');
+    const unitInput = tr.querySelector('.ing-unit');
+    if (nameInput) rows.push({
+      name: nameInput.value,
+      amount: parseFloat(amountInput.value) || 0,
+      unit: unitInput.value
+    });
+  });
+  return rows;
+}
+
+function renderIngredients(ingredients, scaleFactor) {
+  const tbody = document.getElementById('ingredients-body');
+  tbody.innerHTML = '';
+  ingredients.forEach((ing, i) => {
+    const newAmount = ing.amount * scaleFactor;
+    const tr = document.createElement('tr');
+    tr.className = 'border-t border-gray-100 ingredient-row';
+    tr.innerHTML = `
+      <td class="px-4 py-2">
+        <input type="text" class="ing-name w-full border-0 bg-transparent text-gray-800 text-sm focus:outline-none focus:border-b focus:border-blue-300"
+          value="${escHtml(ing.name)}" maxlength="50"
+          oninput="saveRecipe(); scaleRecipe()" />
+      </td>
+      <td class="px-4 py-2 text-right">
+        <input type="number" class="ing-amount w-20 border border-gray-200 rounded px-2 py-1 text-right text-sm font-medium focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+          value="${ing.amount}" min="0" step="any"
+          oninput="saveRecipe(); scaleRecipe()" />
+      </td>
+      <td class="px-3 py-2">
+        <input type="text" class="ing-unit w-14 border-0 bg-transparent text-gray-500 text-sm focus:outline-none"
+          value="${escHtml(ing.unit)}" maxlength="10"
+          oninput="saveRecipe(); scaleRecipe()" />
+      </td>
+      <td class="px-4 py-2 text-right font-bold text-blue-700 text-sm whitespace-nowrap scaled-amount">
+        ${fmtNum(newAmount, 2)} <span class="text-blue-400 font-normal">${escHtml(ing.unit)}</span>
+      </td>
+      <td class="px-2 py-2 text-center">
+        <button onclick="removeIngredient(${i})"
+          class="remove-btn text-gray-300 hover:text-red-400 transition-colors text-lg leading-none"
+          title="Fjern">×</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function scaleRecipe() {
+  const base = parseFloat(document.getElementById('base-persons').value) || 1;
+  const target = parseFloat(document.getElementById('target-persons').value) || 1;
+  const factor = target / base;
+  const g = gcd(Math.round(target*1000), Math.round(base*1000));
+  const sn = Math.round(target*1000/g), sd = Math.round(base*1000/g);
+  const ratioStr = sn === sd ? '1' : sn + ' / ' + sd;
+
+  document.getElementById('scale-ratio-val').textContent = fmtNum(factor, 6);
+  document.getElementById('scale-ratio-formula').textContent = '(' + fmtNum(target,4) + ' ÷ ' + fmtNum(base,4) + ' = ' + ratioStr + ')';
+
+  const ingredients = getIngredientRows().length > 0 ? getIngredientRows() : loadRecipe();
+  renderIngredients(ingredients, factor);
+  saveRecipe();
+}
+
+function addIngredient() {
+  const rows = getIngredientRows();
+  rows.push({ name: 'Ny ingrediens', amount: 100, unit: 'g' });
+  const base = parseFloat(document.getElementById('base-persons').value) || 1;
+  const target = parseFloat(document.getElementById('target-persons').value) || 1;
+  renderIngredients(rows, target / base);
+  saveRecipe();
+  // focus on the new name input
+  const allInputs = document.querySelectorAll('#ingredients-body .ing-name');
+  if (allInputs.length > 0) allInputs[allInputs.length - 1].focus();
+}
+
+function removeIngredient(index) {
+  const rows = getIngredientRows();
+  if (rows.length <= 1) return;
+  rows.splice(index, 1);
+  const base = parseFloat(document.getElementById('base-persons').value) || 1;
+  const target = parseFloat(document.getElementById('target-persons').value) || 1;
+  renderIngredients(rows, target / base);
+  saveRecipe();
+}
+
+function initRecipe() {
+  const stored = loadRecipe();
+  const storedTitle = localStorage.getItem('mp1_recipe_title');
+  if (storedTitle) document.getElementById('recipe-title').value = storedTitle;
+  const base = parseFloat(document.getElementById('base-persons').value) || 1;
+  const target = parseFloat(document.getElementById('target-persons').value) || 1;
+  renderIngredients(stored, target / base);
+  scaleRecipe();
+}
+
+// =====================================================================
+// PROPORSJONALITET
+// =====================================================================
+let propType = 'prop'; // 'prop' | 'inv'
+
+const PROP_EXAMPLES = [
+  { label: 'Appelsiner (pris)', x1: 3, y1: 75, lx: 'kg', ly: 'pris (kr)', type: 'prop' },
+  { label: 'Bensinforbruk', x1: 50, y1: 4.25, lx: 'km', ly: 'liter bensin', type: 'prop' },
+  { label: 'Arbeidsinntekt', x1: 8, y1: 1600, lx: 'timer', ly: 'lønn (kr)', type: 'prop' },
+  { label: 'Malere og tid', x1: 2, y1: 12, lx: 'malere', ly: 'timer', type: 'inv' },
+  { label: 'Fart og tid (120 km)', x1: 60, y1: 2, lx: 'km/t', ly: 'timer', type: 'inv' },
+  { label: 'Ruter per side', x1: 4, y1: 25, lx: 'kolonner', ly: 'rader', type: 'inv' },
+];
+
+function buildExampleButtons() {
+  const container = document.getElementById('example-buttons');
+  container.innerHTML = '';
+  PROP_EXAMPLES.forEach((ex, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'px-3 py-1.5 text-xs rounded-lg border border-gray-200 bg-gray-50 hover:bg-blue-50 hover:border-blue-300 text-gray-700 font-medium transition-colors';
+    btn.textContent = ex.label + (ex.type === 'inv' ? ' 🔄' : ' 📈');
+    btn.onclick = () => loadExample(i);
+    container.appendChild(btn);
+  });
+}
+
+function loadExample(i) {
+  const ex = PROP_EXAMPLES[i];
+  setPropType(ex.type);
+  document.getElementById('x1').value = ex.x1;
+  document.getElementById('y1').value = ex.y1;
+  document.getElementById('label-x').value = ex.lx;
+  document.getElementById('label-y').value = ex.ly;
+  document.getElementById('x-new').value = '';
+  calcProp();
+}
+
+function setPropType(type) {
+  propType = type;
+  const btnP = document.getElementById('btn-prop');
+  const btnI = document.getElementById('btn-inv');
+  if (type === 'prop') {
+    btnP.className = 'flex-1 py-2.5 text-sm font-semibold transition-colors bg-blue-600 text-white';
+    btnI.className = 'flex-1 py-2.5 text-sm font-semibold transition-colors bg-white text-gray-500 hover:bg-gray-50';
+  } else {
+    btnI.className = 'flex-1 py-2.5 text-sm font-semibold transition-colors bg-orange-500 text-white';
+    btnP.className = 'flex-1 py-2.5 text-sm font-semibold transition-colors bg-white text-gray-500 hover:bg-gray-50';
+  }
+  calcProp();
+}
+
+function calcProp() {
+  const x1 = parseFloat(document.getElementById('x1').value);
+  const y1 = parseFloat(document.getElementById('y1').value);
+  const xNew = parseFloat(document.getElementById('x-new').value);
+  const lx = document.getElementById('label-x').value || 'x';
+  const ly = document.getElementById('label-y').value || 'y';
+
+  const kBox = document.getElementById('k-result-box');
+  const kFormula = document.getElementById('k-formula');
+  const kValue = document.getElementById('k-value');
+  const resultBox = document.getElementById('prop-result-box');
+  const formulaLine = document.getElementById('prop-formula-line');
+  const answerLine = document.getElementById('prop-answer-line');
+  const stepsDiv = document.getElementById('prop-steps');
+  const stepsList = document.getElementById('steps-list');
+
+  // Update table headers
+  document.getElementById('th-x').textContent = lx;
+  document.getElementById('th-y').textContent = ly;
+  document.getElementById('th-product').textContent = propType === 'prop' ? 'y / x (k)' : 'x · y (k)';
+
+  if (!x1 || !y1 || x1 <= 0 || y1 <= 0) {
+    kBox.classList.add('hidden');
+    resultBox.classList.add('hidden');
+    stepsDiv.classList.add('hidden');
+    renderPropTable(null, null);
+    return;
+  }
+
+  let k;
+  if (propType === 'prop') {
+    k = y1 / x1;
+    kFormula.textContent = 'k = y₁ / x₁ = ' + fmtNum(y1) + ' / ' + fmtNum(x1) + ' = ' + fmtNum(k, 6);
+    kValue.textContent = 'Formel: y = ' + fmtNum(k, 4) + ' · x';
+  } else {
+    k = x1 * y1;
+    kFormula.textContent = 'k = x₁ · y₁ = ' + fmtNum(x1) + ' · ' + fmtNum(y1) + ' = ' + fmtNum(k, 6);
+    kValue.textContent = 'Formel: y = ' + fmtNum(k, 4) + ' / x';
+  }
+
+  kBox.classList.remove('hidden');
+  kBox.classList.add('fade-in');
+
+  renderPropTable(k, lx, ly);
+
+  if (!xNew || xNew <= 0) {
+    resultBox.classList.add('hidden');
+    stepsDiv.classList.add('hidden');
+    return;
+  }
+
+  let yNew;
+  if (propType === 'prop') {
+    yNew = k * xNew;
+    formulaLine.textContent = ly + ' = ' + fmtNum(k, 4) + ' · ' + fmtNum(xNew) + ' = ' + fmtNum(yNew, 4);
+  } else {
+    yNew = k / xNew;
+    formulaLine.textContent = ly + ' = ' + fmtNum(k, 4) + ' / ' + fmtNum(xNew) + ' = ' + fmtNum(yNew, 4);
+  }
+  answerLine.textContent = 'Svar: Når ' + lx + ' = ' + fmtNum(xNew) + ', er ' + ly + ' = ' + fmtNum(yNew, 4);
+
+  resultBox.classList.remove('hidden');
+  resultBox.classList.add('fade-in');
+
+  // Steps
+  stepsList.innerHTML = '';
+  if (propType === 'prop') {
+    [
+      'Skriv opp at y og x er proporsjonale: y = k · x',
+      'Sett inn kjent par: ' + fmtNum(y1) + ' = k · ' + fmtNum(x1),
+      'Løs for k: k = ' + fmtNum(y1) + ' / ' + fmtNum(x1) + ' = ' + fmtNum(k, 6),
+      'Beregn ny y: y = ' + fmtNum(k, 4) + ' · ' + fmtNum(xNew) + ' = ' + fmtNum(yNew, 4),
+    ].forEach(s => { const li = document.createElement('li'); li.textContent = s; stepsList.appendChild(li); });
+  } else {
+    [
+      'Skriv opp at x og y er omvendt proporsjonale: x · y = k',
+      'Sett inn kjent par: ' + fmtNum(x1) + ' · ' + fmtNum(y1) + ' = k',
+      'Beregn k: k = ' + fmtNum(k, 6),
+      'For ny x: y = k / x = ' + fmtNum(k, 4) + ' / ' + fmtNum(xNew) + ' = ' + fmtNum(yNew, 4),
+    ].forEach(s => { const li = document.createElement('li'); li.textContent = s; stepsList.appendChild(li); });
+  }
+  stepsDiv.classList.remove('hidden');
+
+  savePropState();
+}
+
+function renderPropTable(k, lx, ly) {
+  const tbody = document.getElementById('prop-table-body');
+  const note = document.getElementById('table-note');
+  tbody.innerHTML = '';
+  if (k === null) {
+    note.textContent = 'Fyll inn et kjent par ovenfor for å se tabellen.';
+    return;
+  }
+  note.textContent = propType === 'prop'
+    ? 'k = y/x skal være konstant for alle rader.'
+    : 'k = x·y skal være konstant for alle rader.';
+
+  for (let x = 1; x <= 8; x++) {
+    const y = propType === 'prop' ? k * x : k / x;
+    const product = propType === 'prop' ? y / x : x * y;
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-blue-50 transition-colors';
+    tr.innerHTML = `
+      <td class="px-3 py-2 font-mono text-gray-700">${fmtNum(x)}</td>
+      <td class="px-3 py-2 font-mono font-semibold text-blue-700">${fmtNum(y, 4)}</td>
+      <td class="px-3 py-2 font-mono text-green-700 text-xs">${fmtNum(product, 4)}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+function savePropState() {
+  try {
+    localStorage.setItem('mp1_prop', JSON.stringify({
+      type: propType,
+      x1: document.getElementById('x1').value,
+      y1: document.getElementById('y1').value,
+      xNew: document.getElementById('x-new').value,
+      lx: document.getElementById('label-x').value,
+      ly: document.getElementById('label-y').value,
+    }));
+  } catch(e) {}
+}
+
+function loadPropState() {
+  try {
+    const s = localStorage.getItem('mp1_prop');
+    if (!s) return false;
+    const d = JSON.parse(s);
+    if (d.type) { propType = d.type; setPropType(propType); }
+    if (d.x1) document.getElementById('x1').value = d.x1;
+    if (d.y1) document.getElementById('y1').value = d.y1;
+    if (d.xNew) document.getElementById('x-new').value = d.xNew;
+    if (d.lx) document.getElementById('label-x').value = d.lx;
+    if (d.ly) document.getElementById('label-y').value = d.ly;
+    return true;
+  } catch(e) { return false; }
+}
+
+// =====================================================================
+// INIT
+// =====================================================================
+(function init() {
+  // Restore tab
+  const savedTab = localStorage.getItem('mp1_tab') || 'teori';
+  showTab(savedTab);
+
+  // Init recipe (always, so it's ready when tab is opened)
+  initRecipe();
+
+  // Init prop
+  buildExampleButtons();
+  if (!loadPropState()) {
+    // defaults already set in HTML
+    document.getElementById('label-x').value = 'kg';
+    document.getElementById('label-y').value = 'pris (kr)';
+  }
+  calcProp();
+})();
+</script>
+</body>
+</html>

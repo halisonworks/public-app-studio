@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<!--
+  Lineære funksjoner — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 2P (LK20): utforsk y = ax + b — dra i
+  stigningstall og konstantledd og se grafen, nullpunkt og verditabell endre seg.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lineære funksjoner – y = ax + b</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .slider-a::-webkit-slider-thumb { background: #2563eb; }
+    .slider-b::-webkit-slider-thumb { background: #16a34a; }
+    input[type=range] {
+      -webkit-appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid white;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    .slider-a { background: linear-gradient(to right, #93c5fd, #2563eb); }
+    .slider-b { background: linear-gradient(to right, #86efac, #16a34a); }
+    .svg-container { width: 100%; aspect-ratio: 1 / 1; max-height: 480px; }
+    @media (min-width: 1024px) { .svg-container { max-height: 520px; } }
+    .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; }
+    .badge-a { background: #dbeafe; color: #1d4ed8; border-radius: 6px; padding: 2px 8px; font-weight: 700; }
+    .badge-b { background: #dcfce7; color: #15803d; border-radius: 6px; padding: 2px 8px; font-weight: 700; }
+    .badge-null { background: #fef9c3; color: #854d0e; border-radius: 6px; padding: 2px 8px; font-weight: 700; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #e2e8f0; padding: 5px 10px; text-align: center; font-size: 0.875rem; }
+    th { background: #f1f5f9; font-weight: 600; }
+    tr:nth-child(even) td { background: #f8fafc; }
+    .highlight-row td { background: #fef9c3 !important; font-weight: 700; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 py-4 px-4 mb-6 shadow-sm">
+    <div class="max-w-6xl mx-auto flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-lg">f</div>
+      <div>
+        <h1 class="text-xl font-bold text-slate-800 leading-tight">Lineære funksjoner</h1>
+        <p class="text-xs text-slate-500">Matematikk 2P · LK20 · y = ax + b</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 pb-12">
+
+    <!-- Main grid: graph left, controls right -->
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+      <!-- SVG Graph -->
+      <div class="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+        <h2 class="text-sm font-semibold text-slate-500 mb-3 uppercase tracking-wide">Graf</h2>
+        <div class="svg-container mx-auto">
+          <svg id="graph" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg"
+               style="width:100%;height:100%;display:block;" aria-label="Koordinatsystem med linjen y = ax + b">
+            <!-- Rendered by JS -->
+          </svg>
+        </div>
+        <!-- Funksjonsuttrykk under grafen -->
+        <div class="mt-3 text-center">
+          <span class="text-lg font-bold text-blue-700" id="func-expr">f(x) = x</span>
+        </div>
+      </div>
+
+      <!-- Controls + info -->
+      <div class="lg:col-span-2 flex flex-col gap-4">
+
+        <!-- Stigningstall a -->
+        <div class="info-card">
+          <label class="flex items-center justify-between mb-2">
+            <span class="font-semibold text-slate-700">Stigningstall <span class="badge-a">a</span></span>
+            <input type="number" id="a-num" value="1" min="-10" max="10" step="0.1"
+                   class="w-20 text-center border border-blue-300 rounded-lg py-1 text-blue-700 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          </label>
+          <input type="range" id="a-slider" class="slider-a w-full" min="-10" max="10" step="0.1" value="1" />
+          <p class="text-xs text-slate-500 mt-2" id="a-explain">
+            Når <strong>x</strong> øker med 1, øker <strong>y</strong> med <strong>1</strong>.
+          </p>
+        </div>
+
+        <!-- Konstantledd b -->
+        <div class="info-card">
+          <label class="flex items-center justify-between mb-2">
+            <span class="font-semibold text-slate-700">Konstantledd <span class="badge-b">b</span></span>
+            <input type="number" id="b-num" value="0" min="-10" max="10" step="0.1"
+                   class="w-20 text-center border border-green-300 rounded-lg py-1 text-green-700 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+          </label>
+          <input type="range" id="b-slider" class="slider-b w-full" min="-10" max="10" step="0.1" value="0" />
+          <p class="text-xs text-slate-500 mt-2" id="b-explain">
+            Grafen skjærer y-aksen i punktet <strong>(0, 0)</strong>.
+          </p>
+        </div>
+
+        <!-- Nullpunkt + y-skjæring -->
+        <div class="info-card grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <p class="text-slate-500 text-xs font-semibold uppercase tracking-wide mb-1">Nullpunkt</p>
+            <p class="font-bold text-amber-700" id="nullpunkt-txt">x = 0</p>
+            <p class="text-xs text-slate-400">(der y = 0)</p>
+          </div>
+          <div>
+            <p class="text-slate-500 text-xs font-semibold uppercase tracking-wide mb-1">y-skjæring</p>
+            <p class="font-bold text-green-700" id="y-skjaering-txt">(0, 0)</p>
+            <p class="text-xs text-slate-400">(der x = 0)</p>
+          </div>
+        </div>
+
+        <!-- Les av verdi -->
+        <div class="info-card">
+          <h3 class="font-semibold text-slate-700 mb-2 text-sm">Les av verdi</h3>
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-slate-600">x =</label>
+            <input type="number" id="readoff-x" value="2" step="0.5"
+                   class="w-24 border border-slate-300 rounded-lg py-1 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+          </div>
+          <p class="mt-2 text-sm text-slate-700">
+            f(<span id="readoff-x-show">2</span>) = <strong class="text-blue-700" id="readoff-y-show">3</strong>
+          </p>
+          <p class="text-xs text-slate-400 mt-1">Et punkt er markert på grafen.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Second row: forklaring + verditabell -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+
+      <!-- Forklaring -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+        <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Forklaring</h2>
+        <div class="space-y-3 text-sm text-slate-700 leading-relaxed">
+          <p>
+            En <strong>lineær funksjon</strong> er en funksjon der grafen er en rett linje.
+            Den generelle formen er <strong>y = ax + b</strong>.
+          </p>
+          <p id="explain-a-long">
+            <span class="badge-a">a = 1</span> er <strong>stigningstallet</strong>.
+            Det forteller hvor bratt linjen er. Når x øker med 1, endres y med <strong>1</strong>.
+            Er a positiv, stiger linjen. Er a negativ, synker den. Er a = 0, er linjen vannrett.
+          </p>
+          <p id="explain-b-long">
+            <span class="badge-b">b = 0</span> er <strong>konstantleddet</strong>.
+            Det bestemmer hvor linjen krysser y-aksen — punktet <strong>(0, 0)</strong>.
+            Endrer du b, forskyver grafen seg opp eller ned.
+          </p>
+          <p id="explain-null-long">
+            <strong>Nullpunktet</strong> er der grafen krysser x-aksen, altså der y = 0.
+            Vi løser ax + b = 0 → x = −b/a (gjelder kun når a ≠ 0).
+            Her er nullpunktet <strong>x = 0</strong>.
+          </p>
+        </div>
+      </div>
+
+      <!-- Verditabell -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+        <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Verditabell</h2>
+        <div class="overflow-x-auto">
+          <table id="verditabell">
+            <thead>
+              <tr><th>x</th><th>y = f(x)</th></tr>
+            </thead>
+            <tbody id="verditabell-body">
+            </tbody>
+          </table>
+        </div>
+        <p class="text-xs text-slate-400 mt-2">Den gule raden svarer til verdien du leser av over.</p>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="text-center text-xs text-slate-400 py-6 border-t border-slate-200 mt-4">
+    Halison App Studio · Interaktivt læremiddel for Matematikk 2P (LK20) ·
+    <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-slate-600" target="_blank">GitHub</a>
+  </footer>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── State ────────────────────────────────────────────────────────────────
+  let a = 1, b = 0, readX = 2;
+
+  // ── DOM refs ─────────────────────────────────────────────────────────────
+  const aSlider    = document.getElementById('a-slider');
+  const bSlider    = document.getElementById('b-slider');
+  const aNum       = document.getElementById('a-num');
+  const bNum       = document.getElementById('b-num');
+  const readoffX   = document.getElementById('readoff-x');
+  const svg        = document.getElementById('graph');
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  function fmt(n) {
+    // Round to 2 decimals, strip trailing zeros
+    return parseFloat(n.toFixed(2)).toString();
+  }
+
+  function fmtCoeff(n) {
+    // Format coefficient for function expression string
+    const r = parseFloat(n.toFixed(2));
+    return r;
+  }
+
+  function buildFuncExpr(a, b) {
+    const af = fmtCoeff(a);
+    const bf = fmtCoeff(b);
+    let expr = 'f(x) = ';
+    if (af === 0 && bf === 0) return expr + '0';
+    if (af === 0) return expr + fmt(bf);
+    // build a*x part
+    let aPart = '';
+    if (af === 1)       aPart = 'x';
+    else if (af === -1) aPart = '−x';
+    else                aPart = fmt(af) + 'x';
+    // build b part
+    let bPart = '';
+    if (bf > 0)       bPart = ' + ' + fmt(bf);
+    else if (bf < 0)  bPart = ' − ' + fmt(Math.abs(bf));
+    return expr + aPart + bPart;
+  }
+
+  // ── SVG coordinate system ────────────────────────────────────────────────
+  // ViewBox: 0 0 500 500. Origin at center (250, 250).
+  // Scale: 30px per unit. Range ≈ −8 to +8 in each axis.
+  const W = 500, H = 500;
+  const OX = 250, OY = 250;   // pixel origin
+  const SCALE = 30;            // px per math unit
+  const AXIS_RANGE = 8;        // units from origin to edge (approx)
+
+  function toSvgX(mx) { return OX + mx * SCALE; }
+  function toSvgY(my) { return OY - my * SCALE; }
+  function toMathX(sx) { return (sx - OX) / SCALE; }
+
+  function svgEl(tag, attrs) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    return el;
+  }
+
+  function renderGraph() {
+    // Clear
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    // ── Background ─────────────────────────────────────────────────────────
+    svg.appendChild(svgEl('rect', { x: 0, y: 0, width: W, height: H, fill: '#f8fafc' }));
+
+    // ── Gridlines ──────────────────────────────────────────────────────────
+    for (let i = -AXIS_RANGE; i <= AXIS_RANGE; i++) {
+      const px = toSvgX(i);
+      const py = toSvgY(i);
+      if (px >= 0 && px <= W) {
+        svg.appendChild(svgEl('line', {
+          x1: px, y1: 0, x2: px, y2: H,
+          stroke: i === 0 ? '#94a3b8' : '#e2e8f0',
+          'stroke-width': i === 0 ? 1.5 : 1
+        }));
+      }
+      if (py >= 0 && py <= H) {
+        svg.appendChild(svgEl('line', {
+          x1: 0, y1: py, x2: W, y2: py,
+          stroke: i === 0 ? '#94a3b8' : '#e2e8f0',
+          'stroke-width': i === 0 ? 1.5 : 1
+        }));
+      }
+    }
+
+    // ── Axis arrows ────────────────────────────────────────────────────────
+    // x-axis
+    svg.appendChild(svgEl('line', {
+      x1: 5, y1: OY, x2: W - 5, y2: OY,
+      stroke: '#475569', 'stroke-width': 2
+    }));
+    // x arrow head
+    svg.appendChild(svgEl('polygon', {
+      points: `${W-5},${OY} ${W-14},${OY-5} ${W-14},${OY+5}`,
+      fill: '#475569'
+    }));
+    // y-axis
+    svg.appendChild(svgEl('line', {
+      x1: OX, y1: H - 5, x2: OX, y2: 5,
+      stroke: '#475569', 'stroke-width': 2
+    }));
+    // y arrow head
+    svg.appendChild(svgEl('polygon', {
+      points: `${OX},5 ${OX-5},14 ${OX+5},14`,
+      fill: '#475569'
+    }));
+
+    // ── Axis labels ────────────────────────────────────────────────────────
+    svg.appendChild(Object.assign(svgEl('text', {
+      x: W - 8, y: OY + 16, fill: '#475569',
+      'font-size': '13', 'font-family': 'Segoe UI,system-ui,sans-serif', 'font-weight': '600'
+    }), { textContent: 'x' }));
+    svg.appendChild(Object.assign(svgEl('text', {
+      x: OX + 8, y: 16, fill: '#475569',
+      'font-size': '13', 'font-family': 'Segoe UI,system-ui,sans-serif', 'font-weight': '600'
+    }), { textContent: 'y' }));
+
+    // ── Tick marks + numbers ───────────────────────────────────────────────
+    for (let i = -AXIS_RANGE; i <= AXIS_RANGE; i++) {
+      if (i === 0) continue;
+      const px = toSvgX(i);
+      const py = toSvgY(i);
+      // x-axis tick
+      if (px >= 10 && px <= W - 20) {
+        svg.appendChild(svgEl('line', { x1: px, y1: OY - 4, x2: px, y2: OY + 4, stroke: '#475569', 'stroke-width': 1.5 }));
+        const xt = svgEl('text', {
+          x: px, y: OY + 17, fill: '#64748b',
+          'font-size': '11', 'font-family': 'Segoe UI,system-ui,sans-serif',
+          'text-anchor': 'middle'
+        });
+        xt.textContent = i;
+        svg.appendChild(xt);
+      }
+      // y-axis tick
+      if (py >= 10 && py <= H - 20) {
+        svg.appendChild(svgEl('line', { x1: OX - 4, y1: py, x2: OX + 4, y2: py, stroke: '#475569', 'stroke-width': 1.5 }));
+        const yt = svgEl('text', {
+          x: OX - 8, y: py + 4, fill: '#64748b',
+          'font-size': '11', 'font-family': 'Segoe UI,system-ui,sans-serif',
+          'text-anchor': 'end'
+        });
+        yt.textContent = i;
+        svg.appendChild(yt);
+      }
+    }
+    // Origin label
+    const orig = svgEl('text', {
+      x: OX - 8, y: OY + 17, fill: '#94a3b8',
+      'font-size': '11', 'font-family': 'Segoe UI,system-ui,sans-serif', 'text-anchor': 'end'
+    });
+    orig.textContent = '0';
+    svg.appendChild(orig);
+
+    // ── Draw the line y = ax + b ───────────────────────────────────────────
+    // Compute intercepts at SVG edges to clip line to viewport
+    // We'll parameterize by x in math coords from −9 to +9
+    const MX_LEFT  = toMathX(0);
+    const MX_RIGHT = toMathX(W);
+
+    const y_left  = a * MX_LEFT  + b;
+    const y_right = a * MX_RIGHT + b;
+
+    const p1x = toSvgX(MX_LEFT);
+    const p1y = toSvgY(y_left);
+    const p2x = toSvgX(MX_RIGHT);
+    const p2y = toSvgY(y_right);
+
+    svg.appendChild(svgEl('line', {
+      x1: p1x, y1: p1y, x2: p2x, y2: p2y,
+      stroke: '#2563eb', 'stroke-width': 2.5,
+      'stroke-linecap': 'round'
+    }));
+
+    // ── y-intercept point (0, b) ───────────────────────────────────────────
+    const yIntSx = toSvgX(0);
+    const yIntSy = toSvgY(b);
+    svg.appendChild(svgEl('circle', {
+      cx: yIntSx, cy: yIntSy, r: 6,
+      fill: '#16a34a', stroke: 'white', 'stroke-width': 2
+    }));
+    // Label
+    const bLabel = svgEl('text', {
+      x: yIntSx + 10, y: yIntSy - 6,
+      fill: '#15803d', 'font-size': '12',
+      'font-family': 'Segoe UI,system-ui,sans-serif', 'font-weight': '700'
+    });
+    bLabel.textContent = '(0, ' + fmt(b) + ')';
+    svg.appendChild(bLabel);
+
+    // ── Nullpunkt (−b/a, 0) ───────────────────────────────────────────────
+    if (Math.abs(a) > 0.001) {
+      const nullX = -b / a;
+      const nullSx = toSvgX(nullX);
+      const nullSy = toSvgY(0);
+      if (nullSx >= 0 && nullSx <= W) {
+        svg.appendChild(svgEl('circle', {
+          cx: nullSx, cy: nullSy, r: 6,
+          fill: '#d97706', stroke: 'white', 'stroke-width': 2
+        }));
+        const nLabel = svgEl('text', {
+          x: nullSx + 10, y: nullSy - 6,
+          fill: '#b45309', 'font-size': '12',
+          'font-family': 'Segoe UI,system-ui,sans-serif', 'font-weight': '700'
+        });
+        nLabel.textContent = '(' + fmt(nullX) + ', 0)';
+        svg.appendChild(nLabel);
+      }
+    }
+
+    // ── Read-off point ────────────────────────────────────────────────────
+    const roY = a * readX + b;
+    const roSx = toSvgX(readX);
+    const roSy = toSvgY(roY);
+    if (roSx >= 0 && roSx <= W && roSy >= 0 && roSy <= H) {
+      // Dashed drop lines
+      svg.appendChild(svgEl('line', {
+        x1: roSx, y1: roSy, x2: roSx, y2: OY,
+        stroke: '#7c3aed', 'stroke-width': 1.5,
+        'stroke-dasharray': '4,3', opacity: '0.7'
+      }));
+      svg.appendChild(svgEl('line', {
+        x1: roSx, y1: roSy, x2: OX, y2: roSy,
+        stroke: '#7c3aed', 'stroke-width': 1.5,
+        'stroke-dasharray': '4,3', opacity: '0.7'
+      }));
+      svg.appendChild(svgEl('circle', {
+        cx: roSx, cy: roSy, r: 7,
+        fill: '#7c3aed', stroke: 'white', 'stroke-width': 2.5
+      }));
+    }
+  }
+
+  // ── UI update ─────────────────────────────────────────────────────────────
+  function update() {
+    // Sync sliders ↔ number inputs
+    aSlider.value = a;
+    aNum.value    = fmt(a);
+    bSlider.value = b;
+    bNum.value    = fmt(b);
+
+    // Function expression
+    document.getElementById('func-expr').textContent = buildFuncExpr(a, b);
+
+    // a-explain
+    const aDir = a > 0 ? 'øker' : (a < 0 ? 'synker' : 'endres ikke');
+    document.getElementById('a-explain').innerHTML =
+      'Når <strong>x</strong> øker med 1, ' + aDir + ' <strong>y</strong> med <strong>' + fmt(Math.abs(a)) + '</strong>.';
+
+    // b-explain
+    document.getElementById('b-explain').innerHTML =
+      'Grafen skjærer y-aksen i punktet <strong>(0, ' + fmt(b) + ')</strong>.';
+
+    // Nullpunkt
+    let nullTxt, nullLong;
+    if (Math.abs(a) < 0.001) {
+      if (Math.abs(b) < 0.001) {
+        nullTxt  = 'Hele x-aksen';
+        nullLong = 'Siden a = 0 og b = 0 er funksjonen f(x) = 0, og grafen faller sammen med x-aksen.';
+      } else {
+        nullTxt  = 'Ingen (a = 0)';
+        nullLong = 'Siden a = 0 er linjen vannrett og krysser aldri x-aksen (med mindre b = 0).';
+      }
+    } else {
+      const nx = -b / a;
+      nullTxt  = 'x = ' + fmt(nx);
+      nullLong = 'Nullpunktet er der y = 0. Vi løser ax + b = 0 → x = −b/a = ' + fmt(nx) + '. Her er nullpunktet <strong>(' + fmt(nx) + ', 0)</strong>.';
+    }
+    document.getElementById('nullpunkt-txt').textContent    = nullTxt;
+    document.getElementById('y-skjaering-txt').textContent  = '(0, ' + fmt(b) + ')';
+
+    // Forklaring-blokken
+    const af = fmtCoeff(a), bf = fmtCoeff(b);
+    document.getElementById('explain-a-long').innerHTML =
+      '<span class="badge-a">a = ' + fmt(a) + '</span> er <strong>stigningstallet</strong>. ' +
+      'Det forteller hvor bratt linjen er. Når x øker med 1, ' + aDir + ' y med <strong>' + fmt(Math.abs(a)) + '</strong>. ' +
+      (a > 0 ? 'Linjen stiger fra venstre mot høyre.' : a < 0 ? 'Linjen synker fra venstre mot høyre.' : 'Linjen er vannrett.');
+
+    document.getElementById('explain-b-long').innerHTML =
+      '<span class="badge-b">b = ' + fmt(b) + '</span> er <strong>konstantleddet</strong>. ' +
+      'Det bestemmer hvor linjen krysser y-aksen — punktet <strong>(0, ' + fmt(b) + ')</strong>. ' +
+      'Endrer du b, forskyver grafen seg opp eller ned.';
+
+    document.getElementById('explain-null-long').innerHTML =
+      '<strong>Nullpunktet</strong> er der grafen krysser x-aksen (y = 0). ' + nullLong;
+
+    // Read-off
+    const roY = a * readX + b;
+    document.getElementById('readoff-x-show').textContent = fmt(readX);
+    document.getElementById('readoff-y-show').textContent = fmt(roY);
+
+    // Verditabell
+    buildVerditabell();
+
+    // Graph
+    renderGraph();
+  }
+
+  // ── Verditabell ───────────────────────────────────────────────────────────
+  function buildVerditabell() {
+    const tbody = document.getElementById('verditabell-body');
+    tbody.innerHTML = '';
+    const xs = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
+    for (const x of xs) {
+      const y = a * x + b;
+      const tr = document.createElement('tr');
+      const isHighlight = Math.abs(x - readX) < 0.001;
+      if (isHighlight) tr.className = 'highlight-row';
+      const tdx = document.createElement('td');
+      tdx.textContent = x;
+      const tdy = document.createElement('td');
+      tdy.textContent = fmt(y);
+      tr.appendChild(tdx);
+      tr.appendChild(tdy);
+      tbody.appendChild(tr);
+    }
+  }
+
+  // ── Event listeners ───────────────────────────────────────────────────────
+  function clampA(v) { return Math.max(-10, Math.min(10, v)); }
+  function clampB(v) { return Math.max(-10, Math.min(10, v)); }
+
+  aSlider.addEventListener('input', function () {
+    a = clampA(parseFloat(this.value) || 0);
+    update();
+  });
+  aNum.addEventListener('input', function () {
+    const v = parseFloat(this.value);
+    if (!isNaN(v)) { a = clampA(v); update(); }
+  });
+  aNum.addEventListener('change', function () {
+    const v = parseFloat(this.value);
+    a = isNaN(v) ? 0 : clampA(v);
+    update();
+  });
+
+  bSlider.addEventListener('input', function () {
+    b = clampB(parseFloat(this.value) || 0);
+    update();
+  });
+  bNum.addEventListener('input', function () {
+    const v = parseFloat(this.value);
+    if (!isNaN(v)) { b = clampB(v); update(); }
+  });
+  bNum.addEventListener('change', function () {
+    const v = parseFloat(this.value);
+    b = isNaN(v) ? 0 : clampB(v);
+    update();
+  });
+
+  readoffX.addEventListener('input', function () {
+    const v = parseFloat(this.value);
+    if (!isNaN(v)) { readX = v; update(); }
+  });
+  readoffX.addEventListener('change', function () {
+    const v = parseFloat(this.value);
+    readX = isNaN(v) ? 0 : v;
+    update();
+  });
+
+  // ── Initial render ────────────────────────────────────────────────────────
+  update();
+
+})();
+</script>
+
+</body>
+</html>

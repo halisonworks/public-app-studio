@@ -13,9 +13,11 @@ into **category folders** — open one to browse just those, or see
 - [`creative/`](./creative/) — color-palette, infographic-stats, link-in-bio
 - [`game/`](./game/) — quiz-game
 - [`prototype/`](./prototype/) — saas-prototype
+- [`math/`](./math/) — interactive maths learning tools for the Norwegian
+  curriculum (LK20), by level: [`NO-2P`](./math/NO-2P/) and [`NO-1P`](./math/NO-1P/)
 
 `price-calculator` and `persona-developer` also include a Norwegian (`i18n/nb/`)
-version.
+version; the `math/` tools are Norwegian throughout.
 
 ## What a project looks like
 

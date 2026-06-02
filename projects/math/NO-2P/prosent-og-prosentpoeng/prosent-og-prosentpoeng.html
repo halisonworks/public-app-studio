@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<!--
+  Prosent og prosentpoeng — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 2P (LK20): forskjellen på prosentpoeng og
+  prosentvis endring, pluss en prosentkalkulator med tre regnemåter.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prosent og prosentpoeng – Matematikk 2P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .bar-container { transition: width 0.4s ease; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+    .formula-box { font-family: 'Courier New', monospace; }
+    .tab-btn.active { border-bottom: 3px solid #6366f1; color: #6366f1; font-weight: 700; }
+    .section-card { scroll-margin-top: 1rem; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-indigo-700 text-white shadow-md">
+    <div class="max-w-3xl mx-auto px-4 py-5">
+      <p class="text-indigo-200 text-sm font-semibold uppercase tracking-widest mb-1">Matematikk 2P · LK20</p>
+      <h1 class="text-2xl sm:text-3xl font-bold">Prosent og prosentpoeng</h1>
+      <p class="mt-1 text-indigo-100 text-sm">Lær forskjellen — og regn selv</p>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-8 space-y-10">
+
+    <!-- ─── SEKSJON 1: FORKLARING ─── -->
+    <section class="section-card bg-white rounded-2xl shadow p-6 sm:p-8" id="forklaring">
+      <h2 class="text-xl font-bold text-indigo-700 mb-4">Hva er forskjellen?</h2>
+
+      <div class="grid sm:grid-cols-2 gap-5 mb-6">
+        <!-- Prosentpoeng -->
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <h3 class="font-bold text-amber-800 mb-2">📐 Prosentpoeng</h3>
+          <p class="text-sm text-amber-900 leading-relaxed">
+            <strong>Prosentpoeng</strong> er den <em>aritmetiske differansen</em> mellom to prosenttall.
+            Du trekker rett og slett det ene fra det andre.
+          </p>
+          <div class="formula-box bg-amber-100 rounded-lg mt-3 px-3 py-2 text-sm text-amber-900">
+            Endring = til − fra
+          </div>
+          <p class="text-xs text-amber-700 mt-2">
+            Eks.: Renten øker fra 2 % til 3 %. Det er <strong>1 prosentpoeng</strong> opp.
+          </p>
+        </div>
+
+        <!-- Prosentvis endring -->
+        <div class="bg-sky-50 border border-sky-200 rounded-xl p-4">
+          <h3 class="font-bold text-sky-800 mb-2">📊 Prosentvis endring</h3>
+          <p class="text-sm text-sky-900 leading-relaxed">
+            <strong>Prosentvis endring</strong> sier hvor mye endringen er <em>relativt til utgangspunktet</em>.
+            Den svarer på: «Hvor stor økning er dette sammenlignet med det vi startet med?»
+          </p>
+          <div class="formula-box bg-sky-100 rounded-lg mt-3 px-3 py-2 text-sm text-sky-900">
+            Endring = (til − fra) / fra · 100 %
+          </div>
+          <p class="text-xs text-sky-700 mt-2">
+            Eks.: Fra 2 % til 3 %: (3−2)/2 · 100 % = <strong>50 % økning</strong> i renten.
+          </p>
+        </div>
+      </div>
+
+      <div class="bg-indigo-50 border-l-4 border-indigo-400 rounded-r-xl p-4 text-sm text-indigo-900">
+        <strong>Klassisk eksempel:</strong> En bank hever boliglånsrenten fra 2,0 % til 3,0 %.
+        Avisen skriver «renten økte med 1 prosentpoeng». Det er korrekt. Men lånet ditt er egentlig
+        50 % dyrere enn før — det er den <em>prosentvise endringen</em>. Begge tallene er riktige,
+        men de forteller ulike ting. Å blande dem er en vanlig feil!
+      </div>
+    </section>
+
+    <!-- ─── SEKSJON 2: INTERAKTIVT EKSEMPEL ─── -->
+    <section class="section-card bg-white rounded-2xl shadow p-6 sm:p-8" id="interaktiv">
+      <h2 class="text-xl font-bold text-indigo-700 mb-1">Prøv selv: fra … til …</h2>
+      <p class="text-sm text-gray-500 mb-5">Endre «fra» og «til» for å se begge beregningene live.</p>
+
+      <!-- Inputs -->
+      <div class="flex flex-wrap gap-4 mb-6">
+        <div class="flex-1 min-w-[130px]">
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1" for="inp-fra">Fra (%)</label>
+          <input id="inp-fra" type="number" step="0.1" min="0.1" max="99.9"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            placeholder="f.eks. 2" />
+        </div>
+        <div class="flex items-end pb-2 text-2xl text-gray-400">→</div>
+        <div class="flex-1 min-w-[130px]">
+          <label class="block text-xs font-semibold text-gray-500 uppercase mb-1" for="inp-til">Til (%)</label>
+          <input id="inp-til" type="number" step="0.1" min="0.1" max="100"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            placeholder="f.eks. 3" />
+        </div>
+      </div>
+
+      <!-- Kontekst-velger -->
+      <div class="mb-5">
+        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Kontekst (valgfritt)</label>
+        <select id="ctx-select"
+          class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white">
+          <option value="rente">Boliglånsrente</option>
+          <option value="arbeidsledighet">Arbeidsledighet</option>
+          <option value="stemmer">Velgerstøtte (parti)</option>
+          <option value="egenandel">Egenandel (helse)</option>
+          <option value="fri">Egendefinert</option>
+        </select>
+      </div>
+
+      <!-- Resultat-kort -->
+      <div id="result-box" class="hidden space-y-4">
+
+        <!-- Visuelle stolper -->
+        <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+          <p class="text-xs font-semibold text-gray-400 uppercase mb-3">Visuell sammenligning</p>
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between text-xs text-gray-500 mb-1">
+                <span>Fra</span><span id="bar-fra-label" class="font-semibold text-gray-700"></span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
+                <div id="bar-fra" class="h-5 rounded-full bg-amber-400 bar-container" style="width:0%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs text-gray-500 mb-1">
+                <span>Til</span><span id="bar-til-label" class="font-semibold text-gray-700"></span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-5 overflow-hidden">
+                <div id="bar-til" class="h-5 rounded-full bg-sky-500 bar-container" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prosentpoeng -->
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="bg-amber-400 text-white text-xs font-bold px-2 py-0.5 rounded-full">PP</span>
+            <span class="font-bold text-amber-800">Endring i prosentpoeng</span>
+          </div>
+          <div class="formula-box text-sm bg-amber-100 rounded-lg px-3 py-2 text-amber-900 mb-2" id="pp-formula"></div>
+          <p class="text-amber-800 font-semibold" id="pp-result"></p>
+          <p class="text-xs text-amber-700 mt-1" id="pp-context"></p>
+        </div>
+
+        <!-- Prosentvis endring -->
+        <div class="bg-sky-50 border border-sky-200 rounded-xl p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="bg-sky-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">%</span>
+            <span class="font-bold text-sky-800">Prosentvis endring</span>
+          </div>
+          <div class="formula-box text-sm bg-sky-100 rounded-lg px-3 py-2 text-sky-900 mb-2" id="pv-formula"></div>
+          <p class="text-sky-800 font-semibold" id="pv-result"></p>
+          <p class="text-xs text-sky-700 mt-1" id="pv-context"></p>
+        </div>
+
+        <!-- Tolkning -->
+        <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-sm text-indigo-900" id="tolkning-box"></div>
+      </div>
+
+      <!-- Tom melding -->
+      <div id="empty-msg" class="text-center text-gray-400 text-sm py-6">
+        Skriv inn tall i feltene ovenfor for å se resultatene.
+      </div>
+    </section>
+
+    <!-- ─── SEKSJON 3: PROSENTKALKULATOR ─── -->
+    <section class="section-card bg-white rounded-2xl shadow p-6 sm:p-8" id="kalkulator">
+      <h2 class="text-xl font-bold text-indigo-700 mb-1">Prosentkalkulator</h2>
+      <p class="text-sm text-gray-500 mb-5">Velg regnemåte og fyll inn tallene.</p>
+
+      <!-- Faner -->
+      <div class="flex border-b border-gray-200 mb-6 gap-1">
+        <button class="tab-btn active px-3 py-2 text-sm text-gray-600 hover:text-indigo-600 transition-colors" data-tab="0">
+          A % av B
+        </button>
+        <button class="tab-btn px-3 py-2 text-sm text-gray-600 hover:text-indigo-600 transition-colors" data-tab="1">
+          A av B i %
+        </button>
+        <button class="tab-btn px-3 py-2 text-sm text-gray-600 hover:text-indigo-600 transition-colors" data-tab="2">
+          Endring A→B
+        </button>
+      </div>
+
+      <!-- Fane 0: Hva er A % av B? -->
+      <div class="calc-tab" id="tab-0">
+        <p class="text-sm text-gray-600 mb-4">
+          <strong>Eksempel:</strong> Hva er 15 % av 8 500 kr (månedlig forsikring)?
+        </p>
+        <div class="flex flex-wrap gap-4 mb-4">
+          <div class="flex-1 min-w-[110px]">
+            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">A (prosent)</label>
+            <input id="c0-a" type="number" step="any" placeholder="f.eks. 15"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          </div>
+          <div class="flex items-end pb-2 text-gray-400 text-sm">% av</div>
+          <div class="flex-1 min-w-[110px]">
+            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">B (verdi)</label>
+            <input id="c0-b" type="number" step="any" placeholder="f.eks. 8500"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          </div>
+        </div>
+        <div id="c0-result" class="hidden">
+          <div class="formula-box text-sm bg-gray-100 rounded-lg px-3 py-2 text-gray-700 mb-2" id="c0-formula"></div>
+          <div class="bg-indigo-600 text-white rounded-xl px-4 py-3 font-bold text-lg" id="c0-answer"></div>
+        </div>
+      </div>
+
+      <!-- Fane 1: A er hvor mange % av B? -->
+      <div class="calc-tab hidden" id="tab-1">
+        <p class="text-sm text-gray-600 mb-4">
+          <strong>Eksempel:</strong> 340 elever av 1 200 stemte. Hvor mange prosent er det?
+        </p>
+        <div class="flex flex-wrap gap-4 mb-4">
+          <div class="flex-1 min-w-[110px]">
+            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">A (del)</label>
+            <input id="c1-a" type="number" step="any" placeholder="f.eks. 340"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          </div>
+          <div class="flex items-end pb-2 text-gray-400 text-sm">av</div>
+          <div class="flex-1 min-w-[110px]">
+            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">B (hele)</label>
+            <input id="c1-b" type="number" step="any" placeholder="f.eks. 1200"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          </div>
+        </div>
+        <div id="c1-result" class="hidden">
+          <div class="formula-box text-sm bg-gray-100 rounded-lg px-3 py-2 text-gray-700 mb-2" id="c1-formula"></div>
+          <div class="bg-indigo-600 text-white rounded-xl px-4 py-3 font-bold text-lg" id="c1-answer"></div>
+        </div>
+      </div>
+
+      <!-- Fane 2: Prosentvis endring fra A til B -->
+      <div class="calc-tab hidden" id="tab-2">
+        <p class="text-sm text-gray-600 mb-4">
+          <strong>Eksempel:</strong> Husleien gikk fra 9 800 kr til 11 200 kr. Hvor stor er økningen i prosent?
+        </p>
+        <div class="flex flex-wrap gap-4 mb-4">
+          <div class="flex-1 min-w-[110px]">
+            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Fra (A)</label>
+            <input id="c2-a" type="number" step="any" placeholder="f.eks. 9800"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          </div>
+          <div class="flex items-end pb-2 text-gray-400">→</div>
+          <div class="flex-1 min-w-[110px]">
+            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Til (B)</label>
+            <input id="c2-b" type="number" step="any" placeholder="f.eks. 11200"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          </div>
+        </div>
+        <div id="c2-result" class="hidden">
+          <div class="formula-box text-sm bg-gray-100 rounded-lg px-3 py-2 text-gray-700 mb-2" id="c2-formula"></div>
+          <div class="bg-indigo-600 text-white rounded-xl px-4 py-3 font-bold text-lg" id="c2-answer"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── SEKSJON 4: RASK OPPGAVE ─── -->
+    <section class="section-card bg-white rounded-2xl shadow p-6 sm:p-8" id="quiz">
+      <h2 class="text-xl font-bold text-indigo-700 mb-1">Kjapt spørsmål</h2>
+      <p class="text-sm text-gray-500 mb-4">Test forståelsen din!</p>
+
+      <div id="quiz-container" class="space-y-4">
+        <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+          <p class="font-semibold text-indigo-900 mb-3" id="quiz-question"></p>
+          <div class="space-y-2" id="quiz-options"></div>
+        </div>
+        <div id="quiz-feedback" class="hidden rounded-xl p-4 text-sm font-medium"></div>
+        <button id="quiz-next"
+          class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg px-4 py-2 text-sm transition-colors">
+          Neste spørsmål →
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="mt-12 border-t border-gray-200 bg-white">
+    <div class="max-w-3xl mx-auto px-4 py-5 text-xs text-gray-400 flex flex-wrap justify-between gap-2">
+      <span>Matematikk 2P · LK20 · Halison App Studio</span>
+      <a href="https://github.com/halisonworks/public-app-studio" class="hover:text-indigo-500 underline" target="_blank" rel="noopener">
+        github.com/halisonworks/public-app-studio
+      </a>
+    </div>
+  </footer>
+
+  <script>
+    // ── Hjelpefunksjoner ──────────────────────────────────────────────────────
+    function fmt(n, desimaler) {
+      if (desimaler === undefined) desimaler = 2;
+      return n.toLocaleString('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: desimaler });
+    }
+
+    function fmtProsentpoeng(n) {
+      var abs = Math.abs(n);
+      var s = fmt(abs, 2);
+      return (n >= 0 ? '+' : '−') + s + ' prosentpoeng';
+    }
+
+    function fmtPV(n) {
+      var abs = Math.abs(n);
+      var s = fmt(abs, 1);
+      return (n >= 0 ? '+' : '−') + s + ' %';
+    }
+
+    // ── LocalStorage ──────────────────────────────────────────────────────────
+    function savePP() {
+      var fra = document.getElementById('inp-fra').value;
+      var til = document.getElementById('inp-til').value;
+      var ctx = document.getElementById('ctx-select').value;
+      try { localStorage.setItem('pp_fra', fra); localStorage.setItem('pp_til', til); localStorage.setItem('pp_ctx', ctx); } catch(e) {}
+    }
+
+    function loadPP() {
+      try {
+        var fra = localStorage.getItem('pp_fra');
+        var til = localStorage.getItem('pp_til');
+        var ctx = localStorage.getItem('pp_ctx');
+        if (fra) document.getElementById('inp-fra').value = fra;
+        if (til) document.getElementById('inp-til').value = til;
+        if (ctx) document.getElementById('ctx-select').value = ctx;
+      } catch(e) {}
+    }
+
+    function saveCalc(id, a, b) {
+      try { localStorage.setItem('calc_' + id + '_a', a); localStorage.setItem('calc_' + id + '_b', b); } catch(e) {}
+    }
+
+    function loadCalc() {
+      try {
+        [0,1,2].forEach(function(i) {
+          var a = localStorage.getItem('calc_' + i + '_a');
+          var b = localStorage.getItem('calc_' + i + '_b');
+          if (a) document.getElementById('c' + i + '-a').value = a;
+          if (b) document.getElementById('c' + i + '-b').value = b;
+        });
+      } catch(e) {}
+    }
+
+    // ── Kontekst-tekster ──────────────────────────────────────────────────────
+    var kontekster = {
+      rente: {
+        enhet: '%',
+        ppTekst: function(fra, til, pp) {
+          var retning = pp >= 0 ? 'økte' : 'falt';
+          return 'Boliglånsrenten ' + retning + ' med ' + fmt(Math.abs(pp), 2) + ' prosentpoeng (fra ' + fmt(fra,1) + ' % til ' + fmt(til,1) + ' %).';
+        },
+        pvTekst: function(fra, til, pv) {
+          var retning = pv >= 0 ? 'dyrere' : 'billigere';
+          return 'Lånet er ' + fmt(Math.abs(pv), 1) + ' % ' + retning + ' enn før — målt relativt til utgangspunktet.';
+        }
+      },
+      arbeidsledighet: {
+        enhet: '%',
+        ppTekst: function(fra, til, pp) {
+          var retning = pp >= 0 ? 'økte' : 'falt';
+          return 'Arbeidsledigheten ' + retning + ' med ' + fmt(Math.abs(pp), 2) + ' prosentpoeng.';
+        },
+        pvTekst: function(fra, til, pv) {
+          var retning = pv >= 0 ? 'flere' : 'færre';
+          return 'Det er ' + fmt(Math.abs(pv), 1) + ' % ' + retning + ' arbeidsledige enn ved utgangspunktet.';
+        }
+      },
+      stemmer: {
+        enhet: '%',
+        ppTekst: function(fra, til, pp) {
+          var retning = pp >= 0 ? 'økte' : 'falt';
+          return 'Velgerstøtten ' + retning + ' med ' + fmt(Math.abs(pp), 2) + ' prosentpoeng.';
+        },
+        pvTekst: function(fra, til, pv) {
+          var retning = pv >= 0 ? 'bedre' : 'dårligere';
+          return 'Partiet gjør det ' + fmt(Math.abs(pv), 1) + ' % ' + retning + ' enn sist — relativt sett.';
+        }
+      },
+      egenandel: {
+        enhet: '%',
+        ppTekst: function(fra, til, pp) {
+          var retning = pp >= 0 ? 'økte' : 'falt';
+          return 'Egenandelen ' + retning + ' med ' + fmt(Math.abs(pp), 2) + ' prosentpoeng.';
+        },
+        pvTekst: function(fra, til, pv) {
+          var retning = pv >= 0 ? 'høyere' : 'lavere';
+          return 'Det er ' + fmt(Math.abs(pv), 1) + ' % ' + retning + ' egenandel enn før.';
+        }
+      },
+      fri: {
+        enhet: '%',
+        ppTekst: function(fra, til, pp) {
+          var retning = pp >= 0 ? 'økte' : 'falt';
+          return 'Andelen ' + retning + ' med ' + fmt(Math.abs(pp), 2) + ' prosentpoeng.';
+        },
+        pvTekst: function(fra, til, pv) {
+          var retning = pv >= 0 ? 'mer' : 'mindre';
+          return 'Det er ' + fmt(Math.abs(pv), 1) + ' % ' + retning + ' enn utgangspunktet.';
+        }
+      }
+    };
+
+    // ── Seksjon 2: Prosentpoeng-kalkulator ───────────────────────────────────
+    function oppdaterPP() {
+      var fraVal = parseFloat(document.getElementById('inp-fra').value);
+      var tilVal = parseFloat(document.getElementById('inp-til').value);
+      var ctx = document.getElementById('ctx-select').value;
+      var resultBox = document.getElementById('result-box');
+      var emptyMsg = document.getElementById('empty-msg');
+
+      if (isNaN(fraVal) || isNaN(tilVal) || fraVal <= 0) {
+        resultBox.classList.add('hidden');
+        emptyMsg.classList.remove('hidden');
+        return;
+      }
+
+      resultBox.classList.remove('hidden');
+      emptyMsg.classList.add('hidden');
+
+      var pp = tilVal - fraVal;
+      var pv = (tilVal - fraVal) / fraVal * 100;
+      var k = kontekster[ctx] || kontekster['fri'];
+
+      // Stolper: skaler til maks 100 % av 30 % som "full bredde", cap ved 100%
+      var scale = Math.max(fraVal, tilVal);
+      var maxBar = Math.max(scale * 1.4, 5);
+      var fraW = Math.min((fraVal / maxBar) * 100, 100);
+      var tilW = Math.min((tilVal / maxBar) * 100, 100);
+
+      document.getElementById('bar-fra').style.width = fraW + '%';
+      document.getElementById('bar-til').style.width = tilW + '%';
+      document.getElementById('bar-fra-label').textContent = fmt(fraVal, 2) + ' %';
+      document.getElementById('bar-til-label').textContent = fmt(tilVal, 2) + ' %';
+
+      // Prosentpoeng
+      document.getElementById('pp-formula').textContent =
+        'Endring = til − fra = ' + fmt(tilVal, 2) + ' % − ' + fmt(fraVal, 2) + ' % = ' + fmt(Math.abs(pp), 2) + ' prosentpoeng';
+      document.getElementById('pp-result').textContent = fmtProsentpoeng(pp);
+      document.getElementById('pp-context').textContent = k.ppTekst(fraVal, tilVal, pp);
+
+      // Prosentvis endring
+      document.getElementById('pv-formula').textContent =
+        'Endring = (til − fra) / fra · 100 % = (' + fmt(tilVal,2) + ' − ' + fmt(fraVal,2) + ') / ' + fmt(fraVal,2) + ' · 100 % = ' + fmt(Math.abs(pv),1) + ' %';
+      document.getElementById('pv-result').textContent = fmtPV(pv);
+      document.getElementById('pv-context').textContent = k.pvTekst(fraVal, tilVal, pv);
+
+      // Tolkning
+      var endringPP = Math.abs(pp);
+      var endringPV = Math.abs(pv);
+      var retning = pp >= 0 ? 'økning' : 'nedgang';
+      document.getElementById('tolkning-box').innerHTML =
+        '<strong>Tolkning:</strong> En endring på <strong>' + fmt(endringPP,2) + ' prosentpoeng</strong> høres kanskje liten ut. ' +
+        'Men relativt til utgangspunktet på ' + fmt(fraVal,2) + ' % er dette faktisk en ' + retning + ' på <strong>' + fmt(endringPV,1) + ' %</strong>. ' +
+        'Det er viktig å oppgi <em>hvilken</em> type endring man beskriver!';
+
+      savePP();
+    }
+
+    document.getElementById('inp-fra').addEventListener('input', oppdaterPP);
+    document.getElementById('inp-til').addEventListener('input', oppdaterPP);
+    document.getElementById('ctx-select').addEventListener('change', oppdaterPP);
+
+    // ── Seksjon 3: Kalkulator-faner ──────────────────────────────────────────
+    var tabBtns = document.querySelectorAll('.tab-btn');
+    var tabPanels = document.querySelectorAll('.calc-tab');
+
+    tabBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var idx = parseInt(btn.getAttribute('data-tab'));
+        tabBtns.forEach(function(b) { b.classList.remove('active'); });
+        tabPanels.forEach(function(p) { p.classList.add('hidden'); });
+        btn.classList.add('active');
+        document.getElementById('tab-' + idx).classList.remove('hidden');
+      });
+    });
+
+    // Fane 0: A % av B
+    function oppdaterC0() {
+      var a = parseFloat(document.getElementById('c0-a').value);
+      var b = parseFloat(document.getElementById('c0-b').value);
+      var res = document.getElementById('c0-result');
+      if (isNaN(a) || isNaN(b)) { res.classList.add('hidden'); return; }
+      var svar = a / 100 * b;
+      document.getElementById('c0-formula').textContent = a + ' % av ' + fmt(b, 2) + ' = ' + a + '/100 × ' + fmt(b,2);
+      document.getElementById('c0-answer').textContent = '= ' + fmt(svar, 2);
+      res.classList.remove('hidden');
+      saveCalc(0, a, b);
+    }
+    document.getElementById('c0-a').addEventListener('input', oppdaterC0);
+    document.getElementById('c0-b').addEventListener('input', oppdaterC0);
+
+    // Fane 1: A er hvor mange % av B?
+    function oppdaterC1() {
+      var a = parseFloat(document.getElementById('c1-a').value);
+      var b = parseFloat(document.getElementById('c1-b').value);
+      var res = document.getElementById('c1-result');
+      if (isNaN(a) || isNaN(b) || b === 0) { res.classList.add('hidden'); return; }
+      var svar = a / b * 100;
+      document.getElementById('c1-formula').textContent = fmt(a,2) + ' / ' + fmt(b,2) + ' × 100 % = ' + fmt(svar,2) + ' %';
+      document.getElementById('c1-answer').textContent = fmt(a,2) + ' er ' + fmt(svar,2) + ' % av ' + fmt(b,2);
+      res.classList.remove('hidden');
+      saveCalc(1, a, b);
+    }
+    document.getElementById('c1-a').addEventListener('input', oppdaterC1);
+    document.getElementById('c1-b').addEventListener('input', oppdaterC1);
+
+    // Fane 2: Prosentvis endring fra A til B
+    function oppdaterC2() {
+      var a = parseFloat(document.getElementById('c2-a').value);
+      var b = parseFloat(document.getElementById('c2-b').value);
+      var res = document.getElementById('c2-result');
+      if (isNaN(a) || isNaN(b) || a === 0) { res.classList.add('hidden'); return; }
+      var svar = (b - a) / a * 100;
+      var retning = svar >= 0 ? 'økning' : 'nedgang';
+      document.getElementById('c2-formula').textContent =
+        '(' + fmt(b,2) + ' − ' + fmt(a,2) + ') / ' + fmt(a,2) + ' × 100 % = ' + fmt(Math.abs(svar),2) + ' %';
+      document.getElementById('c2-answer').textContent =
+        fmt(Math.abs(svar),2) + ' % ' + retning + (svar >= 0 ? ' ▲' : ' ▼');
+      res.classList.remove('hidden');
+      saveCalc(2, a, b);
+    }
+    document.getElementById('c2-a').addEventListener('input', oppdaterC2);
+    document.getElementById('c2-b').addEventListener('input', oppdaterC2);
+
+    // ── Seksjon 4: Quiz ──────────────────────────────────────────────────────
+    var sporsmal = [
+      {
+        tekst: 'Renten gikk fra 4 % til 5 %. Hvor mange prosentpoeng økte renten?',
+        alternativer: ['1 prosentpoeng', '25 prosentpoeng', '4 prosentpoeng', '5 prosentpoeng'],
+        riktig: 0,
+        forklaring: '5 % − 4 % = 1 prosentpoeng. Prosentpoeng er rett og slett differansen mellom de to prosenttallene.'
+      },
+      {
+        tekst: 'Arbeidsledigheten gikk fra 4 % til 5 %. Hva er den prosentvise endringen?',
+        alternativer: ['1 %', '25 %', '20 %', '4 %'],
+        riktig: 1,
+        forklaring: '(5 − 4) / 4 × 100 % = 25 %. Ledigheten er 25 % høyere enn den var — selv om endringen er 1 prosentpoeng.'
+      },
+      {
+        tekst: 'En avis skriver at «skatten økte med 2 prosentpoeng, fra 22 % til 24 %». Hva er den prosentvise økningen i skatten?',
+        alternativer: ['2 %', '22 %', 'ca. 9,1 %', '24 %'],
+        riktig: 2,
+        forklaring: '(24 − 22) / 22 × 100 % ≈ 9,1 %. 2 prosentpoeng opp fra 22 % er relativt sett ca. 9,1 % økning.'
+      },
+      {
+        tekst: 'Hva beskriver «prosentpoeng»?',
+        alternativer: [
+          'Den relative endringen mellom to prosenttall',
+          'Den aritmetiske differansen mellom to prosenttall',
+          'Prosentandelen av et tall',
+          'Antall hundredeler i en brøk'
+        ],
+        riktig: 1,
+        forklaring: 'Prosentpoeng er alltid den enkle differansen: til − fra. Det er ikke en relativ størrelse.'
+      },
+      {
+        tekst: 'Velgerstøtten til et parti falt fra 20 % til 15 %. Hva er nedgangen i prosentpoeng?',
+        alternativer: ['5 prosentpoeng', '25 prosentpoeng', '15 prosentpoeng', '4 prosentpoeng'],
+        riktig: 0,
+        forklaring: '20 % − 15 % = 5 prosentpoeng. (Den prosentvise nedgangen er derimot 25 %.)'
+      }
+    ];
+
+    var quizIndex = 0;
+    var quizBesvart = false;
+
+    function visSporsmal(idx) {
+      quizBesvart = false;
+      var sp = sporsmal[idx % sporsmal.length];
+      document.getElementById('quiz-question').textContent = sp.tekst;
+      var optDiv = document.getElementById('quiz-options');
+      optDiv.innerHTML = '';
+      sp.alternativer.forEach(function(alt, i) {
+        var btn = document.createElement('button');
+        btn.textContent = alt;
+        btn.className = 'w-full text-left px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-indigo-50 hover:border-indigo-300 text-sm transition-colors';
+        btn.setAttribute('data-idx', i);
+        btn.addEventListener('click', function() {
+          if (quizBesvart) return;
+          quizBesvart = true;
+          var valgt = parseInt(btn.getAttribute('data-idx'));
+          var feedback = document.getElementById('quiz-feedback');
+          feedback.classList.remove('hidden');
+          if (valgt === sp.riktig) {
+            feedback.className = 'rounded-xl p-4 text-sm font-medium bg-green-50 border border-green-300 text-green-800';
+            feedback.innerHTML = '✓ Riktig! ' + sp.forklaring;
+          } else {
+            feedback.className = 'rounded-xl p-4 text-sm font-medium bg-red-50 border border-red-300 text-red-800';
+            feedback.innerHTML = '✗ Ikke helt. Riktig svar: <strong>' + sp.alternativer[sp.riktig] + '</strong>. ' + sp.forklaring;
+          }
+          // Marker knapper
+          optDiv.querySelectorAll('button').forEach(function(b, bi) {
+            b.disabled = true;
+            if (bi === sp.riktig) {
+              b.className = 'w-full text-left px-4 py-2 rounded-lg border font-semibold text-sm bg-green-100 border-green-400 text-green-800';
+            } else if (bi === valgt) {
+              b.className = 'w-full text-left px-4 py-2 rounded-lg border font-semibold text-sm bg-red-100 border-red-400 text-red-800';
+            } else {
+              b.className = 'w-full text-left px-4 py-2 rounded-lg border text-sm bg-gray-50 border-gray-200 text-gray-400';
+            }
+          });
+          document.getElementById('quiz-next').classList.remove('hidden');
+        });
+        optDiv.appendChild(btn);
+      });
+      document.getElementById('quiz-feedback').classList.add('hidden');
+      document.getElementById('quiz-next').classList.add('hidden');
+    }
+
+    document.getElementById('quiz-next').addEventListener('click', function() {
+      quizIndex++;
+      visSporsmal(quizIndex);
+    });
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    loadPP();
+    loadCalc();
+    oppdaterPP();
+    oppdaterC0();
+    oppdaterC1();
+    oppdaterC2();
+    visSporsmal(0);
+  </script>
+</body>
+</html>

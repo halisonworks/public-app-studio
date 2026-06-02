@@ -1,7 +1,7 @@
 # App Studio — single-file briefing for AI assistants
 
 > This one file is everything an AI assistant needs to help someone build an
-> **App Studio** project. A user may paste this URL to you (the assistant) and
+> **App Studio by Halison** project. A user may paste this URL to you (the assistant) and
 > say little else. Read it fully, then follow "Instructions for the AI assistant"
 > below. If you can browse, you may also read the deeper resources linked at the
 > end — but this file alone is enough.
@@ -10,9 +10,9 @@
 
 ---
 
-## What App Studio is
+## What App Studio by Halison is
 
-App Studio is a workbench that renders **one self-contained file** as a live app —
+App Studio by Halison is a workbench that renders **one self-contained file** as a live app —
 no build step, no install, no servers. The user pastes code into it (**New →
 paste → Run App**), can save it, and can package it into a real desktop app. It
 runs either:
@@ -82,7 +82,7 @@ reminding the user to check the numbers/facts before relying on them.
   (e.g. `recharts@2.12.7`). Don't use Next.js, routers, Redux/Zustand, or UI kits
   (Material UI, Chakra).
 
-### Do NOT rebuild what App Studio already provides
+### Do NOT rebuild what App Studio by Halison already provides
 Leave these out — they're wasted effort and clutter the UI:
 - **PNG / image export** and **Print / Save-as-PDF** — App Studio has both built
   in. (For print, you may add `@media print` CSS so the printout looks clean, but

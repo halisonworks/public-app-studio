@@ -78,11 +78,15 @@ place. See the license below.
 
 ## Categories
 
-Projects span seven use-case categories, each with a [context add-on](prompts/context/)
+Projects span use-case categories, each with a [context add-on](prompts/context/)
 you can hand your AI: **educational**, **business**, **personal**,
 **data / dashboard**, **creative**, **game / quiz**, and **prototype** — covering
 founders, investors, managers, sales, marketers, teachers, presenters, finance,
 infographic makers, influencers, and app prototypers.
+
+There's also a **[math](projects/math/)** category: interactive learning tools
+for the Norwegian curriculum (LK20), organized by level (1P and 2P) and written
+in Norwegian.
 
 Want to contribute a project, prompt, or category? See [CONTRIBUTING.md](CONTRIBUTING.md).
 

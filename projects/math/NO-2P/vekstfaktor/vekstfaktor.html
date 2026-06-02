@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<!--
+  Vekstfaktor — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 2P (LK20): vekstfaktor og gjentatt
+  prosentvis endring, med tabell og graf — pluss å regne baklengs.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vekstfaktor – Matematikk 2P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .tab-active { border-bottom: 3px solid #2563eb; color: #2563eb; font-weight: 600; }
+    .tab-inactive { border-bottom: 3px solid transparent; color: #6b7280; }
+    .tab-inactive:hover { color: #374151; border-bottom-color: #d1d5db; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+    .result-card { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); }
+    .result-card-green { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); }
+    .result-card-red { background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); }
+    svg text { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .tooltip {
+      position: absolute;
+      background: #1e3a5f;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      pointer-events: none;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .example-btn {
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .example-btn:hover { transform: translateY(-1px); }
+    .example-btn:active { transform: translateY(0); }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- Header -->
+<header class="bg-blue-700 text-white shadow-lg">
+  <div class="max-w-4xl mx-auto px-4 py-5">
+    <div class="flex items-center gap-3">
+      <div class="text-3xl">📈</div>
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight">Vekstfaktor</h1>
+        <p class="text-blue-200 text-sm mt-0.5">Matematikk 2P · Gjentatt prosentvis endring</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Tabs -->
+<div class="max-w-4xl mx-auto px-4 mt-6">
+  <div class="flex gap-0 border-b border-gray-200 bg-white rounded-t-xl shadow-sm overflow-hidden">
+    <button id="tab-frem" onclick="setTab('frem')"
+      class="tab-active px-6 py-3 text-sm transition-all">
+      Fremover: beregn sluttverdi
+    </button>
+    <button id="tab-bak" onclick="setTab('bak')"
+      class="tab-inactive px-6 py-3 text-sm transition-all">
+      Bakover: finn vekstfaktor
+    </button>
+    <button id="tab-teori" onclick="setTab('teori')"
+      class="tab-inactive px-6 py-3 text-sm transition-all">
+      Teori
+    </button>
+  </div>
+</div>
+
+<!-- ======================== TAB: FREMOVER ======================== -->
+<div id="panel-frem" class="max-w-4xl mx-auto px-4 pb-12">
+  <div class="bg-white rounded-b-xl rounded-tr-xl shadow-sm p-6">
+
+    <!-- Forklaring -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-900">
+      <strong>Fremover-beregning:</strong> Skriv inn startverdi, prosentvis endring per periode og antall perioder.
+      Kalkulatoren beregner vekstfaktoren og sluttverdien.
+    </div>
+
+    <!-- Eksempler -->
+    <div class="mb-6">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Last inn eksempel</p>
+      <div class="flex flex-wrap gap-2">
+        <button class="example-btn bg-green-100 text-green-800 border border-green-200 text-xs px-3 py-1.5 rounded-full font-medium"
+          onclick="loadExempel('sparepenger')">💰 Sparepenger (rente)</button>
+        <button class="example-btn bg-orange-100 text-orange-800 border border-orange-200 text-xs px-3 py-1.5 rounded-full font-medium"
+          onclick="loadExempel('bil')">🚗 Bilverdi (avskrivning)</button>
+        <button class="example-btn bg-blue-100 text-blue-800 border border-blue-200 text-xs px-3 py-1.5 rounded-full font-medium"
+          onclick="loadExempel('befolkning')">🏘️ Befolkningsvekst</button>
+        <button class="example-btn bg-red-100 text-red-800 border border-red-200 text-xs px-3 py-1.5 rounded-full font-medium"
+          onclick="loadExempel('rabatt')">🏷️ Prisnedgang (rabatt)</button>
+      </div>
+    </div>
+
+    <!-- Inputs -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          Startverdi
+          <span class="text-gray-400 font-normal text-xs">(kr, innb., stk. …)</span>
+        </label>
+        <input id="f-start" type="number" step="any" value="50000"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="beregnFrem()" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          Endring per periode
+          <span class="text-gray-400 font-normal text-xs">(%)</span>
+        </label>
+        <input id="f-prosent" type="number" step="any" value="3.5"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="beregnFrem()" />
+        <p class="text-xs text-gray-400 mt-1">Negativ verdi = nedgang</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          Antall perioder
+          <span class="text-gray-400 font-normal text-xs">(n)</span>
+        </label>
+        <input id="f-n" type="number" step="1" min="1" max="100" value="5"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+          oninput="beregnFrem()" />
+      </div>
+    </div>
+
+    <!-- Resultatkort -->
+    <div id="f-result-cards" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6"></div>
+
+    <!-- Formel-visning -->
+    <div id="f-formel" class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6 text-sm font-mono text-gray-700"></div>
+
+    <!-- Graf -->
+    <div class="mb-6">
+      <h3 class="text-sm font-semibold text-gray-700 mb-2">Graf – utvikling over perioder</h3>
+      <div class="relative w-full overflow-x-auto">
+        <div id="f-tooltip" class="tooltip"></div>
+        <svg id="f-chart" class="w-full" style="min-width:320px;height:280px;display:block;"></svg>
+      </div>
+    </div>
+
+    <!-- Tabell -->
+    <div>
+      <h3 class="text-sm font-semibold text-gray-700 mb-2">Periodeoversikt</h3>
+      <div class="overflow-x-auto rounded-lg border border-gray-200">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+            <tr>
+              <th class="px-4 py-2 text-left">Periode</th>
+              <th class="px-4 py-2 text-right">Verdi</th>
+              <th class="px-4 py-2 text-right">Endring</th>
+              <th class="px-4 py-2 text-right">Endring (%)</th>
+            </tr>
+          </thead>
+          <tbody id="f-tabell" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======================== TAB: BAKOVER ======================== -->
+<div id="panel-bak" class="max-w-4xl mx-auto px-4 pb-12 hidden">
+  <div class="bg-white rounded-b-xl rounded-tr-xl shadow-sm p-6">
+
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-sm text-amber-900">
+      <strong>Bakover-beregning:</strong> Du vet start- og sluttverdien, og antall perioder.
+      Kalkulatoren finner vekstfaktoren og den prosentvise endringen per periode.
+      <br/>
+      <span class="font-mono">Vekstfaktor = (sluttverdi / startverdi)^(1/n)</span>
+    </div>
+
+    <!-- Eksempler bakover -->
+    <div class="mb-6">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Last inn eksempel</p>
+      <div class="flex flex-wrap gap-2">
+        <button class="example-btn bg-purple-100 text-purple-800 border border-purple-200 text-xs px-3 py-1.5 rounded-full font-medium"
+          onclick="loadEksempelBak('hus')">🏠 Boligprisutvikling</button>
+        <button class="example-btn bg-teal-100 text-teal-800 border border-teal-200 text-xs px-3 py-1.5 rounded-full font-medium"
+          onclick="loadEksempelBak('aksje')">📊 Aksjevekst</button>
+        <button class="example-btn bg-rose-100 text-rose-800 border border-rose-200 text-xs px-3 py-1.5 rounded-full font-medium"
+          onclick="loadEksempelBak('befolkningsbak')">👥 Befolkningsendring</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Startverdi</label>
+        <input id="b-start" type="number" step="any" value="200000"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+          oninput="beregnBak()" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Sluttverdi</label>
+        <input id="b-slutt" type="number" step="any" value="280000"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+          oninput="beregnBak()" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Antall perioder <span class="text-gray-400 font-normal text-xs">(n)</span></label>
+        <input id="b-n" type="number" step="1" min="1" max="100" value="5"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+          oninput="beregnBak()" />
+      </div>
+    </div>
+
+    <!-- Resultatkort bakover -->
+    <div id="b-result-cards" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6"></div>
+
+    <!-- Formel bakover -->
+    <div id="b-formel" class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6 text-sm font-mono text-gray-700"></div>
+
+    <!-- Graf bakover -->
+    <div class="mb-6">
+      <h3 class="text-sm font-semibold text-gray-700 mb-2">Graf – rekonstruert utvikling</h3>
+      <div class="relative w-full overflow-x-auto">
+        <div id="b-tooltip" class="tooltip"></div>
+        <svg id="b-chart" class="w-full" style="min-width:320px;height:280px;display:block;"></svg>
+      </div>
+    </div>
+
+    <!-- Tabell bakover -->
+    <div>
+      <h3 class="text-sm font-semibold text-gray-700 mb-2">Periodeoversikt</h3>
+      <div class="overflow-x-auto rounded-lg border border-gray-200">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+            <tr>
+              <th class="px-4 py-2 text-left">Periode</th>
+              <th class="px-4 py-2 text-right">Verdi</th>
+              <th class="px-4 py-2 text-right">Endring</th>
+              <th class="px-4 py-2 text-right">Endring (%)</th>
+            </tr>
+          </thead>
+          <tbody id="b-tabell" class="divide-y divide-gray-100"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======================== TAB: TEORI ======================== -->
+<div id="panel-teori" class="max-w-4xl mx-auto px-4 pb-12 hidden">
+  <div class="bg-white rounded-b-xl rounded-tr-xl shadow-sm p-6 space-y-6">
+
+    <div>
+      <h2 class="text-lg font-bold text-gray-800 mb-3">Hva er vekstfaktor?</h2>
+      <p class="text-sm text-gray-700 leading-relaxed">
+        En <strong>prosentvis endring</strong> kan uttrykkes som én multiplikasjon med en <strong>vekstfaktor</strong>.
+        I stedet for å legge til eller trekke fra en prosentandel, multipliserer vi med vekstfaktoren.
+      </p>
+    </div>
+
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-5">
+      <h3 class="font-bold text-blue-900 mb-3">Formler</h3>
+      <div class="space-y-3 text-sm">
+        <div class="bg-white rounded-lg p-3 border border-blue-100 font-mono">
+          <span class="text-blue-700 font-bold">Økning p %:</span><br/>
+          Vekstfaktor = 1 + p/100
+        </div>
+        <div class="bg-white rounded-lg p-3 border border-blue-100 font-mono">
+          <span class="text-red-600 font-bold">Nedgang p %:</span><br/>
+          Vekstfaktor = 1 − p/100
+        </div>
+        <div class="bg-white rounded-lg p-3 border border-blue-100 font-mono">
+          <span class="text-green-700 font-bold">Etter n perioder:</span><br/>
+          Sluttverdi = Startverdi × Vekstfaktor<sup>n</sup>
+        </div>
+        <div class="bg-white rounded-lg p-3 border border-blue-100 font-mono">
+          <span class="text-purple-700 font-bold">Baklengs (finn vekstfaktor):</span><br/>
+          Vekstfaktor = (Sluttverdi / Startverdi)<sup>1/n</sup>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 class="font-bold text-gray-800 mb-3">Eksempler fra virkeligheten</h3>
+      <div class="space-y-4">
+
+        <div class="border border-gray-200 rounded-lg p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-lg">💰</span>
+            <span class="font-semibold text-gray-800">Sparepenger med rente</span>
+          </div>
+          <p class="text-sm text-gray-600">
+            Du setter inn <strong>10 000 kr</strong> i banken med <strong>3,5 % rente per år</strong>.
+            Etter <strong>5 år</strong>:
+          </p>
+          <p class="text-sm font-mono mt-2 bg-gray-50 rounded p-2">
+            Vekstfaktor = 1 + 3,5/100 = 1,035<br/>
+            Sluttverdi = 10 000 × 1,035<sup>5</sup> ≈ 11 877 kr
+          </p>
+        </div>
+
+        <div class="border border-gray-200 rounded-lg p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-lg">🚗</span>
+            <span class="font-semibold text-gray-800">Bilens verdi synker</span>
+          </div>
+          <p class="text-sm text-gray-600">
+            En ny bil koster <strong>350 000 kr</strong> og mister <strong>15 % av verdien hvert år</strong>.
+            Etter <strong>4 år</strong>:
+          </p>
+          <p class="text-sm font-mono mt-2 bg-gray-50 rounded p-2">
+            Vekstfaktor = 1 − 15/100 = 0,85<br/>
+            Sluttverdi = 350 000 × 0,85<sup>4</sup> ≈ 182 564 kr
+          </p>
+        </div>
+
+        <div class="border border-gray-200 rounded-lg p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-lg">🏘️</span>
+            <span class="font-semibold text-gray-800">Befolkningsvekst</span>
+          </div>
+          <p class="text-sm text-gray-600">
+            En by har <strong>45 000 innbyggere</strong> og vokser med <strong>1,2 % per år</strong>.
+            Etter <strong>10 år</strong>:
+          </p>
+          <p class="text-sm font-mono mt-2 bg-gray-50 rounded p-2">
+            Vekstfaktor = 1 + 1,2/100 = 1,012<br/>
+            Sluttverdi = 45 000 × 1,012<sup>10</sup> ≈ 50 629 innbyggere
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-5">
+      <h3 class="font-bold text-amber-900 mb-2">Viktig: Prosentvis endring er ikke additiv</h3>
+      <p class="text-sm text-amber-800 leading-relaxed">
+        En oppgang på 10 % etterfulgt av en nedgang på 10 % gir <em>ikke</em> det samme som ingen endring!<br/>
+        <span class="font-mono">1,10 × 0,90 = 0,99</span> — du har faktisk tapt 1 % av startverdien.
+        Dette er fordi prosentene beregnes av ulike grunnlag.
+      </p>
+    </div>
+
+    <div>
+      <h3 class="font-bold text-gray-800 mb-2">Total prosentvis endring</h3>
+      <p class="text-sm text-gray-700 leading-relaxed">
+        Etter n perioder med vekstfaktor V er <strong>total prosentvis endring</strong>:
+      </p>
+      <p class="text-sm font-mono bg-gray-50 rounded p-3 mt-2">
+        Total endring (%) = (V<sup>n</sup> − 1) × 100
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<footer class="max-w-4xl mx-auto px-4 py-4 text-center text-xs text-gray-400 pb-8">
+  Matematikk 2P · LK20 · Halison App Studio ·
+  <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-gray-600" target="_blank">public-app-studio</a>
+</footer>
+
+<script>
+// ──────────────────────────────────────────────────────────────────────────────
+// TAB NAVIGATION
+// ──────────────────────────────────────────────────────────────────────────────
+function setTab(name) {
+  ['frem','bak','teori'].forEach(t => {
+    document.getElementById('panel-' + t).classList.toggle('hidden', t !== name);
+    document.getElementById('tab-' + t).className =
+      (t === name ? 'tab-active' : 'tab-inactive') +
+      ' px-6 py-3 text-sm transition-all';
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// TALLFORMATERING
+// ──────────────────────────────────────────────────────────────────────────────
+function fmtTall(v, desimaler) {
+  if (v === null || isNaN(v)) return '–';
+  const d = desimaler !== undefined ? desimaler : (Math.abs(v) >= 1000 ? 0 : 2);
+  return v.toLocaleString('nb-NO', { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+
+function fmtVekst(v) {
+  return v.toLocaleString('nb-NO', { minimumFractionDigits: 4, maximumFractionDigits: 6 });
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// EKSEMPLER – FREMOVER
+// ──────────────────────────────────────────────────────────────────────────────
+const EKSEMPLER_FREM = {
+  sparepenger: { start: 10000,  prosent:  3.5, n: 10, label: 'Sparepenger: 10 000 kr satt inn med 3,5 % rente per år' },
+  bil:         { start: 350000, prosent: -15,  n:  6, label: 'Bilverdi: 350 000 kr, mister 15 % av verdi hvert år' },
+  befolkning:  { start: 45000,  prosent:  1.2, n: 10, label: 'Befolkning: 45 000 innb., vokser 1,2 % per år' },
+  rabatt:      { start: 1200,   prosent: -8,   n:  4, label: 'Pris: 1 200 kr, reduseres med 8 % hvert år' },
+};
+
+function loadExempel(key) {
+  const e = EKSEMPLER_FREM[key];
+  document.getElementById('f-start').value   = e.start;
+  document.getElementById('f-prosent').value = e.prosent;
+  document.getElementById('f-n').value       = e.n;
+  beregnFrem();
+  saveToStorage();
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// EKSEMPLER – BAKOVER
+// ──────────────────────────────────────────────────────────────────────────────
+const EKSEMPLER_BAK = {
+  hus:             { start: 2800000, slutt: 4100000, n: 8,  label: 'Bolig: fra 2 800 000 til 4 100 000 kr over 8 år' },
+  aksje:           { start: 5000,    slutt: 12000,   n: 7,  label: 'Aksjer: fra 5 000 til 12 000 kr over 7 år' },
+  befolkningsbak:  { start: 38000,   slutt: 33500,   n: 10, label: 'Befolkning: fra 38 000 til 33 500 innb. over 10 år' },
+};
+
+function loadEksempelBak(key) {
+  const e = EKSEMPLER_BAK[key];
+  document.getElementById('b-start').value = e.start;
+  document.getElementById('b-slutt').value = e.slutt;
+  document.getElementById('b-n').value     = e.n;
+  beregnBak();
+  saveToStorage();
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// LOCALSTORAGE
+// ──────────────────────────────────────────────────────────────────────────────
+function saveToStorage() {
+  try {
+    localStorage.setItem('vekstfaktor_frem', JSON.stringify({
+      start:   document.getElementById('f-start').value,
+      prosent: document.getElementById('f-prosent').value,
+      n:       document.getElementById('f-n').value,
+    }));
+    localStorage.setItem('vekstfaktor_bak', JSON.stringify({
+      start: document.getElementById('b-start').value,
+      slutt: document.getElementById('b-slutt').value,
+      n:     document.getElementById('b-n').value,
+    }));
+  } catch(_) {}
+}
+
+function loadFromStorage() {
+  try {
+    const f = JSON.parse(localStorage.getItem('vekstfaktor_frem') || 'null');
+    if (f) {
+      document.getElementById('f-start').value   = f.start;
+      document.getElementById('f-prosent').value = f.prosent;
+      document.getElementById('f-n').value       = f.n;
+    }
+    const b = JSON.parse(localStorage.getItem('vekstfaktor_bak') || 'null');
+    if (b) {
+      document.getElementById('b-start').value = b.start;
+      document.getElementById('b-slutt').value = b.slutt;
+      document.getElementById('b-n').value     = b.n;
+    }
+  } catch(_) {}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// BEREGN FREMOVER
+// ──────────────────────────────────────────────────────────────────────────────
+function beregnFrem() {
+  const start   = parseFloat(document.getElementById('f-start').value);
+  const prosent = parseFloat(document.getElementById('f-prosent').value);
+  const n       = parseInt(document.getElementById('f-n').value, 10);
+
+  if (isNaN(start) || isNaN(prosent) || isNaN(n) || n < 1) {
+    document.getElementById('f-result-cards').innerHTML =
+      '<p class="text-sm text-red-500 col-span-3">Fyll inn gyldige verdier for alle felt.</p>';
+    return;
+  }
+
+  const vekstfaktor = 1 + prosent / 100;
+  const slutt = start * Math.pow(vekstfaktor, n);
+  const totalEndringProsent = (Math.pow(vekstfaktor, n) - 1) * 100;
+  const erOkning = vekstfaktor >= 1;
+
+  // Resultatkort
+  const cardClass = erOkning ? 'result-card-green' : 'result-card-red';
+  const vfFarge   = erOkning ? 'text-green-700' : 'text-red-700';
+  document.getElementById('f-result-cards').innerHTML = `
+    <div class="result-card rounded-xl p-4 border border-blue-200">
+      <div class="text-xs text-blue-600 font-semibold uppercase mb-1">Vekstfaktor</div>
+      <div class="text-2xl font-bold text-blue-800">${fmtVekst(vekstfaktor)}</div>
+      <div class="text-xs text-blue-500 mt-1">per periode</div>
+    </div>
+    <div class="${cardClass} rounded-xl p-4 border ${erOkning ? 'border-green-200' : 'border-red-200'}">
+      <div class="text-xs ${vfFarge} font-semibold uppercase mb-1">Sluttverdi</div>
+      <div class="text-2xl font-bold ${vfFarge}">${fmtTall(slutt, 2)}</div>
+      <div class="text-xs ${erOkning ? 'text-green-500' : 'text-red-400'} mt-1">etter ${n} periode${n !== 1 ? 'r' : ''}</div>
+    </div>
+    <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+      <div class="text-xs text-gray-500 font-semibold uppercase mb-1">Total endring</div>
+      <div class="text-2xl font-bold ${totalEndringProsent >= 0 ? 'text-green-700' : 'text-red-700'}">
+        ${totalEndringProsent >= 0 ? '+' : ''}${fmtTall(totalEndringProsent, 2)} %
+      </div>
+      <div class="text-xs text-gray-400 mt-1">fra start til slutt</div>
+    </div>
+  `;
+
+  // Formel-visning
+  const vfStr = fmtVekst(vekstfaktor);
+  const startStr = fmtTall(start, 2);
+  const sluttStr = fmtTall(slutt, 2);
+  document.getElementById('f-formel').innerHTML =
+    `Vekstfaktor = 1 ${prosent >= 0 ? '+' : '−'} ${Math.abs(prosent)}/100 = <strong>${vfStr}</strong><br/>` +
+    `Sluttverdi = ${startStr} × ${vfStr}<sup>${n}</sup> = <strong>${sluttStr}</strong>`;
+
+  // Tabell
+  const tbody = document.getElementById('f-tabell');
+  tbody.innerHTML = '';
+  let periodeVerdier = [start];
+  for (let i = 1; i <= n; i++) {
+    periodeVerdier.push(start * Math.pow(vekstfaktor, i));
+  }
+  periodeVerdier.forEach((v, i) => {
+    const endring = i === 0 ? null : v - periodeVerdier[i - 1];
+    const endringPct = i === 0 ? null : prosent;
+    const row = document.createElement('tr');
+    row.className = i % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+    row.innerHTML = `
+      <td class="px-4 py-2 text-gray-700">${i === 0 ? 'Start' : 'Periode ' + i}</td>
+      <td class="px-4 py-2 text-right font-medium text-gray-800">${fmtTall(v, 2)}</td>
+      <td class="px-4 py-2 text-right ${endring === null ? 'text-gray-400' : endring >= 0 ? 'text-green-600' : 'text-red-500'}">
+        ${endring === null ? '–' : (endring >= 0 ? '+' : '') + fmtTall(endring, 2)}
+      </td>
+      <td class="px-4 py-2 text-right ${endringPct === null ? 'text-gray-400' : endringPct >= 0 ? 'text-green-600' : 'text-red-500'}">
+        ${endringPct === null ? '–' : (endringPct >= 0 ? '+' : '') + fmtTall(endringPct, 2) + ' %'}
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  // Graf
+  tegnGraf('f-chart', 'f-tooltip', periodeVerdier, erOkning);
+  saveToStorage();
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// BEREGN BAKOVER
+// ──────────────────────────────────────────────────────────────────────────────
+function beregnBak() {
+  const start = parseFloat(document.getElementById('b-start').value);
+  const slutt = parseFloat(document.getElementById('b-slutt').value);
+  const n     = parseInt(document.getElementById('b-n').value, 10);
+
+  if (isNaN(start) || isNaN(slutt) || isNaN(n) || n < 1 || start <= 0 || slutt <= 0) {
+    document.getElementById('b-result-cards').innerHTML =
+      '<p class="text-sm text-red-500 col-span-3">Fyll inn positive verdier for alle felt.</p>';
+    return;
+  }
+
+  const vekstfaktor = Math.pow(slutt / start, 1 / n);
+  const prosent     = (vekstfaktor - 1) * 100;
+  const erOkning    = vekstfaktor >= 1;
+  const totalEndring = (slutt / start - 1) * 100;
+
+  const cardClass = erOkning ? 'result-card-green' : 'result-card-red';
+  const vfFarge   = erOkning ? 'text-green-700' : 'text-red-700';
+
+  document.getElementById('b-result-cards').innerHTML = `
+    <div class="result-card rounded-xl p-4 border border-blue-200">
+      <div class="text-xs text-blue-600 font-semibold uppercase mb-1">Vekstfaktor</div>
+      <div class="text-2xl font-bold text-blue-800">${fmtVekst(vekstfaktor)}</div>
+      <div class="text-xs text-blue-500 mt-1">per periode</div>
+    </div>
+    <div class="${cardClass} rounded-xl p-4 border ${erOkning ? 'border-green-200' : 'border-red-200'}">
+      <div class="text-xs ${vfFarge} font-semibold uppercase mb-1">Endring per periode</div>
+      <div class="text-2xl font-bold ${vfFarge}">${prosent >= 0 ? '+' : ''}${fmtTall(prosent, 4)} %</div>
+      <div class="text-xs ${erOkning ? 'text-green-500' : 'text-red-400'} mt-1">
+        ${erOkning ? 'Økning' : 'Nedgang'} per periode
+      </div>
+    </div>
+    <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+      <div class="text-xs text-gray-500 font-semibold uppercase mb-1">Total endring</div>
+      <div class="text-2xl font-bold ${totalEndring >= 0 ? 'text-green-700' : 'text-red-700'}">
+        ${totalEndring >= 0 ? '+' : ''}${fmtTall(totalEndring, 2)} %
+      </div>
+      <div class="text-xs text-gray-400 mt-1">fra start til slutt</div>
+    </div>
+  `;
+
+  const vfStr    = fmtVekst(vekstfaktor);
+  const startStr = fmtTall(start, 2);
+  const sluttStr = fmtTall(slutt, 2);
+  document.getElementById('b-formel').innerHTML =
+    `Vekstfaktor = (${sluttStr} / ${startStr})<sup>1/${n}</sup> = <strong>${vfStr}</strong><br/>` +
+    `Endring per periode: (${vfStr} − 1) × 100 = <strong>${prosent >= 0 ? '+' : ''}${fmtTall(prosent, 4)} %</strong>`;
+
+  // Tabell
+  const tbody = document.getElementById('b-tabell');
+  tbody.innerHTML = '';
+  let periodeVerdier = [start];
+  for (let i = 1; i <= n; i++) {
+    periodeVerdier.push(start * Math.pow(vekstfaktor, i));
+  }
+  periodeVerdier.forEach((v, i) => {
+    const endring    = i === 0 ? null : v - periodeVerdier[i - 1];
+    const endringPct = i === 0 ? null : prosent;
+    const row = document.createElement('tr');
+    row.className = i % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+    row.innerHTML = `
+      <td class="px-4 py-2 text-gray-700">${i === 0 ? 'Start' : 'Periode ' + i}</td>
+      <td class="px-4 py-2 text-right font-medium text-gray-800">${fmtTall(v, 2)}</td>
+      <td class="px-4 py-2 text-right ${endring === null ? 'text-gray-400' : endring >= 0 ? 'text-green-600' : 'text-red-500'}">
+        ${endring === null ? '–' : (endring >= 0 ? '+' : '') + fmtTall(endring, 2)}
+      </td>
+      <td class="px-4 py-2 text-right ${endringPct === null ? 'text-gray-400' : endringPct >= 0 ? 'text-green-600' : 'text-red-500'}">
+        ${endringPct === null ? '–' : (endringPct >= 0 ? '+' : '') + fmtTall(endringPct, 4) + ' %'}
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  tegnGraf('b-chart', 'b-tooltip', periodeVerdier, erOkning);
+  saveToStorage();
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// SVG GRAF
+// ──────────────────────────────────────────────────────────────────────────────
+function tegnGraf(svgId, tooltipId, verdier, erOkning) {
+  const svgEl = document.getElementById(svgId);
+  const tooltipEl = document.getElementById(tooltipId);
+  svgEl.innerHTML = '';
+
+  const W = svgEl.clientWidth || 600;
+  const H = 260;
+  const PL = 70, PR = 20, PT = 20, PB = 40;
+  const innerW = W - PL - PR;
+  const innerH = H - PT - PB;
+
+  const n = verdier.length - 1;
+  const minV = Math.min(...verdier);
+  const maxV = Math.max(...verdier);
+  const range = maxV - minV || 1;
+  const padV = range * 0.12;
+  const lo = minV - padV;
+  const hi = maxV + padV;
+
+  const toX = i => PL + (i / Math.max(n, 1)) * innerW;
+  const toY = v => PT + innerH - ((v - lo) / (hi - lo)) * innerH;
+
+  const ns = 'http://www.w3.org/2000/svg';
+  svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svgEl.setAttribute('height', H);
+
+  // Grid + Y-akse labels
+  const TICKS = 5;
+  for (let t = 0; t <= TICKS; t++) {
+    const yVal = lo + (t / TICKS) * (hi - lo);
+    const yPx  = toY(yVal);
+    const line = document.createElementNS(ns, 'line');
+    line.setAttribute('x1', PL); line.setAttribute('x2', W - PR);
+    line.setAttribute('y1', yPx); line.setAttribute('y2', yPx);
+    line.setAttribute('stroke', '#e5e7eb'); line.setAttribute('stroke-width', '1');
+    svgEl.appendChild(line);
+
+    const txt = document.createElementNS(ns, 'text');
+    txt.setAttribute('x', PL - 6); txt.setAttribute('y', yPx + 4);
+    txt.setAttribute('text-anchor', 'end'); txt.setAttribute('font-size', '10');
+    txt.setAttribute('fill', '#9ca3af');
+    txt.textContent = fmtTall(yVal, 0);
+    svgEl.appendChild(txt);
+  }
+
+  // X-akse labels
+  for (let i = 0; i <= n; i++) {
+    const xPx = toX(i);
+    const txt = document.createElementNS(ns, 'text');
+    txt.setAttribute('x', xPx); txt.setAttribute('y', H - PB + 16);
+    txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('font-size', '10');
+    txt.setAttribute('fill', '#9ca3af');
+    txt.textContent = i === 0 ? 'Start' : i;
+    svgEl.appendChild(txt);
+  }
+
+  // Areal under kurven (fill)
+  const fillColor = erOkning ? '#bbf7d0' : '#fecdd3';
+  if (n > 0) {
+    let dFill = `M ${toX(0)} ${toY(verdier[0])}`;
+    for (let i = 1; i <= n; i++) {
+      dFill += ` L ${toX(i)} ${toY(verdier[i])}`;
+    }
+    dFill += ` L ${toX(n)} ${toY(lo)} L ${toX(0)} ${toY(lo)} Z`;
+    const areal = document.createElementNS(ns, 'path');
+    areal.setAttribute('d', dFill);
+    areal.setAttribute('fill', fillColor);
+    areal.setAttribute('opacity', '0.5');
+    svgEl.appendChild(areal);
+  }
+
+  // Linje
+  const lineColor = erOkning ? '#16a34a' : '#dc2626';
+  if (n > 0) {
+    let dLine = `M ${toX(0)} ${toY(verdier[0])}`;
+    for (let i = 1; i <= n; i++) {
+      dLine += ` L ${toX(i)} ${toY(verdier[i])}`;
+    }
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', dLine);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', lineColor);
+    path.setAttribute('stroke-width', '2.5');
+    path.setAttribute('stroke-linejoin', 'round');
+    svgEl.appendChild(path);
+  }
+
+  // Punkter med tooltip
+  verdier.forEach((v, i) => {
+    const cx = toX(i);
+    const cy = toY(v);
+
+    const circle = document.createElementNS(ns, 'circle');
+    circle.setAttribute('cx', cx); circle.setAttribute('cy', cy);
+    circle.setAttribute('r', '5');
+    circle.setAttribute('fill', lineColor);
+    circle.setAttribute('stroke', 'white');
+    circle.setAttribute('stroke-width', '2');
+    circle.style.cursor = 'pointer';
+
+    // Hover-effekt
+    circle.addEventListener('mouseenter', function(e) {
+      circle.setAttribute('r', '7');
+      const label = i === 0 ? 'Start' : `Periode ${i}`;
+      tooltipEl.textContent = `${label}: ${fmtTall(v, 2)}`;
+      tooltipEl.style.opacity = '1';
+      positionTooltip(tooltipEl, e, svgEl);
+    });
+    circle.addEventListener('mousemove', function(e) {
+      positionTooltip(tooltipEl, e, svgEl);
+    });
+    circle.addEventListener('mouseleave', function() {
+      circle.setAttribute('r', '5');
+      tooltipEl.style.opacity = '0';
+    });
+    svgEl.appendChild(circle);
+  });
+}
+
+function positionTooltip(tooltip, event, svgEl) {
+  const rect = svgEl.getBoundingClientRect();
+  const container = svgEl.closest('.relative');
+  if (!container) return;
+  const containerRect = container.getBoundingClientRect();
+  let x = event.clientX - containerRect.left + 10;
+  let y = event.clientY - containerRect.top - 32;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top  = y + 'px';
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// INITIALISERING
+// ──────────────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function() {
+  loadFromStorage();
+  beregnFrem();
+  beregnBak();
+});
+
+// Redraw charts on resize
+let resizeTimer;
+window.addEventListener('resize', function() {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(function() {
+    beregnFrem();
+    beregnBak();
+  }, 150);
+});
+</script>
+</body>
+</html>

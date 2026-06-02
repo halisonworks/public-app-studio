@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<!--
+  Statistikk — Halison App Studio-eksempel
+
+  Interaktivt læremiddel for matematikk 2P (LK20): regn ut gjennomsnitt, median,
+  typetall, variasjonsbredde og standardavvik for et datasett, med histogram.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken; ikke-kommersiell bruk. Utgitt under Halison App Studio
+  Examples License — se LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Statistikk — Sentralmål og spredning</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .result-card { transition: box-shadow 0.2s; }
+    .result-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
+    textarea { resize: vertical; }
+    .hist-bar { transition: opacity 0.15s; }
+    .hist-bar:hover { opacity: 0.75; }
+    .tag-pill {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      vertical-align: middle;
+    }
+    .formula-box {
+      font-family: 'Courier New', monospace;
+      background: #f0f4ff;
+      border-left: 3px solid #6366f1;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      margin: 6px 0;
+    }
+    #error-msg { display: none; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-indigo-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-indigo-700 text-white shadow-lg">
+    <div class="max-w-4xl mx-auto px-4 py-5">
+      <h1 class="text-2xl font-bold tracking-tight">Statistikk</h1>
+      <p class="text-indigo-200 text-sm mt-0.5">Sentralmål og spredning — Matematikk 2P (LK20)</p>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 py-8 space-y-8">
+
+    <!-- Dataset input -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+      <h2 class="text-lg font-semibold text-slate-800 mb-1">Datasett</h2>
+      <p class="text-sm text-slate-500 mb-3">
+        Skriv inn eller lim inn tall separert med mellomrom, komma eller linjeskift.
+      </p>
+      <textarea
+        id="data-input"
+        rows="4"
+        class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 font-mono"
+        placeholder="Eks: 12 15 14 10 18 12 16 14 13 15"
+      ></textarea>
+      <div id="error-msg" class="mt-2 text-red-600 text-sm font-medium"></div>
+      <div class="flex flex-wrap gap-3 mt-4">
+        <button
+          id="calc-btn"
+          class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors"
+        >Beregn</button>
+        <button
+          id="reset-btn"
+          class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-5 py-2 rounded-lg text-sm transition-colors"
+        >Tilbakestill</button>
+        <span id="n-label" class="self-center text-slate-400 text-sm hidden">
+          <span id="n-val" class="font-bold text-slate-600"></span> verdier
+        </span>
+      </div>
+
+      <!-- Preset datasets -->
+      <div class="mt-4 border-t border-slate-100 pt-4">
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Forhåndsdefinerte datasett</p>
+        <div class="flex flex-wrap gap-2">
+          <button class="preset-btn text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full border border-indigo-200 transition-colors"
+            data-set="12 15 14 10 18 12 16 14 13 15 11 17 14 13 16">Karakterer (klasse)</button>
+          <button class="preset-btn text-xs bg-teal-50 hover:bg-teal-100 text-teal-700 px-3 py-1 rounded-full border border-teal-200 transition-colors"
+            data-set="170 165 178 182 169 175 180 168 172 177 183 165 171 174 176">Høyde (cm)</button>
+          <button class="preset-btn text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-3 py-1 rounded-full border border-amber-200 transition-colors"
+            data-set="5 8 7 6 9 10 4 6 7 8 9 5 7 8 6">Mål per kamp</button>
+          <button class="preset-btn text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-1 rounded-full border border-rose-200 transition-colors"
+            data-set="2 5 6 7 8 6 5 4 100 6 7 5 6 8 5">Med uteligger</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results section (hidden until calculated) -->
+    <section id="results-section" class="hidden space-y-6">
+
+      <!-- Summary cards grid -->
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="cards-grid">
+
+        <div class="result-card bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Gjennomsnitt</span>
+            <span class="tag-pill bg-indigo-100 text-indigo-700">x̄</span>
+          </div>
+          <p id="res-mean" class="text-3xl font-bold text-indigo-700 mt-1"></p>
+          <p class="text-xs text-slate-400 mt-1">Summen delt på antallet</p>
+        </div>
+
+        <div class="result-card bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Median</span>
+            <span class="tag-pill bg-teal-100 text-teal-700">Md</span>
+          </div>
+          <p id="res-median" class="text-3xl font-bold text-teal-700 mt-1"></p>
+          <p class="text-xs text-slate-400 mt-1">Midtverdien i sortert rekkefølge</p>
+        </div>
+
+        <div class="result-card bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Typetall</span>
+            <span class="tag-pill bg-amber-100 text-amber-700">Mo</span>
+          </div>
+          <p id="res-mode" class="text-2xl font-bold text-amber-700 mt-1 leading-snug"></p>
+          <p id="res-mode-note" class="text-xs text-slate-400 mt-1"></p>
+        </div>
+
+        <div class="result-card bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Variasjonsbredde</span>
+            <span class="tag-pill bg-rose-100 text-rose-700">V</span>
+          </div>
+          <p id="res-range" class="text-3xl font-bold text-rose-700 mt-1"></p>
+          <p class="text-xs text-slate-400 mt-1">Største − minste verdi</p>
+        </div>
+
+        <div class="result-card bg-white rounded-2xl border border-slate-100 shadow-sm p-5 col-span-2 md:col-span-2">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Standardavvik</span>
+            <span class="tag-pill bg-purple-100 text-purple-700">σ</span>
+          </div>
+          <p id="res-std" class="text-3xl font-bold text-purple-700 mt-1"></p>
+          <p class="text-xs text-slate-400 mt-1">Gjennomsnittlig avstand fra gjennomsnittet</p>
+        </div>
+
+      </div>
+
+      <!-- Standardavvik formula -->
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+        <h3 class="font-semibold text-slate-700 mb-3">Formel: standardavvik (populasjonsformel, deler på <em>n</em>)</h3>
+        <div class="formula-box">σ = √( (1/n) · Σ(xᵢ − x̄)² )</div>
+        <p class="text-sm text-slate-500 mt-2">
+          I matematikk 2P bruker vi <strong>populasjonsstandardavviket</strong> (σ), der vi deler på
+          <em>n</em> (antall dataverdier). Dette er passende når datasettet representerer hele
+          populasjonen, eller i skolesammenheng der ikke annet er spesifisert.
+          (Merk: I statistikk for utvalg deler man i stedet på <em>n − 1</em> for å få et
+          forventningsrett estimat av populasjonens standardavvik.)
+        </p>
+        <div id="std-steps" class="mt-4 text-sm text-slate-600 font-mono bg-slate-50 rounded-lg p-4 leading-relaxed overflow-x-auto"></div>
+      </div>
+
+      <!-- Histogram -->
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+        <h3 class="font-semibold text-slate-700 mb-1">Histogram</h3>
+        <p class="text-xs text-slate-400 mb-4">
+          Den loddrette linjen viser <span class="text-indigo-600 font-semibold">gjennomsnitt</span>
+          og <span class="text-teal-600 font-semibold">median</span>.
+        </p>
+        <div id="histogram-container" class="w-full overflow-x-auto">
+          <svg id="histogram" class="block mx-auto"></svg>
+        </div>
+        <div id="histogram-legend" class="flex flex-wrap gap-4 mt-3 text-xs text-slate-600 justify-center"></div>
+      </div>
+
+      <!-- Sorted data -->
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+        <h3 class="font-semibold text-slate-700 mb-3">Sorterte data</h3>
+        <div id="sorted-display" class="flex flex-wrap gap-1.5 font-mono text-sm"></div>
+      </div>
+
+      <!-- Explanations -->
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+        <h3 class="font-semibold text-slate-700 mb-2">Hva forteller målene oss?</h3>
+
+        <div class="flex gap-3">
+          <span class="tag-pill bg-indigo-100 text-indigo-700 self-start mt-0.5">x̄</span>
+          <div>
+            <p class="font-semibold text-slate-700 text-sm">Gjennomsnitt</p>
+            <p class="text-sm text-slate-500">
+              Gjennomsnittet beskriver «typisk» verdi ved å fordele summen likt på alle.
+              Det er lett å tolke, men <strong class="text-rose-600">sensitivt for uteliggere</strong>
+              (ekstreme verdier) — én stor avviker kan trekke gjennomsnittet langt i én retning.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <span class="tag-pill bg-teal-100 text-teal-700 self-start mt-0.5">Md</span>
+          <div>
+            <p class="font-semibold text-slate-700 text-sm">Median</p>
+            <p class="text-sm text-slate-500">
+              Medianen er verdien midt i det sorterte datasettet. Den er
+              <strong class="text-teal-700">robust mot uteliggere</strong> og forteller hva
+              «halvparten over / halvparten under»-grensen er. Brukes gjerne om inntekt eller
+              boligpriser der noen ekstreme verdier finnes.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <span class="tag-pill bg-amber-100 text-amber-700 self-start mt-0.5">Mo</span>
+          <div>
+            <p class="font-semibold text-slate-700 text-sm">Typetall (modus)</p>
+            <p class="text-sm text-slate-500">
+              Typetallet er den verdien som forekommer oftest. Det er det eneste sentralmålet
+              som kan brukes på kategoriske data (f.eks. favorittfarge). Et datasett kan ha
+              ingen, ett eller flere typetall.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <span class="tag-pill bg-rose-100 text-rose-700 self-start mt-0.5">V</span>
+          <div>
+            <p class="font-semibold text-slate-700 text-sm">Variasjonsbredde</p>
+            <p class="text-sm text-slate-500">
+              Variasjonsbredden er forskjellen mellom den største og minste verdien i datasettet.
+              Det er det enkleste spredningsmålet, men tar kun hensyn til de to ytterste verdiene
+              og sier ingenting om fordelingen imellom.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <span class="tag-pill bg-purple-100 text-purple-700 self-start mt-0.5">σ</span>
+          <div>
+            <p class="font-semibold text-slate-700 text-sm">Standardavvik</p>
+            <p class="text-sm text-slate-500">
+              Standardavviket måler den gjennomsnittlige avstanden fra gjennomsnittet.
+              Et lavt standardavvik betyr at verdiene ligger tett rundt gjennomsnittet;
+              et høyt betyr stor spredning. Det brukes mye fordi det er i samme enhet som dataene.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <p class="text-sm text-amber-800">
+            <strong>Tips:</strong> Prøv «Med uteligger»-datasettet ovenfor og se hvordan
+            gjennomsnittet påvirkes av den ene ekstreme verdien (100), mens medianen forblir
+            nesten uendret. Dette illustrerer godt hvorfor median ofte er bedre egnet for
+            skjeve fordelinger.
+          </p>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer class="mt-12 py-6 text-center text-xs text-slate-400">
+    Halison App Studio · Matematikk 2P (LK20) · Statistikk
+  </footer>
+
+<script>
+(function () {
+  'use strict';
+
+  // ─── DOM refs ────────────────────────────────────────────────────────────────
+  const inputEl      = document.getElementById('data-input');
+  const calcBtn      = document.getElementById('calc-btn');
+  const resetBtn     = document.getElementById('reset-btn');
+  const errorEl      = document.getElementById('error-msg');
+  const resultsEl    = document.getElementById('results-section');
+  const nLabel       = document.getElementById('n-label');
+  const nVal         = document.getElementById('n-val');
+
+  const resMean      = document.getElementById('res-mean');
+  const resMedian    = document.getElementById('res-median');
+  const resMode      = document.getElementById('res-mode');
+  const resModeNote  = document.getElementById('res-mode-note');
+  const resRange     = document.getElementById('res-range');
+  const resStd       = document.getElementById('res-std');
+  const stdSteps     = document.getElementById('std-steps');
+  const sortedDisp   = document.getElementById('sorted-display');
+  const histSvg      = document.getElementById('histogram');
+  const histLegend   = document.getElementById('histogram-legend');
+
+  // ─── Default dataset ────────────────────────────────────────────────────────
+  const DEFAULT = '12 15 14 10 18 12 16 14 13 15 11 17 14 13 16';
+
+  // Restore from localStorage or use default
+  inputEl.value = localStorage.getItem('stat2p-dataset') || DEFAULT;
+
+  // ─── Preset buttons ─────────────────────────────────────────────────────────
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      inputEl.value = btn.dataset.set;
+      compute();
+    });
+  });
+
+  // ─── Parse input ────────────────────────────────────────────────────────────
+  function parseInput(raw) {
+    return raw
+      .split(/[\s,;\n]+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+      .map(s => {
+        const n = parseFloat(s.replace(',', '.'));
+        if (isNaN(n)) throw new Error(`«${s}» er ikke et gyldig tall.`);
+        return n;
+      });
+  }
+
+  // ─── Statistics helpers ─────────────────────────────────────────────────────
+  function mean(arr) {
+    return arr.reduce((a, b) => a + b, 0) / arr.length;
+  }
+
+  function median(sorted) {
+    const n = sorted.length;
+    if (n % 2 === 1) return sorted[Math.floor(n / 2)];
+    return (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
+  }
+
+  function mode(arr) {
+    const freq = {};
+    arr.forEach(v => { freq[v] = (freq[v] || 0) + 1; });
+    const maxFreq = Math.max(...Object.values(freq));
+    if (maxFreq === 1) return { values: [], freq: 1, none: true };
+    const modes = Object.keys(freq).filter(k => freq[k] === maxFreq).map(Number);
+    return { values: modes, freq: maxFreq, none: false };
+  }
+
+  function populationStd(arr, mu) {
+    const n = arr.length;
+    const sumSq = arr.reduce((acc, x) => acc + (x - mu) ** 2, 0);
+    return Math.sqrt(sumSq / n);
+  }
+
+  // ─── Number formatting ──────────────────────────────────────────────────────
+  function fmt(n, decimals = 2) {
+    if (Number.isInteger(n)) return n.toString();
+    return n.toFixed(decimals).replace('.', ',');
+  }
+
+  // ─── Show error ─────────────────────────────────────────────────────────────
+  function showError(msg) {
+    errorEl.style.display = 'block';
+    errorEl.textContent = msg;
+    resultsEl.classList.add('hidden');
+    nLabel.classList.add('hidden');
+  }
+  function clearError() {
+    errorEl.style.display = 'none';
+    errorEl.textContent = '';
+  }
+
+  // ─── Main compute ────────────────────────────────────────────────────────────
+  function compute() {
+    clearError();
+    let data;
+    try {
+      data = parseInput(inputEl.value);
+    } catch (e) {
+      showError('Ugyldig inndata: ' + e.message);
+      return;
+    }
+    if (data.length < 2) {
+      showError('Skriv inn minst 2 tall for å beregne statistikk.');
+      return;
+    }
+
+    // Save to localStorage
+    localStorage.setItem('stat2p-dataset', inputEl.value.trim());
+
+    const n = data.length;
+    const sorted = [...data].sort((a, b) => a - b);
+    const mu = mean(data);
+    const med = median(sorted);
+    const modeResult = mode(data);
+    const range = sorted[n - 1] - sorted[0];
+    const std = populationStd(data, mu);
+
+    // ── Cards ────────────────────────────────────────────────────────────────
+    resMean.textContent = fmt(mu);
+    resMedian.textContent = fmt(med);
+
+    if (modeResult.none) {
+      resMode.textContent = '—';
+      resModeNote.textContent = 'Ingen typetall (alle verdier er like hyppige)';
+    } else if (modeResult.values.length > 3) {
+      resMode.textContent = modeResult.values.slice(0, 3).map(v => fmt(v)).join(', ') + ' …';
+      resModeNote.textContent = `${modeResult.values.length} typetall (hyppighet: ${modeResult.freq})`;
+    } else {
+      resMode.textContent = modeResult.values.map(v => fmt(v)).join(', ');
+      resModeNote.textContent = modeResult.values.length > 1
+        ? `${modeResult.values.length} typetall (hyppighet: ${modeResult.freq})`
+        : `Hyppighet: ${modeResult.freq}`;
+    }
+
+    resRange.textContent = fmt(range);
+    resStd.textContent = fmt(std);
+
+    // ── Std steps ───────────────────────────────────────────────────────────
+    const deviations = data.map(x => x - mu);
+    const squaredDevs = deviations.map(d => d * d);
+    const sumSq = squaredDevs.reduce((a, b) => a + b, 0);
+
+    const showN = Math.min(n, 6);
+    let stepsHTML = `n = ${n}\n`;
+    stepsHTML += `x̄ = ${fmt(mu)}\n\n`;
+    stepsHTML += `Kvadrerte avvik (xᵢ − x̄)²:\n`;
+    for (let i = 0; i < showN; i++) {
+      stepsHTML += `  (${fmt(data[i])} − ${fmt(mu)})² = (${fmt(deviations[i])})² = ${fmt(squaredDevs[i])}\n`;
+    }
+    if (n > showN) stepsHTML += `  … (${n - showN} flere)\n`;
+    stepsHTML += `\nΣ(xᵢ − x̄)² = ${fmt(sumSq)}\n`;
+    stepsHTML += `σ = √(${fmt(sumSq)} / ${n}) = √${fmt(sumSq / n)} ≈ ${fmt(std)}`;
+
+    stdSteps.textContent = stepsHTML;
+
+    // ── Sorted display ───────────────────────────────────────────────────────
+    sortedDisp.innerHTML = '';
+    sorted.forEach((v, i) => {
+      const span = document.createElement('span');
+      span.className = 'px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-xs font-mono border border-slate-200';
+      // Highlight median position(s)
+      const isMedianPos = (n % 2 === 1)
+        ? i === Math.floor(n / 2)
+        : (i === n / 2 - 1 || i === n / 2);
+      if (isMedianPos) {
+        span.className = 'px-2 py-0.5 rounded bg-teal-100 text-teal-800 text-xs font-mono border border-teal-300 font-bold';
+        span.title = 'Median-posisjon';
+      }
+      // Highlight mode values
+      if (!modeResult.none && modeResult.values.includes(v)) {
+        span.className = 'px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-xs font-mono border border-amber-300 font-bold';
+        if (isMedianPos) {
+          span.className = 'px-2 py-0.5 rounded bg-purple-100 text-purple-800 text-xs font-mono border border-purple-300 font-bold';
+        }
+        span.title = 'Typetall';
+      }
+      span.textContent = fmt(v);
+      sortedDisp.appendChild(span);
+    });
+
+    // ── Histogram ────────────────────────────────────────────────────────────
+    drawHistogram(sorted, mu, med);
+
+    nVal.textContent = n;
+    nLabel.classList.remove('hidden');
+    resultsEl.classList.remove('hidden');
+    resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ─── Histogram drawing ───────────────────────────────────────────────────────
+  function drawHistogram(sorted, mu, med) {
+    const n = sorted.length;
+    const minVal = sorted[0];
+    const maxVal = sorted[n - 1];
+
+    // Determine bins
+    let bins;
+    const allIntegers = sorted.every(v => Number.isInteger(v));
+    const distinctVals = [...new Set(sorted)].sort((a, b) => a - b);
+
+    if (allIntegers && distinctVals.length <= 20) {
+      // One bar per distinct integer value
+      bins = distinctVals.map(v => ({
+        label: String(v),
+        from: v - 0.5,
+        to: v + 0.5,
+        count: sorted.filter(x => x === v).length,
+        center: v
+      }));
+    } else {
+      // Sturges' rule for bin count
+      const numBins = Math.max(5, Math.min(15, Math.ceil(Math.log2(n) + 1)));
+      const span = maxVal - minVal;
+      const binWidth = span === 0 ? 1 : span / numBins;
+      const binsArr = [];
+      for (let i = 0; i < numBins; i++) {
+        const from = minVal + i * binWidth;
+        const to = i === numBins - 1 ? maxVal + 1e-9 : from + binWidth;
+        const count = sorted.filter(x => x >= from && x < to).length;
+        binsArr.push({
+          label: `${fmt(from)}–${fmt(from + binWidth)}`,
+          from, to,
+          count,
+          center: from + binWidth / 2
+        });
+      }
+      bins = binsArr.filter(b => b.count > 0 || true); // keep all bins for axis continuity
+    }
+
+    const maxCount = Math.max(...bins.map(b => b.count), 1);
+
+    // SVG dimensions
+    const svgW = Math.max(400, Math.min(760, bins.length * 48 + 80));
+    const svgH = 280;
+    const padLeft = 44;
+    const padRight = 20;
+    const padTop = 20;
+    const padBottom = 54;
+    const chartW = svgW - padLeft - padRight;
+    const chartH = svgH - padTop - padBottom;
+    const barW = chartW / bins.length;
+
+    histSvg.setAttribute('width', svgW);
+    histSvg.setAttribute('height', svgH);
+    histSvg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+
+    let svgContent = '';
+
+    // Grid lines
+    const yTicks = 4;
+    for (let i = 0; i <= yTicks; i++) {
+      const y = padTop + chartH - (i / yTicks) * chartH;
+      const val = Math.round((i / yTicks) * maxCount);
+      svgContent += `<line x1="${padLeft}" y1="${y}" x2="${padLeft + chartW}" y2="${y}" stroke="#e2e8f0" stroke-width="1"/>`;
+      svgContent += `<text x="${padLeft - 6}" y="${y + 4}" text-anchor="end" font-size="11" fill="#94a3b8">${val}</text>`;
+    }
+
+    // Bars
+    bins.forEach((bin, i) => {
+      const barH = (bin.count / maxCount) * chartH;
+      const x = padLeft + i * barW;
+      const y = padTop + chartH - barH;
+      const color = '#818cf8';
+      const colorDark = '#6366f1';
+      svgContent += `<rect class="hist-bar" x="${x + 1}" y="${y}" width="${barW - 2}" height="${barH}"
+        fill="${color}" stroke="${colorDark}" stroke-width="0.5" rx="2"/>`;
+
+      // Count label on bar
+      if (bin.count > 0) {
+        svgContent += `<text x="${x + barW / 2}" y="${y - 4}" text-anchor="middle" font-size="10" fill="#6366f1" font-weight="600">${bin.count}</text>`;
+      }
+    });
+
+    // X-axis labels
+    // For many bins, show every Nth label
+    const showEvery = bins.length > 10 ? Math.ceil(bins.length / 10) : 1;
+    bins.forEach((bin, i) => {
+      if (i % showEvery !== 0 && i !== bins.length - 1) return;
+      const x = padLeft + i * barW + barW / 2;
+      const y = padTop + chartH + 16;
+      svgContent += `<text x="${x}" y="${y}" text-anchor="middle" font-size="10" fill="#64748b"
+        transform="rotate(-30, ${x}, ${y})">${bin.label}</text>`;
+    });
+
+    // X and Y axis lines
+    svgContent += `<line x1="${padLeft}" y1="${padTop}" x2="${padLeft}" y2="${padTop + chartH}" stroke="#cbd5e1" stroke-width="1.5"/>`;
+    svgContent += `<line x1="${padLeft}" y1="${padTop + chartH}" x2="${padLeft + chartW}" y2="${padTop + chartH}" stroke="#cbd5e1" stroke-width="1.5"/>`;
+
+    // Helper: map data value to x pixel
+    function valToX(v) {
+      if (bins.length === 0) return padLeft;
+      const dataMin = bins[0].from;
+      const dataMax = bins[bins.length - 1].to;
+      return padLeft + ((v - dataMin) / (dataMax - dataMin)) * chartW;
+    }
+
+    // Mean line
+    const meanX = valToX(mu);
+    svgContent += `<line x1="${meanX}" y1="${padTop}" x2="${meanX}" y2="${padTop + chartH}"
+      stroke="#6366f1" stroke-width="2" stroke-dasharray="5,3"/>`;
+    svgContent += `<text x="${meanX + 4}" y="${padTop + 14}" font-size="11" fill="#6366f1" font-weight="700">x̄ = ${fmt(mu)}</text>`;
+
+    // Median line
+    const medX = valToX(med);
+    const medOffset = Math.abs(meanX - medX) < 30 ? 16 : 0;
+    svgContent += `<line x1="${medX}" y1="${padTop}" x2="${medX}" y2="${padTop + chartH}"
+      stroke="#0d9488" stroke-width="2" stroke-dasharray="3,3"/>`;
+    svgContent += `<text x="${medX + 4}" y="${padTop + 14 + medOffset}" font-size="11" fill="#0d9488" font-weight="700">Md = ${fmt(med)}</text>`;
+
+    histSvg.innerHTML = svgContent;
+
+    // Legend
+    histLegend.innerHTML = `
+      <span class="flex items-center gap-1.5">
+        <svg width="22" height="10"><line x1="0" y1="5" x2="22" y2="5" stroke="#6366f1" stroke-width="2" stroke-dasharray="5,3"/></svg>
+        <span class="text-indigo-700 font-semibold">Gjennomsnitt (x̄ = ${fmt(mu)})</span>
+      </span>
+      <span class="flex items-center gap-1.5">
+        <svg width="22" height="10"><line x1="0" y1="5" x2="22" y2="5" stroke="#0d9488" stroke-width="2" stroke-dasharray="3,3"/></svg>
+        <span class="text-teal-700 font-semibold">Median (Md = ${fmt(med)})</span>
+      </span>`;
+  }
+
+  // ─── Event listeners ─────────────────────────────────────────────────────────
+  calcBtn.addEventListener('click', compute);
+
+  inputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.ctrlKey) compute();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    inputEl.value = DEFAULT;
+    localStorage.removeItem('stat2p-dataset');
+    clearError();
+    resultsEl.classList.add('hidden');
+    nLabel.classList.add('hidden');
+  });
+
+  // ─── Auto-compute on load ────────────────────────────────────────────────────
+  compute();
+
+}());
+</script>
+</body>
+</html>
