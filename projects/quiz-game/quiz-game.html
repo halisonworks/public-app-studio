@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<!--
+  Quiz Game — Halison App Studio example
+
+  An 8-question multiple-choice quiz: instant feedback, score tracking, a best
+  score saved to your browser, keyboard answers (1–4), and play again.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz Game</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; }
+    .option-btn { transition: background-color 0.15s, transform 0.1s; }
+    .option-btn:not(:disabled):hover { transform: translateY(-1px); }
+    .option-btn:not(:disabled):active { transform: translateY(0); }
+    @keyframes pop-in {
+      0% { opacity: 0; transform: scale(0.94) translateY(6px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .animate-pop { animation: pop-in 0.22s ease-out both; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    .animate-shake { animation: shake 0.35s ease-in-out; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 flex items-center justify-center p-4">
+
+  <div id="app" class="w-full max-w-xl"></div>
+
+  <script>
+    const QUESTIONS = [
+      {
+        q: "Which planet in our solar system has the most moons?",
+        options: ["Jupiter", "Saturn", "Uranus", "Neptune"],
+        correct: 1
+      },
+      {
+        q: "What is the chemical symbol for gold?",
+        options: ["Go", "Gd", "Au", "Ag"],
+        correct: 2
+      },
+      {
+        q: "In which country is the ancient city of Machu Picchu located?",
+        options: ["Colombia", "Bolivia", "Chile", "Peru"],
+        correct: 3
+      },
+      {
+        q: "Who painted the Sistine Chapel ceiling?",
+        options: ["Leonardo da Vinci", "Raphael", "Michelangelo", "Donatello"],
+        correct: 2
+      },
+      {
+        q: "What is the longest river in Africa?",
+        options: ["Congo", "Niger", "Nile", "Zambezi"],
+        correct: 2
+      },
+      {
+        q: "In what year did the Berlin Wall fall?",
+        options: ["1987", "1989", "1991", "1993"],
+        correct: 1
+      },
+      {
+        q: "What is the hardest natural substance on Earth?",
+        options: ["Quartz", "Titanium", "Corundum", "Diamond"],
+        correct: 3
+      },
+      {
+        q: "Which country has the largest land area in the world?",
+        options: ["Canada", "United States", "China", "Russia"],
+        correct: 3
+      }
+    ];
+
+    const BEST_KEY = "quizgame_best";
+
+    let state = {
+      screen: "start",   // "start" | "question" | "results"
+      current: 0,
+      score: 0,
+      answered: false,
+      chosen: -1,
+      best: parseInt(localStorage.getItem(BEST_KEY) || "0", 10)
+    };
+
+    function saveIfBest() {
+      if (state.score > state.best) {
+        state.best = state.score;
+        localStorage.setItem(BEST_KEY, state.best);
+      }
+    }
+
+    function render() {
+      const app = document.getElementById("app");
+      if (state.screen === "start") {
+        app.innerHTML = renderStart();
+      } else if (state.screen === "question") {
+        app.innerHTML = renderQuestion();
+        attachOptionHandlers();
+      } else {
+        app.innerHTML = renderResults();
+        attachRestartHandler();
+      }
+    }
+
+    function renderStart() {
+      return `
+        <div class="animate-pop bg-white rounded-3xl shadow-2xl p-8 text-center">
+          <div class="text-6xl mb-4">🧠</div>
+          <h1 class="text-3xl font-bold text-indigo-700 mb-2">Quiz Game</h1>
+          <p class="text-gray-500 mb-6">8 general-knowledge questions — science, geography, history &amp; more.</p>
+          <div class="flex items-center justify-center gap-2 mb-6 text-sm text-gray-400">
+            <span>🏆 Best score:</span>
+            <span class="font-semibold text-indigo-500">${state.best} / 8</span>
+          </div>
+          <p class="text-xs text-gray-400 mb-6">Tip: use keys <kbd class="bg-gray-100 px-1 rounded">1</kbd>–<kbd class="bg-gray-100 px-1 rounded">4</kbd> to answer</p>
+          <button id="start-btn"
+            class="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold text-lg py-3 rounded-2xl transition-colors">
+            Start Quiz
+          </button>
+        </div>`;
+    }
+
+    function renderQuestion() {
+      const q = QUESTIONS[state.current];
+      const progress = state.current + 1;
+      const pct = Math.round((state.current / QUESTIONS.length) * 100);
+
+      const optionsHtml = q.options.map((opt, i) => {
+        let extra = "bg-white border-2 border-gray-200 text-gray-800 hover:border-indigo-400 hover:bg-indigo-50";
+        if (state.answered) {
+          if (i === q.correct) {
+            extra = "bg-emerald-500 border-2 border-emerald-600 text-white";
+          } else if (i === state.chosen && i !== q.correct) {
+            extra = "bg-red-500 border-2 border-red-600 text-white animate-shake";
+          } else {
+            extra = "bg-gray-100 border-2 border-gray-200 text-gray-400";
+          }
+        }
+        const disabledAttr = state.answered ? "disabled" : "";
+        return `
+          <button data-idx="${i}" ${disabledAttr}
+            class="option-btn w-full text-left rounded-xl px-4 py-3 font-medium flex items-center gap-3 cursor-pointer disabled:cursor-default ${extra}">
+            <span class="flex-shrink-0 w-7 h-7 rounded-full bg-current bg-opacity-10 flex items-center justify-center text-sm font-bold
+              ${state.answered && i === q.correct ? 'bg-white text-emerald-700' : ''}
+              ${state.answered && i === state.chosen && i !== q.correct ? 'text-red-200' : 'text-indigo-500'}
+              ${!state.answered ? 'text-indigo-400' : ''}
+            ">${i + 1}</span>
+            <span>${opt}</span>
+          </button>`;
+      }).join("");
+
+      const feedbackHtml = state.answered
+        ? (state.chosen === q.correct
+            ? `<p class="mt-4 text-center text-emerald-600 font-semibold animate-pop">✅ Correct!</p>`
+            : `<p class="mt-4 text-center text-red-500 font-semibold animate-pop">❌ Wrong — the answer is <span class="underline">${q.options[q.correct]}</span></p>`)
+        : "";
+
+      const nextLabel = state.current < QUESTIONS.length - 1 ? "Next Question →" : "See Results →";
+      const nextBtn = state.answered
+        ? `<button id="next-btn" class="w-full mt-5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold py-3 rounded-2xl transition-colors">
+            ${nextLabel}
+           </button>`
+        : "";
+
+      return `
+        <div class="animate-pop bg-white rounded-3xl shadow-2xl p-7">
+          <div class="flex items-center justify-between mb-3 text-sm text-gray-400 font-medium">
+            <span>Question ${progress} / ${QUESTIONS.length}</span>
+            <span class="text-indigo-500 font-semibold">Score: ${state.score}</span>
+          </div>
+          <div class="w-full bg-gray-100 rounded-full h-2 mb-6">
+            <div class="bg-indigo-500 h-2 rounded-full transition-all duration-500" style="width:${pct}%"></div>
+          </div>
+          <p class="text-xl font-bold text-gray-800 mb-5 leading-snug">${q.q}</p>
+          <div class="flex flex-col gap-3">
+            ${optionsHtml}
+          </div>
+          ${feedbackHtml}
+          ${nextBtn}
+        </div>`;
+    }
+
+    function renderResults() {
+      const total = QUESTIONS.length;
+      const pct = Math.round((state.score / total) * 100);
+      let emoji = "😐";
+      let msg = "Not bad — keep practising!";
+      if (pct === 100) { emoji = "🏆"; msg = "Perfect score! Outstanding!"; }
+      else if (pct >= 75) { emoji = "🎉"; msg = "Great job! You know your stuff!"; }
+      else if (pct >= 50) { emoji = "👍"; msg = "Solid effort! Room to grow."; }
+      else if (pct < 25) { emoji = "📚"; msg = "Time to hit the books!"; }
+
+      return `
+        <div class="animate-pop bg-white rounded-3xl shadow-2xl p-8 text-center">
+          <div class="text-6xl mb-4">${emoji}</div>
+          <h2 class="text-3xl font-bold text-indigo-700 mb-1">Quiz Complete!</h2>
+          <p class="text-gray-500 mb-6">${msg}</p>
+          <div class="bg-indigo-50 rounded-2xl p-5 mb-6">
+            <p class="text-5xl font-extrabold text-indigo-700">${state.score}<span class="text-2xl text-indigo-400"> / ${total}</span></p>
+            <p class="text-gray-400 text-sm mt-1">${pct}% correct</p>
+          </div>
+          <div class="flex items-center justify-center gap-2 mb-6 text-sm text-gray-400">
+            <span>🏆 Best score:</span>
+            <span class="font-semibold text-indigo-500">${state.best} / 8</span>
+          </div>
+          <button id="restart-btn"
+            class="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold text-lg py-3 rounded-2xl transition-colors">
+            Play Again
+          </button>
+        </div>`;
+    }
+
+    function attachOptionHandlers() {
+      document.querySelectorAll(".option-btn").forEach(btn => {
+        btn.addEventListener("click", () => handleAnswer(parseInt(btn.dataset.idx, 10)));
+      });
+      const startBtn = document.getElementById("start-btn");
+      if (startBtn) startBtn.addEventListener("click", startQuiz);
+      const nextBtn = document.getElementById("next-btn");
+      if (nextBtn) nextBtn.addEventListener("click", advance);
+    }
+
+    function attachRestartHandler() {
+      const btn = document.getElementById("restart-btn");
+      if (btn) btn.addEventListener("click", restart);
+    }
+
+    function startQuiz() {
+      state.screen = "question";
+      state.current = 0;
+      state.score = 0;
+      state.answered = false;
+      state.chosen = -1;
+      render();
+    }
+
+    function handleAnswer(idx) {
+      if (state.answered) return;
+      state.answered = true;
+      state.chosen = idx;
+      if (idx === QUESTIONS[state.current].correct) {
+        state.score++;
+      }
+      render();
+    }
+
+    function advance() {
+      if (!state.answered) return;
+      state.current++;
+      if (state.current >= QUESTIONS.length) {
+        saveIfBest();
+        state.screen = "results";
+      }
+      state.answered = false;
+      state.chosen = -1;
+      render();
+    }
+
+    function restart() {
+      state.screen = "start";
+      render();
+    }
+
+    document.addEventListener("keydown", e => {
+      const key = e.key;
+      if (state.screen === "start" && (key === "Enter" || key === " ")) {
+        startQuiz();
+        return;
+      }
+      if (state.screen === "question") {
+        if (!state.answered && ["1","2","3","4"].includes(key)) {
+          handleAnswer(parseInt(key, 10) - 1);
+          return;
+        }
+        if (state.answered && (key === "Enter" || key === " " || key === "ArrowRight")) {
+          advance();
+          return;
+        }
+      }
+      if (state.screen === "results" && (key === "Enter" || key === " ")) {
+        restart();
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>

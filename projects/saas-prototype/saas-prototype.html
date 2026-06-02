@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<!--
+  SaaS Prototype — Halison App Studio example
+
+  An interactive prototype of a project-management app: sidebar navigation, a
+  task board with movable cards across To do / Doing / Done, and a settings view.
+  Mock data, no backend — a clickable demo of an idea.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flowdesk — Project Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:  '#f0f4ff',
+              100: '#e0eaff',
+              200: '#c7d7fe',
+              300: '#a5b8fd',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    .nav-item { transition: background 0.15s, color 0.15s; }
+    .card-drag { cursor: grab; }
+    .task-card { transition: box-shadow 0.15s, transform 0.1s; }
+    .task-card:hover { transform: translateY(-1px); }
+    .toggle-track { transition: background 0.2s; }
+    .toggle-thumb { transition: transform 0.2s; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 min-h-screen">
+
+<!-- ─── App Shell ─── -->
+<div id="app" class="flex h-screen overflow-hidden">
+
+  <!-- ─── Sidebar ─── -->
+  <aside id="sidebar" class="w-60 flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+    <!-- Logo -->
+    <div class="flex items-center gap-2 px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+      <div class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/>
+        </svg>
+      </div>
+      <span class="font-semibold text-gray-900 dark:text-white text-base tracking-tight">Flowdesk</span>
+    </div>
+
+    <!-- Workspace badge -->
+    <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+      <div class="flex items-center gap-2 px-2 py-1.5 rounded-md bg-gray-50 dark:bg-gray-700/50">
+        <div class="w-6 h-6 rounded bg-brand-500 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">A</div>
+        <div class="min-w-0">
+          <p id="sidebar-ws-name" class="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">Acme Corp</p>
+          <p class="text-[10px] text-gray-400">Free plan</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 px-3 py-3 space-y-0.5">
+      <button onclick="navigate('dashboard')" data-view="dashboard"
+        class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        Dashboard
+      </button>
+      <button onclick="navigate('tasks')" data-view="tasks"
+        class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+        </svg>
+        Tasks
+      </button>
+      <button onclick="navigate('settings')" data-view="settings"
+        class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        Settings
+      </button>
+    </nav>
+
+    <!-- User footer -->
+    <div class="border-t border-gray-100 dark:border-gray-700 px-4 py-3">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">SL</div>
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">Sarah Lin</p>
+          <p class="text-[10px] text-gray-400 truncate">sarah@acme.io</p>
+        </div>
+        <span class="text-[10px] font-medium bg-brand-100 dark:bg-brand-900 text-brand-700 dark:text-brand-300 px-1.5 py-0.5 rounded">Admin</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── Main content ─── -->
+  <main class="flex-1 overflow-y-auto">
+
+    <!-- ─── Dashboard View ─── -->
+    <div id="view-dashboard" class="hidden p-6 max-w-6xl mx-auto">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Dashboard</h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Welcome back, Sarah. Here's what's happening.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-400">Sprint 4 · Jun 2026</span>
+          <span class="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded-full">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
+          </span>
+        </div>
+      </div>
+
+      <!-- Summary cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Tasks</span>
+            <div class="w-7 h-7 rounded-lg bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center">
+              <svg class="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            </div>
+          </div>
+          <p id="stat-total" class="text-2xl font-bold text-gray-900 dark:text-white">14</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">across all columns</p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Completed</span>
+            <div class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
+              <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+          </div>
+          <p id="stat-done" class="text-2xl font-bold text-gray-900 dark:text-white">5</p>
+          <p id="stat-done-pct" class="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">36% of total</p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">In Progress</span>
+            <div class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
+              <svg class="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+          </div>
+          <p id="stat-doing" class="text-2xl font-bold text-gray-900 dark:text-white">5</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">active this sprint</p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Team Members</span>
+            <div class="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center">
+              <svg class="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            </div>
+          </div>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white">6</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">2 online now</p>
+        </div>
+      </div>
+
+      <!-- Progress bar + recent activity -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Sprint progress -->
+        <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+          <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-4">Sprint Progress</h2>
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <span>To Do</span>
+                <span id="prog-todo">4 tasks</span>
+              </div>
+              <div class="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div id="bar-todo" class="h-2 bg-gray-300 dark:bg-gray-500 rounded-full transition-all duration-500" style="width:29%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <span>Doing</span>
+                <span id="prog-doing">5 tasks</span>
+              </div>
+              <div class="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div id="bar-doing" class="h-2 bg-amber-400 rounded-full transition-all duration-500" style="width:36%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <span>Done</span>
+                <span id="prog-done">5 tasks</span>
+              </div>
+              <div class="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div id="bar-done" class="h-2 bg-emerald-500 rounded-full transition-all duration-500" style="width:36%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mini team list -->
+          <div class="mt-5 pt-4 border-t border-gray-100 dark:border-gray-700">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">Team</p>
+            <div class="flex flex-wrap gap-3">
+              <div class="flex items-center gap-2">
+                <div class="relative"><div class="w-7 h-7 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-xs font-semibold">SL</div><span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white dark:border-gray-800"></span></div>
+                <span class="text-xs text-gray-700 dark:text-gray-300">Sarah L.</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="relative"><div class="w-7 h-7 rounded-full bg-gradient-to-br from-rose-400 to-rose-600 flex items-center justify-center text-white text-xs font-semibold">MK</div><span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white dark:border-gray-800"></span></div>
+                <span class="text-xs text-gray-700 dark:text-gray-300">Marcus K.</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="relative"><div class="w-7 h-7 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-xs font-semibold">JP</div></div>
+                <span class="text-xs text-gray-700 dark:text-gray-300">Jana P.</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-xs font-semibold">RN</div>
+                <span class="text-xs text-gray-700 dark:text-gray-300">Ravi N.</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-xs font-semibold">AO</div>
+                <span class="text-xs text-gray-700 dark:text-gray-300">Amy O.</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-full bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center text-white text-xs font-semibold">TD</div>
+                <span class="text-xs text-gray-700 dark:text-gray-300">Tom D.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent activity -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+          <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-4">Recent Activity</h2>
+          <ol id="activity-feed" class="space-y-3 text-xs text-gray-600 dark:text-gray-400">
+            <li class="flex gap-2"><span class="mt-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"></span><span><strong class="text-gray-800 dark:text-gray-200">Marcus</strong> moved "API rate-limit tests" → Done</span></li>
+            <li class="flex gap-2"><span class="mt-0.5 w-1.5 h-1.5 rounded-full bg-brand-400 flex-shrink-0"></span><span><strong class="text-gray-800 dark:text-gray-200">Sarah</strong> moved "Onboarding flow redesign" → Doing</span></li>
+            <li class="flex gap-2"><span class="mt-0.5 w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0"></span><span><strong class="text-gray-800 dark:text-gray-200">Jana</strong> added "CSV export feature"</span></li>
+            <li class="flex gap-2"><span class="mt-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0"></span><span><strong class="text-gray-800 dark:text-gray-200">Ravi</strong> moved "Dark mode polish" → Done</span></li>
+            <li class="flex gap-2"><span class="mt-0.5 w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0"></span><span><strong class="text-gray-800 dark:text-gray-200">Amy</strong> moved "Billing webhook" → Doing</span></li>
+            <li class="flex gap-2"><span class="mt-0.5 w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0"></span><span><strong class="text-gray-800 dark:text-gray-200">Tom</strong> added "Slack notification integration"</span></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Tasks View ─── -->
+    <div id="view-tasks" class="hidden p-6">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Task Board</h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Sprint 4 · Drag or use arrows to move cards</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700">◀ ▶ move card</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Board columns -->
+      <div class="flex gap-5 overflow-x-auto pb-4" style="min-height: calc(100vh - 160px)">
+        <!-- To Do column -->
+        <div class="flex-1 min-w-[260px]">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-gray-400"></span>
+              <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">To Do</h2>
+              <span id="count-todo" class="text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded-full">4</span>
+            </div>
+          </div>
+          <div id="col-todo" class="space-y-3"></div>
+        </div>
+
+        <!-- Doing column -->
+        <div class="flex-1 min-w-[260px]">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+              <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Doing</h2>
+              <span id="count-doing" class="text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full">5</span>
+            </div>
+          </div>
+          <div id="col-doing" class="space-y-3"></div>
+        </div>
+
+        <!-- Done column -->
+        <div class="flex-1 min-w-[260px]">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Done</h2>
+              <span id="count-done" class="text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-full">5</span>
+            </div>
+          </div>
+          <div id="col-done" class="space-y-3"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Settings View ─── -->
+    <div id="view-settings" class="hidden p-6 max-w-2xl mx-auto">
+      <div class="mb-6">
+        <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Settings</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Manage your workspace preferences</p>
+      </div>
+
+      <!-- Workspace -->
+      <section class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 mb-5">
+        <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-4">Workspace</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Workspace Name</label>
+            <input id="ws-name-input" type="text" value="Acme Corp"
+              class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+              oninput="updateWorkspaceName(this.value)">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Workspace URL</label>
+            <div class="flex">
+              <span class="inline-flex items-center px-3 py-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-600 border border-r-0 border-gray-200 dark:border-gray-600 rounded-l-lg">flowdesk.app/</span>
+              <input id="ws-slug-input" type="text" value="acme-corp"
+                class="flex-1 px-3 py-2 text-sm rounded-r-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Time Zone</label>
+            <select class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500">
+              <option value="utc">UTC+0 — London</option>
+              <option value="cet" selected>UTC+1 — Central European Time</option>
+              <option value="est">UTC-5 — Eastern Time</option>
+              <option value="pst">UTC-8 — Pacific Time</option>
+            </select>
+          </div>
+          <div class="pt-1">
+            <button id="save-btn" onclick="saveSettings()"
+              class="px-4 py-2 text-sm font-medium bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition-colors">
+              Save changes
+            </button>
+            <span id="save-feedback" class="hidden ml-3 text-xs text-emerald-600 dark:text-emerald-400 font-medium">Saved!</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Appearance -->
+      <section class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 mb-5">
+        <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-4">Appearance</h2>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-800 dark:text-gray-200">Dark Mode</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Use a darker color scheme</p>
+          </div>
+          <button id="dark-toggle" onclick="toggleDark()" role="switch" aria-checked="false"
+            class="toggle-track relative inline-flex w-10 h-5.5 rounded-full bg-gray-200 dark:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1"
+            style="width:40px;height:22px;">
+            <span id="dark-thumb" class="toggle-thumb absolute left-0.5 top-0.5 w-4.5 h-4.5 rounded-full bg-white shadow-sm"
+              style="width:18px;height:18px;top:2px;left:2px;"></span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Notifications -->
+      <section class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+        <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-4">Notifications</h2>
+        <div class="space-y-4">
+          <!-- Toggle rows -->
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-800 dark:text-gray-200">Task assignments</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">When someone assigns a task to you</p>
+            </div>
+            <button onclick="toggleNotif(this)" data-on="true" role="switch" aria-checked="true"
+              class="toggle-track relative inline-flex rounded-full bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1"
+              style="width:40px;height:22px;">
+              <span class="toggle-thumb absolute rounded-full bg-white shadow-sm" style="width:18px;height:18px;top:2px;left:20px;"></span>
+            </button>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-800 dark:text-gray-200">Status updates</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">When tasks you own change status</p>
+            </div>
+            <button onclick="toggleNotif(this)" data-on="true" role="switch" aria-checked="true"
+              class="toggle-track relative inline-flex rounded-full bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1"
+              style="width:40px;height:22px;">
+              <span class="toggle-thumb absolute rounded-full bg-white shadow-sm" style="width:18px;height:18px;top:2px;left:20px;"></span>
+            </button>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-800 dark:text-gray-200">Sprint summaries</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Weekly digest every Monday</p>
+            </div>
+            <button onclick="toggleNotif(this)" data-on="false" role="switch" aria-checked="false"
+              class="toggle-track relative inline-flex rounded-full bg-gray-200 dark:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1"
+              style="width:40px;height:22px;">
+              <span class="toggle-thumb absolute rounded-full bg-white shadow-sm" style="width:18px;height:18px;top:2px;left:2px;"></span>
+            </button>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-800 dark:text-gray-200">Comments &amp; mentions</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Notify when someone @mentions you</p>
+            </div>
+            <button onclick="toggleNotif(this)" data-on="true" role="switch" aria-checked="true"
+              class="toggle-track relative inline-flex rounded-full bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1"
+              style="width:40px;height:22px;">
+              <span class="toggle-thumb absolute rounded-full bg-white shadow-sm" style="width:18px;height:18px;top:2px;left:20px;"></span>
+            </button>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-800 dark:text-gray-200">Marketing emails</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Product news and tips</p>
+            </div>
+            <button onclick="toggleNotif(this)" data-on="false" role="switch" aria-checked="false"
+              class="toggle-track relative inline-flex rounded-full bg-gray-200 dark:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1"
+              style="width:40px;height:22px;">
+              <span class="toggle-thumb absolute rounded-full bg-white shadow-sm" style="width:18px;height:18px;top:2px;left:2px;"></span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // ─── State ───────────────────────────────────────────────────────────────────
+  var currentView = 'dashboard';
+  var darkMode = false;
+
+  var tasks = [
+    // To Do
+    { id: 1, col: 'todo',  title: 'CSV export feature',                 tag: 'Feature',  priority: 'medium', assignee: 'JP', color: 'amber' },
+    { id: 2, col: 'todo',  title: 'Slack notification integration',     tag: 'Feature',  priority: 'high',   assignee: 'TD', color: 'sky' },
+    { id: 3, col: 'todo',  title: 'Keyboard shortcut map',              tag: 'UX',       priority: 'low',    assignee: 'SL', color: 'brand' },
+    { id: 4, col: 'todo',  title: 'Invite team by email link',          tag: 'Feature',  priority: 'medium', assignee: 'AO', color: 'purple' },
+    // Doing
+    { id: 5, col: 'doing', title: 'Onboarding flow redesign',           tag: 'Design',   priority: 'high',   assignee: 'SL', color: 'brand' },
+    { id: 6, col: 'doing', title: 'Billing webhook handler',            tag: 'Backend',  priority: 'high',   assignee: 'MK', color: 'rose' },
+    { id: 7, col: 'doing', title: 'Mobile responsive layout',           tag: 'Frontend', priority: 'medium', assignee: 'JP', color: 'amber' },
+    { id: 8, col: 'doing', title: 'Search autocomplete',                tag: 'Frontend', priority: 'medium', assignee: 'RN', color: 'teal' },
+    { id: 9, col: 'doing', title: 'Usage analytics dashboard',          tag: 'Feature',  priority: 'low',    assignee: 'AO', color: 'purple' },
+    // Done
+    { id: 10, col: 'done', title: 'Dark mode polish',                   tag: 'Design',   priority: 'low',    assignee: 'RN', color: 'teal' },
+    { id: 11, col: 'done', title: 'API rate-limit tests',               tag: 'Backend',  priority: 'high',   assignee: 'MK', color: 'rose' },
+    { id: 12, col: 'done', title: 'User role permissions',              tag: 'Backend',  priority: 'high',   assignee: 'TD', color: 'sky' },
+    { id: 13, col: 'done', title: 'Password reset email flow',          tag: 'Feature',  priority: 'medium', assignee: 'SL', color: 'brand' },
+    { id: 14, col: 'done', title: 'Stripe subscription integration',    tag: 'Backend',  priority: 'high',   assignee: 'MK', color: 'rose' },
+  ];
+
+  var colOrder = ['todo', 'doing', 'done'];
+
+  var tagColors = {
+    'Feature':  'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300',
+    'Design':   'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+    'Backend':  'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
+    'Frontend': 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
+    'UX':       'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  };
+
+  var priorityConfig = {
+    high:   { label: 'High',   dot: 'bg-rose-500' },
+    medium: { label: 'Med',    dot: 'bg-amber-400' },
+    low:    { label: 'Low',    dot: 'bg-emerald-400' },
+  };
+
+  var assigneeColors = {
+    SL: 'from-brand-400 to-brand-600',
+    MK: 'from-rose-400 to-rose-600',
+    JP: 'from-amber-400 to-amber-600',
+    RN: 'from-teal-400 to-teal-600',
+    AO: 'from-purple-400 to-purple-600',
+    TD: 'from-sky-400 to-sky-600',
+  };
+
+  // ─── Navigation ──────────────────────────────────────────────────────────────
+  function navigate(view) {
+    currentView = view;
+    ['dashboard', 'tasks', 'settings'].forEach(function(v) {
+      var el = document.getElementById('view-' + v);
+      if (el) el.classList.toggle('hidden', v !== view);
+    });
+    document.querySelectorAll('[data-view]').forEach(function(btn) {
+      var active = btn.dataset.view === view;
+      btn.classList.toggle('bg-brand-50', active);
+      btn.classList.toggle('dark:bg-brand-900/30', active);
+      btn.classList.toggle('text-brand-700', active);
+      btn.classList.toggle('dark:text-brand-400', active);
+      btn.classList.toggle('font-semibold', active);
+      btn.classList.toggle('text-gray-600', !active);
+      btn.classList.toggle('dark:text-gray-400', !active);
+      btn.classList.toggle('font-medium', !active);
+    });
+    if (view === 'tasks') renderBoard();
+    if (view === 'dashboard') updateDashboardStats();
+  }
+
+  // ─── Task board ──────────────────────────────────────────────────────────────
+  function renderBoard() {
+    var cols = { todo: [], doing: [], done: [] };
+    tasks.forEach(function(t) { if (cols[t.col]) cols[t.col].push(t); });
+
+    ['todo', 'doing', 'done'].forEach(function(col) {
+      var container = document.getElementById('col-' + col);
+      var countEl   = document.getElementById('count-' + col);
+      if (!container) return;
+      countEl.textContent = cols[col].length;
+      container.innerHTML = '';
+      if (cols[col].length === 0) {
+        container.innerHTML = '<div class="text-center py-10 text-xs text-gray-400 dark:text-gray-600 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">No tasks here</div>';
+        return;
+      }
+      cols[col].forEach(function(task) {
+        container.appendChild(buildCard(task, col));
+      });
+    });
+  }
+
+  function buildCard(task, col) {
+    var idx = colOrder.indexOf(col);
+    var canLeft  = idx > 0;
+    var canRight = idx < colOrder.length - 1;
+    var leftLabel  = idx > 0  ? '◀ ' + colLabel(colOrder[idx - 1]) : '';
+    var rightLabel = idx < 2  ? colLabel(colOrder[idx + 1]) + ' ▶' : '';
+
+    var pCfg = priorityConfig[task.priority] || priorityConfig.low;
+    var tagCls = tagColors[task.tag] || 'bg-gray-100 text-gray-600';
+    var avatarGrad = assigneeColors[task.assignee] || 'from-gray-400 to-gray-600';
+
+    var card = document.createElement('div');
+    card.className = 'task-card bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3.5 shadow-sm';
+    card.innerHTML =
+      '<div class="flex items-start justify-between gap-2 mb-2">' +
+        '<p class="text-sm font-medium text-gray-800 dark:text-gray-200 leading-snug flex-1">' + escHtml(task.title) + '</p>' +
+        '<div class="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br ' + avatarGrad + ' flex items-center justify-center text-white text-[10px] font-semibold">' + escHtml(task.assignee) + '</div>' +
+      '</div>' +
+      '<div class="flex items-center gap-1.5 mb-3">' +
+        '<span class="text-[10px] font-medium px-1.5 py-0.5 rounded ' + tagCls + '">' + escHtml(task.tag) + '</span>' +
+        '<span class="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400">' +
+          '<span class="w-1.5 h-1.5 rounded-full ' + pCfg.dot + '"></span>' + pCfg.label +
+        '</span>' +
+      '</div>' +
+      '<div class="flex items-center gap-2">' +
+        (canLeft  ? '<button onclick="moveTask(' + task.id + ',\'' + colOrder[idx - 1] + '\')" class="flex-1 text-[11px] font-medium text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-2 py-1 text-left border border-gray-100 dark:border-gray-700 transition-colors">' + leftLabel + '</button>' : '<div class="flex-1"></div>') +
+        (canRight ? '<button onclick="moveTask(' + task.id + ',\'' + colOrder[idx + 1] + '\')" class="flex-1 text-[11px] font-medium text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-2 py-1 text-right border border-gray-100 dark:border-gray-700 transition-colors">' + rightLabel + '</button>' : '<div class="flex-1"></div>') +
+      '</div>';
+    return card;
+  }
+
+  function colLabel(col) {
+    return col === 'todo' ? 'To Do' : col === 'doing' ? 'Doing' : 'Done';
+  }
+
+  function moveTask(id, targetCol) {
+    var task = tasks.find(function(t) { return t.id === id; });
+    if (!task) return;
+    task.col = targetCol;
+    renderBoard();
+    updateDashboardStats();
+    addActivityItem(task, targetCol);
+  }
+
+  function addActivityItem(task, col) {
+    var feed = document.getElementById('activity-feed');
+    if (!feed) return;
+    var names = { SL: 'Sarah', MK: 'Marcus', JP: 'Jana', RN: 'Ravi', AO: 'Amy', TD: 'Tom' };
+    var dotCls = col === 'done' ? 'bg-emerald-400' : col === 'doing' ? 'bg-amber-400' : 'bg-gray-300';
+    var li = document.createElement('li');
+    li.className = 'flex gap-2';
+    li.innerHTML = '<span class="mt-0.5 w-1.5 h-1.5 rounded-full ' + dotCls + ' flex-shrink-0"></span>' +
+      '<span><strong class="text-gray-800 dark:text-gray-200">' + (names[task.assignee] || task.assignee) + '</strong>' +
+      ' moved "' + escHtml(task.title) + '" → ' + colLabel(col) + '</span>';
+    feed.prepend(li);
+    // keep feed tidy — max 8 items
+    while (feed.children.length > 8) feed.removeChild(feed.lastChild);
+  }
+
+  // ─── Dashboard stats ─────────────────────────────────────────────────────────
+  function updateDashboardStats() {
+    var counts = { todo: 0, doing: 0, done: 0 };
+    tasks.forEach(function(t) { if (counts[t.col] !== undefined) counts[t.col]++; });
+    var total = tasks.length;
+
+    var elTotal = document.getElementById('stat-total');
+    var elDone  = document.getElementById('stat-done');
+    var elDonePct = document.getElementById('stat-done-pct');
+    var elDoing = document.getElementById('stat-doing');
+    if (elTotal)   elTotal.textContent   = total;
+    if (elDone)    elDone.textContent    = counts.done;
+    if (elDonePct) elDonePct.textContent = (total ? Math.round(counts.done / total * 100) : 0) + '% of total';
+    if (elDoing)   elDoing.textContent   = counts.doing;
+
+    var progTodo  = document.getElementById('prog-todo');
+    var progDoing = document.getElementById('prog-doing');
+    var progDone  = document.getElementById('prog-done');
+    if (progTodo)  progTodo.textContent  = counts.todo  + ' task' + (counts.todo  !== 1 ? 's' : '');
+    if (progDoing) progDoing.textContent = counts.doing + ' task' + (counts.doing !== 1 ? 's' : '');
+    if (progDone)  progDone.textContent  = counts.done  + ' task' + (counts.done  !== 1 ? 's' : '');
+
+    var barTodo  = document.getElementById('bar-todo');
+    var barDoing = document.getElementById('bar-doing');
+    var barDone  = document.getElementById('bar-done');
+    if (barTodo)  barTodo.style.width  = (total ? Math.round(counts.todo  / total * 100) : 0) + '%';
+    if (barDoing) barDoing.style.width = (total ? Math.round(counts.doing / total * 100) : 0) + '%';
+    if (barDone)  barDone.style.width  = (total ? Math.round(counts.done  / total * 100) : 0) + '%';
+  }
+
+  // ─── Settings ────────────────────────────────────────────────────────────────
+  function updateWorkspaceName(val) {
+    var el = document.getElementById('sidebar-ws-name');
+    if (el) el.textContent = val || 'Untitled';
+  }
+
+  function saveSettings() {
+    var fb = document.getElementById('save-feedback');
+    if (!fb) return;
+    fb.classList.remove('hidden');
+    setTimeout(function() { fb.classList.add('hidden'); }, 2000);
+  }
+
+  function toggleDark() {
+    darkMode = !darkMode;
+    document.documentElement.classList.toggle('dark', darkMode);
+    var btn   = document.getElementById('dark-toggle');
+    var thumb = document.getElementById('dark-thumb');
+    if (btn) {
+      btn.style.background = darkMode ? '#4f46e5' : '';
+      btn.setAttribute('aria-checked', darkMode ? 'true' : 'false');
+    }
+    if (thumb) {
+      thumb.style.transform = darkMode ? 'translateX(18px)' : 'translateX(0)';
+    }
+  }
+
+  function toggleNotif(btn) {
+    var on = btn.dataset.on === 'true';
+    on = !on;
+    btn.dataset.on = on ? 'true' : 'false';
+    btn.setAttribute('aria-checked', on ? 'true' : 'false');
+    btn.style.background = on ? '#4f46e5' : '';
+    if (!on) btn.classList.add('bg-gray-200', 'dark:bg-gray-600');
+    else     btn.classList.remove('bg-gray-200', 'dark:bg-gray-600');
+    var thumb = btn.querySelector('.toggle-thumb');
+    if (thumb) thumb.style.left = on ? '20px' : '2px';
+  }
+
+  // ─── Utility ─────────────────────────────────────────────────────────────────
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // ─── Boot ─────────────────────────────────────────────────────────────────────
+  navigate('dashboard');
+</script>
+</body>
+</html>

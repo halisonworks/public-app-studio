@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<!--
+  Habit Tracker — Halison App Studio example
+
+  A weekly habit tracker: add habits, tick each day, and watch streaks and
+  weekly completion. Saves to your browser so it persists across sessions.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Habit Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .day-btn { transition: background-color 0.15s, border-color 0.15s; }
+    .day-btn:hover { filter: brightness(0.95); }
+    .habit-row:nth-child(even) { background-color: #f8fafc; }
+    .habit-row:nth-child(odd)  { background-color: #ffffff; }
+    @media (max-width: 639px) {
+      .day-label { font-size: 0.6rem; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+  <!-- Modal overlay -->
+  <div id="confirmModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 hidden">
+    <div class="bg-white rounded-2xl shadow-xl p-6 w-80 max-w-full mx-4">
+      <h2 class="text-lg font-semibold text-slate-800 mb-2">Reset all habits?</h2>
+      <p class="text-sm text-slate-500 mb-5">This will permanently delete all your habits and check-ins. This action cannot be undone.</p>
+      <div class="flex gap-3 justify-end">
+        <button id="cancelReset" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200">Cancel</button>
+        <button id="confirmReset" class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- App shell -->
+  <div class="max-w-3xl mx-auto px-4 py-8">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Habit Tracker</h1>
+        <p id="weekLabel" class="text-sm text-slate-400 mt-0.5"></p>
+      </div>
+      <button id="resetBtn" class="text-xs font-medium text-red-400 hover:text-red-600 border border-red-200 hover:border-red-400 rounded-lg px-3 py-1.5 transition-colors">
+        Reset all
+      </button>
+    </div>
+
+    <!-- Add habit -->
+    <div class="bg-white rounded-2xl shadow-sm p-4 mb-4 flex gap-2">
+      <input id="habitInput" type="text" placeholder="New habit (e.g. Morning run, Read 20 min…)"
+        class="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+      <button id="addBtn"
+        class="bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-lg px-4 py-2 transition-colors whitespace-nowrap">
+        Add
+      </button>
+    </div>
+
+    <!-- Summary bar -->
+    <div id="summary" class="bg-indigo-50 border border-indigo-100 rounded-2xl px-5 py-3 mb-4 flex flex-wrap gap-4 text-sm text-indigo-700 hidden">
+      <span><span class="font-semibold" id="sumTotal">0</span> habits</span>
+      <span>·</span>
+      <span>Avg completion this week: <span class="font-semibold" id="sumAvg">0%</span></span>
+      <span>·</span>
+      <span>Best streak today: <span class="font-semibold" id="sumStreak">0 days</span></span>
+    </div>
+
+    <!-- Habit grid -->
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+
+      <!-- Day header -->
+      <div id="dayHeader" class="grid items-center border-b border-slate-100 px-4 py-2 bg-slate-50"
+        style="grid-template-columns: 1fr repeat(7,2.5rem) 3.5rem 3.5rem 2rem; gap:0.25rem;">
+        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Habit</div>
+        <!-- Day labels injected by JS -->
+        <div class="text-xs font-semibold text-slate-500 text-center col-span-7 contents" id="dayLabels"></div>
+        <div class="text-xs font-semibold text-slate-400 text-center">Streak</div>
+        <div class="text-xs font-semibold text-slate-400 text-center">Week %</div>
+        <div></div>
+      </div>
+
+      <!-- Habit rows -->
+      <div id="habitList">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Empty state -->
+      <div id="emptyState" class="py-12 text-center text-slate-400 text-sm">
+        <div class="text-4xl mb-3">🌱</div>
+        <p class="font-medium text-slate-500">No habits yet</p>
+        <p class="mt-1">Add your first habit above to get started.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ─── Constants ────────────────────────────────────────────────────────────
+    const STORAGE_PREFIX = 'habit_tracker_';
+    const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+    // ─── State ────────────────────────────────────────────────────────────────
+    // habits: [{id, name, checks: {ISO_DATE: bool}}]
+    let habits = [];
+
+    // ─── Storage ──────────────────────────────────────────────────────────────
+    function save() {
+      localStorage.setItem(STORAGE_PREFIX + 'habits', JSON.stringify(habits));
+    }
+
+    function load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_PREFIX + 'habits');
+        if (raw) habits = JSON.parse(raw);
+      } catch(e) {
+        habits = [];
+      }
+    }
+
+    // ─── Date helpers ─────────────────────────────────────────────────────────
+    // Returns YYYY-MM-DD for a given Date
+    function toISO(d) {
+      return d.toISOString().slice(0, 10);
+    }
+
+    // Get the Monday of the current week (locale-independent)
+    function getMondayOfWeek(d) {
+      const day = d.getDay(); // 0=Sun
+      const diff = (day === 0) ? -6 : 1 - day;
+      const mon = new Date(d);
+      mon.setDate(d.getDate() + diff);
+      return mon;
+    }
+
+    // Returns array of 7 Date objects Mon–Sun for the current week
+    function getWeekDates() {
+      const today = new Date();
+      const mon = getMondayOfWeek(today);
+      return Array.from({length: 7}, (_, i) => {
+        const d = new Date(mon);
+        d.setDate(mon.getDate() + i);
+        return d;
+      });
+    }
+
+    // Format "Jun 2 – Jun 8, 2026"
+    function formatWeekRange(dates) {
+      const fmt = (d) => d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+      return fmt(dates[0]) + ' – ' + fmt(dates[6]) + ', ' + dates[6].getFullYear();
+    }
+
+    // ─── Metrics ──────────────────────────────────────────────────────────────
+    function weekCompletion(habit, weekDates) {
+      const todayISO = toISO(new Date());
+      // Only count days up to and including today in this week
+      const countable = weekDates.filter(d => toISO(d) <= todayISO);
+      if (countable.length === 0) return 0;
+      const done = countable.filter(d => habit.checks[toISO(d)]).length;
+      return Math.round((done / countable.length) * 100);
+    }
+
+    // Consecutive streak: count back from today within week
+    function currentStreak(habit, weekDates) {
+      const todayISO = toISO(new Date());
+      // Build sorted list of days up to today
+      const past = weekDates.filter(d => toISO(d) <= todayISO).reverse();
+      let streak = 0;
+      for (const d of past) {
+        if (habit.checks[toISO(d)]) streak++;
+        else break;
+      }
+      return streak;
+    }
+
+    // ─── Render ───────────────────────────────────────────────────────────────
+    function render() {
+      const weekDates = getWeekDates();
+      const todayISO = toISO(new Date());
+
+      // Week label
+      document.getElementById('weekLabel').textContent = 'Week of ' + formatWeekRange(weekDates);
+
+      // Day header labels
+      const labelsEl = document.getElementById('dayLabels');
+      labelsEl.innerHTML = '';
+      weekDates.forEach((d, i) => {
+        const cell = document.createElement('div');
+        cell.className = 'text-xs font-medium text-slate-500 text-center day-label';
+        const iso = toISO(d);
+        if (iso === todayISO) {
+          cell.innerHTML = '<span class="inline-block bg-indigo-500 text-white rounded-full w-7 h-7 leading-7 text-center text-xs font-semibold">' + DAYS[i] + '</span>';
+        } else {
+          cell.textContent = DAYS[i];
+        }
+        labelsEl.appendChild(cell);
+      });
+
+      // Habit rows
+      const listEl = document.getElementById('habitList');
+      listEl.innerHTML = '';
+
+      const emptyState = document.getElementById('emptyState');
+      const summary = document.getElementById('summary');
+
+      if (habits.length === 0) {
+        emptyState.classList.remove('hidden');
+        summary.classList.add('hidden');
+        return;
+      }
+      emptyState.classList.add('hidden');
+      summary.classList.remove('hidden');
+
+      habits.forEach((habit, idx) => {
+        const row = document.createElement('div');
+        row.className = 'habit-row grid items-center px-4 py-2.5 border-b border-slate-50 last:border-0';
+        row.style.gridTemplateColumns = '1fr repeat(7,2.5rem) 3.5rem 3.5rem 2rem';
+        row.style.gap = '0.25rem';
+
+        // Name
+        const nameCell = document.createElement('div');
+        nameCell.className = 'text-sm font-medium text-slate-700 truncate pr-2';
+        nameCell.textContent = habit.name;
+        row.appendChild(nameCell);
+
+        // Day checkboxes
+        weekDates.forEach((d) => {
+          const iso = toISO(d);
+          const isFuture = iso > todayISO;
+          const checked = !!habit.checks[iso];
+
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.setAttribute('aria-label', (checked ? 'Uncheck' : 'Check') + ' ' + habit.name + ' on ' + iso);
+          btn.className = 'day-btn mx-auto flex items-center justify-center w-7 h-7 rounded-full border-2 transition-all ' +
+            (isFuture
+              ? 'border-slate-200 bg-slate-50 cursor-not-allowed opacity-40'
+              : checked
+                ? 'border-indigo-400 bg-indigo-400 text-white'
+                : 'border-slate-300 bg-white hover:border-indigo-300');
+          if (!isFuture) {
+            btn.innerHTML = checked
+              ? '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>'
+              : '';
+            btn.addEventListener('click', () => toggle(idx, iso));
+          }
+          row.appendChild(btn);
+        });
+
+        // Streak
+        const streak = currentStreak(habit, weekDates);
+        const streakCell = document.createElement('div');
+        streakCell.className = 'text-center text-xs font-semibold ' + (streak >= 3 ? 'text-emerald-600' : streak >= 1 ? 'text-indigo-500' : 'text-slate-400');
+        streakCell.textContent = streak > 0 ? streak + 'd' : '—';
+        row.appendChild(streakCell);
+
+        // Week %
+        const pct = weekCompletion(habit, weekDates);
+        const pctCell = document.createElement('div');
+        pctCell.className = 'text-center text-xs font-semibold ' + (pct === 100 ? 'text-emerald-600' : pct >= 50 ? 'text-indigo-500' : 'text-slate-400');
+        pctCell.textContent = pct + '%';
+        row.appendChild(pctCell);
+
+        // Delete button
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.setAttribute('aria-label', 'Delete ' + habit.name);
+        delBtn.className = 'ml-auto flex items-center justify-center w-6 h-6 rounded-full text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors';
+        delBtn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>';
+        delBtn.addEventListener('click', () => deleteHabit(idx));
+        row.appendChild(delBtn);
+
+        listEl.appendChild(row);
+      });
+
+      // Summary
+      const allPct = habits.map(h => weekCompletion(h, weekDates));
+      const avgPct = habits.length ? Math.round(allPct.reduce((a,b) => a+b, 0) / habits.length) : 0;
+      const maxStreak = habits.length ? Math.max(...habits.map(h => currentStreak(h, weekDates))) : 0;
+      document.getElementById('sumTotal').textContent = habits.length;
+      document.getElementById('sumAvg').textContent = avgPct + '%';
+      document.getElementById('sumStreak').textContent = maxStreak + (maxStreak === 1 ? ' day' : ' days');
+    }
+
+    // ─── Actions ──────────────────────────────────────────────────────────────
+    function addHabit(name) {
+      name = name.trim();
+      if (!name) return;
+      habits.push({ id: Date.now().toString(), name, checks: {} });
+      save();
+      render();
+    }
+
+    function deleteHabit(idx) {
+      habits.splice(idx, 1);
+      save();
+      render();
+    }
+
+    function toggle(idx, iso) {
+      if (!habits[idx].checks) habits[idx].checks = {};
+      habits[idx].checks[iso] = !habits[idx].checks[iso];
+      save();
+      render();
+    }
+
+    function resetAll() {
+      habits = [];
+      // Clear only our keys
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith(STORAGE_PREFIX)) localStorage.removeItem(k);
+      });
+      render();
+    }
+
+    // ─── Event listeners ──────────────────────────────────────────────────────
+    document.getElementById('addBtn').addEventListener('click', () => {
+      const input = document.getElementById('habitInput');
+      addHabit(input.value);
+      input.value = '';
+      input.focus();
+    });
+
+    document.getElementById('habitInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const input = document.getElementById('habitInput');
+        addHabit(input.value);
+        input.value = '';
+      }
+    });
+
+    // Reset modal
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      document.getElementById('confirmModal').classList.remove('hidden');
+    });
+    document.getElementById('cancelReset').addEventListener('click', () => {
+      document.getElementById('confirmModal').classList.add('hidden');
+    });
+    document.getElementById('confirmReset').addEventListener('click', () => {
+      document.getElementById('confirmModal').classList.add('hidden');
+      resetAll();
+    });
+    // Close modal on backdrop click
+    document.getElementById('confirmModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('confirmModal')) {
+        document.getElementById('confirmModal').classList.add('hidden');
+      }
+    });
+
+    // ─── Boot ─────────────────────────────────────────────────────────────────
+    load();
+    render();
+  </script>
+</body>
+</html>
