@@ -6,6 +6,13 @@ This is the public library for App Studio. Here you can download completed
 projects to load straight into App Studio, and browse prompt examples to help
 you build your own.
 
+> ⚠️ **Everything here is an example.** These projects (and anything an AI builds
+> for you from them) are starting points and learning aids, generated to show
+> what's possible. They may contain mistakes, simplified models, or inaccurate
+> numbers. **Don't rely on any calculation, result, or piece of information for
+> real decisions without checking it yourself.** Treat them as inspiration to
+> adapt — not as a source of truth.
+
 ## Who it's for
 
 Founders, investors, managers, sales people, marketers, teachers, presenters,

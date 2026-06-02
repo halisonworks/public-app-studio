@@ -40,5 +40,5 @@ per habit. Remember everything across reloads.
 
 ## Built example
 
-[`projects/habit-tracker/`](../../projects/habit-tracker/) — built with this add-on.
+[`projects/personal/habit-tracker/`](../../projects/personal/habit-tracker/) — built with this add-on.
 

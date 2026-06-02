@@ -41,5 +41,5 @@ clean swatches.
 
 ## Built example
 
-[`projects/color-palette/`](../../projects/color-palette/) — built with this add-on.
+[`projects/creative/color-palette/`](../../projects/creative/color-palette/) — built with this add-on.
 

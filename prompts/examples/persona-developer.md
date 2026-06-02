@@ -13,7 +13,7 @@ This is a **full HTML page** example (English UI); a Norwegian version is in
 > [`../authoring-guide.md`](../authoring-guide.md).
 >
 > A ready-to-run build of this example lives in
-> [`projects/persona-developer/`](../../projects/persona-developer/).
+> [`projects/educational/persona-developer/`](../../projects/educational/persona-developer/).
 
 ## Simple version
 

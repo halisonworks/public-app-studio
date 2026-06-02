@@ -40,5 +40,5 @@ button. Let me answer with keys 1–4 or by clicking.
 
 ## Built example
 
-[`projects/quiz-game/`](../../projects/quiz-game/) — built with this add-on.
+[`projects/game/quiz-game/`](../../projects/game/quiz-game/) — built with this add-on.
 

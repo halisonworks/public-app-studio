@@ -13,7 +13,7 @@ Dette er et **HTML-side**-eksempel.
 > LLM). Se [`../../authoring-guide.md`](../../authoring-guide.md).
 >
 > En ferdig build av dette eksempelet ligger i
-> [`projects/price-calculator/`](../../../../projects/price-calculator/).
+> [`projects/educational/price-calculator/`](../../../../projects/educational/price-calculator/).
 
 ---
 

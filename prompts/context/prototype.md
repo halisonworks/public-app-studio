@@ -42,5 +42,5 @@ data, and make the navigation and task moves actually work.
 
 ## Built example
 
-[`projects/saas-prototype/`](../../projects/saas-prototype/) — built with this add-on.
+[`projects/prototype/saas-prototype/`](../../projects/prototype/saas-prototype/) — built with this add-on.
 

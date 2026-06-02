@@ -15,7 +15,7 @@ Norwegian version (Norwegian UI strings) is in
 > [`../authoring-guide.md`](../authoring-guide.md).
 >
 > A ready-to-run build of this example lives in
-> [`projects/price-calculator/`](../../projects/price-calculator/).
+> [`projects/educational/price-calculator/`](../../projects/educational/price-calculator/).
 
 ---
 

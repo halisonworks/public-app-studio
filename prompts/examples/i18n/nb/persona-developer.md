@@ -13,7 +13,7 @@ Dette er et **HTML-side**-eksempel.
 > [`../../authoring-guide.md`](../../authoring-guide.md).
 >
 > En ferdig build av dette eksempelet ligger i
-> [`projects/persona-developer/`](../../../../projects/persona-developer/).
+> [`projects/educational/persona-developer/`](../../../../projects/educational/persona-developer/).
 
 ## Enkel versjon
 

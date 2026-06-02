@@ -1,47 +1,34 @@
 # Projects
 
-Ready-made App Studio projects you can download and load.
+Ready-made App Studio projects you can download and load. Projects are organized
+into **category folders** — open one to browse just those, or see
+[`catalog.md`](../catalog.md) for the full table with a screenshot gallery.
 
-## In this library
+## Categories
 
-- [`tip-calculator/`](./tip-calculator/) — split a bill and add a tip (React component)
-- [`price-calculator/`](./price-calculator/) — markup / margin / VAT calculator with school & business modes (HTML · also [Norsk](./price-calculator/i18n/nb/))
-- [`ux-retention-simulator/`](./ux-retention-simulator/) — extractive vs empowering UX cohort-retention dashboard (HTML)
-- [`persona-developer/`](./persona-developer/) — build customer personas with Learn / Practice / Present modes (HTML · also [Norsk](./persona-developer/i18n/nb/))
-- [`habit-tracker/`](./habit-tracker/) — weekly habit tracker with streaks, saved locally (HTML)
-- [`sales-dashboard/`](./sales-dashboard/) — SaaS KPI dashboard, React + recharts (JSX)
-- [`color-palette/`](./color-palette/) — harmonious palette generator with lock & copy (HTML)
-- [`quiz-game/`](./quiz-game/) — 8-question multiple-choice quiz with score (HTML)
-- [`saas-prototype/`](./saas-prototype/) — clickable project-management app mockup (HTML)
-- [`invoice-generator/`](./invoice-generator/) — freelancer/SMB invoice with live totals, print-friendly (HTML)
-- [`pricing-page/`](./pricing-page/) — SaaS pricing page with monthly/annual toggle (HTML)
-- [`flashcards/`](./flashcards/) — flip-card study tool with shuffle and known-tracking (HTML)
-- [`pomodoro-timer/`](./pomodoro-timer/) — focus timer with work/break cycles (HTML)
-- [`infographic-stats/`](./infographic-stats/) — editable share-ready stats infographic (HTML)
-- [`cap-table-simulator/`](./cap-table-simulator/) — funding-round dilution & ownership simulator (HTML)
-- [`runway-forecaster/`](./runway-forecaster/) — startup cash runway & burn projection (HTML)
-- [`loan-amortization/`](./loan-amortization/) — loan/mortgage calculator with schedule + chart (HTML)
-- [`quote-builder/`](./quote-builder/) — sales quote/proposal with discounts, print-friendly (HTML)
-- [`commission-calculator/`](./commission-calculator/) — tiered sales commissions with accelerators (HTML)
-- [`ab-test-calculator/`](./ab-test-calculator/) — A/B test statistical significance (HTML)
-- [`chart-maker/`](./chart-maker/) — paste data → bar/line/donut SVG chart (HTML)
-- [`gantt-chart/`](./gantt-chart/) — project timeline with % complete and today line (HTML)
-- [`rubric-grader/`](./rubric-grader/) — weighted rubric builder + grader, print-friendly (HTML)
-- [`link-in-bio/`](./link-in-bio/) — Linktree-style bio page builder (HTML)
+- [`educational/`](./educational/) — price-calculator, persona-developer, flashcards, rubric-grader
+- [`business/`](./business/) — cap-table-simulator, runway-forecaster, loan-amortization, quote-builder, commission-calculator, ab-test-calculator, gantt-chart, invoice-generator, pricing-page, ux-retention-simulator
+- [`data/`](./data/) — sales-dashboard (React + recharts), chart-maker
+- [`personal/`](./personal/) — habit-tracker, pomodoro-timer, tip-calculator
+- [`creative/`](./creative/) — color-palette, infographic-stats, link-in-bio
+- [`game/`](./game/) — quiz-game
+- [`prototype/`](./prototype/) — saas-prototype
 
-See [`catalog.md`](../catalog.md) for the full table by category.
+`price-calculator` and `persona-developer` also include a Norwegian (`i18n/nb/`)
+version.
 
 ## What a project looks like
 
-Each project lives in its own folder and ships **two files** — the same project
-in two forms, one for each way you might use it:
+Each project lives in a folder **inside its category** and ships **two files** —
+the same project in two forms, one for each way you might use it:
 
 ```
 projects/
-└─ tip-calculator/
-   ├─ tip-calculator.appstudio   ← load straight into App Studio (Import)
-   ├─ tip-calculator.jsx         ← the raw source (copy-paste, read, review)
-   └─ README.md                  ← what it is and how to use it
+└─ personal/
+   └─ tip-calculator/
+      ├─ tip-calculator.appstudio   ← load straight into App Studio (Import)
+      ├─ tip-calculator.jsx         ← the raw source (copy-paste, read, review)
+      └─ README.md                  ← what it is and how to use it
 ```
 
 | File | What it is | How you use it |
@@ -78,7 +65,8 @@ See the root [LICENSE](../LICENSE) for the terms.
 
 ## Adding a project
 
-1. Create a folder named after the project (kebab-case).
+1. Create a folder for the project inside its category folder
+   (`projects/<category>/<project>/`, kebab-case).
 2. Add the raw source (`.jsx` / `.html`) with the header comment at the top.
 3. Generate the matching `.appstudio` file (JSON with `schema`,
    `name`, the source in `code`, and `packaging`). See

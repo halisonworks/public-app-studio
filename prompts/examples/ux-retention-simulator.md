@@ -14,7 +14,7 @@ This is a **full HTML page** example (English UI).
 > [`../authoring-guide.md`](../authoring-guide.md).
 >
 > A ready-to-run build of this example lives in
-> [`projects/ux-retention-simulator/`](../../projects/ux-retention-simulator/).
+> [`projects/business/ux-retention-simulator/`](../../projects/business/ux-retention-simulator/).
 
 It's also a good illustration of giving the model **explicit formulas** and a
 **precise visual spec** when you want a deterministic, reproducible result.

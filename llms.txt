@@ -48,6 +48,10 @@ When a user gives you this file (or its link), do this:
 Do not ask the user to set anything up, install packages, or run commands. They
 will never touch a terminal.
 
+**It's an example.** What you build is a starting point, not a verified product.
+If it involves calculations, data, or factual claims, add a brief one-line note
+reminding the user to check the numbers/facts before relying on them.
+
 ---
 
 ## The rules (follow these exactly)
@@ -138,6 +142,9 @@ paste the result into App Studio.
 If anything doesn't render, tell the assistant "put everything in one file" and
 paste again. Everything stays on your computer — App Studio has no account and no
 cloud.
+
+These projects are examples and starting points — they can contain errors or
+simplified calculations. Check any numbers or facts before relying on them.
 
 ---
 
