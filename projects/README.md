@@ -18,6 +18,16 @@ Ready-made App Studio projects you can download and load.
 - [`flashcards/`](./flashcards/) — flip-card study tool with shuffle and known-tracking (HTML)
 - [`pomodoro-timer/`](./pomodoro-timer/) — focus timer with work/break cycles (HTML)
 - [`infographic-stats/`](./infographic-stats/) — editable share-ready stats infographic (HTML)
+- [`cap-table-simulator/`](./cap-table-simulator/) — funding-round dilution & ownership simulator (HTML)
+- [`runway-forecaster/`](./runway-forecaster/) — startup cash runway & burn projection (HTML)
+- [`loan-amortization/`](./loan-amortization/) — loan/mortgage calculator with schedule + chart (HTML)
+- [`quote-builder/`](./quote-builder/) — sales quote/proposal with discounts, print-friendly (HTML)
+- [`commission-calculator/`](./commission-calculator/) — tiered sales commissions with accelerators (HTML)
+- [`ab-test-calculator/`](./ab-test-calculator/) — A/B test statistical significance (HTML)
+- [`chart-maker/`](./chart-maker/) — paste data → bar/line/donut SVG chart (HTML)
+- [`gantt-chart/`](./gantt-chart/) — project timeline with % complete and today line (HTML)
+- [`rubric-grader/`](./rubric-grader/) — weighted rubric builder + grader, print-friendly (HTML)
+- [`link-in-bio/`](./link-in-bio/) — Linktree-style bio page builder (HTML)
 
 See [`catalog.md`](../catalog.md) for the full table by category.
 

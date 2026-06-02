@@ -8,10 +8,12 @@ single default-exported React component, or a self-contained HTML page.
 
 ## The best, simplest workflow
 
-1. **Upload [`authoring-guide.md`](./authoring-guide.md) to your AI** (or paste
-   it once) at the start of the chat — it carries all the App Studio rules and
-   constraints. For a particular *kind* of app, also upload a category add-on
-   from [`context/`](./context/) (e.g. educational or business).
+1. **Give your AI the rules.** Either **upload [`authoring-guide.md`](./authoring-guide.md)**
+   (or paste it once) at the start of the chat, **or** — if your assistant can
+   browse the web — **point it at this repo**
+   (`https://github.com/halisonworks/public-app-studio`) and ask it to read the
+   guide and a couple of examples. For a particular *kind* of app, also add a
+   category add-on from [`context/`](./context/) (e.g. educational or business).
 2. **Then send a short, simple prompt** — a sentence or two saying what you want.
    The AI fills in the rest within those rules.
 

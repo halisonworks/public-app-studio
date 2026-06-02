@@ -21,10 +21,13 @@ the AI to "put everything in one file" and paste again.
 The simplest, most reliable way: **set the stage once with the App Studio
 document, then keep your own prompts short.**
 
-1. **Set the stage.** Upload
-   [`prompts/authoring-guide.md`](../prompts/authoring-guide.md) to your AI (or
-   paste it once) at the start of the chat. That document carries all the App
-   Studio rules and constraints, so you don't have to repeat them.
+1. **Set the stage.** Give your AI the rules one of two ways: **upload**
+   [`prompts/authoring-guide.md`](../prompts/authoring-guide.md) (or paste it
+   once) at the start of the chat, **or** — if your assistant can browse the web
+   — **point it at this repository**
+   (`https://github.com/halisonworks/public-app-studio`) and ask it to read the
+   authoring guide and a couple of examples. Either way it learns what App Studio
+   runs and how the projects are built, so you don't have to repeat it.
 2. **Ask, simply.** Send a short prompt — a sentence or two — like "a habit
    tracker for the week" or "an interactive tip calculator." The AI fills in the
    rest within the rules from step 1. (No guide uploaded? Use a template from

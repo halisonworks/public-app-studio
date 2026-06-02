@@ -5,9 +5,14 @@ Gemini, Grok): what App Studio can run, and the rules and constraints to follow.
 
 ## The best, simplest way to use it
 
-1. **Upload this document to your AI.** Attach `authoring-guide.md` (or paste the
-   block below once) at the start of a new chat. It carries all the rules and
-   constraints, so you don't have to repeat them.
+1. **Give your AI the rules — two easy ways:**
+   - **Upload this document** (`authoring-guide.md`), or paste the block below,
+     at the start of a new chat; **or**
+   - **Point your AI at this repository** — if your assistant can browse the web,
+     give it the link **https://github.com/halisonworks/public-app-studio** and
+     ask it to *read the authoring guide and a couple of examples* so it learns
+     what App Studio runs and how the projects are built. (Claude, ChatGPT, and
+     Gemini can read a public repo this way.)
 2. **Then send a short, simple prompt** — a sentence or two describing what you
    want. The AI fills in the rest *within the rules above*. For example:
    *"Build a weekly habit tracker."* or *"Make an interactive tip calculator."*
