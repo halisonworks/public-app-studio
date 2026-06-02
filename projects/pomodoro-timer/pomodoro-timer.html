@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<!--
+  Pomodoro Timer — Halison App Studio example
+
+  A focus timer with work and break cycles, a circular countdown, adjustable
+  durations, and a daily session count. Saves your settings to the browser.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pomodoro Timer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            pomored: { DEFAULT: '#e05c5c', dark: '#c94a4a' },
+            pomegreen: { DEFAULT: '#4caf82', dark: '#3a9068' },
+            pomoblue: { DEFAULT: '#4c8faf', dark: '#3a7a96' },
+            surface: '#1e1e2e',
+            panel: '#2a2a3e',
+            border: '#3a3a52',
+            text: '#e8e8f0',
+            muted: '#8888a8',
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body { background-color: #1e1e2e; color: #e8e8f0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    .ring-track { stroke: #3a3a52; }
+    .ring-progress { transition: stroke-dashoffset 0.5s linear; transform-origin: center; transform: rotate(-90deg); }
+    .phase-work .ring-progress { stroke: #e05c5c; }
+    .phase-short .ring-progress { stroke: #4caf82; }
+    .phase-long .ring-progress { stroke: #4c8faf; }
+    .phase-work .phase-badge { background-color: #e05c5c22; color: #e05c5c; border: 1px solid #e05c5c55; }
+    .phase-short .phase-badge { background-color: #4caf8222; color: #4caf82; border: 1px solid #4caf8255; }
+    .phase-long .phase-badge { background-color: #4c8faf22; color: #4c8faf; border: 1px solid #4c8faf55; }
+    .phase-work .timer-text { color: #e05c5c; }
+    .phase-short .timer-text { color: #4caf82; }
+    .phase-long .timer-text { color: #4c8faf; }
+    .btn-primary { background-color: #e05c5c; }
+    .btn-primary:hover { background-color: #c94a4a; }
+    .phase-short .btn-primary { background-color: #4caf82; }
+    .phase-short .btn-primary:hover { background-color: #3a9068; }
+    .phase-long .btn-primary { background-color: #4c8faf; }
+    .phase-long .btn-primary:hover { background-color: #3a7a96; }
+    input[type=range] { accent-color: #e05c5c; }
+    input[type=number] { background-color: #2a2a3e; border: 1px solid #3a3a52; color: #e8e8f0; border-radius: 0.375rem; padding: 0.375rem 0.5rem; width: 5rem; text-align: center; }
+    input[type=number]:focus { outline: none; border-color: #e05c5c; }
+    .dot-indicator { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .dot-done { background-color: #e05c5c; }
+    .dot-pending { background-color: #3a3a52; }
+    .settings-panel { background-color: #2a2a3e; border: 1px solid #3a3a52; border-radius: 1rem; }
+    details summary { cursor: pointer; user-select: none; list-style: none; }
+    details summary::-webkit-details-marker { display: none; }
+    details[open] .chevron { transform: rotate(180deg); }
+    .chevron { transition: transform 0.2s; display: inline-block; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+  <div id="app" class="phase-work w-full max-w-sm flex flex-col items-center gap-6">
+
+    <!-- Title -->
+    <h1 class="text-2xl font-semibold tracking-widest uppercase text-muted">Pomodoro</h1>
+
+    <!-- Phase badge -->
+    <span id="phaseBadge" class="phase-badge text-xs font-semibold uppercase tracking-widest px-3 py-1 rounded-full">Focus</span>
+
+    <!-- Circular ring + timer -->
+    <div class="relative flex items-center justify-center" style="width:240px;height:240px;">
+      <svg width="240" height="240" viewBox="0 0 240 240" class="absolute inset-0">
+        <circle class="ring-track" cx="120" cy="120" r="108" fill="none" stroke-width="10"/>
+        <circle id="ringProgress" class="ring-progress" cx="120" cy="120" r="108" fill="none" stroke-width="10"
+          stroke-linecap="round"
+          stroke-dasharray="678.58"
+          stroke-dashoffset="0"/>
+      </svg>
+      <div class="flex flex-col items-center z-10">
+        <span id="timerDisplay" class="timer-text text-6xl font-mono font-bold tabular-nums">25:00</span>
+        <span id="sessionDots" class="flex gap-1 mt-3"></span>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="flex gap-3">
+      <button id="btnStartPause"
+        class="btn-primary text-white font-semibold px-8 py-3 rounded-xl text-lg shadow transition-colors">
+        Start
+      </button>
+      <button id="btnReset"
+        class="bg-panel border border-border text-muted hover:text-text hover:border-muted font-semibold px-5 py-3 rounded-xl text-lg transition-colors">
+        Reset
+      </button>
+    </div>
+
+    <!-- Today's sessions count -->
+    <div class="flex items-center gap-2 text-sm text-muted">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+      </svg>
+      <span>Today: <span id="sessionsCount" class="font-semibold text-text">0</span> focus sessions completed</span>
+    </div>
+
+    <!-- Settings accordion -->
+    <details class="settings-panel w-full p-4" id="settingsDetails">
+      <summary class="flex items-center justify-between text-sm font-semibold text-muted uppercase tracking-widest">
+        <span>Settings</span>
+        <span class="chevron text-muted">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+          </svg>
+        </span>
+      </summary>
+      <div class="mt-4 flex flex-col gap-4">
+        <div class="grid grid-cols-3 gap-3 text-center text-xs text-muted uppercase tracking-wide">
+          <span>Focus</span>
+          <span>Short break</span>
+          <span>Long break</span>
+        </div>
+        <div class="grid grid-cols-3 gap-3 text-center">
+          <div class="flex flex-col items-center gap-1">
+            <input type="number" id="setWork" min="1" max="120" value="25" />
+            <span class="text-xs text-muted">min</span>
+          </div>
+          <div class="flex flex-col items-center gap-1">
+            <input type="number" id="setShort" min="1" max="60" value="5" />
+            <span class="text-xs text-muted">min</span>
+          </div>
+          <div class="flex flex-col items-center gap-1">
+            <input type="number" id="setLong" min="1" max="120" value="15" />
+            <span class="text-xs text-muted">min</span>
+          </div>
+        </div>
+        <div class="border-t border-border pt-3 flex flex-col gap-2">
+          <label class="flex items-center gap-2 cursor-pointer text-sm text-muted">
+            <input type="checkbox" id="setSound" checked class="w-4 h-4 accent-pomored rounded" />
+            <span>Play beep at phase end</span>
+          </label>
+          <button id="btnApply"
+            class="mt-1 w-full bg-panel border border-border hover:border-muted text-text text-sm font-semibold py-2 rounded-lg transition-colors">
+            Apply
+          </button>
+          <button id="btnResetSessions"
+            class="w-full text-muted text-xs hover:text-text py-1 transition-colors">
+            Reset today's session count
+          </button>
+        </div>
+      </div>
+    </details>
+
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ── Constants ──────────────────────────────────────────────────────────
+      var RING_RADIUS = 108;
+      var RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS; // ≈ 678.58
+      var STORAGE_KEY = 'pomodoro_v1';
+      var TODAY_KEY = 'pomodoro_today_v1';
+
+      // ── State ──────────────────────────────────────────────────────────────
+      var settings = { work: 25, short: 5, long: 15, sound: true };
+      var PHASES = ['work', 'short', 'long'];
+      // cycle: 4 work sessions then 1 long break; between works → short break
+      var currentPhase = 'work'; // 'work' | 'short' | 'long'
+      var workSessionsInCycle = 0; // counts work sessions completed in current cycle
+      var totalSeconds = 0;
+      var remainingSeconds = 0;
+      var running = false;
+      var intervalId = null;
+      var todaySessions = 0;
+      var todayDate = '';
+
+      // ── DOM ────────────────────────────────────────────────────────────────
+      var app = document.getElementById('app');
+      var phaseBadge = document.getElementById('phaseBadge');
+      var ringProgress = document.getElementById('ringProgress');
+      var timerDisplay = document.getElementById('timerDisplay');
+      var sessionDots = document.getElementById('sessionDots');
+      var sessionsCount = document.getElementById('sessionsCount');
+      var btnStartPause = document.getElementById('btnStartPause');
+      var btnReset = document.getElementById('btnReset');
+      var setWork = document.getElementById('setWork');
+      var setShort = document.getElementById('setShort');
+      var setLong = document.getElementById('setLong');
+      var setSound = document.getElementById('setSound');
+      var btnApply = document.getElementById('btnApply');
+      var btnResetSessions = document.getElementById('btnResetSessions');
+
+      // ── Persistence ────────────────────────────────────────────────────────
+      function loadStorage() {
+        try {
+          var raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            if (parsed.work) settings.work = Math.max(1, Math.min(120, parseInt(parsed.work, 10) || 25));
+            if (parsed.short) settings.short = Math.max(1, Math.min(60, parseInt(parsed.short, 10) || 5));
+            if (parsed.long) settings.long = Math.max(1, Math.min(120, parseInt(parsed.long, 10) || 15));
+            settings.sound = parsed.sound !== false;
+          }
+        } catch (e) { /* ignore */ }
+
+        try {
+          var todayRaw = localStorage.getItem(TODAY_KEY);
+          var todayStr = new Date().toISOString().slice(0, 10);
+          if (todayRaw) {
+            var t = JSON.parse(todayRaw);
+            if (t.date === todayStr) {
+              todaySessions = parseInt(t.count, 10) || 0;
+              todayDate = todayStr;
+            } else {
+              todaySessions = 0;
+              todayDate = todayStr;
+            }
+          } else {
+            todaySessions = 0;
+            todayDate = todayStr;
+          }
+        } catch (e) {
+          todaySessions = 0;
+          todayDate = new Date().toISOString().slice(0, 10);
+        }
+      }
+
+      function saveSettings() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+        } catch (e) { /* ignore */ }
+      }
+
+      function saveTodaySessions() {
+        try {
+          var todayStr = new Date().toISOString().slice(0, 10);
+          // If the date rolled over, reset
+          if (todayStr !== todayDate) {
+            todaySessions = 0;
+            todayDate = todayStr;
+          }
+          localStorage.setItem(TODAY_KEY, JSON.stringify({ date: todayDate, count: todaySessions }));
+        } catch (e) { /* ignore */ }
+      }
+
+      // ── Audio beep ─────────────────────────────────────────────────────────
+      function playBeep() {
+        if (!settings.sound) return;
+        try {
+          var AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) return;
+          var ctx = new AudioCtx();
+          function tone(freq, startTime, duration, gain) {
+            var osc = ctx.createOscillator();
+            var gainNode = ctx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, startTime);
+            gainNode.gain.setValueAtTime(gain, startTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+          }
+          var now = ctx.currentTime;
+          tone(880, now, 0.25, 0.4);
+          tone(1100, now + 0.28, 0.2, 0.3);
+          tone(1320, now + 0.52, 0.35, 0.25);
+          // close after sounds finish
+          setTimeout(function () { try { ctx.close(); } catch (e) { /* ignore */ } }, 1200);
+        } catch (e) { /* ignore */ }
+      }
+
+      // ── Timer logic ────────────────────────────────────────────────────────
+      function phaseDuration(phase) {
+        if (phase === 'work') return settings.work * 60;
+        if (phase === 'short') return settings.short * 60;
+        return settings.long * 60;
+      }
+
+      function phaseLabel(phase) {
+        if (phase === 'work') return 'Focus';
+        if (phase === 'short') return 'Short Break';
+        return 'Long Break';
+      }
+
+      function phaseCssClass(phase) {
+        if (phase === 'work') return 'phase-work';
+        if (phase === 'short') return 'phase-short';
+        return 'phase-long';
+      }
+
+      function formatTime(sec) {
+        var m = Math.floor(sec / 60);
+        var s = sec % 60;
+        return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+      }
+
+      function updateRing() {
+        var fraction = totalSeconds > 0 ? remainingSeconds / totalSeconds : 1;
+        var offset = RING_CIRCUMFERENCE * (1 - fraction);
+        ringProgress.setAttribute('stroke-dashoffset', offset.toFixed(2));
+      }
+
+      function updateDots() {
+        sessionDots.innerHTML = '';
+        for (var i = 0; i < 4; i++) {
+          var dot = document.createElement('span');
+          dot.className = 'dot-indicator ' + (i < workSessionsInCycle ? 'dot-done' : 'dot-pending');
+          sessionDots.appendChild(dot);
+        }
+      }
+
+      function updateUI() {
+        var label = formatTime(remainingSeconds);
+        timerDisplay.textContent = label;
+        document.title = label + ' — ' + phaseLabel(currentPhase) + ' | Pomodoro';
+        updateRing();
+        updateDots();
+        phaseBadge.textContent = phaseLabel(currentPhase);
+        // Remove old phase classes
+        app.classList.remove('phase-work', 'phase-short', 'phase-long');
+        app.classList.add(phaseCssClass(currentPhase));
+        sessionsCount.textContent = todaySessions;
+        btnStartPause.textContent = running ? 'Pause' : (remainingSeconds < totalSeconds ? 'Resume' : 'Start');
+      }
+
+      function syncInputsToSettings() {
+        setWork.value = settings.work;
+        setShort.value = settings.short;
+        setLong.value = settings.long;
+        setSound.checked = settings.sound;
+      }
+
+      function initPhase(phase) {
+        currentPhase = phase;
+        totalSeconds = phaseDuration(phase);
+        remainingSeconds = totalSeconds;
+        running = false;
+        clearTimer();
+        updateUI();
+      }
+
+      function clearTimer() {
+        if (intervalId !== null) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+      }
+
+      function tick() {
+        if (remainingSeconds <= 0) {
+          clearTimer();
+          running = false;
+          onPhaseEnd();
+          return;
+        }
+        remainingSeconds--;
+        updateUI();
+      }
+
+      function onPhaseEnd() {
+        playBeep();
+        if (currentPhase === 'work') {
+          workSessionsInCycle++;
+          todaySessions++;
+          saveTodaySessions();
+          if (workSessionsInCycle >= 4) {
+            workSessionsInCycle = 0;
+            initPhase('long');
+          } else {
+            initPhase('short');
+          }
+        } else {
+          initPhase('work');
+        }
+        // Auto-advance: start next phase automatically
+        startTimer();
+      }
+
+      function startTimer() {
+        if (running) return;
+        running = true;
+        intervalId = setInterval(tick, 1000);
+        updateUI();
+      }
+
+      function pauseTimer() {
+        running = false;
+        clearTimer();
+        updateUI();
+      }
+
+      function resetTimer() {
+        clearTimer();
+        running = false;
+        initPhase(currentPhase);
+        updateUI();
+      }
+
+      // ── Event handlers ─────────────────────────────────────────────────────
+      btnStartPause.addEventListener('click', function () {
+        if (running) {
+          pauseTimer();
+        } else {
+          startTimer();
+        }
+      });
+
+      btnReset.addEventListener('click', function () {
+        resetTimer();
+      });
+
+      btnApply.addEventListener('click', function () {
+        var w = parseInt(setWork.value, 10);
+        var s = parseInt(setShort.value, 10);
+        var l = parseInt(setLong.value, 10);
+        if (!isNaN(w) && w >= 1 && w <= 120) settings.work = w;
+        if (!isNaN(s) && s >= 1 && s <= 60) settings.short = s;
+        if (!isNaN(l) && l >= 1 && l <= 120) settings.long = l;
+        settings.sound = setSound.checked;
+        saveSettings();
+        syncInputsToSettings();
+        // Re-init current phase with new duration only if timer not running
+        if (!running) {
+          totalSeconds = phaseDuration(currentPhase);
+          remainingSeconds = totalSeconds;
+          updateUI();
+        }
+        // Close the settings panel
+        document.getElementById('settingsDetails').removeAttribute('open');
+      });
+
+      btnResetSessions.addEventListener('click', function () {
+        todaySessions = 0;
+        saveTodaySessions();
+        updateUI();
+      });
+
+      // ── Init ───────────────────────────────────────────────────────────────
+      loadStorage();
+      syncInputsToSettings();
+      ringProgress.setAttribute('stroke-dasharray', RING_CIRCUMFERENCE.toFixed(2));
+      workSessionsInCycle = 0;
+      initPhase('work');
+
+    }());
+  </script>
+</body>
+</html>

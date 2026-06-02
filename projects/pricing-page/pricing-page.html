@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<!--
+  Pricing Page — Halison App Studio example
+
+  A SaaS pricing page: three tiers with a monthly/annual toggle, a highlighted
+  plan, and a feature-comparison table.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pricing — Nexus SaaS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .toggle-track { transition: background-color 0.2s ease; }
+    .toggle-thumb { transition: transform 0.2s ease; }
+    .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .card-hover:hover { transform: translateY(-4px); }
+    .toast {
+      animation: slideIn 0.35s ease, fadeOut 0.4s ease 2.6s forwards;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to   { opacity: 0; pointer-events: none; }
+    }
+    .badge-popular {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    }
+    .gradient-hero {
+      background: linear-gradient(160deg, #0f172a 0%, #1e1b4b 60%, #0f172a 100%);
+    }
+    .price-transition {
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+
+  <!-- Hero / Header -->
+  <section class="gradient-hero py-20 px-4 text-center text-white">
+    <p class="text-indigo-300 text-sm font-semibold tracking-widest uppercase mb-3">Simple, transparent pricing</p>
+    <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">Plans that scale with you</h1>
+    <p class="text-slate-300 text-lg max-w-xl mx-auto mb-10">
+      Start free. Upgrade when you need to. Cancel anytime — no questions asked.
+    </p>
+
+    <!-- Billing Toggle -->
+    <div class="inline-flex items-center gap-3 bg-white/10 backdrop-blur rounded-full px-5 py-2.5">
+      <span id="label-monthly" class="text-sm font-semibold text-white">Monthly</span>
+      <button
+        id="billing-toggle"
+        role="switch"
+        aria-checked="false"
+        aria-label="Toggle annual billing"
+        onclick="toggleBilling()"
+        class="toggle-track relative w-12 h-6 rounded-full bg-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-1 focus:ring-offset-transparent"
+      >
+        <span id="toggle-thumb" class="toggle-thumb absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow"></span>
+      </button>
+      <span id="label-annual" class="text-sm font-medium text-slate-300">
+        Annual <span class="ml-1 bg-emerald-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">2 months free</span>
+      </span>
+    </div>
+  </section>
+
+  <!-- Pricing Cards -->
+  <section class="max-w-6xl mx-auto px-4 -mt-8 pb-16">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+
+      <!-- Starter -->
+      <div class="card-hover bg-white rounded-2xl shadow-md border border-slate-200 p-8 flex flex-col">
+        <div class="mb-6">
+          <h2 class="text-lg font-bold text-slate-700 mb-1">Starter</h2>
+          <p class="text-slate-500 text-sm">Perfect for individuals and small side projects.</p>
+        </div>
+        <div class="mb-6">
+          <div class="flex items-end gap-1">
+            <span class="text-4xl font-extrabold text-slate-900 price-transition" id="price-starter">$9</span>
+            <span class="text-slate-500 text-sm mb-1.5">/mo</span>
+          </div>
+          <p class="text-slate-400 text-xs mt-1" id="billed-starter">Billed monthly</p>
+        </div>
+        <ul class="space-y-3 text-sm text-slate-700 mb-8 flex-1">
+          <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold text-base">✓</span> 3 projects</li>
+          <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold text-base">✓</span> 5 GB storage</li>
+          <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold text-base">✓</span> Basic analytics</li>
+          <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold text-base">✓</span> Email support</li>
+          <li class="flex items-center gap-2"><span class="text-slate-300 font-bold text-base">✕</span> <span class="text-slate-400">Custom domain</span></li>
+          <li class="flex items-center gap-2"><span class="text-slate-300 font-bold text-base">✕</span> <span class="text-slate-400">Team seats</span></li>
+          <li class="flex items-center gap-2"><span class="text-slate-300 font-bold text-base">✕</span> <span class="text-slate-400">Priority support</span></li>
+          <li class="flex items-center gap-2"><span class="text-slate-300 font-bold text-base">✕</span> <span class="text-slate-400">API access</span></li>
+        </ul>
+        <button
+          onclick="selectPlan('Starter')"
+          class="w-full py-3 rounded-xl border-2 border-indigo-500 text-indigo-600 font-semibold text-sm hover:bg-indigo-50 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        >
+          Get started free
+        </button>
+      </div>
+
+      <!-- Pro (Most Popular) -->
+      <div class="card-hover relative bg-gradient-to-b from-indigo-600 to-violet-700 rounded-2xl shadow-2xl p-8 flex flex-col text-white -mt-2 md:-mt-4">
+        <div class="absolute -top-3.5 left-1/2 -translate-x-1/2">
+          <span class="badge-popular text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg tracking-wide uppercase">Most Popular</span>
+        </div>
+        <div class="mb-6 mt-3">
+          <h2 class="text-lg font-bold mb-1">Pro</h2>
+          <p class="text-indigo-200 text-sm">For growing teams who need more power and collaboration.</p>
+        </div>
+        <div class="mb-6">
+          <div class="flex items-end gap-1">
+            <span class="text-4xl font-extrabold price-transition" id="price-pro">$29</span>
+            <span class="text-indigo-200 text-sm mb-1.5">/mo</span>
+          </div>
+          <p class="text-indigo-300 text-xs mt-1" id="billed-pro">Billed monthly</p>
+        </div>
+        <ul class="space-y-3 text-sm text-indigo-100 mb-8 flex-1">
+          <li class="flex items-center gap-2"><span class="text-emerald-300 font-bold text-base">✓</span> Unlimited projects</li>
+          <li class="flex items-center gap-2"><span class="text-emerald-300 font-bold text-base">✓</span> 50 GB storage</li>
+          <li class="flex items-center gap-2"><span class="text-emerald-300 font-bold text-base">✓</span> Advanced analytics</li>
+          <li class="flex items-center gap-2"><span class="text-emerald-300 font-bold text-base">✓</span> Priority email support</li>
+          <li class="flex items-center gap-2"><span class="text-emerald-300 font-bold text-base">✓</span> Custom domain</li>
+          <li class="flex items-center gap-2"><span class="text-emerald-300 font-bold text-base">✓</span> Up to 5 team seats</li>
+          <li class="flex items-center gap-2"><span class="text-slate-400 font-bold text-base">✕</span> <span class="text-indigo-300/70">Priority support (24 h)</span></li>
+          <li class="flex items-center gap-2"><span class="text-slate-400 font-bold text-base">✕</span> <span class="text-indigo-300/70">API access</span></li>
+        </ul>
+        <button
+          onclick="selectPlan('Pro')"
+          class="w-full py-3 rounded-xl bg-white text-indigo-700 font-semibold text-sm hover:bg-indigo-50 transition-colors shadow-lg focus:outline-none focus:ring-2 focus:ring-white"
+        >
+          Start with Pro
+        </button>
+      </div>
+
+      <!-- Business -->
+      <div class="card-hover bg-white rounded-2xl shadow-md border border-slate-200 p-8 flex flex-col">
+        <div class="mb-6">
+          <h2 class="text-lg font-bold text-slate-700 mb-1">Business</h2>
+          <p class="text-slate-500 text-sm">Enterprise-grade features for larger organisations.</p>
+        </div>
+        <div class="mb-6">
+          <div class="flex items-end gap-1">
+            <span class="text-4xl font-extrabold text-slate-900 price-transition" id="price-business">$79</span>
+            <span class="text-slate-500 text-sm mb-1.5">/mo</span>
+          </div>
+          <p class="text-slate-400 text-xs mt-1" id="billed-business">Billed monthly</p>
+        </div>
+        <ul class="space-y-3 text-sm text-slate-700 mb-8 flex-1">
+          <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold text-base">✓</span> Unlimited projects</li>
+          <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold text-base">✓</span> 500 GB storage</li>
+          <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold text-base">✓</span> Full analytics suite</li>
+          <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold text-base">✓</span> Dedicated account manager</li>
+          <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold text-base">✓</span> Custom domain + SSL</li>
+          <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold text-base">✓</span> Unlimited team seats</li>
+          <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold text-base">✓</span> Priority support (24 h)</li>
+          <li class="flex items-center gap-2"><span class="text-emerald-500 font-bold text-base">✓</span> Full API access</li>
+        </ul>
+        <button
+          onclick="selectPlan('Business')"
+          class="w-full py-3 rounded-xl border-2 border-indigo-500 text-indigo-600 font-semibold text-sm hover:bg-indigo-50 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        >
+          Contact sales
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Feature Comparison Table -->
+  <section class="max-w-5xl mx-auto px-4 pb-24">
+    <h2 class="text-2xl font-bold text-center text-slate-800 mb-2">Compare all features</h2>
+    <p class="text-center text-slate-500 text-sm mb-10">Everything you need to decide which plan is right for you.</p>
+
+    <div class="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
+      <table class="w-full text-sm text-left">
+        <thead>
+          <tr class="bg-slate-100 border-b border-slate-200">
+            <th class="py-4 px-6 font-semibold text-slate-600 w-1/2">Feature</th>
+            <th class="py-4 px-4 text-center font-semibold text-slate-600">Starter</th>
+            <th class="py-4 px-4 text-center font-bold text-indigo-700 bg-indigo-50">Pro</th>
+            <th class="py-4 px-4 text-center font-semibold text-slate-600">Business</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr class="bg-slate-50">
+            <td class="py-3 px-6 font-semibold text-slate-500 text-xs uppercase tracking-wider" colspan="4">Core</td>
+          </tr>
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3.5 px-6 text-slate-700">Projects</td>
+            <td class="py-3.5 px-4 text-center text-slate-600">3</td>
+            <td class="py-3.5 px-4 text-center font-medium text-indigo-700 bg-indigo-50/50">Unlimited</td>
+            <td class="py-3.5 px-4 text-center text-slate-600">Unlimited</td>
+          </tr>
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3.5 px-6 text-slate-700">Storage</td>
+            <td class="py-3.5 px-4 text-center text-slate-600">5 GB</td>
+            <td class="py-3.5 px-4 text-center font-medium text-indigo-700 bg-indigo-50/50">50 GB</td>
+            <td class="py-3.5 px-4 text-center text-slate-600">500 GB</td>
+          </tr>
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3.5 px-6 text-slate-700">Team seats</td>
+            <td class="py-3.5 px-4 text-center"><span class="text-slate-300 text-lg">✕</span></td>
+            <td class="py-3.5 px-4 text-center font-medium text-indigo-700 bg-indigo-50/50">5</td>
+            <td class="py-3.5 px-4 text-center text-slate-600">Unlimited</td>
+          </tr>
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3.5 px-6 text-slate-700">Custom domain</td>
+            <td class="py-3.5 px-4 text-center"><span class="text-slate-300 text-lg">✕</span></td>
+            <td class="py-3.5 px-4 text-center bg-indigo-50/50"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+            <td class="py-3.5 px-4 text-center"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+          </tr>
+          <tr class="bg-slate-50">
+            <td class="py-3 px-6 font-semibold text-slate-500 text-xs uppercase tracking-wider" colspan="4">Analytics</td>
+          </tr>
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3.5 px-6 text-slate-700">Page views &amp; sessions</td>
+            <td class="py-3.5 px-4 text-center"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+            <td class="py-3.5 px-4 text-center bg-indigo-50/50"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+            <td class="py-3.5 px-4 text-center"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+          </tr>
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3.5 px-6 text-slate-700">Funnel analysis</td>
+            <td class="py-3.5 px-4 text-center"><span class="text-slate-300 text-lg">✕</span></td>
+            <td class="py-3.5 px-4 text-center bg-indigo-50/50"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+            <td class="py-3.5 px-4 text-center"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+          </tr>
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3.5 px-6 text-slate-700">Custom dashboards</td>
+            <td class="py-3.5 px-4 text-center"><span class="text-slate-300 text-lg">✕</span></td>
+            <td class="py-3.5 px-4 text-center bg-indigo-50/50"><span class="text-slate-300 text-lg">✕</span></td>
+            <td class="py-3.5 px-4 text-center"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+          </tr>
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3.5 px-6 text-slate-700">Data export (CSV / JSON)</td>
+            <td class="py-3.5 px-4 text-center"><span class="text-slate-300 text-lg">✕</span></td>
+            <td class="py-3.5 px-4 text-center bg-indigo-50/50"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+            <td class="py-3.5 px-4 text-center"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+          </tr>
+          <tr class="bg-slate-50">
+            <td class="py-3 px-6 font-semibold text-slate-500 text-xs uppercase tracking-wider" colspan="4">Integrations &amp; API</td>
+          </tr>
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3.5 px-6 text-slate-700">Slack &amp; email webhooks</td>
+            <td class="py-3.5 px-4 text-center"><span class="text-slate-300 text-lg">✕</span></td>
+            <td class="py-3.5 px-4 text-center bg-indigo-50/50"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+            <td class="py-3.5 px-4 text-center"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+          </tr>
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3.5 px-6 text-slate-700">REST API access</td>
+            <td class="py-3.5 px-4 text-center"><span class="text-slate-300 text-lg">✕</span></td>
+            <td class="py-3.5 px-4 text-center bg-indigo-50/50"><span class="text-slate-300 text-lg">✕</span></td>
+            <td class="py-3.5 px-4 text-center"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+          </tr>
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3.5 px-6 text-slate-700">SSO / SAML</td>
+            <td class="py-3.5 px-4 text-center"><span class="text-slate-300 text-lg">✕</span></td>
+            <td class="py-3.5 px-4 text-center bg-indigo-50/50"><span class="text-slate-300 text-lg">✕</span></td>
+            <td class="py-3.5 px-4 text-center"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+          </tr>
+          <tr class="bg-slate-50">
+            <td class="py-3 px-6 font-semibold text-slate-500 text-xs uppercase tracking-wider" colspan="4">Support</td>
+          </tr>
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3.5 px-6 text-slate-700">Community forum</td>
+            <td class="py-3.5 px-4 text-center"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+            <td class="py-3.5 px-4 text-center bg-indigo-50/50"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+            <td class="py-3.5 px-4 text-center"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+          </tr>
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3.5 px-6 text-slate-700">Email support</td>
+            <td class="py-3.5 px-4 text-center"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+            <td class="py-3.5 px-4 text-center bg-indigo-50/50"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+            <td class="py-3.5 px-4 text-center"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+          </tr>
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3.5 px-6 text-slate-700">Priority support (24 h SLA)</td>
+            <td class="py-3.5 px-4 text-center"><span class="text-slate-300 text-lg">✕</span></td>
+            <td class="py-3.5 px-4 text-center bg-indigo-50/50"><span class="text-slate-300 text-lg">✕</span></td>
+            <td class="py-3.5 px-4 text-center"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+          </tr>
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3.5 px-6 text-slate-700">Dedicated account manager</td>
+            <td class="py-3.5 px-4 text-center"><span class="text-slate-300 text-lg">✕</span></td>
+            <td class="py-3.5 px-4 text-center bg-indigo-50/50"><span class="text-slate-300 text-lg">✕</span></td>
+            <td class="py-3.5 px-4 text-center"><span class="text-emerald-500 text-lg font-bold">✓</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- FAQ strip -->
+  <section class="bg-white border-t border-slate-100 py-16 px-4">
+    <div class="max-w-2xl mx-auto text-center">
+      <h2 class="text-xl font-bold text-slate-800 mb-2">Still have questions?</h2>
+      <p class="text-slate-500 text-sm mb-6">Our team is happy to walk you through any plan or help you find the right fit.</p>
+      <button
+        onclick="selectPlan('custom quote')"
+        class="inline-block px-8 py-3 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition-colors shadow focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2"
+      >
+        Talk to sales
+      </button>
+    </div>
+  </section>
+
+  <!-- Toast container -->
+  <div id="toast-container" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-3 pointer-events-none"></div>
+
+  <script>
+    var isAnnual = false;
+
+    var prices = {
+      starter:  { monthly: 9,  annual: 7  },
+      pro:      { monthly: 29, annual: 24 },
+      business: { monthly: 79, annual: 66 }
+    };
+
+    function toggleBilling() {
+      isAnnual = !isAnnual;
+
+      var toggle = document.getElementById('billing-toggle');
+      var thumb  = document.getElementById('toggle-thumb');
+      var labelM = document.getElementById('label-monthly');
+      var labelA = document.getElementById('label-annual');
+
+      toggle.setAttribute('aria-checked', isAnnual ? 'true' : 'false');
+      toggle.classList.toggle('bg-indigo-500', isAnnual);
+      toggle.classList.toggle('bg-slate-600', !isAnnual);
+      thumb.style.transform = isAnnual ? 'translateX(24px)' : 'translateX(0)';
+      labelM.classList.toggle('text-white', !isAnnual);
+      labelM.classList.toggle('text-slate-300', isAnnual);
+      labelA.classList.toggle('text-white', isAnnual);
+      labelA.classList.toggle('text-slate-300', !isAnnual);
+
+      updatePrices();
+    }
+
+    function updatePrices() {
+      var tiers = ['starter', 'pro', 'business'];
+      tiers.forEach(function(tier) {
+        var el     = document.getElementById('price-' + tier);
+        var sub    = document.getElementById('billed-' + tier);
+        var amount = isAnnual ? prices[tier].annual : prices[tier].monthly;
+
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(-6px)';
+        setTimeout(function() {
+          el.textContent = '$' + amount;
+          el.style.opacity = '1';
+          el.style.transform = 'translateY(0)';
+        }, 120);
+
+        sub.textContent = isAnnual
+          ? 'Billed annually — save ' + Math.round((1 - prices[tier].annual / prices[tier].monthly) * 100) + '%'
+          : 'Billed monthly';
+      });
+    }
+
+    function selectPlan(planName) {
+      showToast('Selected <strong>' + planName + '</strong> — we\'ll be in touch soon!');
+    }
+
+    function showToast(html) {
+      var container = document.getElementById('toast-container');
+
+      var toast = document.createElement('div');
+      toast.className = 'toast pointer-events-auto flex items-center gap-3 bg-slate-900 text-white text-sm font-medium px-5 py-3.5 rounded-2xl shadow-2xl';
+      toast.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg><span>' + html + '</span>';
+
+      container.appendChild(toast);
+
+      setTimeout(function() {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 3200);
+    }
+  </script>
+</body>
+</html>

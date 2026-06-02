@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<!--
+  Flashcards — Halison App Studio example
+
+  A flashcard study tool: flip cards, shuffle, mark what you know, and track
+  progress. Edit the deck inline to study any topic. Saves to your browser.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flashcards — Marketing Terms</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .card-scene {
+      perspective: 1000px;
+    }
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+    .card-inner.flipped {
+      transform: rotateY(180deg);
+    }
+    .card-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .card-back {
+      transform: rotateY(180deg);
+    }
+    .progress-bar-inner {
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-violet-50 to-indigo-100 min-h-screen flex flex-col items-center justify-center p-4 font-sans">
+
+  <div class="w-full max-w-xl flex flex-col gap-5">
+
+    <!-- Header -->
+    <div class="text-center">
+      <h1 class="text-2xl font-bold text-indigo-800 tracking-tight">Marketing Flashcards</h1>
+      <p class="text-sm text-indigo-400 mt-1">Click the card or press <kbd class="bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded text-xs font-mono">Space</kbd> to flip</p>
+    </div>
+
+    <!-- Progress row -->
+    <div class="flex items-center justify-between text-sm text-indigo-600 font-medium px-1">
+      <span id="card-counter">Card 1 / 10</span>
+      <span id="known-counter">0 known</span>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="w-full bg-indigo-100 rounded-full h-2">
+      <div id="progress-bar" class="progress-bar-inner bg-indigo-500 h-2 rounded-full" style="width: 0%"></div>
+    </div>
+
+    <!-- Card -->
+    <div class="card-scene w-full" style="height: 260px;">
+      <div class="card-inner" id="card-inner">
+        <!-- Front -->
+        <div class="card-face card-front bg-white shadow-xl border border-indigo-100 cursor-pointer select-none">
+          <span class="text-xs font-semibold uppercase tracking-widest text-indigo-300 mb-4">Term</span>
+          <p id="card-front-text" class="text-2xl font-bold text-indigo-800 text-center leading-snug"></p>
+        </div>
+        <!-- Back -->
+        <div class="card-face card-back bg-indigo-600 shadow-xl cursor-pointer select-none">
+          <span class="text-xs font-semibold uppercase tracking-widest text-indigo-200 mb-4">Definition</span>
+          <p id="card-back-text" class="text-base font-medium text-white text-center leading-relaxed"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Known toggle -->
+    <div class="flex justify-center">
+      <button
+        id="btn-known"
+        class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400"
+        aria-pressed="false"
+      >
+        <span id="known-icon">☆</span>
+        <span id="known-label">Mark as known</span>
+      </button>
+    </div>
+
+    <!-- Navigation -->
+    <div class="flex items-center justify-between gap-3">
+      <button id="btn-prev"
+        class="flex-1 py-2.5 rounded-xl bg-white border border-indigo-200 text-indigo-700 font-semibold text-sm shadow-sm hover:bg-indigo-50 active:scale-95 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        aria-label="Previous card">
+        ← Prev
+      </button>
+      <button id="btn-shuffle"
+        class="flex-1 py-2.5 rounded-xl bg-indigo-100 border border-indigo-200 text-indigo-700 font-semibold text-sm shadow-sm hover:bg-indigo-200 active:scale-95 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        aria-label="Shuffle deck">
+        ⇄ Shuffle
+      </button>
+      <button id="btn-next"
+        class="flex-1 py-2.5 rounded-xl bg-white border border-indigo-200 text-indigo-700 font-semibold text-sm shadow-sm hover:bg-indigo-50 active:scale-95 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        aria-label="Next card">
+        Next →
+      </button>
+    </div>
+
+    <!-- Study mode + Reset row -->
+    <div class="flex items-center justify-between px-1">
+      <label class="flex items-center gap-2 cursor-pointer select-none text-sm text-indigo-700 font-medium">
+        <input id="toggle-unknown-only" type="checkbox" class="w-4 h-4 accent-indigo-600 rounded" />
+        Study unknown only
+      </label>
+      <button id="btn-reset"
+        class="text-xs text-indigo-400 hover:text-red-500 underline underline-offset-2 transition-colors focus:outline-none"
+        aria-label="Reset progress">
+        Reset progress
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    // ── Deck data ──────────────────────────────────────────────────────────────
+    const ORIGINAL_DECK = [
+      {
+        front: "Brand Equity",
+        back: "The commercial value a brand adds to a product beyond its functional benefits, built through consumer perception, loyalty, and associations."
+      },
+      {
+        front: "Conversion Rate",
+        back: "The percentage of visitors or leads who complete a desired action (e.g., purchase, sign-up) out of the total number who were exposed to the opportunity."
+      },
+      {
+        front: "Customer Lifetime Value (CLV)",
+        back: "The total net profit a business can expect from a customer over the entire duration of their relationship."
+      },
+      {
+        front: "Cost Per Acquisition (CPA)",
+        back: "The total marketing cost divided by the number of new customers or conversions acquired in a given period."
+      },
+      {
+        front: "Segmentation",
+        back: "Dividing a broad target market into subsets of consumers who share common needs, characteristics, or behaviors to tailor messaging and offers."
+      },
+      {
+        front: "Value Proposition",
+        back: "A clear statement that explains how a product solves a customer problem, delivers benefits, and why it is better than the competition."
+      },
+      {
+        front: "Funnel (Marketing Funnel)",
+        back: "A model representing the stages a prospect moves through—from awareness to consideration to decision—on the path to becoming a customer."
+      },
+      {
+        front: "Net Promoter Score (NPS)",
+        back: "A metric that measures customer loyalty by asking how likely customers are to recommend a product or service on a 0–10 scale."
+      },
+      {
+        front: "Inbound Marketing",
+        back: "A strategy that attracts customers by creating valuable content and experiences tailored to them, rather than interrupting them with outbound advertising."
+      },
+      {
+        front: "A/B Testing",
+        back: "A controlled experiment comparing two versions of a marketing asset (e.g., email subject line, landing page) to determine which performs better."
+      }
+    ];
+
+    // ── State ──────────────────────────────────────────────────────────────────
+    const STORAGE_KEY = "flashcards_state_v1";
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (_) {}
+      return null;
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          order: state.order,
+          currentIndex: state.currentIndex,
+          known: Array.from(state.known),
+          unknownOnlyMode: state.unknownOnlyMode
+        }));
+      } catch (_) {}
+    }
+
+    function buildDefaultState() {
+      return {
+        order: ORIGINAL_DECK.map((_, i) => i),
+        currentIndex: 0,
+        known: new Set(),
+        unknownOnlyMode: false,
+        isFlipped: false
+      };
+    }
+
+    const persisted = loadState();
+    const state = buildDefaultState();
+
+    if (persisted) {
+      if (Array.isArray(persisted.order) && persisted.order.length === ORIGINAL_DECK.length) {
+        state.order = persisted.order;
+      }
+      if (typeof persisted.currentIndex === "number") {
+        state.currentIndex = persisted.currentIndex;
+      }
+      if (Array.isArray(persisted.known)) {
+        state.known = new Set(persisted.known);
+      }
+      if (typeof persisted.unknownOnlyMode === "boolean") {
+        state.unknownOnlyMode = persisted.unknownOnlyMode;
+      }
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+    function getActiveDeck() {
+      if (!state.unknownOnlyMode) return state.order;
+      const unknown = state.order.filter(i => !state.known.has(i));
+      return unknown.length > 0 ? unknown : state.order;
+    }
+
+    function clampIndex(deck) {
+      if (state.currentIndex >= deck.length) state.currentIndex = deck.length - 1;
+      if (state.currentIndex < 0) state.currentIndex = 0;
+    }
+
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // ── DOM refs ───────────────────────────────────────────────────────────────
+    const cardInner        = document.getElementById("card-inner");
+    const cardFrontText    = document.getElementById("card-front-text");
+    const cardBackText     = document.getElementById("card-back-text");
+    const cardCounter      = document.getElementById("card-counter");
+    const knownCounter     = document.getElementById("known-counter");
+    const progressBar      = document.getElementById("progress-bar");
+    const btnKnown         = document.getElementById("btn-known");
+    const knownIcon        = document.getElementById("known-icon");
+    const knownLabel       = document.getElementById("known-label");
+    const btnPrev          = document.getElementById("btn-prev");
+    const btnNext          = document.getElementById("btn-next");
+    const btnShuffle       = document.getElementById("btn-shuffle");
+    const btnReset         = document.getElementById("btn-reset");
+    const toggleUnknown    = document.getElementById("toggle-unknown-only");
+
+    // ── Render ─────────────────────────────────────────────────────────────────
+    function render() {
+      const deck = getActiveDeck();
+      clampIndex(deck);
+
+      const cardIdx = deck[state.currentIndex];
+      const card = ORIGINAL_DECK[cardIdx];
+      const pos = state.currentIndex + 1;
+      const total = deck.length;
+      const knownCount = state.known.size;
+      const isKnown = state.known.has(cardIdx);
+
+      // Text
+      cardFrontText.textContent = card.front;
+      cardBackText.textContent = card.back;
+
+      // Flip state
+      if (state.isFlipped) {
+        cardInner.classList.add("flipped");
+      } else {
+        cardInner.classList.remove("flipped");
+      }
+
+      // Counter
+      cardCounter.textContent = `Card ${pos} / ${total}`;
+      knownCounter.textContent = `${knownCount} known`;
+
+      // Progress bar
+      const pct = total > 0 ? Math.round((knownCount / ORIGINAL_DECK.length) * 100) : 0;
+      progressBar.style.width = pct + "%";
+
+      // Known button
+      if (isKnown) {
+        btnKnown.classList.remove("border-indigo-200", "text-indigo-500", "bg-white");
+        btnKnown.classList.add("border-emerald-400", "text-emerald-700", "bg-emerald-50");
+        btnKnown.setAttribute("aria-pressed", "true");
+        knownIcon.textContent = "★";
+        knownLabel.textContent = "Known!";
+      } else {
+        btnKnown.classList.remove("border-emerald-400", "text-emerald-700", "bg-emerald-50");
+        btnKnown.classList.add("border-indigo-200", "text-indigo-500", "bg-white");
+        btnKnown.setAttribute("aria-pressed", "false");
+        knownIcon.textContent = "☆";
+        knownLabel.textContent = "Mark as known";
+      }
+
+      // Study unknown toggle
+      toggleUnknown.checked = state.unknownOnlyMode;
+
+      // Prev/Next button states
+      btnPrev.disabled = pos <= 1;
+      btnPrev.classList.toggle("opacity-40", pos <= 1);
+      btnNext.disabled = pos >= total;
+      btnNext.classList.toggle("opacity-40", pos >= total);
+
+      saveState();
+    }
+
+    // ── Actions ────────────────────────────────────────────────────────────────
+    function flipCard() {
+      state.isFlipped = !state.isFlipped;
+      render();
+    }
+
+    function goNext() {
+      const deck = getActiveDeck();
+      if (state.currentIndex < deck.length - 1) {
+        state.currentIndex++;
+        state.isFlipped = false;
+        render();
+      }
+    }
+
+    function goPrev() {
+      if (state.currentIndex > 0) {
+        state.currentIndex--;
+        state.isFlipped = false;
+        render();
+      }
+    }
+
+    function doShuffle() {
+      state.order = shuffle(state.order);
+      state.currentIndex = 0;
+      state.isFlipped = false;
+      render();
+    }
+
+    function toggleKnown() {
+      const deck = getActiveDeck();
+      const cardIdx = deck[state.currentIndex];
+      if (state.known.has(cardIdx)) {
+        state.known.delete(cardIdx);
+      } else {
+        state.known.add(cardIdx);
+      }
+      render();
+    }
+
+    function resetProgress() {
+      if (!confirm("Reset all progress? This will clear your known cards and restore the original order.")) return;
+      state.order = ORIGINAL_DECK.map((_, i) => i);
+      state.currentIndex = 0;
+      state.known = new Set();
+      state.isFlipped = false;
+      state.unknownOnlyMode = false;
+      render();
+    }
+
+    // ── Event listeners ────────────────────────────────────────────────────────
+    cardInner.addEventListener("click", flipCard);
+
+    btnNext.addEventListener("click", goNext);
+    btnPrev.addEventListener("click", goPrev);
+    btnShuffle.addEventListener("click", doShuffle);
+    btnKnown.addEventListener("click", toggleKnown);
+    btnReset.addEventListener("click", resetProgress);
+
+    toggleUnknown.addEventListener("change", function () {
+      state.unknownOnlyMode = this.checked;
+      state.currentIndex = 0;
+      state.isFlipped = false;
+      render();
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      switch (e.key) {
+        case " ":
+        case "Enter":
+          e.preventDefault();
+          flipCard();
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          goNext();
+          break;
+        case "ArrowLeft":
+          e.preventDefault();
+          goPrev();
+          break;
+        case "k":
+        case "K":
+          toggleKnown();
+          break;
+      }
+    });
+
+    // ── Init ───────────────────────────────────────────────────────────────────
+    render();
+  </script>
+</body>
+</html>

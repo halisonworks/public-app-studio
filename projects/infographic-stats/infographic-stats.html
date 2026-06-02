@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<!--
+  Infographic Stats — Halison App Studio example
+
+  An editable key-stats infographic: big numbers with animated bars/rings and a
+  mini chart, with editable values and accent color. Built to screenshot and
+  share. Saves to your browser.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Infographic Stats — App Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Base */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root {
+      --accent: #6366f1;
+      --accent-light: #a5b4fc;
+      --accent-dark: #4338ca;
+      --bg-card: #1e1e2e;
+      --bg-page: #13131f;
+      --text-primary: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+
+    body {
+      background: var(--bg-page);
+      color: var(--text-primary);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* Ring */
+    .ring-track {
+      fill: none;
+      stroke: rgba(255,255,255,0.08);
+    }
+
+    .ring-fill {
+      fill: none;
+      stroke: var(--accent);
+      stroke-linecap: round;
+      /* dashoffset is animated from full -> target via the keyframe below */
+      animation: ringFill 1.2s cubic-bezier(0.4,0,0.2,1) forwards;
+      transition: stroke 0.4s;
+    }
+
+    @keyframes ringFill {
+      from { stroke-dashoffset: var(--ring-full); }
+      to   { stroke-dashoffset: var(--ring-offset); }
+    }
+
+    .ring-pct {
+      font-size: 0.78rem;
+      font-weight: 700;
+      fill: var(--text-primary);
+    }
+
+    /* Horizontal stat bar (track + proportional fill) */
+    @keyframes barGrow {
+      from { width: 0; }
+      to   { width: var(--bar-w); }
+    }
+
+    .stat-bar-track {
+      width: 100%;
+      height: 10px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .stat-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 999px;
+      width: var(--bar-w);
+      animation: barGrow 1.2s cubic-bezier(0.4,0,0.2,1) forwards;
+      transition: background 0.4s;
+    }
+
+    /* Chart bar animation */
+    @keyframes chartBarGrow {
+      from { height: 0; }
+      to   { height: var(--chart-h); }
+    }
+
+    .chart-bar {
+      background: var(--accent);
+      border-radius: 4px 4px 0 0;
+      animation: chartBarGrow 1.4s cubic-bezier(0.4,0,0.2,1) forwards;
+      transition: background 0.4s;
+      width: 100%;
+    }
+
+    /* Panel */
+    .controls-panel {
+      background: #1a1a2e;
+      border-left: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .ctrl-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+
+    .ctrl-input {
+      background: #0f0f1a;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 0.82rem;
+      padding: 5px 8px;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .ctrl-input:focus {
+      border-color: var(--accent);
+    }
+
+    /* Infographic card */
+    .info-card {
+      background: linear-gradient(135deg, #1e1e2e 0%, #181825 100%);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .stat-block {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 18px 16px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      transition: border-color 0.3s;
+    }
+
+    .stat-block:hover {
+      border-color: rgba(255,255,255,0.15);
+    }
+
+    .stat-number {
+      font-size: 1.9rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      color: var(--text-primary);
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .bar-wrapper {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 56px;
+      padding: 0 4px;
+    }
+
+    .bar-pct {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent);
+      transition: color 0.4s;
+    }
+
+    /* Headline gradient */
+    .headline-gradient {
+      background: linear-gradient(90deg, #f1f5f9 0%, var(--accent-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      transition: background 0.4s;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    }
+
+    /* Color swatch */
+    input[type="color"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 32px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px;
+      padding: 2px;
+      background: #0f0f1a;
+      cursor: pointer;
+    }
+
+    input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+    input[type="color"]::-webkit-color-swatch { border: none; border-radius: 4px; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+    /* Accent badge */
+    .accent-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 999px;
+      transition: background 0.4s;
+    }
+
+    /* Chart axis label */
+    .axis-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+  <!-- Top bar -->
+  <header class="flex items-center gap-3 px-5 py-3 border-b border-white/5 bg-black/20">
+    <div class="flex items-center gap-2">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <rect width="22" height="22" rx="6" fill="var(--accent)"/>
+        <rect x="5" y="11" width="3" height="6" rx="1.5" fill="white"/>
+        <rect x="9.5" y="7" width="3" height="10" rx="1.5" fill="white"/>
+        <rect x="14" y="4" width="3" height="13" rx="1.5" fill="white"/>
+      </svg>
+      <span class="text-sm font-semibold text-white/80">Infographic Stats</span>
+    </div>
+    <span class="text-white/20 text-xs">|</span>
+    <span class="text-xs text-white/40">App Studio</span>
+    <div class="ml-auto text-xs text-white/25">Edit values in the panel →</div>
+  </header>
+
+  <!-- Main layout -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- Infographic area -->
+    <main class="flex-1 overflow-y-auto p-5 lg:p-8 flex items-start justify-center">
+      <div id="infographic" class="info-card w-full max-w-2xl shadow-2xl">
+
+        <!-- Header section -->
+        <div class="px-8 pt-8 pb-6">
+          <div class="flex items-center justify-between mb-3">
+            <span id="display-badge" class="accent-badge">2026 Product Report</span>
+            <span class="text-xs text-white/25 font-mono">Q2 · 2026</span>
+          </div>
+          <h1 id="display-headline" class="headline-gradient text-3xl font-extrabold leading-tight mb-1">
+            Growth at a Glance
+          </h1>
+          <p id="display-subtitle" class="text-white/50 text-sm">
+            Key performance metrics across all product lines — Jan to Jun 2026
+          </p>
+        </div>
+
+        <div class="divider mx-6"></div>
+
+        <!-- Stat blocks grid -->
+        <div id="stat-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 px-6 pt-6 pb-2">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="divider mx-6 mt-6"></div>
+
+        <!-- Mini bar chart -->
+        <div class="px-6 pt-6 pb-8">
+          <h2 class="text-xs font-semibold uppercase tracking-widest text-white/40 mb-6">
+            Category Breakdown
+          </h2>
+          <div id="chart-area" class="flex items-end gap-4">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-8 py-4 bg-white/[0.02] border-t border-white/5 flex items-center justify-between">
+          <span class="text-xs text-white/20">halison.works · App Studio</span>
+          <span id="display-footer-year" class="text-xs text-white/20 font-mono">2026</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- Controls panel -->
+    <aside class="controls-panel w-64 overflow-y-auto p-4 flex flex-col gap-4 shrink-0">
+
+      <div>
+        <div class="ctrl-label text-xs font-bold text-white/60 mb-2 flex items-center gap-1">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="currentColor"><path d="M5.5 0L7 4H11L7.8 6.5L9 11L5.5 8.5L2 11L3.2 6.5L0 4H4L5.5 0Z"/></svg>
+          Appearance
+        </div>
+        <div class="ctrl-label">Accent Color</div>
+        <input type="color" id="ctrl-accent" value="#6366f1" />
+      </div>
+
+      <div class="divider"></div>
+
+      <div>
+        <div class="ctrl-label text-xs font-bold text-white/60 mb-2">Header</div>
+        <div class="ctrl-label">Badge text</div>
+        <input class="ctrl-input mb-2" id="ctrl-badge" type="text" maxlength="30" />
+        <div class="ctrl-label">Headline</div>
+        <input class="ctrl-input mb-2" id="ctrl-headline" type="text" maxlength="50" />
+        <div class="ctrl-label">Subtitle</div>
+        <input class="ctrl-input" id="ctrl-subtitle" type="text" maxlength="80" />
+      </div>
+
+      <div class="divider"></div>
+
+      <div>
+        <div class="ctrl-label text-xs font-bold text-white/60 mb-2">Stat Blocks</div>
+        <div id="stat-controls" class="flex flex-col gap-3">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div>
+        <div class="ctrl-label text-xs font-bold text-white/60 mb-2">Chart Categories</div>
+        <div id="chart-controls" class="flex flex-col gap-3">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div class="mt-auto pt-2">
+        <button id="btn-reset" class="w-full text-xs text-white/30 hover:text-white/60 py-2 transition-colors">
+          Reset to defaults
+        </button>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    // ── Default state ─────────────────────────────────────────────────────────
+    var DEFAULTS = {
+      accent: '#6366f1',
+      badge: '2026 Product Report',
+      headline: 'Growth at a Glance',
+      subtitle: 'Key performance metrics across all product lines — Jan to Jun 2026',
+      stats: [
+        { value: '4.2M',  pct: 84, label: 'Active Users',      type: 'ring' },
+        { value: '+127%', pct: 72, label: 'Revenue Growth',     type: 'ring' },
+        { value: '98.6%', pct: 99, label: 'Uptime SLA',         type: 'bar'  },
+        { value: '12.4K', pct: 62, label: 'Enterprise Clients', type: 'ring' },
+        { value: '3.8s',  pct: 38, label: 'Avg. Load Time',     type: 'bar'  },
+        { value: '41',    pct: 82, label: 'NPS Score',           type: 'ring' }
+      ],
+      chart: [
+        { label: 'Core',      pct: 90 },
+        { label: 'API',       pct: 75 },
+        { label: 'Mobile',    pct: 60 },
+        { label: 'Analytics', pct: 48 },
+        { label: 'Support',   pct: 35 }
+      ]
+    };
+
+    var STORAGE_KEY = 'infographic-stats-v2';
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    function loadState() {
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch(e) {}
+      return JSON.parse(JSON.stringify(DEFAULTS));
+    }
+
+    function saveState(state) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+    }
+
+    var state = loadState();
+
+    // ── CSS variable helpers ──────────────────────────────────────────────────
+    function hexToRgb(hex) {
+      var r = parseInt(hex.slice(1,3),16);
+      var g = parseInt(hex.slice(3,5),16);
+      var b = parseInt(hex.slice(5,7),16);
+      return { r:r, g:g, b:b };
+    }
+
+    function lightenHex(hex, factor) {
+      var c = hexToRgb(hex);
+      var r = Math.round(c.r + (255 - c.r) * factor);
+      var g = Math.round(c.g + (255 - c.g) * factor);
+      var b = Math.round(c.b + (255 - c.b) * factor);
+      return 'rgb(' + r + ',' + g + ',' + b + ')';
+    }
+
+    function darkenHex(hex, factor) {
+      var c = hexToRgb(hex);
+      var r = Math.round(c.r * (1 - factor));
+      var g = Math.round(c.g * (1 - factor));
+      var b = Math.round(c.b * (1 - factor));
+      return 'rgb(' + r + ',' + g + ',' + b + ')';
+    }
+
+    function applyAccent(accent) {
+      document.documentElement.style.setProperty('--accent', accent);
+      document.documentElement.style.setProperty('--accent-light', lightenHex(accent, 0.4));
+      document.documentElement.style.setProperty('--accent-dark', darkenHex(accent, 0.2));
+    }
+
+    // ── Ring SVG builder ──────────────────────────────────────────────────────
+    function buildRing(pct) {
+      var p = Math.min(100, Math.max(0, pct));
+      var size = 60;
+      var stroke = 6;
+      var c = size / 2;
+      var r = (size - stroke) / 2;
+      var circ = 2 * Math.PI * r;
+      // dashoffset target: full circumference at 0%, 0 at 100%
+      var offset = circ * (1 - p / 100);
+      var svg = '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">'
+        + '<circle class="ring-track" cx="' + c + '" cy="' + c + '" r="' + r + '" stroke-width="' + stroke + '"/>'
+        + '<circle class="ring-fill" cx="' + c + '" cy="' + c + '" r="' + r + '" stroke-width="' + stroke + '"'
+        + ' stroke-dasharray="' + circ + '"'
+        + ' stroke-dashoffset="' + offset + '"'
+        + ' style="--ring-full:' + circ + '; --ring-offset:' + offset + ';"'
+        + ' transform="rotate(-90 ' + c + ' ' + c + ')"/>'
+        + '<text class="ring-pct" x="' + c + '" y="' + c + '" text-anchor="middle" dominant-baseline="central">' + p + '%</text>'
+        + '</svg>';
+      return svg;
+    }
+
+    // ── Horizontal bar builder (track + proportional fill) ──────────────────────
+    function buildBar(pct) {
+      var p = Math.min(100, Math.max(0, pct));
+      return '<div class="bar-wrapper">'
+        + '<div class="stat-bar-track"><div class="stat-bar-fill" style="--bar-w:' + p + '%"></div></div>'
+        + '<div class="bar-pct">' + p + '%</div>'
+        + '</div>';
+    }
+
+    // ── Render infographic ────────────────────────────────────────────────────
+    function renderInfograhic() {
+      applyAccent(state.accent);
+
+      document.getElementById('display-badge').textContent = state.badge;
+      document.getElementById('display-headline').textContent = state.headline;
+      document.getElementById('display-subtitle').textContent = state.subtitle;
+
+      // Stat grid
+      var grid = document.getElementById('stat-grid');
+      grid.innerHTML = '';
+      state.stats.forEach(function(s) {
+        var visual = s.type === 'ring' ? buildRing(s.pct) : buildBar(s.pct);
+        var block = document.createElement('div');
+        block.className = 'stat-block';
+        block.innerHTML = '<div class="stat-number">' + escHtml(s.value) + '</div>'
+          + visual
+          + '<div class="stat-label">' + escHtml(s.label) + '</div>';
+        grid.appendChild(block);
+      });
+
+      // Chart
+      var chart = document.getElementById('chart-area');
+      chart.innerHTML = '';
+      var maxPct = 0;
+      state.chart.forEach(function(c) { if (c.pct > maxPct) maxPct = c.pct; });
+
+      var TRACK_H = 120;
+      state.chart.forEach(function(c) {
+        var p = Math.min(100, Math.max(1, c.pct));
+        var barH = Math.max(8, Math.round(TRACK_H * p / 100));
+        var col = document.createElement('div');
+        col.className = 'flex flex-col items-center gap-1 flex-1';
+        col.innerHTML = '<div class="w-full flex items-end justify-center" style="height:' + TRACK_H + 'px">'
+          + '<div class="chart-bar" style="--chart-h:' + barH + 'px; height:' + barH + 'px"></div>'
+          + '</div>'
+          + '<div class="axis-label">' + escHtml(c.label) + '</div>'
+          + '<div class="text-xs font-bold" style="color:var(--accent)">' + p + '%</div>';
+        chart.appendChild(col);
+      });
+    }
+
+    // ── Render controls ───────────────────────────────────────────────────────
+    function renderControls() {
+      document.getElementById('ctrl-accent').value = state.accent;
+      document.getElementById('ctrl-badge').value = state.badge;
+      document.getElementById('ctrl-headline').value = state.headline;
+      document.getElementById('ctrl-subtitle').value = state.subtitle;
+
+      // Stat controls
+      var sc = document.getElementById('stat-controls');
+      sc.innerHTML = '';
+      state.stats.forEach(function(s, i) {
+        var wrap = document.createElement('div');
+        wrap.className = 'rounded-lg bg-white/[0.03] p-2 flex flex-col gap-1.5';
+        wrap.innerHTML = '<div class="flex gap-1">'
+          + '<div class="flex-1">'
+          + '<div class="ctrl-label">Value</div>'
+          + '<input class="ctrl-input" data-stat="' + i + '" data-field="value" type="text" maxlength="12" value="' + escAttr(s.value) + '">'
+          + '</div>'
+          + '<div style="width:48px">'
+          + '<div class="ctrl-label">%</div>'
+          + '<input class="ctrl-input" data-stat="' + i + '" data-field="pct" type="number" min="1" max="100" value="' + s.pct + '">'
+          + '</div>'
+          + '</div>'
+          + '<div>'
+          + '<div class="ctrl-label">Label</div>'
+          + '<input class="ctrl-input" data-stat="' + i + '" data-field="label" type="text" maxlength="24" value="' + escAttr(s.label) + '">'
+          + '</div>'
+          + '<div>'
+          + '<div class="ctrl-label">Visual</div>'
+          + '<select class="ctrl-input" data-stat="' + i + '" data-field="type">'
+          + '<option value="ring"' + (s.type==='ring'?' selected':'') + '>Ring</option>'
+          + '<option value="bar"' + (s.type==='bar'?' selected':'') + '>Bar</option>'
+          + '</select>'
+          + '</div>';
+        sc.appendChild(wrap);
+      });
+
+      // Chart controls
+      var cc = document.getElementById('chart-controls');
+      cc.innerHTML = '';
+      state.chart.forEach(function(c, i) {
+        var wrap = document.createElement('div');
+        wrap.className = 'flex gap-1';
+        wrap.innerHTML = '<div class="flex-1">'
+          + '<div class="ctrl-label">Label</div>'
+          + '<input class="ctrl-input" data-chart="' + i + '" data-field="label" type="text" maxlength="14" value="' + escAttr(c.label) + '">'
+          + '</div>'
+          + '<div style="width:48px">'
+          + '<div class="ctrl-label">%</div>'
+          + '<input class="ctrl-input" data-chart="' + i + '" data-field="pct" type="number" min="1" max="100" value="' + c.pct + '">'
+          + '</div>';
+        cc.appendChild(wrap);
+      });
+
+      attachControlListeners();
+    }
+
+    // ── Event listeners ───────────────────────────────────────────────────────
+    function attachControlListeners() {
+      // Stat inputs
+      var statInputs = document.querySelectorAll('[data-stat]');
+      statInputs.forEach(function(el) {
+        el.addEventListener('input', function() {
+          var i = parseInt(this.getAttribute('data-stat'));
+          var field = this.getAttribute('data-field');
+          var val = this.value;
+          if (field === 'pct') {
+            val = Math.min(100, Math.max(1, parseInt(val) || 1));
+          }
+          state.stats[i][field] = val;
+          saveState(state);
+          renderInfograhic();
+        });
+      });
+
+      // Chart inputs
+      var chartInputs = document.querySelectorAll('[data-chart]');
+      chartInputs.forEach(function(el) {
+        el.addEventListener('input', function() {
+          var i = parseInt(this.getAttribute('data-chart'));
+          var field = this.getAttribute('data-field');
+          var val = this.value;
+          if (field === 'pct') {
+            val = Math.min(100, Math.max(1, parseInt(val) || 1));
+          }
+          state.chart[i][field] = val;
+          saveState(state);
+          renderInfograhic();
+        });
+      });
+    }
+
+    // ── Top-level control bindings ────────────────────────────────────────────
+    function bindTopControls() {
+      document.getElementById('ctrl-accent').addEventListener('input', function() {
+        state.accent = this.value;
+        saveState(state);
+        renderInfograhic();
+      });
+
+      document.getElementById('ctrl-badge').addEventListener('input', function() {
+        state.badge = this.value;
+        saveState(state);
+        document.getElementById('display-badge').textContent = this.value;
+      });
+
+      document.getElementById('ctrl-headline').addEventListener('input', function() {
+        state.headline = this.value;
+        saveState(state);
+        document.getElementById('display-headline').textContent = this.value;
+      });
+
+      document.getElementById('ctrl-subtitle').addEventListener('input', function() {
+        state.subtitle = this.value;
+        saveState(state);
+        document.getElementById('display-subtitle').textContent = this.value;
+      });
+
+      document.getElementById('btn-reset').addEventListener('click', function() {
+        if (confirm('Reset all values to defaults?')) {
+          state = JSON.parse(JSON.stringify(DEFAULTS));
+          saveState(state);
+          renderInfograhic();
+          renderControls();
+        }
+      });
+    }
+
+    // ── Utilities ─────────────────────────────────────────────────────────────
+    function escHtml(str) {
+      return String(str)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;');
+    }
+
+    function escAttr(str) {
+      return String(str)
+        .replace(/&/g,'&amp;')
+        .replace(/"/g,'&quot;');
+    }
+
+    // ── Boot ──────────────────────────────────────────────────────────────────
+    renderInfograhic();
+    renderControls();
+    bindTopControls();
+  </script>
+</body>
+</html>

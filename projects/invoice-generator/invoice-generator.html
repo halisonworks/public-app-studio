@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<!--
+  Invoice Generator — Halison App Studio example
+
+  Build a clean invoice: your details, the client's, line items with live totals,
+  tax and currency. Saves to your browser; print-friendly via App Studio's Print.
+
+  From the Halison App Studio public library:
+  https://github.com/halisonworks/public-app-studio
+
+  Permitted use: personal, educational, and other non-commercial use. You may
+  modify it, but keep this header and the source link intact, and do not sell,
+  commercialize, or republish it. Released under the Halison App Studio Examples
+  License — see the LICENSE file in the repository above.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; }
+      #invoice-wrapper {
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      #app-shell { padding: 0 !important; background: white !important; }
+    }
+    [contenteditable]:focus { outline: 2px solid #6366f1; border-radius: 2px; }
+    [contenteditable]:empty:before { content: attr(data-placeholder); color: #9ca3af; }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen" id="app-shell">
+
+  <!-- Top toolbar (no-print) -->
+  <div class="no-print sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
+      <span class="font-semibold text-indigo-600 text-lg tracking-tight">Invoice Generator</span>
+      <div class="flex items-center gap-2 ml-auto flex-wrap">
+        <!-- Currency -->
+        <label class="text-sm text-gray-600 font-medium">Currency:</label>
+        <select id="currency-select"
+          class="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white">
+          <option value="kr">kr (NOK)</option>
+          <option value="$">$ (USD)</option>
+          <option value="€">€ (EUR)</option>
+          <option value="£">£ (GBP)</option>
+          <option value="SEK">SEK</option>
+          <option value="DKK">DKK</option>
+        </select>
+        <!-- VAT -->
+        <label class="text-sm text-gray-600 font-medium ml-2">Tax / VAT:</label>
+        <select id="vat-select"
+          class="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white">
+          <option value="0">0 %</option>
+          <option value="5">5 %</option>
+          <option value="10">10 %</option>
+          <option value="12">12 %</option>
+          <option value="15">15 %</option>
+          <option value="20">20 %</option>
+          <option value="25" selected>25 %</option>
+        </select>
+        <!-- Clear button -->
+        <button id="btn-clear"
+          class="ml-2 text-sm px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded font-medium transition">
+          New Invoice
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main area -->
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <div id="invoice-wrapper"
+      class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+
+      <!-- Invoice header band -->
+      <div class="bg-indigo-700 px-8 py-6 flex flex-col sm:flex-row sm:items-start gap-4">
+        <div class="flex-1">
+          <div
+            id="business-name"
+            contenteditable="true"
+            data-placeholder="Your Business Name"
+            data-key="businessName"
+            class="text-2xl font-bold text-white focus:bg-indigo-600 focus:rounded px-1 -ml-1 min-w-[180px] block">
+          </div>
+          <div
+            id="business-address"
+            contenteditable="true"
+            data-placeholder="123 Main Street, Oslo, Norway"
+            data-key="businessAddress"
+            class="text-indigo-200 text-sm mt-1 whitespace-pre-wrap focus:bg-indigo-600 focus:rounded px-1 -ml-1 block">
+          </div>
+          <div
+            id="business-email"
+            contenteditable="true"
+            data-placeholder="hello@yourbusiness.no"
+            data-key="businessEmail"
+            class="text-indigo-200 text-sm mt-0.5 focus:bg-indigo-600 focus:rounded px-1 -ml-1 block">
+          </div>
+        </div>
+        <div class="text-right">
+          <div class="text-indigo-100 text-xs uppercase tracking-widest font-semibold mb-1">Invoice</div>
+          <div class="flex items-center justify-end gap-2">
+            <span class="text-indigo-200 text-sm">#</span>
+            <input id="invoice-number" type="text" data-key="invoiceNumber"
+              placeholder="2025-001"
+              class="bg-indigo-600 text-white text-sm font-semibold rounded px-2 py-0.5 w-28 text-right border border-indigo-400 focus:outline-none focus:ring-2 focus:ring-white placeholder-indigo-300" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Dates + client block -->
+      <div class="px-8 py-6 grid grid-cols-1 sm:grid-cols-2 gap-8 border-b border-gray-100">
+        <!-- Bill to -->
+        <div>
+          <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Bill To</div>
+          <div
+            id="client-name"
+            contenteditable="true"
+            data-placeholder="Acme AS"
+            data-key="clientName"
+            class="font-semibold text-gray-800 text-base focus:outline-none focus:bg-indigo-50 focus:rounded px-1 -ml-1 block">
+          </div>
+          <div
+            id="client-address"
+            contenteditable="true"
+            data-placeholder="456 Client Road, Bergen, Norway"
+            data-key="clientAddress"
+            class="text-gray-500 text-sm mt-1 whitespace-pre-wrap focus:outline-none focus:bg-indigo-50 focus:rounded px-1 -ml-1 block">
+          </div>
+        </div>
+        <!-- Dates -->
+        <div class="flex flex-col gap-3 sm:items-end">
+          <div class="flex items-center gap-3">
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider w-24 text-right">Issue Date</label>
+            <input id="issue-date" type="date" data-key="issueDate"
+              class="text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          </div>
+          <div class="flex items-center gap-3">
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider w-24 text-right">Due Date</label>
+            <input id="due-date" type="date" data-key="dueDate"
+              class="text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Line items -->
+      <div class="px-8 pt-6 pb-2">
+        <table class="w-full text-sm" id="line-items-table">
+          <thead>
+            <tr class="border-b-2 border-gray-200 text-left">
+              <th class="pb-2 font-semibold text-gray-500 uppercase tracking-wider text-xs w-full">Description</th>
+              <th class="pb-2 font-semibold text-gray-500 uppercase tracking-wider text-xs text-right whitespace-nowrap pr-4">Qty</th>
+              <th class="pb-2 font-semibold text-gray-500 uppercase tracking-wider text-xs text-right whitespace-nowrap pr-4">Unit Price</th>
+              <th class="pb-2 font-semibold text-gray-500 uppercase tracking-wider text-xs text-right whitespace-nowrap">Amount</th>
+              <th class="pb-2 no-print w-8"></th>
+            </tr>
+          </thead>
+          <tbody id="line-items-body">
+            <!-- rows injected by JS -->
+          </tbody>
+        </table>
+
+        <!-- Add row button -->
+        <div class="no-print mt-3 mb-4">
+          <button id="btn-add-row"
+            class="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-800 font-medium border border-dashed border-indigo-300 hover:border-indigo-500 rounded px-3 py-1.5 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+            </svg>
+            Add line item
+          </button>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="px-8 pb-8">
+        <div class="flex justify-end">
+          <div class="w-full sm:w-72 border-t border-gray-200 pt-4 space-y-2">
+            <div class="flex justify-between text-sm text-gray-600">
+              <span>Subtotal</span>
+              <span id="subtotal-display" class="font-medium tabular-nums">kr 0.00</span>
+            </div>
+            <div class="flex justify-between text-sm text-gray-600">
+              <span id="tax-label">VAT (25 %)</span>
+              <span id="tax-display" class="font-medium tabular-nums">kr 0.00</span>
+            </div>
+            <div class="flex justify-between text-base font-bold text-gray-800 border-t border-gray-300 pt-2 mt-2">
+              <span>Total</span>
+              <span id="total-display" class="tabular-nums text-indigo-700">kr 0.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes / payment info -->
+      <div class="px-8 pb-8 border-t border-gray-100 pt-6">
+        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Notes &amp; Payment Info</div>
+        <div
+          id="notes"
+          contenteditable="true"
+          data-placeholder="Bank: Nordea — Account: 1234.56.78901 — Please reference invoice number when paying. Thank you for your business!"
+          data-key="notes"
+          class="text-sm text-gray-600 min-h-[48px] whitespace-pre-wrap focus:outline-none focus:bg-indigo-50 focus:rounded px-1 -ml-1 block">
+        </div>
+      </div>
+
+      <!-- Footer band -->
+      <div class="bg-gray-50 border-t border-gray-200 px-8 py-4 text-center text-xs text-gray-400">
+        <span id="footer-business-name"></span> &mdash; Thank you for your business.
+      </div>
+
+    </div><!-- /invoice-wrapper -->
+  </div><!-- /main area -->
+
+<script>
+(function () {
+  'use strict';
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  var DEFAULT_LINES = [
+    { desc: 'Web Design & Development', qty: 1, price: 15000 },
+    { desc: 'SEO Audit & Recommendations', qty: 3, price: 2500 },
+    { desc: 'Monthly Maintenance (hours)', qty: 5, price: 850 }
+  ];
+
+  var state = {
+    businessName: 'Freelance Studio AS',
+    businessAddress: 'Storgata 12, 0155 Oslo\nNorway',
+    businessEmail: 'post@freelancestudio.no',
+    clientName: 'Acme Solutions AS',
+    clientAddress: 'Drammensveien 45\n0271 Oslo, Norway',
+    invoiceNumber: '2025-001',
+    issueDate: '',
+    dueDate: '',
+    notes: 'Bank: DNB — Account: 1503.25.48720\nPlease reference the invoice number when paying. Thank you for your business!',
+    currency: 'kr',
+    vatRate: 25,
+    lines: JSON.parse(JSON.stringify(DEFAULT_LINES))
+  };
+
+  // Set default dates (today + 30 days)
+  var today = new Date();
+  var due = new Date(today);
+  due.setDate(due.getDate() + 30);
+  function fmtDate(d) {
+    var mm = ('0' + (d.getMonth() + 1)).slice(-2);
+    var dd = ('0' + d.getDate()).slice(-2);
+    return d.getFullYear() + '-' + mm + '-' + dd;
+  }
+  state.issueDate = fmtDate(today);
+  state.dueDate = fmtDate(due);
+
+  // ── LocalStorage ──────────────────────────────────────────────────────────
+  var LS_KEY = 'invoice-generator-v1';
+
+  function saveState() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e) {}
+  }
+
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (!raw) return;
+      var saved = JSON.parse(raw);
+      Object.assign(state, saved);
+    } catch(e) {}
+  }
+
+  // ── DOM refs ──────────────────────────────────────────────────────────────
+  var elBusinessName    = document.getElementById('business-name');
+  var elBusinessAddress = document.getElementById('business-address');
+  var elBusinessEmail   = document.getElementById('business-email');
+  var elClientName      = document.getElementById('client-name');
+  var elClientAddress   = document.getElementById('client-address');
+  var elInvoiceNumber   = document.getElementById('invoice-number');
+  var elIssueDate       = document.getElementById('issue-date');
+  var elDueDate         = document.getElementById('due-date');
+  var elNotes           = document.getElementById('notes');
+  var elCurrency        = document.getElementById('currency-select');
+  var elVat             = document.getElementById('vat-select');
+  var elBody            = document.getElementById('line-items-body');
+  var elSubtotal        = document.getElementById('subtotal-display');
+  var elTaxDisplay      = document.getElementById('tax-display');
+  var elTotal           = document.getElementById('total-display');
+  var elTaxLabel        = document.getElementById('tax-label');
+  var elFooterName      = document.getElementById('footer-business-name');
+  var btnAddRow         = document.getElementById('btn-add-row');
+  var btnClear          = document.getElementById('btn-clear');
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function fmt(n) {
+    var sym = state.currency;
+    var num = n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return sym + ' ' + num;
+  }
+
+  // ── Render line items ─────────────────────────────────────────────────────
+  function renderLines() {
+    elBody.innerHTML = '';
+    state.lines.forEach(function (line, idx) {
+      var tr = document.createElement('tr');
+      tr.className = 'border-b border-gray-100 group';
+      tr.dataset.idx = idx;
+
+      var amount = (parseFloat(line.qty) || 0) * (parseFloat(line.price) || 0);
+
+      tr.innerHTML =
+        '<td class="py-2 pr-3">' +
+          '<input type="text" placeholder="Service or product description" value="' + escHtml(line.desc) + '" ' +
+                 'data-field="desc" data-idx="' + idx + '" ' +
+                 'class="w-full border-0 border-b border-transparent focus:border-indigo-400 focus:outline-none bg-transparent text-gray-700 text-sm py-0.5" />' +
+        '</td>' +
+        '<td class="py-2 pr-4 text-right">' +
+          '<input type="number" min="0" step="0.01" value="' + line.qty + '" ' +
+                 'data-field="qty" data-idx="' + idx + '" ' +
+                 'class="w-16 border-0 border-b border-transparent focus:border-indigo-400 focus:outline-none bg-transparent text-gray-700 text-sm text-right py-0.5" />' +
+        '</td>' +
+        '<td class="py-2 pr-4 text-right">' +
+          '<input type="number" min="0" step="0.01" value="' + line.price + '" ' +
+                 'data-field="price" data-idx="' + idx + '" ' +
+                 'class="w-24 border-0 border-b border-transparent focus:border-indigo-400 focus:outline-none bg-transparent text-gray-700 text-sm text-right py-0.5" />' +
+        '</td>' +
+        '<td class="py-2 text-right text-gray-800 font-medium tabular-nums whitespace-nowrap amount-cell">' +
+          fmt(amount) +
+        '</td>' +
+        '<td class="py-2 pl-2 no-print">' +
+          '<button data-remove="' + idx + '" ' +
+                  'class="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition text-lg leading-none" ' +
+                  'title="Remove row">&times;</button>' +
+        '</td>';
+
+      elBody.appendChild(tr);
+    });
+
+    updateTotals();
+  }
+
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  // ── Update totals ─────────────────────────────────────────────────────────
+  function updateTotals() {
+    var subtotal = state.lines.reduce(function (acc, l) {
+      return acc + (parseFloat(l.qty) || 0) * (parseFloat(l.price) || 0);
+    }, 0);
+    var vatRate = parseFloat(state.vatRate) || 0;
+    var taxAmt = subtotal * vatRate / 100;
+    var total = subtotal + taxAmt;
+
+    elSubtotal.textContent = fmt(subtotal);
+    elTaxDisplay.textContent = fmt(taxAmt);
+    elTotal.textContent = fmt(total);
+    elTaxLabel.textContent = 'VAT (' + vatRate + ' %)';
+
+    // Also update amount cells without full re-render
+    var amtCells = elBody.querySelectorAll('.amount-cell');
+    amtCells.forEach(function (cell, idx) {
+      var l = state.lines[idx];
+      if (l) {
+        cell.textContent = fmt((parseFloat(l.qty) || 0) * (parseFloat(l.price) || 0));
+      }
+    });
+  }
+
+  // ── Populate fields from state ─────────────────────────────────────────────
+  function populateFields() {
+    elBusinessName.textContent    = state.businessName;
+    elBusinessAddress.textContent = state.businessAddress;
+    elBusinessEmail.textContent   = state.businessEmail;
+    elClientName.textContent      = state.clientName;
+    elClientAddress.textContent   = state.clientAddress;
+    elNotes.textContent           = state.notes;
+    elInvoiceNumber.value         = state.invoiceNumber;
+    elIssueDate.value             = state.issueDate;
+    elDueDate.value               = state.dueDate;
+    elCurrency.value              = state.currency;
+    elVat.value                   = String(state.vatRate);
+    elFooterName.textContent      = state.businessName;
+    renderLines();
+  }
+
+  // ── Bind contenteditable fields ───────────────────────────────────────────
+  function bindContentEditable(el) {
+    el.addEventListener('input', function () {
+      var key = el.dataset.key;
+      state[key] = el.textContent;
+      if (key === 'businessName') elFooterName.textContent = el.textContent;
+      saveState();
+    });
+  }
+
+  [elBusinessName, elBusinessAddress, elBusinessEmail, elClientName, elClientAddress, elNotes]
+    .forEach(bindContentEditable);
+
+  // ── Bind simple inputs ─────────────────────────────────────────────────────
+  function bindInput(el, key) {
+    el.addEventListener('input', function () {
+      state[key] = el.value;
+      saveState();
+    });
+  }
+  bindInput(elInvoiceNumber, 'invoiceNumber');
+  bindInput(elIssueDate, 'issueDate');
+  bindInput(elDueDate, 'dueDate');
+
+  elCurrency.addEventListener('change', function () {
+    state.currency = elCurrency.value;
+    updateTotals();
+    saveState();
+  });
+
+  elVat.addEventListener('change', function () {
+    state.vatRate = parseFloat(elVat.value);
+    updateTotals();
+    saveState();
+  });
+
+  // ── Line item delegation ───────────────────────────────────────────────────
+  elBody.addEventListener('input', function (e) {
+    var el = e.target;
+    var idx = parseInt(el.dataset.idx, 10);
+    var field = el.dataset.field;
+    if (isNaN(idx) || !field) return;
+    if (field === 'desc') {
+      state.lines[idx].desc = el.value;
+    } else if (field === 'qty') {
+      state.lines[idx].qty = el.value;
+    } else if (field === 'price') {
+      state.lines[idx].price = el.value;
+    }
+    updateTotals();
+    saveState();
+  });
+
+  elBody.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-remove]');
+    if (!btn) return;
+    var idx = parseInt(btn.dataset.remove, 10);
+    if (isNaN(idx)) return;
+    state.lines.splice(idx, 1);
+    renderLines();
+    saveState();
+  });
+
+  btnAddRow.addEventListener('click', function () {
+    state.lines.push({ desc: '', qty: 1, price: 0 });
+    renderLines();
+    saveState();
+    // Focus new description field
+    var rows = elBody.querySelectorAll('tr');
+    var lastRow = rows[rows.length - 1];
+    if (lastRow) {
+      var inp = lastRow.querySelector('input[data-field="desc"]');
+      if (inp) inp.focus();
+    }
+  });
+
+  // ── Clear / New Invoice ────────────────────────────────────────────────────
+  btnClear.addEventListener('click', function () {
+    if (!confirm('Start a new invoice? All current data will be cleared.')) return;
+    var newToday = new Date();
+    var newDue = new Date(newToday);
+    newDue.setDate(newDue.getDate() + 30);
+    state.businessName    = '';
+    state.businessAddress = '';
+    state.businessEmail   = '';
+    state.clientName      = '';
+    state.clientAddress   = '';
+    state.invoiceNumber   = '';
+    state.issueDate       = fmtDate(newToday);
+    state.dueDate         = fmtDate(newDue);
+    state.notes           = '';
+    state.currency        = 'kr';
+    state.vatRate         = 25;
+    state.lines           = [{ desc: '', qty: 1, price: 0 }];
+    saveState();
+    populateFields();
+  });
+
+  // ── Boot ───────────────────────────────────────────────────────────────────
+  loadState();
+  populateFields();
+
+})();
+</script>
+</body>
+</html>
