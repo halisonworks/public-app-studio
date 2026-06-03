@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Canvas Runtime</title>
+    <!--
+      Tailwind Play CDN config must come BEFORE the tailwindcss.js script.
+      The colors below are the shadcn/ui semantic tokens, mapped to the CSS
+      variables defined in the <style> block. They let canvases that paste
+      shadcn artifacts (bg-background, text-muted-foreground, border-input,
+      ring-ring, ...) resolve and render instead of dropping unknown classes.
+    -->
+    <script>
+      window.tailwind = window.tailwind || {};
+      window.tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              border: 'hsl(var(--border))',
+              input: 'hsl(var(--input))',
+              ring: 'hsl(var(--ring))',
+              background: 'hsl(var(--background))',
+              foreground: 'hsl(var(--foreground))',
+              primary: { DEFAULT: 'hsl(var(--primary))', foreground: 'hsl(var(--primary-foreground))' },
+              secondary: { DEFAULT: 'hsl(var(--secondary))', foreground: 'hsl(var(--secondary-foreground))' },
+              destructive: { DEFAULT: 'hsl(var(--destructive))', foreground: 'hsl(var(--destructive-foreground))' },
+              muted: { DEFAULT: 'hsl(var(--muted))', foreground: 'hsl(var(--muted-foreground))' },
+              accent: { DEFAULT: 'hsl(var(--accent))', foreground: 'hsl(var(--accent-foreground))' },
+              popover: { DEFAULT: 'hsl(var(--popover))', foreground: 'hsl(var(--popover-foreground))' },
+              card: { DEFAULT: 'hsl(var(--card))', foreground: 'hsl(var(--card-foreground))' },
+            },
+          },
+        },
+      };
+    </script>
+    <script src="./tailwindcss.js"></script>
+    <style>
+      html, body { margin: 0; padding: 0; }
+      html, body, #root { min-height: 100%; }
+      body { background-color: #f8fafc; }
+      /* shadcn/ui default light-theme tokens (HSL triples consumed as hsl(var(--x))). */
+      :root {
+        --background: 0 0% 100%; --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%; --card-foreground: 222.2 84% 4.9%;
+        --popover: 0 0% 100%; --popover-foreground: 222.2 84% 4.9%;
+        --primary: 222.2 47.4% 11.2%; --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96.1%; --secondary-foreground: 222.2 47.4% 11.2%;
+        --muted: 210 40% 96.1%; --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96.1%; --accent-foreground: 222.2 47.4% 11.2%;
+        --destructive: 0 84.2% 60.2%; --destructive-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%; --input: 214.3 31.8% 91.4%; --ring: 222.2 84% 4.9%;
+      }
+    </style>
+    <script>
+      // Forward iframe-level errors to the parent so the shell can render
+      // the same red-bordered "Runtime Error" box it used pre-iframe.
+      window.addEventListener('error', function (event) {
+        try {
+          window.parent.postMessage({
+            type: 'error',
+            message: event.message || (event.error && event.error.message) || 'Unknown iframe error'
+          }, '*');
+        } catch (_) { /* parent gone */ }
+      });
+      window.addEventListener('unhandledrejection', function (event) {
+        try {
+          var reason = event.reason;
+          var message = reason && reason.message ? reason.message : String(reason);
+          window.parent.postMessage({ type: 'error', message: message }, '*');
+        } catch (_) { /* parent gone */ }
+      });
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./bootstrap.js"></script>
+  </body>
+</html>
