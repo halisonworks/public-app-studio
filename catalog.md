@@ -27,7 +27,7 @@ and anyone who wants to make a quick prototype of an app idea.
 | [![chart-maker](projects/data/chart-maker/screenshot.png)](projects/data/chart-maker/) **Chart maker** | [![gantt-chart](projects/business/gantt-chart/screenshot.png)](projects/business/gantt-chart/) **Gantt chart** | [![rubric-grader](projects/educational/rubric-grader/screenshot.png)](projects/educational/rubric-grader/) **Rubric grader** |
 | [![link-in-bio](projects/creative/link-in-bio/screenshot.png)](projects/creative/link-in-bio/) **Link in bio** | | |
 
-*(`tip-calculator` and `sales-dashboard` are React components — they render inside App Studio.)*
+*(`tip-calculator`, `sales-dashboard`, and `team-crm` are React components — they render inside App Studio.)*
 
 ## Projects
 
@@ -39,6 +39,7 @@ and anyone who wants to make a quick prototype of an app idea.
 | [persona-developer](projects/educational/persona-developer/) | Educational | HTML | EN, NB | [prompt](prompts/examples/persona-developer.md) |
 | [habit-tracker](projects/personal/habit-tracker/) | Personal | HTML | EN | [starter](prompts/context/personal.md) |
 | [sales-dashboard](projects/data/sales-dashboard/) | Data / dashboard | React | EN | [starter](prompts/context/data-dashboard.md) |
+| [team-crm](projects/business/team-crm/) | Business / sales · multi-user | React | EN | — |
 | [color-palette](projects/creative/color-palette/) | Creative | HTML | EN | [starter](prompts/context/creative.md) |
 | [quiz-game](projects/game/quiz-game/) | Game / quiz | HTML | EN | [starter](prompts/context/game-quiz.md) |
 | [saas-prototype](projects/prototype/saas-prototype/) | Prototype | HTML | EN | [starter](prompts/context/prototype.md) |

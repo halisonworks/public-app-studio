@@ -7,7 +7,7 @@ into **category folders** — open one to browse just those, or see
 ## Categories
 
 - [`educational/`](./educational/) — price-calculator, persona-developer, flashcards, rubric-grader
-- [`business/`](./business/) — cap-table-simulator, runway-forecaster, loan-amortization, quote-builder, commission-calculator, ab-test-calculator, gantt-chart, invoice-generator, pricing-page, ux-retention-simulator
+- [`business/`](./business/) — cap-table-simulator, runway-forecaster, loan-amortization, quote-builder, commission-calculator, ab-test-calculator, gantt-chart, invoice-generator, pricing-page, ux-retention-simulator, team-crm (React; multi-user over a shared folder)
 - [`data/`](./data/) — sales-dashboard (React + recharts), chart-maker
 - [`personal/`](./personal/) — habit-tracker, pomodoro-timer, tip-calculator
 - [`travel/`](./travel/) — trip-budget, trip-split, timezones-flight, itinerary

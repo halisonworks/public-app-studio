@@ -51,6 +51,13 @@ three shapes load the same way.
 - Start with one screen; add features in follow-up messages.
 - Keep state local (`useState`, or `localStorage` in HTML) — there's no server.
 
+## Saving data and sharing with a team
+
+Want an app that saves real data, or that a small team shares over OneDrive or a
+network folder? See [Saving data and sharing it with a team](./data-and-team-sharing.md)
+for the `window.appStudio.storage` and `window.appStudio.shared` APIs, with the
+[Team CRM](../projects/business/team-crm/) as a full worked example.
+
 ## Sharing what you made
 
 If you contribute a project back to this library, add the standard header to its
