@@ -20,7 +20,9 @@ into **category folders** — open one to browse just those, or see
   curriculum (LK20), by level: [`NO-2P`](./math/NO-2P/) and [`NO-1P`](./math/NO-1P/)
 - [`genealogy/`](./genealogy/) — family-history tools: relationship-calculator,
   ancestor-birth-date, soundex-coder, shared-cm-predictor, citation-builder,
-  ahnentafel-numbering, old-style-date-converter
+  ahnentafel-numbering, old-style-date-converter; plus a Norwegian set in
+  [`genealogy/norge/`](./genealogy/norge/) (patronymikon, slektskap, kirkekalender,
+  amt↔fylke, gamle mål & mynt, ane-aldersestimator, ressurser, farskaps-Bayes)
 - [`diy-hobby/`](./diy-hobby/) — practical maker's calculators (English + `i18n/nb/`):
   knitting-calculator, recipe-scaler, planting-calendar, material-calculator
 

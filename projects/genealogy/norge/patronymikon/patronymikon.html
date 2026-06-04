@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<!--
+  Patronymikon — Halison App Studio-eksempel
+
+  Bygg og tolk norske patronymer (Ole → Olsen/Olsdatter og omvendt), med notater om gårdsnavn og navneloven av 1923.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken intakt; du kan endre verktøyet, men ikke selg, kommersialiser
+  eller republiser det. Utgitt under Halison App Studio Examples License — se
+  LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patronymikon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; }
+    .fade-in { animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .pill { display: inline-flex; align-items: center; gap: 0.35rem; }
+    .gender-btn { transition: all 0.15s ease; }
+    .gender-son.active { background: #eef2ff; border-color: #6366f1; color: #4338ca; }
+    .gender-dtr.active { background: #fdf2f8; border-color: #ec4899; color: #be185d; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-gray-900 leading-tight">Patronymikon</h1>
+          <p class="text-xs text-gray-500">Bygg og tolk norske patronymer</p>
+        </div>
+      </div>
+      <a href="https://github.com/halisonworks/public-app-studio" target="_blank" rel="noopener"
+         class="hidden sm:inline-flex text-xs text-gray-400 hover:text-indigo-500 underline">App Studio</a>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 py-8 space-y-6">
+
+    <!-- Om norske patronymer -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Om norske patronymer</h2>
+      <div class="text-sm text-gray-600 leading-relaxed space-y-3">
+        <p>
+          Et <strong class="text-gray-800">patronym</strong> er et navn dannet av farens fornavn pluss en endelse:
+          <span class="text-indigo-700 font-semibold">«-sen/-son»</span> (sønn) eller
+          <span class="text-pink-700 font-semibold">«-datter/-dotter»</span> (datter).
+          Slik ble <em>Ole</em> sin sønn til <em>Olsen</em> og hans datter til <em>Olsdatter</em>.
+        </p>
+        <p>
+          Skikken var nærmest enerådende i Norge før ca. <strong class="text-gray-800">1900</strong>. Hver ny generasjon fikk
+          et nytt patronym, så «etternavnet» skiftet fra far til barn og var ikke arvelig på den måten vi kjenner i dag.
+        </p>
+        <p>
+          I tillegg brukte folk ofte <strong class="text-gray-800">gårdsnavn</strong> som et slags etternavn — men dette
+          fulgte bostedet og kunne endre seg når familien flyttet til en annen gård. En person kunne altså bytte
+          «etternavn» ved å flytte.
+        </p>
+        <p>
+          <strong class="text-gray-800">Navneloven av 1923</strong> gjorde etternavn arvelige og faste. Mange frøs da fast
+          datidens patronym eller gårdsnavn som det slektsnavnet vi kjenner i dag.
+        </p>
+        <p class="text-xs text-gray-500 bg-gray-50 rounded-lg px-4 py-3 border border-gray-100">
+          Merk: formene <span class="font-semibold">-son</span> og <span class="font-semibold">-dotter</span> er eldre og
+          dialektale — særlig vanlige på Vestlandet — mens <span class="font-semibold">-sen</span> og
+          <span class="font-semibold">-datter</span> er de mer utbredte/moderne formene i bokmålsområdet.
+        </p>
+      </div>
+    </section>
+
+    <!-- 1) BYGG -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div class="flex items-center gap-2 mb-5">
+        <span class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">1</span>
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Bygg patronym</h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Farens fornavn</label>
+            <input id="byggNavn" type="text" value="Ole" autocomplete="off"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+              placeholder="f.eks. Ole" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Barnets kjønn</label>
+            <div class="grid grid-cols-2 gap-3">
+              <button id="byggSon" type="button"
+                class="gender-btn gender-son active border-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-600 border-gray-200 flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path stroke-linecap="round" d="M12 12v9M8 16h8"/></svg>
+                Sønn
+              </button>
+              <button id="byggDtr" type="button"
+                class="gender-btn gender-dtr border-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-gray-600 border-gray-200 flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path stroke-linecap="round" d="M12 12v9M9 18h6"/></svg>
+                Datter
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="bg-indigo-50 rounded-xl px-5 py-4 border border-indigo-100">
+            <div class="text-xs text-indigo-600 font-medium mb-1">Moderne form (-sen / -datter)</div>
+            <div id="byggModerne" class="text-2xl font-bold text-indigo-800">—</div>
+          </div>
+          <div class="bg-gray-50 rounded-xl px-5 py-4 border border-gray-200">
+            <div class="text-xs text-gray-500 font-medium mb-1">Eldre / dialektal form (-son / -dotter)</div>
+            <div id="byggEldre" class="text-2xl font-bold text-gray-700">—</div>
+          </div>
+          <p id="byggNote" class="text-xs text-gray-400"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2) TOLK -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div class="flex items-center gap-2 mb-5">
+        <span class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">2</span>
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Tolk patronym</h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Patronym</label>
+          <input id="tolkInput" type="text" value="Olsdatter" autocomplete="off"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+            placeholder="f.eks. Olsdatter, Pedersen, Larsson" />
+          <p class="text-xs text-gray-400 mt-2">Skriv inn et patronym så tolker verktøyet kjønn og sannsynlig farsnavn.</p>
+        </div>
+
+        <div id="tolkResult" class="space-y-3">
+          <div class="bg-gray-50 rounded-xl px-5 py-4 border border-gray-200">
+            <div class="text-xs text-gray-500 font-medium mb-1">Kjønn</div>
+            <div id="tolkKjonn" class="text-lg font-bold text-gray-800">—</div>
+          </div>
+          <div class="bg-gray-50 rounded-xl px-5 py-4 border border-gray-200">
+            <div class="text-xs text-gray-500 font-medium mb-1">Sannsynlig farsnavn</div>
+            <div id="tolkFar" class="text-lg font-bold text-gray-800">—</div>
+            <div id="tolkAlt" class="text-xs text-gray-500 mt-1"></div>
+          </div>
+          <p id="tolkNote" class="text-xs text-gray-400"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3) GÅRDSNAVN & NAVNELOV -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div class="flex items-center gap-2 mb-5">
+        <span class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">3</span>
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Gårdsnavn &amp; navneloven</h2>
+      </div>
+
+      <div class="text-sm text-gray-600 leading-relaxed space-y-3">
+        <p>
+          Ved siden av patronymet brukte folk gjerne et <strong class="text-gray-800">gårdsnavn</strong> for å si hvor de
+          bodde. I kirkebøker og folketellinger ser du ofte en tredelt struktur:
+          <span class="font-semibold text-indigo-700">fornavn + patronym + gårdsnavn</span>.
+        </p>
+        <p>
+          Fordi gårdsnavnet fulgte <strong class="text-gray-800">bostedet</strong>, kunne det skifte gjennom livet. Flyttet
+          en husmann fra <em>Haugen</em> til <em>Berget</em>, ble han gjerne kalt etter den nye gården. Dette gjør
+          slektsgransking utfordrende: «etternavnet» er ikke alltid stabilt før 1900-tallet.
+        </p>
+        <p>
+          <strong class="text-gray-800">Navneloven av 1923</strong> innførte arvelige, faste etternavn for alle. Da ble enten
+          patronymet eller gårdsnavnet låst som familienavn — derfor heter mange i dag både <em>Olsen</em> (frosset patronym)
+          og <em>Haugen</em> (frosset gårdsnavn).
+        </p>
+
+        <div class="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-3 mt-2">
+          <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Eksempler</div>
+          <div class="flex gap-3">
+            <span class="text-indigo-500 font-bold flex-shrink-0">›</span>
+            <p><strong class="text-gray-800">Ole Pedersen Haugen</strong> = Ole, sønn av Peder, bosatt på gården Haugen.</p>
+          </div>
+          <div class="flex gap-3">
+            <span class="text-indigo-500 font-bold flex-shrink-0">›</span>
+            <p><strong class="text-gray-800">Marit Larsdatter Berge</strong> = Marit, datter av Lars, bosatt på gården Berge.</p>
+          </div>
+          <div class="flex gap-3">
+            <span class="text-indigo-500 font-bold flex-shrink-0">›</span>
+            <p><strong class="text-gray-800">Nils Knutsen Li</strong> som flytter til Haugen, kan senere stå oppført som
+              <strong class="text-gray-800">Nils Knutsen Haugen</strong> — samme person, nytt gårdsnavn.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="max-w-4xl mx-auto px-4 py-6 text-center text-xs text-gray-400">
+    Patronymikon &mdash; <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-indigo-500" target="_blank" rel="noopener">Halison App Studio</a>
+  </footer>
+
+<script>
+// ─── Oppslagstabell: fornavn → patronymisk stamme ───────────────────────────
+const TABELL = {
+ 'Ole':'Ols','Ola':'Ols','Lars':'Lars','Nils':'Nils','Anders':'Anders','Hans':'Hans',
+ 'Knut':'Knut','Peder':'Peders','Per':'Pers','Jon':'Jons','Johan':'Johans','Johannes':'Johannes',
+ 'Erik':'Eriks','Halvor':'Halvors','Gunnar':'Gunnars','Svein':'Svens','Sven':'Svens','Tor':'Tors',
+ 'Bjørn':'Bjørns','Rasmus':'Rasmus','Kristen':'Kristens','Kristoffer':'Kristoffers','Sjur':'Sjurs',
+ 'Ivar':'Ivars','Arne':'Arnes','Engebret':'Engebret','Gulbrand':'Gulbrands','Torstein':'Torsteins',
+ 'Mikkel':'Mikkels','Gjert':'Gjerts','Eilert':'Eilerts','Elling':'Ellings','Syver':'Syvers',
+ 'Even':'Evens','Amund':'Amunds','Åge':'Åges','Audun':'Auduns','Håkon':'Håkons','Trond':'Tronds',
+ 'Jakob':'Jakobs','Mathias':'Mathias','Kristian':'Kristians','Markus':'Markus','Nikolai':'Nikolais'
+};
+
+// ─── Hjelpere ───────────────────────────────────────────────────────────────
+
+// Stor forbokstav, resten små (for pen visning)
+function tittelCase(s) {
+  s = s.trim();
+  if (!s) return '';
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
+// Finn patronymisk stamme fra et fornavn
+function finnStamme(navn) {
+  // Eksakt treff i tabell (case-insensitivt)
+  for (const key in TABELL) {
+    if (key.toLowerCase() === navn.toLowerCase()) return TABELL[key];
+  }
+  // Fallback: slutter navnet på 's' -> ikke legg til ny s; ellers legg til 's'
+  const lower = navn.toLowerCase();
+  if (lower.endsWith('s')) return navn;
+  return navn + 's';
+}
+
+// Sikre at stammen har genitiv-s (noen tabell-stammer er lagret uten, f.eks. 'Knut')
+function genitiv(stamme) {
+  return stamme.toLowerCase().endsWith('s') ? stamme : stamme + 's';
+}
+
+// Bygg patronym fra stamme + kjønn + form
+function byggPatronym(stamme, erSon, moderne) {
+  const g = genitiv(stamme);                       // Ols, Lars, Knuts ...
+  if (erSon) {
+    if (moderne) return g + 'en';                  // Ols+en = Olsen, Knuts+en = Knutsen
+    return g + 'son';                              // eldre: Ols+son = Olsson, Lars+son = Larsson
+  } else {
+    if (moderne) return g + 'datter';              // Ols+datter = Olsdatter
+    return g + 'dotter';                           // eldre: Ols+dotter = Olsdotter
+  }
+}
+
+// ─── 1) BYGG ────────────────────────────────────────────────────────────────
+
+let byggErSon = true;
+
+function oppdaterBygg() {
+  const raw = document.getElementById('byggNavn').value.trim();
+  const moderneEl = document.getElementById('byggModerne');
+  const eldreEl = document.getElementById('byggEldre');
+  const noteEl = document.getElementById('byggNote');
+
+  if (!raw) {
+    moderneEl.textContent = '—';
+    eldreEl.textContent = '—';
+    noteEl.textContent = 'Skriv inn farens fornavn for å bygge patronymet.';
+    lagre();
+    return;
+  }
+
+  const navn = tittelCase(raw);
+  const stamme = finnStamme(navn);
+
+  const moderne = byggPatronym(stamme, byggErSon, true);
+  const eldre = byggPatronym(stamme, byggErSon, false);
+
+  moderneEl.textContent = moderne;
+  eldreEl.textContent = eldre;
+
+  const kjonnOrd = byggErSon ? 'sønn' : 'datter';
+  // Var navnet kjent i tabellen?
+  let kjent = false;
+  for (const key in TABELL) { if (key.toLowerCase() === navn.toLowerCase()) { kjent = true; break; } }
+  noteEl.textContent = (kjent ? 'Stamme «' + stamme + '» fra oppslagstabellen. ' : 'Stamme «' + stamme + '» dannet med fallback-regelen. ')
+    + navn + ' sin ' + kjonnOrd + ' fikk dette patronymet.';
+
+  lagre();
+}
+
+document.getElementById('byggNavn').addEventListener('input', oppdaterBygg);
+
+document.getElementById('byggSon').addEventListener('click', function() {
+  byggErSon = true;
+  this.classList.add('active');
+  document.getElementById('byggDtr').classList.remove('active');
+  oppdaterBygg();
+});
+document.getElementById('byggDtr').addEventListener('click', function() {
+  byggErSon = false;
+  this.classList.add('active');
+  document.getElementById('byggSon').classList.remove('active');
+  oppdaterBygg();
+});
+
+// ─── 2) TOLK ────────────────────────────────────────────────────────────────
+
+// Endelser i prioritert rekkefølge (lengst først for å unngå feilmatch)
+const ENDELSER = [
+  { suf: 'datter', kjonn: 'kvinne', ordform: '-datter (datter, moderne)' },
+  { suf: 'dotter', kjonn: 'kvinne', ordform: '-dotter (datter, eldre/dialektal)' },
+  { suf: 'sson',   kjonn: 'mann',   ordform: '-son (sønn, eldre/dialektal)' },
+  { suf: 'son',    kjonn: 'mann',   ordform: '-son (sønn, eldre/dialektal)' },
+  { suf: 'sen',    kjonn: 'mann',   ordform: '-sen (sønn, moderne)' },
+];
+
+// Gitt en stamme (uten endelse), finn mulige fornavn fra tabellen
+function fornavnFraStamme(stamme) {
+  const treff = [];
+  const sLow = stamme.toLowerCase();
+  for (const key in TABELL) {
+    if (TABELL[key].toLowerCase() === sLow) treff.push(key);
+  }
+  // Fjern duplikater og sorter
+  return Array.from(new Set(treff)).sort();
+}
+
+// Reverser fallback: stamme -> antatt fornavn (strip genitiv-s hvis lagt til)
+function antattFornavn(stamme) {
+  // Hvis stammen slutter på 's' og uten 's' gir et plausibelt navn, vis begge muligheter
+  if (stamme.toLowerCase().endsWith('s')) {
+    return stamme.slice(0, -1); // Peders -> Peder, Ols -> Ol (ufullstendig, men tabellen dekker vanlige)
+  }
+  return stamme;
+}
+
+function oppdaterTolk() {
+  const raw = document.getElementById('tolkInput').value.trim();
+  const kjonnEl = document.getElementById('tolkKjonn');
+  const farEl = document.getElementById('tolkFar');
+  const altEl = document.getElementById('tolkAlt');
+  const noteEl = document.getElementById('tolkNote');
+
+  altEl.textContent = '';
+  if (!raw) {
+    kjonnEl.textContent = '—';
+    farEl.textContent = '—';
+    noteEl.textContent = 'Skriv inn et patronym for å tolke det.';
+    lagre();
+    return;
+  }
+
+  const navn = tittelCase(raw);
+  const lower = navn.toLowerCase();
+
+  let funnet = null;
+  for (const e of ENDELSER) {
+    if (lower.endsWith(e.suf) && lower.length > e.suf.length) {
+      funnet = { ...e, stamme: navn.slice(0, navn.length - e.suf.length) };
+      break;
+    }
+  }
+
+  if (!funnet) {
+    kjonnEl.textContent = 'Ukjent';
+    farEl.textContent = '—';
+    noteEl.textContent = '«' + navn + '» ser ikke ut som et patronym (mangler -sen/-son/-datter/-dotter). '
+      + 'Kan det være et gårdsnavn eller et moderne slektsnavn?';
+    lagre();
+    return;
+  }
+
+  // Kjønn
+  kjonnEl.textContent = funnet.kjonn === 'kvinne' ? 'Kvinne (datter)' : 'Mann (sønn)';
+  kjonnEl.className = 'text-lg font-bold ' + (funnet.kjonn === 'kvinne' ? 'text-pink-700' : 'text-indigo-700');
+
+  // Farsnavn: prøv tabell-oppslag på stammen først
+  const stamme = funnet.stamme;
+  const fraTabell = fornavnFraStamme(stamme);
+
+  if (fraTabell.length > 0) {
+    farEl.textContent = fraTabell[0];
+    if (fraTabell.length > 1) {
+      altEl.textContent = 'Andre muligheter med samme stamme: ' + fraTabell.slice(1).join(', ') + '.';
+    }
+  } else {
+    const antatt = antattFornavn(stamme);
+    farEl.textContent = antatt || stamme;
+  }
+
+  noteEl.textContent = 'Tolket endelse: ' + funnet.ordform + '. Stamme «' + stamme + '». '
+    + 'Merk at samme stamme kan svare til flere fornavn (Ols → Ole eller Ola), så farsnavnet er ikke alltid entydig.';
+
+  lagre();
+}
+
+document.getElementById('tolkInput').addEventListener('input', oppdaterTolk);
+
+// ─── localStorage (try/catch) ───────────────────────────────────────────────
+
+function lagre() {
+  try {
+    localStorage.setItem('patronymikon', JSON.stringify({
+      byggNavn: document.getElementById('byggNavn').value,
+      byggErSon: byggErSon,
+      tolkInput: document.getElementById('tolkInput').value
+    }));
+  } catch (e) { /* ignorer */ }
+}
+
+(function gjenopprett() {
+  try {
+    const lagret = JSON.parse(localStorage.getItem('patronymikon'));
+    if (lagret) {
+      if (typeof lagret.byggNavn === 'string') document.getElementById('byggNavn').value = lagret.byggNavn;
+      if (typeof lagret.tolkInput === 'string') document.getElementById('tolkInput').value = lagret.tolkInput;
+      if (typeof lagret.byggErSon === 'boolean') {
+        byggErSon = lagret.byggErSon;
+        if (byggErSon) {
+          document.getElementById('byggSon').classList.add('active');
+          document.getElementById('byggDtr').classList.remove('active');
+        } else {
+          document.getElementById('byggDtr').classList.add('active');
+          document.getElementById('byggSon').classList.remove('active');
+        }
+      }
+    }
+  } catch (e) { /* ignorer */ }
+  oppdaterBygg();
+  oppdaterTolk();
+})();
+</script>
+</body>
+</html>

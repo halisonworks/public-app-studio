@@ -28,4 +28,20 @@ account, no upload, and no internet connection required.
 Every tool is a single self-contained HTML page (Tailwind via CDN), runs fully
 offline, and keeps your inputs in `localStorage`.
 
+## Norsk slektsforskning (Norwegian)
+
+A dedicated set of tools for **Norwegian** family history, written in Norwegian
+(Bokmål) — patronymics, the *menning* kinship system, the 1700 calendar reform,
+old units and currency, historical county (*amt*) names, and a curated link
+library of Norwegian sources. See [`norge/`](./norge/):
+
+- [Ane-aldersestimator](./norge/ane-aldersestimator/) — probable birth-year windows for ancestors
+- [Patronymikon](./norge/patronymikon/) — Olsen / Olsdatter builder and decoder
+- [Slektskap (norske termer)](./norge/slektskap-norsk/) — søskenbarn, tremenning, firmenning …
+- [Ressurser & datasett](./norge/ressurser-og-datasett/) — searchable Norwegian source library
+- [Bayesiansk farskaps-sannsynlighet](./norge/biologisk-far-bayes/) — educational Bayesian paternity demo
+- [Gamle mål & mynt](./norge/gamle-maal-og-mynt/) — old Norwegian units and coinage converter
+- [Kirkeårskalender](./norge/kirkekalender/) — Easter computus, movable feasts, the 1700 switch
+- [Amt ↔ fylke](./norge/amt-og-fylke/) — historical county names vs. today's fylker
+
 See the full catalog with screenshots: [../../catalog.md](../../catalog.md).

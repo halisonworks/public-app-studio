@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<!--
+  Amt ↔ fylke — Halison App Studio-eksempel
+
+  Slå opp gamle norske amtsnavn mot dagens fylker, og se hvordan inndelingen endret seg i 1919, 2020 og 2024 — for å forstå stedsnavn i gamle kilder.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken intakt; du kan endre verktøyet, men ikke selg, kommersialiser
+  eller republiser det. Utgitt under Halison App Studio Examples License — se
+  LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amt ↔ fylke</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; }
+    .fade-in { animation: fadeIn 0.35s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .row-hover { transition: background-color 0.15s ease; cursor: pointer; }
+    .row-hover:hover { background-color: #eef2ff; }
+    mark { background: #fde68a; color: #92400e; padding: 0 1px; border-radius: 2px; }
+    .timeline-dot { box-shadow: 0 0 0 3px #fff, 0 0 0 5px #c7d2fe; }
+    .pill { font-size: 11px; padding: 1px 8px; border-radius: 9999px; font-weight: 600; white-space: nowrap; }
+    .pill-amt { background: #fef3c7; color: #92400e; }
+    .pill-1919 { background: #dbeafe; color: #1e40af; }
+    .pill-2020 { background: #ede9fe; color: #5b21b6; }
+    .pill-2024 { background: #d1fae5; color: #065f46; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-gray-900 leading-tight">Amt ↔ fylke</h1>
+        <p class="text-xs text-gray-500">Gamle amtsnavn mot dagens fylker — og forvaltningshistorien bak</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-8 space-y-6">
+
+    <!-- Om-kort -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Om inndelingen</h2>
+      <div class="text-sm text-gray-600 leading-relaxed space-y-3">
+        <p>
+          Norge var delt inn i <strong class="text-gray-800">amt</strong> fram til
+          <strong class="text-gray-800">1. januar 1919</strong>, da amtene ble til
+          <strong class="text-gray-800">fylker</strong> og de fleste fikk nye, fornorska navn.
+          Byen <em>Kristiania</em> ble til <em>Oslo</em> i 1925.
+        </p>
+        <p>
+          I <strong class="text-gray-800">2020</strong> ble en rekke fylker slått sammen til
+          større regioner (regionreformen). Flere av disse ble
+          <strong class="text-gray-800">delt opp igjen fra 1. januar 2024</strong>, slik at
+          gamle fylkesnavn som Østfold, Akershus, Buskerud, Vestfold, Telemark, Troms og
+          Finnmark ble gjenoppretta.
+        </p>
+        <p class="text-gray-500">
+          Verktøyet hjelper deg å tolke stedsnavn i gamle kilder: et amtsnavn i en kirkebok
+          eller folketelling kan slås opp mot fylket det ble til — og videre fram til dagens
+          inndeling.
+        </p>
+      </div>
+    </section>
+
+    <!-- Hierarki-kort -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Forvaltningshierarki</h2>
+      <div class="flex flex-wrap items-center gap-2 text-sm">
+        <span class="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 font-semibold">Rike</span>
+        <svg class="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        <span class="px-3 py-1.5 rounded-lg bg-amber-100 text-amber-800 font-semibold">Amt / fylke</span>
+        <svg class="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        <span class="px-3 py-1.5 rounded-lg bg-indigo-100 text-indigo-800 font-semibold">Fogderi / prestegjeld</span>
+        <svg class="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        <span class="px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 font-semibold">Sokn / tinglag</span>
+      </div>
+      <p class="text-xs text-gray-500 leading-relaxed mt-4">
+        <strong class="text-gray-700">Merk:</strong> kirkebøkene er ordna etter
+        <em>prestegjeld</em> og <em>sokn</em>, ikke etter amt eller fylke. Når du vet hvilket
+        amt et sted lå i, må du finne riktig prestegjeld og sokn for å lete i kirkebøkene —
+        søk i <span class="font-medium text-gray-700">Digitalarkivet</span> for disse.
+      </p>
+    </section>
+
+    <!-- Slå opp motsatt vei -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Slå opp motsatt vei</h2>
+      <p class="text-xs text-gray-500 mb-3">Skriv inn et moderne fylke (1919–2019) for å se hvilket amt det tilsvarte.</p>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <input id="reverseInput" type="text" autocomplete="off"
+          class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+          placeholder="f.eks. Østfold, Hedmark, Sør-Trøndelag…" list="fylkeList" />
+        <datalist id="fylkeList"></datalist>
+      </div>
+      <div id="reverseResult" class="mt-4 hidden fade-in"></div>
+    </section>
+
+    <!-- Søk + tabell -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Amtene og fylkene deres</h2>
+        <span id="resultCount" class="text-xs text-gray-400"></span>
+      </div>
+
+      <div class="relative mb-5">
+        <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
+        <input id="searchInput" type="text" autocomplete="off"
+          class="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+          placeholder="Søk på amt, fylke eller region…" />
+      </div>
+
+      <!-- Desktop tabell -->
+      <div class="hidden md:block overflow-x-auto">
+        <table class="w-full text-sm border-collapse">
+          <thead>
+            <tr class="text-left text-xs uppercase tracking-wider text-gray-400 border-b border-gray-200">
+              <th class="py-2 pr-3 font-semibold">Amt <span class="font-normal normal-case text-gray-300">(før 1919)</span></th>
+              <th class="py-2 px-3 font-semibold">Fylke <span class="font-normal normal-case text-gray-300">(1919–2019)</span></th>
+              <th class="py-2 px-3 font-semibold">Region <span class="font-normal normal-case text-gray-300">(2020–2023)</span></th>
+              <th class="py-2 pl-3 font-semibold">Status fra 2024</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Mobil liste -->
+      <div id="cardList" class="md:hidden space-y-2"></div>
+
+      <p id="noResults" class="hidden text-sm text-gray-400 text-center py-8">Ingen treff. Prøv et annet søkeord.</p>
+    </section>
+
+  </main>
+
+  <!-- Detalj-modal -->
+  <div id="detailOverlay" class="hidden fixed inset-0 z-40 bg-black/40 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div id="detailCard" class="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl shadow-xl max-h-[90vh] overflow-y-auto fade-in"></div>
+  </div>
+
+  <footer class="max-w-5xl mx-auto px-4 py-6 text-center text-xs text-gray-400">
+    Amt ↔ fylke &mdash; <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-indigo-500" target="_blank" rel="noopener">Halison App Studio</a>
+  </footer>
+
+<script>
+// ─── Data ─────────────────────────────────────────────────────────────────────
+const DATA = [
+ {amt:'Smaalenenes amt', fylke:'Østfold', r2020:'Viken', r2024:'Østfold (gjenoppretta)'},
+ {amt:'Akershus amt', fylke:'Akershus', r2020:'Viken', r2024:'Akershus (gjenoppretta)'},
+ {amt:'Kristiania (by)', fylke:'Oslo', r2020:'Oslo', r2024:'Oslo'},
+ {amt:'Hedemarkens amt', fylke:'Hedmark', r2020:'Innlandet', r2024:'Innlandet'},
+ {amt:'Kristians amt', fylke:'Oppland', r2020:'Innlandet', r2024:'Innlandet'},
+ {amt:'Buskeruds amt', fylke:'Buskerud', r2020:'Viken', r2024:'Buskerud (gjenoppretta)'},
+ {amt:'Jarlsberg og Larviks amt', fylke:'Vestfold', r2020:'Vestfold og Telemark', r2024:'Vestfold (gjenoppretta)'},
+ {amt:'Bratsberg amt', fylke:'Telemark', r2020:'Vestfold og Telemark', r2024:'Telemark (gjenoppretta)'},
+ {amt:'Nedenes amt', fylke:'Aust-Agder', r2020:'Agder', r2024:'Agder'},
+ {amt:'Lister og Mandals amt', fylke:'Vest-Agder', r2020:'Agder', r2024:'Agder'},
+ {amt:'Stavanger amt', fylke:'Rogaland', r2020:'Rogaland', r2024:'Rogaland'},
+ {amt:'Søndre Bergenhus amt', fylke:'Hordaland', r2020:'Vestland', r2024:'Vestland'},
+ {amt:'Bergen (by)', fylke:'Bergen (eget fylke til 1972, så Hordaland)', r2020:'Vestland', r2024:'Vestland'},
+ {amt:'Nordre Bergenhus amt', fylke:'Sogn og Fjordane', r2020:'Vestland', r2024:'Vestland'},
+ {amt:'Romsdals amt', fylke:'Møre og Romsdal', r2020:'Møre og Romsdal', r2024:'Møre og Romsdal'},
+ {amt:'Søndre Trondhjems amt', fylke:'Sør-Trøndelag', r2020:'Trøndelag', r2024:'Trøndelag'},
+ {amt:'Nordre Trondhjems amt', fylke:'Nord-Trøndelag', r2020:'Trøndelag', r2024:'Trøndelag'},
+ {amt:'Nordlands amt', fylke:'Nordland', r2020:'Nordland', r2024:'Nordland'},
+ {amt:'Tromsø amt', fylke:'Troms', r2020:'Troms og Finnmark', r2024:'Troms (gjenoppretta)'},
+ {amt:'Finmarkens amt', fylke:'Finnmark', r2020:'Troms og Finnmark', r2024:'Finnmark (gjenoppretta)'}
+];
+
+// Korte merknader per amt (vises i detaljkortet der det er relevant)
+const NOTES = {
+  'Kristiania (by)': 'Hovedstaden het Kristiania fram til 1925, da bynavnet ble endra til Oslo. I gamle kilder før 1925 finner du derfor «Christiania» eller «Kristiania».',
+  'Bergen (by)': 'Bergen var en egen bykommune og eget fylke fram til 1972, da byen ble slått sammen med Hordaland fylke.',
+  'Hedemarkens amt': 'Skrives «Hedemarkens» i amtsperioden; fylkesnavnet ble «Hedmark» fra 1919.',
+  'Søndre Trondhjems amt': 'Trondhjem ble skrevet med «-hjem» i amtsnavnet; byen het offisielt Trondhjem til 1930. Fylket ble «Sør-Trøndelag».',
+  'Nordre Trondhjems amt': 'Tilsvarende ble «Nordre Trondhjems amt» til fylket «Nord-Trøndelag» i 1919.',
+  'Smaalenenes amt': 'Det gamle amtsnavnet «Smaalenene» ble erstatta av fylkesnavnet «Østfold» i 1919.',
+  'Finmarkens amt': 'Skrives «Finmarkens» (med én n) i amtsperioden; fylkesnavnet ble «Finnmark».',
+  'Jarlsberg og Larviks amt': 'Slått sammen av de gamle grevskapene Jarlsberg og Larvik; ble fylket «Vestfold» i 1919.',
+  'Bratsberg amt': 'Det gamle amtsnavnet «Bratsberg» ble erstatta av fylkesnavnet «Telemark» i 1919.'
+};
+
+// ─── Hjelpefunksjoner ─────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function norm(s) {
+  return String(s).toLowerCase().trim();
+}
+function highlight(text, query) {
+  const safe = esc(text);
+  if (!query) return safe;
+  const q = norm(query);
+  const lower = text.toLowerCase();
+  const idx = lower.indexOf(q);
+  if (idx === -1) return safe;
+  // Bygg highlight på ren tekst, så escape per del
+  const before = text.slice(0, idx);
+  const match = text.slice(idx, idx + q.length);
+  const after = text.slice(idx + q.length);
+  return esc(before) + '<mark>' + esc(match) + '</mark>' + esc(after);
+}
+
+// ─── DOM-refs ─────────────────────────────────────────────────────────────────
+const tableBody = document.getElementById('tableBody');
+const cardList = document.getElementById('cardList');
+const searchInput = document.getElementById('searchInput');
+const noResults = document.getElementById('noResults');
+const resultCount = document.getElementById('resultCount');
+
+// ─── Render tabell + mobilliste ───────────────────────────────────────────────
+function render(query) {
+  const q = norm(query);
+  const rows = DATA.filter(d =>
+    !q ||
+    norm(d.amt).includes(q) ||
+    norm(d.fylke).includes(q) ||
+    norm(d.r2020).includes(q) ||
+    norm(d.r2024).includes(q)
+  );
+
+  tableBody.innerHTML = '';
+  cardList.innerHTML = '';
+
+  rows.forEach(d => {
+    const i = DATA.indexOf(d);
+
+    // Desktop-rad
+    const tr = document.createElement('tr');
+    tr.className = 'row-hover border-b border-gray-100';
+    tr.setAttribute('data-idx', i);
+    tr.innerHTML =
+      '<td class="py-3 pr-3 font-semibold text-gray-800">' + highlight(d.amt, query) + '</td>' +
+      '<td class="py-3 px-3 text-gray-700">' + highlight(d.fylke, query) + '</td>' +
+      '<td class="py-3 px-3 text-gray-500">' + highlight(d.r2020, query) + '</td>' +
+      '<td class="py-3 pl-3 text-gray-700">' + highlight(d.r2024, query) + '</td>';
+    tableBody.appendChild(tr);
+
+    // Mobilkort
+    const card = document.createElement('div');
+    card.className = 'row-hover border border-gray-200 rounded-xl p-3';
+    card.setAttribute('data-idx', i);
+    card.innerHTML =
+      '<div class="font-semibold text-gray-800 mb-2">' + highlight(d.amt, query) + '</div>' +
+      '<div class="grid grid-cols-1 gap-1 text-xs">' +
+        '<div class="flex gap-2"><span class="pill pill-1919">1919</span><span class="text-gray-700">' + highlight(d.fylke, query) + '</span></div>' +
+        '<div class="flex gap-2"><span class="pill pill-2020">2020</span><span class="text-gray-600">' + highlight(d.r2020, query) + '</span></div>' +
+        '<div class="flex gap-2"><span class="pill pill-2024">2024</span><span class="text-gray-700">' + highlight(d.r2024, query) + '</span></div>' +
+      '</div>';
+    cardList.appendChild(card);
+  });
+
+  const has = rows.length > 0;
+  noResults.classList.toggle('hidden', has);
+  resultCount.textContent = rows.length + ' av ' + DATA.length;
+}
+
+// ─── Detaljkort (tidslinje) ───────────────────────────────────────────────────
+const overlay = document.getElementById('detailOverlay');
+const detailCard = document.getElementById('detailCard');
+
+function timelineStep(year, label, value, pillClass, isLast) {
+  return (
+    '<div class="relative pl-8 ' + (isLast ? '' : 'pb-6') + '">' +
+      (isLast ? '' : '<span class="absolute left-[7px] top-3 bottom-0 w-0.5 bg-indigo-100"></span>') +
+      '<span class="absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full bg-indigo-500 timeline-dot"></span>' +
+      '<div class="flex items-center gap-2 mb-0.5">' +
+        '<span class="pill ' + pillClass + '">' + esc(year) + '</span>' +
+        '<span class="text-xs uppercase tracking-wider text-gray-400 font-semibold">' + esc(label) + '</span>' +
+      '</div>' +
+      '<div class="text-gray-800 font-semibold">' + esc(value) + '</div>' +
+    '</div>'
+  );
+}
+
+function openDetail(idx) {
+  const d = DATA[idx];
+  const note = NOTES[d.amt];
+  detailCard.innerHTML =
+    '<div class="p-6">' +
+      '<div class="flex items-start justify-between gap-4 mb-5">' +
+        '<div>' +
+          '<p class="text-xs uppercase tracking-wider text-gray-400 font-semibold mb-1">Tidslinje</p>' +
+          '<h3 class="text-xl font-bold text-gray-900">' + esc(d.amt) + '</h3>' +
+        '</div>' +
+        '<button id="closeDetail" class="text-gray-400 hover:text-gray-700 flex-shrink-0 -mt-1 -mr-1 p-1" aria-label="Lukk">' +
+          '<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>' +
+        '</button>' +
+      '</div>' +
+      '<div class="mb-5">' +
+        timelineStep('før 1919', 'Amt', d.amt, 'pill-amt', false) +
+        timelineStep('1919', 'Fylke', d.fylke, 'pill-1919', false) +
+        timelineStep('2020', 'Region', d.r2020, 'pill-2020', false) +
+        timelineStep('2024', 'Status', d.r2024, 'pill-2024', true) +
+      '</div>' +
+      (note
+        ? '<div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-900 leading-relaxed flex gap-2">' +
+            '<svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>' +
+            '<span>' + esc(note) + '</span>' +
+          '</div>'
+        : '') +
+      '<p class="text-xs text-gray-400 mt-5 leading-relaxed">Kirkebøker er ordna etter prestegjeld og sokn — bruk fylket over til å finne riktig prestegjeld, og søk i Digitalarkivet.</p>' +
+    '</div>';
+
+  overlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('closeDetail').addEventListener('click', closeDetail);
+}
+
+function closeDetail() {
+  overlay.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+overlay.addEventListener('click', e => { if (e.target === overlay) closeDetail(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+
+// Delegert klikk på rader / kort
+function bindRowClick(container) {
+  container.addEventListener('click', e => {
+    const el = e.target.closest('[data-idx]');
+    if (el) openDetail(parseInt(el.getAttribute('data-idx'), 10));
+  });
+}
+bindRowClick(tableBody);
+bindRowClick(cardList);
+
+// ─── Slå opp motsatt vei ──────────────────────────────────────────────────────
+const reverseInput = document.getElementById('reverseInput');
+const reverseResult = document.getElementById('reverseResult');
+const fylkeList = document.getElementById('fylkeList');
+
+// Fyll datalist med fylkesnavn (1919). Ta hovednavnet før parentes.
+const fylkeNames = [...new Set(DATA.map(d => d.fylke.replace(/\s*\(.*\)\s*$/, '').trim()))];
+fylkeNames.forEach(n => {
+  const opt = document.createElement('option');
+  opt.value = n;
+  fylkeList.appendChild(opt);
+});
+
+function reverseLookup(query) {
+  const q = norm(query);
+  if (!q) { reverseResult.classList.add('hidden'); reverseResult.innerHTML = ''; return; }
+
+  const matches = DATA.filter(d => norm(d.fylke).includes(q));
+  reverseResult.classList.remove('hidden');
+
+  if (matches.length === 0) {
+    reverseResult.innerHTML =
+      '<div class="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-500">' +
+        'Fant ingen fylker som matcher «' + esc(query) + '». Prøv f.eks. Østfold, Hedmark eller Sør-Trøndelag.' +
+      '</div>';
+    return;
+  }
+
+  const items = matches.map(d =>
+    '<button type="button" data-idx="' + DATA.indexOf(d) + '" class="rev-pick w-full text-left bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 hover:bg-indigo-100 transition-colors">' +
+      '<div class="flex items-center gap-2 flex-wrap">' +
+        '<span class="pill pill-1919">Fylke</span>' +
+        '<span class="font-semibold text-gray-800">' + esc(d.fylke) + '</span>' +
+        '<svg class="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"/></svg>' +
+        '<span class="pill pill-amt">Amt</span>' +
+        '<span class="font-semibold text-gray-800">' + esc(d.amt) + '</span>' +
+      '</div>' +
+      '<div class="text-xs text-gray-500 mt-1">Klikk for hele tidslinjen</div>' +
+    '</button>'
+  ).join('');
+
+  reverseResult.innerHTML = '<div class="space-y-2">' + items + '</div>';
+  reverseResult.querySelectorAll('.rev-pick').forEach(btn => {
+    btn.addEventListener('click', () => openDetail(parseInt(btn.getAttribute('data-idx'), 10)));
+  });
+}
+
+// ─── Hendelser ────────────────────────────────────────────────────────────────
+searchInput.addEventListener('input', () => {
+  render(searchInput.value);
+  try { localStorage.setItem('amtfylke_search', searchInput.value); } catch (e) { /* ignore */ }
+});
+reverseInput.addEventListener('input', () => {
+  reverseLookup(reverseInput.value);
+  try { localStorage.setItem('amtfylke_reverse', reverseInput.value); } catch (e) { /* ignore */ }
+});
+
+// ─── Init + gjenoppretting ────────────────────────────────────────────────────
+(function init() {
+  try {
+    const s = localStorage.getItem('amtfylke_search');
+    if (s) searchInput.value = s;
+    const r = localStorage.getItem('amtfylke_reverse');
+    if (r) reverseInput.value = r;
+  } catch (e) { /* ignore */ }
+  render(searchInput.value);
+  if (reverseInput.value) reverseLookup(reverseInput.value);
+})();
+</script>
+</body>
+</html>

@@ -65,6 +65,14 @@ and anyone who wants to make a quick prototype of an app idea.
 | [citation-builder](projects/genealogy/citation-builder/) | Genealogy | HTML | EN | — |
 | [ahnentafel-numbering](projects/genealogy/ahnentafel-numbering/) | Genealogy | HTML | EN | — |
 | [old-style-date-converter](projects/genealogy/old-style-date-converter/) | Genealogy | HTML | EN | — |
+| [ane-aldersestimator](projects/genealogy/norge/ane-aldersestimator/) | Genealogy (norsk) | HTML | NB | — |
+| [patronymikon](projects/genealogy/norge/patronymikon/) | Genealogy (norsk) | HTML | NB | — |
+| [slektskap-norsk](projects/genealogy/norge/slektskap-norsk/) | Genealogy (norsk) | HTML | NB | — |
+| [ressurser-og-datasett](projects/genealogy/norge/ressurser-og-datasett/) | Genealogy (norsk) | HTML | NB | — |
+| [biologisk-far-bayes](projects/genealogy/norge/biologisk-far-bayes/) | Genealogy (norsk) · DNA | HTML | NB | — |
+| [gamle-maal-og-mynt](projects/genealogy/norge/gamle-maal-og-mynt/) | Genealogy (norsk) | HTML | NB | — |
+| [kirkekalender](projects/genealogy/norge/kirkekalender/) | Genealogy (norsk) | HTML | NB | — |
+| [amt-og-fylke](projects/genealogy/norge/amt-og-fylke/) | Genealogy (norsk) | HTML | NB | — |
 | [trip-budget](projects/travel/trip-budget/) | Travel / personal | HTML | EN | [starter](prompts/context/travel.md) |
 | [trip-split](projects/travel/trip-split/) | Travel / personal | HTML | EN | [starter](prompts/context/travel.md) |
 | [timezones-flight](projects/travel/timezones-flight/) | Travel / personal | HTML | EN | [starter](prompts/context/travel.md) |
@@ -93,6 +101,23 @@ calendar conversions. All run fully offline. See
 | [Source Citation Builder](projects/genealogy/citation-builder/) | Full note / short note / bibliography citations for 8 record types |
 | [Ahnentafel Number Tool](projects/genealogy/ahnentafel-numbering/) | Sosa-Stradonitz number ↔ ancestral path, plus a numbered chart |
 | [Old Style / New Style Date Converter](projects/genealogy/old-style-date-converter/) | Julian ↔ Gregorian, day of the week, double dating |
+
+### Norsk slektsforskning
+
+Verktøy laget spesielt for norsk slektsforskning, på bokmål — patronymer,
+menning-systemet, 1700-kalenderreformen, gamle mål og mynt, amtsnavn, og et
+lenkebibliotek til norske kilder. Se [`projects/genealogy/norge/`](projects/genealogy/norge/).
+
+| Verktøy | Hva det gjør |
+|---------|--------------|
+| [Ane-aldersestimator](projects/genealogy/norge/ane-aldersestimator/) | Sannsynlige fødselsår for foreldre og forfedre — for å avgrense arkivsøk |
+| [Patronymikon](projects/genealogy/norge/patronymikon/) | Bygg og tolk patronymer (Ole → Olsen/Olsdatter), gårdsnavn og navnelov |
+| [Slektskap (norske termer)](projects/genealogy/norge/slektskap-norsk/) | Søskenbarn, tremenning, firmenning, grandonkel … med slektskapsgrad |
+| [Ressurser & datasett](projects/genealogy/norge/ressurser-og-datasett/) | Søkbart lenkebibliotek: Digitalarkivet, Arkivverket, RHD, Slekt og Data m.fl. |
+| [Bayesiansk farskaps-sannsynlighet](projects/genealogy/norge/biologisk-far-bayes/) | Pedagogisk Bayes-demo: feilfar-rate + DNA-bevis → oppdatert sannsynlighet |
+| [Gamle mål & mynt](projects/genealogy/norge/gamle-maal-og-mynt/) | Alen, favn, tønne, skålpund, speciedaler, ort, skilling → metrisk / 1875-kr |
+| [Kirkeårskalender](projects/genealogy/norge/kirkekalender/) | Påskeregning, bevegelige helligdager, og «N. søndag etter trinitatis»-datoer |
+| [Amt ↔ fylke](projects/genealogy/norge/amt-og-fylke/) | Gamle amtsnavn mot dagens fylker (1919, 2020, 2024) |
 
 ## Travel (personal & *Sales, Service and Tourism*)
 

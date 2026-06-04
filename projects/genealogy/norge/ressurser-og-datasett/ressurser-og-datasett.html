@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<!--
+  Ressurser & datasett — Halison App Studio-eksempel
+
+  Et organisert, søkbart lenkebibliotek til de viktigste kildene for norsk slektsforskning: arkiver, folketellinger, kirkebøker, foreninger, gravminner, DNA og mer.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken intakt; du kan endre verktøyet, men ikke selg, kommersialiser
+  eller republiser det. Utgitt under Halison App Studio Examples License — se
+  LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ressurser & datasett — Norsk slektsforskning</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; }
+    .fade-in { animation: fadeIn 0.35s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .badge-free { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+    .badge-paid { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+    .badge-mix  { background: #e0e7ff; color: #3730a3; border: 1px solid #a5b4fc; }
+    .star-btn { transition: transform 0.15s ease, color 0.15s ease; }
+    .star-btn:hover { transform: scale(1.18); }
+    .star-on { color: #f59e0b; }
+    .star-off { color: #d1d5db; }
+    mark { background: #fde68a; color: inherit; border-radius: 2px; padding: 0 1px; }
+    .card { transition: box-shadow 0.18s ease, border-color 0.18s ease; }
+    .card:hover { box-shadow: 0 4px 14px -2px rgba(79,70,229,0.12); border-color: #c7d2fe; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+        <!-- bokstabel/lenke ikon -->
+        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-gray-900 leading-tight">Ressurser &amp; datasett</h1>
+        <p class="text-xs text-gray-500">Norsk slektsforskning</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-8 space-y-6">
+
+    <!-- Om-kort -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Om denne siden</h2>
+      <p class="text-sm text-gray-600 leading-relaxed">
+        Dette er en startside med eksterne lenker til de viktigste kildene for norsk slektsforskning.
+        Nettsteder kan endre adresse over tid, så en lenke kan av og til peke et nytt sted eller være utdatert.
+        Noen baser er gratis, andre krever abonnement eller medlemskap — dette er merket på hvert kort med
+        <span class="inline-block align-middle text-xs font-semibold px-2 py-0.5 rounded-full badge-free">Gratis</span>,
+        <span class="inline-block align-middle text-xs font-semibold px-2 py-0.5 rounded-full badge-paid">Betalt</span> eller
+        <span class="inline-block align-middle text-xs font-semibold px-2 py-0.5 rounded-full badge-mix">Gratis/medlem</span>.
+        Trykk på stjernen for å lagre en favoritt — favorittene dine vises øverst og huskes i nettleseren din.
+      </p>
+    </section>
+
+    <!-- Søk/filter -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sticky top-[72px] z-20">
+      <div class="relative">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+          </svg>
+        </span>
+        <input id="search" type="search" autocomplete="off"
+          class="w-full border border-gray-300 rounded-xl pl-11 pr-10 py-2.5 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+          placeholder="Søk i tittel, beskrivelse eller emne — f.eks. «kirkebøker», «DNA», «utvandring»…" />
+        <button id="clearSearch" type="button" aria-label="Tøm søk"
+          class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <p id="resultCount" class="text-xs text-gray-400 mt-2 px-1"></p>
+    </section>
+
+    <!-- Innhold rendres her -->
+    <div id="content" class="space-y-8"></div>
+
+    <!-- Tomt resultat -->
+    <div id="emptyState" class="hidden bg-white rounded-2xl border border-gray-200 p-10 text-center">
+      <svg class="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+      </svg>
+      <p class="text-gray-500 text-sm">Ingen ressurser passer søket ditt.</p>
+      <p class="text-gray-400 text-xs mt-1">Prøv et annet ord, eller tøm søkefeltet.</p>
+    </div>
+
+  </main>
+
+  <footer class="max-w-5xl mx-auto px-4 py-6 text-center text-xs text-gray-400">
+    Ressurser &amp; datasett &mdash; <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-indigo-500" target="_blank" rel="noopener">Halison App Studio</a>
+  </footer>
+
+<script>
+// ─── Datasett: alle lenkene som objekter ────────────────────────────────────
+// pris: 'free' | 'paid' | 'mix'
+const RESOURCES = [
+  // ARKIV & PRIMÆRKILDER
+  { id: 'digitalarkivet', section: 'Arkiv & primærkilder', title: 'Digitalarkivet',
+    url: 'https://www.digitalarkivet.no', pris: 'free',
+    desc: 'Arkivverkets digitale arkiv: folketellinger, kirkebøker, skifter, panteregister m.m.',
+    tags: ['arkiv', 'folketelling', 'kirkebøker', 'skifte', 'panteregister', 'primærkilde'] },
+  { id: 'arkivverket', section: 'Arkiv & primærkilder', title: 'Arkivverket',
+    url: 'https://www.arkivverket.no', pris: 'free',
+    desc: 'Riksarkivet og statsarkivene; arkivkataloger.',
+    tags: ['arkiv', 'riksarkivet', 'statsarkiv', 'katalog'] },
+  { id: 'nb-nettbibliotek', section: 'Arkiv & primærkilder', title: 'Nasjonalbiblioteket (Nettbiblioteket)',
+    url: 'https://www.nb.no', pris: 'free',
+    desc: 'Digitaliserte bøker, aviser, tidsskrift og bygdebøker.',
+    tags: ['bøker', 'aviser', 'tidsskrift', 'bygdebøker', 'digitalisert'] },
+  { id: 'nb-aviser', section: 'Arkiv & primærkilder', title: 'Nasjonalbiblioteket – Aviser',
+    url: 'https://www.nb.no/search?mediatype=aviser', pris: 'free',
+    desc: 'Historiske aviser, søkbare.',
+    tags: ['aviser', 'historisk', 'søkbar'] },
+  { id: 'kartverket', section: 'Arkiv & primærkilder', title: 'Kartverket',
+    url: 'https://www.kartverket.no', pris: 'free',
+    desc: 'Historiske kart, matrikkel og stedsnavn.',
+    tags: ['kart', 'matrikkel', 'stedsnavn', 'gård'] },
+
+  // FOLKETELLINGER & BEFOLKNINGSREGISTRE
+  { id: 'rhd', section: 'Folketellinger & befolkningsregistre', title: 'RHD – Registreringssentral for historiske data (UiT)',
+    url: 'https://www.rhd.uit.no', pris: 'free',
+    desc: 'Transkriberte folketellinger og kirkebøker.',
+    tags: ['folketelling', 'kirkebøker', 'transkribert', 'uit', 'tromsø'] },
+  { id: 'histreg', section: 'Folketellinger & befolkningsregistre', title: 'Histreg – Historisk befolkningsregister',
+    url: 'https://histreg.no', pris: 'free',
+    desc: 'Kobler personer på tvers av kilder 1800-tallet–1964.',
+    tags: ['befolkningsregister', 'personkobling', '1800-tallet', '1964'] },
+
+  // FORENINGER & HJELP
+  { id: 'slektogdata', section: 'Foreninger & hjelp', title: 'Slekt og Data (tidl. DIS-Norge)',
+    url: 'https://www.slektogdata.no', pris: 'mix',
+    desc: 'Landsforening: forum, kurs, DNA-gruppe, Gravminner.',
+    tags: ['forening', 'forum', 'kurs', 'dna', 'gravminner', 'dis-norge'] },
+  { id: 'nsf', section: 'Foreninger & hjelp', title: 'Norsk Slektshistorisk Forening (NSF)',
+    url: 'https://www.genealogi.no', pris: 'mix',
+    desc: 'Kilder, skannede bøker og tidsskriftet Genealogen.',
+    tags: ['forening', 'kilder', 'bøker', 'genealogen', 'tidsskrift'] },
+  { id: 'lokalhistoriewiki', section: 'Foreninger & hjelp', title: 'Lokalhistoriewiki',
+    url: 'https://lokalhistoriewiki.no', pris: 'free',
+    desc: 'Wiki fra Nasjonalbiblioteket om steder, gårder og personer.',
+    tags: ['wiki', 'lokalhistorie', 'gård', 'steder', 'personer'] },
+
+  // GRAVMINNER & KIRKEGÅRDER
+  { id: 'gravminner', section: 'Gravminner & kirkegårder', title: 'Gravminner (Slekt og Data)',
+    url: 'https://www.slektogdata.no/no/gravminner', pris: 'free',
+    desc: 'Base over gravminner i Norge.',
+    tags: ['gravminner', 'kirkegård', 'gravstein', 'database'] },
+  { id: 'digitaltmuseum', section: 'Gravminner & kirkegårder', title: 'DigitaltMuseum',
+    url: 'https://digitaltmuseum.no', pris: 'free',
+    desc: 'Foto og museumssamlinger.',
+    tags: ['foto', 'museum', 'samling', 'bilder'] },
+
+  // UTVANDRING
+  { id: 'norwayheritage', section: 'Utvandring', title: 'Norway Heritage',
+    url: 'https://www.norwayheritage.com', pris: 'free',
+    desc: 'Emigrantskip og utvandrerhistorie.',
+    tags: ['utvandring', 'emigrant', 'skip', 'amerika'] },
+  { id: 'nagc', section: 'Utvandring', title: 'Norwegian American Genealogical Center (NAGC)',
+    url: 'https://nagcnl.org', pris: 'mix',
+    desc: 'Norsk-amerikansk slektsforskning.',
+    tags: ['utvandring', 'norsk-amerikansk', 'amerika', 'genealogi'] },
+
+  // DNA-SLEKTSFORSKNING
+  { id: 'dnapainter', section: 'DNA-slektsforskning', title: 'DNA Painter',
+    url: 'https://dnapainter.com', pris: 'free',
+    desc: 'Verktøy for å tolke DNA-treff (delt cM m.m.).',
+    tags: ['dna', 'cm', 'treff', 'verktøy', 'kromosom'] },
+  { id: 'gedmatch', section: 'DNA-slektsforskning', title: 'GEDmatch',
+    url: 'https://www.gedmatch.com', pris: 'mix',
+    desc: 'Last opp rådata og sammenlign på tvers av selskaper.',
+    tags: ['dna', 'rådata', 'sammenligne', 'opplasting'] },
+  { id: 'slektogdata-dna', section: 'DNA-slektsforskning', title: 'Slekt og Data – DNA',
+    url: 'https://www.slektogdata.no/no/dna', pris: 'mix',
+    desc: 'Norsk DNA-hjelp og grupper.',
+    tags: ['dna', 'hjelp', 'gruppe', 'norsk'] },
+
+  // INTERNASJONALE BASER
+  { id: 'familysearch', section: 'Internasjonale baser', title: 'FamilySearch',
+    url: 'https://www.familysearch.org', pris: 'free',
+    desc: 'Stor gratis base (drevet av Jesu Kristi Kirke).',
+    tags: ['internasjonal', 'gratis', 'base', 'familysearch'] },
+  { id: 'myheritage', section: 'Internasjonale baser', title: 'MyHeritage',
+    url: 'https://www.myheritage.no', pris: 'paid',
+    desc: 'Slektstrær og poster.',
+    tags: ['internasjonal', 'slektstre', 'poster', 'dna'] },
+  { id: 'ancestry', section: 'Internasjonale baser', title: 'Ancestry',
+    url: 'https://www.ancestry.com', pris: 'paid',
+    desc: 'Stor kommersiell base.',
+    tags: ['internasjonal', 'kommersiell', 'base'] },
+  { id: 'geni', section: 'Internasjonale baser', title: 'Geni',
+    url: 'https://www.geni.com', pris: 'mix',
+    desc: 'Felles verdenstre.',
+    tags: ['internasjonal', 'verdenstre', 'samarbeid'] },
+];
+
+// Seksjonsrekkefølge (favoritter håndteres separat øverst)
+const SECTION_ORDER = [
+  'Arkiv & primærkilder',
+  'Folketellinger & befolkningsregistre',
+  'Foreninger & hjelp',
+  'Gravminner & kirkegårder',
+  'Utvandring',
+  'DNA-slektsforskning',
+  'Internasjonale baser',
+];
+
+const PRIS_LABEL = {
+  free: 'Gratis',
+  paid: 'Betalt',
+  mix:  'Gratis/medlem',
+};
+const PRIS_CLASS = {
+  free: 'badge-free',
+  paid: 'badge-paid',
+  mix:  'badge-mix',
+};
+
+// ─── Favoritter (localStorage) ──────────────────────────────────────────────
+const STORAGE_KEY = 'genealogi_ressurser_favoritter';
+
+function loadFavs() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch (e) {
+    return new Set();
+  }
+}
+function saveFavs(set) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
+  } catch (e) { /* ignore */ }
+}
+let favorites = loadFavs();
+
+// ─── Hjelpere ───────────────────────────────────────────────────────────────
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Marker treff i tekst (etter at teksten er HTML-escaped)
+function highlight(escapedText, query) {
+  if (!query) return escapedText;
+  const q = query.trim();
+  if (!q) return escapedText;
+  // escape regex-spesialtegn
+  const safe = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  try {
+    return escapedText.replace(new RegExp('(' + safe + ')', 'gi'), '<mark>$1</mark>');
+  } catch (e) {
+    return escapedText;
+  }
+}
+
+function matchesQuery(r, q) {
+  if (!q) return true;
+  const hay = (r.title + ' ' + r.desc + ' ' + r.tags.join(' ') + ' ' + r.section).toLowerCase();
+  // Alle ord må finnes (AND-søk)
+  return q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w));
+}
+
+function prettyUrl(url) {
+  return url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+}
+
+// ─── Render ─────────────────────────────────────────────────────────────────
+const contentEl = document.getElementById('content');
+const emptyEl = document.getElementById('emptyState');
+const countEl = document.getElementById('resultCount');
+
+function cardHtml(r, q) {
+  const isFav = favorites.has(r.id);
+  const title = highlight(escapeHtml(r.title), q);
+  const desc = highlight(escapeHtml(r.desc), q);
+  const badgeLabel = PRIS_LABEL[r.pris] || '';
+  const badgeClass = PRIS_CLASS[r.pris] || 'badge-free';
+
+  return (
+    '<div class="card bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-2 fade-in">' +
+      '<div class="flex items-start gap-3">' +
+        '<div class="flex-1 min-w-0">' +
+          '<a href="' + escapeHtml(r.url) + '" target="_blank" rel="noopener" ' +
+            'class="text-base font-semibold text-indigo-700 hover:text-indigo-900 hover:underline break-words">' +
+            title +
+            '<svg class="inline-block w-3.5 h-3.5 ml-0.5 -mt-0.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">' +
+              '<path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />' +
+            '</svg>' +
+          '</a>' +
+          '<div class="text-xs text-gray-400 mt-0.5 break-words">' + escapeHtml(prettyUrl(r.url)) + '</div>' +
+        '</div>' +
+        '<button type="button" class="star-btn flex-shrink-0 ' + (isFav ? 'star-on' : 'star-off') + '" ' +
+          'data-id="' + escapeHtml(r.id) + '" aria-label="' + (isFav ? 'Fjern favoritt' : 'Lagre favoritt') + '" ' +
+          'title="' + (isFav ? 'Fjern fra favoritter' : 'Lagre som favoritt') + '">' +
+          '<svg class="w-6 h-6" viewBox="0 0 24 24" fill="' + (isFav ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="1.8">' +
+            '<path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.5l2.34 4.74 5.23.76-3.78 3.69.89 5.21-4.68-2.46-4.68 2.46.89-5.21-3.78-3.69 5.23-.76 2.34-4.74z" />' +
+          '</svg>' +
+        '</button>' +
+      '</div>' +
+      '<p class="text-sm text-gray-600 leading-snug">' + desc + '</p>' +
+      '<div class="mt-1">' +
+        '<span class="inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full ' + badgeClass + '">' + badgeLabel + '</span>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function sectionHtml(title, cards, opts) {
+  opts = opts || {};
+  const iconStar = opts.fav
+    ? '<svg class="w-4 h-4 inline-block -mt-0.5 mr-1 text-amber-400" viewBox="0 0 24 24" fill="currentColor"><path d="M11.48 3.5l2.34 4.74 5.23.76-3.78 3.69.89 5.21-4.68-2.46-4.68 2.46.89-5.21-3.78-3.69 5.23-.76 2.34-4.74z"/></svg>'
+    : '';
+  return (
+    '<section>' +
+      '<h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 px-1">' +
+        iconStar + escapeHtml(title) +
+        ' <span class="text-gray-300 font-normal normal-case tracking-normal">(' + cards.length + ')</span>' +
+      '</h2>' +
+      '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">' + cards.join('') + '</div>' +
+    '</section>'
+  );
+}
+
+function render() {
+  const q = document.getElementById('search').value.trim();
+  const filtered = RESOURCES.filter(r => matchesQuery(r, q));
+
+  // Telling
+  countEl.textContent = q
+    ? (filtered.length + ' av ' + RESOURCES.length + ' ressurser passer søket')
+    : (RESOURCES.length + ' ressurser i biblioteket');
+
+  if (filtered.length === 0) {
+    contentEl.innerHTML = '';
+    emptyEl.classList.remove('hidden');
+    return;
+  }
+  emptyEl.classList.add('hidden');
+
+  const html = [];
+
+  // Favoritter-seksjon øverst (kun de som også passer søket)
+  const favCards = filtered.filter(r => favorites.has(r.id));
+  if (favCards.length > 0) {
+    html.push(sectionHtml('Favoritter', favCards.map(r => cardHtml(r, q)), { fav: true }));
+  }
+
+  // Vanlige seksjoner
+  for (const section of SECTION_ORDER) {
+    const inSection = filtered.filter(r => r.section === section);
+    if (inSection.length === 0) continue;
+    html.push(sectionHtml(section, inSection.map(r => cardHtml(r, q))));
+  }
+
+  contentEl.innerHTML = html.join('');
+}
+
+// ─── Hendelser ──────────────────────────────────────────────────────────────
+const searchEl = document.getElementById('search');
+const clearBtn = document.getElementById('clearSearch');
+
+searchEl.addEventListener('input', () => {
+  clearBtn.classList.toggle('hidden', !searchEl.value);
+  render();
+});
+clearBtn.addEventListener('click', () => {
+  searchEl.value = '';
+  clearBtn.classList.add('hidden');
+  render();
+  searchEl.focus();
+});
+
+// Stjerne-klikk (event delegation — favoritt kan vises flere steder)
+contentEl.addEventListener('click', (e) => {
+  const btn = e.target.closest('.star-btn');
+  if (!btn) return;
+  const id = btn.getAttribute('data-id');
+  if (!id) return;
+  if (favorites.has(id)) favorites.delete(id);
+  else favorites.add(id);
+  saveFavs(favorites);
+  render();
+});
+
+// ─── Init ───────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>

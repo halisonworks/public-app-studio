@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<!--
+  Slektskap (norske termer) — Halison App Studio-eksempel
+
+  Finn det norske slektskapsordet for to slektninger (søskenbarn, tremenning, grandonkel …) ut fra hvor mange ledd hver er fra felles ane.
+
+  Fra Halison App Studio sitt offentlige bibliotek:
+  https://github.com/halisonworks/public-app-studio
+
+  Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk. Behold denne
+  headeren og kildelenken intakt; du kan endre verktøyet, men ikke selg, kommersialiser
+  eller republiser det. Utgitt under Halison App Studio Examples License — se
+  LICENSE-filen i repoet over.
+-->
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Slektskap (norske termer)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', 'Segoe UI', sans-serif; }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+    .fade-in { animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .preset-btn { transition: all 0.15s ease; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4 0m4 0a4 4 0 014 0m-8 0a4 4 0 00-4 0m4-9a3 3 0 100-6 3 3 0 000 6z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-gray-900 leading-tight">Slektskap (norske termer)</h1>
+          <p class="text-xs text-gray-500">Finn det norske slektskapsordet fra felles ane</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 py-8 space-y-6">
+
+    <!-- Presets -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Forhåndsinnstillinger</h2>
+      <div id="presets" class="flex flex-wrap gap-2"></div>
+    </section>
+
+    <!-- Input Section -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-5">Ledd fra felles ane</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Person 1 -->
+        <div class="rounded-xl border-2 border-blue-200 p-5 space-y-4">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">1</span>
+            <span class="font-semibold text-gray-800">Person 1</span>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Antall ledd fra felles ane ned til Person 1</label>
+            <div class="flex items-center gap-2">
+              <button data-step="g1" data-dir="-1" class="stepper w-9 h-9 rounded-lg border border-gray-300 bg-gray-50 text-gray-600 font-bold text-lg hover:bg-gray-100 active:scale-95 transition">−</button>
+              <input id="g1" type="number" min="0" max="12" value="2"
+                class="w-full text-center border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent" />
+              <button data-step="g1" data-dir="1" class="stepper w-9 h-9 rounded-lg border border-gray-300 bg-gray-50 text-gray-600 font-bold text-lg hover:bg-gray-100 active:scale-95 transition">+</button>
+            </div>
+            <p class="text-xs text-gray-400 mt-2 leading-relaxed">0 = Person 1 ER den felles anen · 1 = barn · 2 = barnebarn · 3 = oldebarn …</p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Kjønn (valgfritt)</label>
+            <select id="s1" class="w-full text-sm border border-gray-300 rounded-lg px-2 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+              <option value="u">Ukjent</option>
+              <option value="m">Mann</option>
+              <option value="k">Kvinne</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Person 2 -->
+        <div class="rounded-xl border-2 border-indigo-200 p-5 space-y-4">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">2</span>
+            <span class="font-semibold text-gray-800">Person 2</span>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Antall ledd fra felles ane ned til Person 2</label>
+            <div class="flex items-center gap-2">
+              <button data-step="g2" data-dir="-1" class="stepper w-9 h-9 rounded-lg border border-gray-300 bg-gray-50 text-gray-600 font-bold text-lg hover:bg-gray-100 active:scale-95 transition">−</button>
+              <input id="g2" type="number" min="0" max="12" value="2"
+                class="w-full text-center border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent" />
+              <button data-step="g2" data-dir="1" class="stepper w-9 h-9 rounded-lg border border-gray-300 bg-gray-50 text-gray-600 font-bold text-lg hover:bg-gray-100 active:scale-95 transition">+</button>
+            </div>
+            <p class="text-xs text-gray-400 mt-2 leading-relaxed">0 = Person 2 ER den felles anen · 1 = barn · 2 = barnebarn · 3 = oldebarn …</p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Kjønn (valgfritt)</label>
+            <select id="s2" class="w-full text-sm border border-gray-300 rounded-lg px-2 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+              <option value="u">Ukjent</option>
+              <option value="m">Mann</option>
+              <option value="k">Kvinne</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Results Section -->
+    <div id="resultsSection" class="space-y-5 fade-in">
+
+      <!-- Relationship Card -->
+      <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Slektskap</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="rounded-xl bg-indigo-50 border border-indigo-100 px-5 py-4">
+            <div class="text-xs text-indigo-600 font-medium mb-1">Person 2 er Person 1 sin</div>
+            <div id="rel21" class="text-2xl font-bold text-indigo-700">—</div>
+          </div>
+          <div class="rounded-xl bg-blue-50 border border-blue-100 px-5 py-4">
+            <div class="text-xs text-blue-600 font-medium mb-1">Person 1 er Person 2 sin</div>
+            <div id="rel12" class="text-2xl font-bold text-blue-700">—</div>
+          </div>
+        </div>
+        <div class="mt-4 bg-gray-50 rounded-xl border border-gray-200 px-5 py-4">
+          <div class="text-xs text-gray-500 font-medium mb-1">Forklaring</div>
+          <p id="explain" class="text-sm text-gray-700 leading-relaxed">—</p>
+        </div>
+        <div class="mt-4 flex flex-wrap gap-4">
+          <div class="bg-white rounded-xl border border-gray-200 px-4 py-3 shadow-sm">
+            <div class="text-xs text-gray-500 font-medium">Slektskapsgrad (sivil grad)</div>
+            <div id="grad" class="text-xl font-bold text-gray-800">—</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Descent diagram -->
+      <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Nedstigningsdiagram</h2>
+        <div class="w-full overflow-x-auto">
+          <svg id="diagram" width="100%" viewBox="0 0 560 360" preserveAspectRatio="xMidYMid meet" class="block"></svg>
+        </div>
+      </section>
+
+      <!-- About menning system -->
+      <section class="bg-gray-50 rounded-xl border border-gray-200 px-5 py-4 text-xs text-gray-500 leading-relaxed">
+        <strong class="text-gray-700">Om menning-systemet:</strong> To personer er N-menninger når nærmeste
+        felles ane ligger N ledd bak for begge. <strong>Søsken</strong> deler foreldre (1 ledd hver).
+        <strong>Søskenbarn</strong> deler besteforeldre (2 ledd hver). <strong>Tremenning</strong> deler
+        oldeforeldre (3 ledd hver). <strong>Firmenning</strong> deler tippoldeforeldre (4 ledd hver), og slik
+        videre. Ligger anen ulikt mange ledd bak for de to, blir relasjonen «forskjøvet» et antall ledd
+        (f.eks. søskenbarn forskjøvet 1 ledd, eller onkel/tante ↔ nevø/niese).
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="max-w-4xl mx-auto px-4 py-6 text-center text-xs text-gray-400">
+    Slektskap (norske termer) &mdash; <a href="https://github.com/halisonworks/public-app-studio" class="underline hover:text-indigo-500" target="_blank" rel="noopener">Halison App Studio</a>
+  </footer>
+
+<script>
+// ─── Kjernelogikk (transkribert) ─────────────────────────────────────────────
+
+function ordenstall(n){const t=['','første','andre','tredje','fjerde','femte','sjette','sjuende','åttende','niende','tiende'];return t[n]||(n+'.');}
+function menning(n){ // likt antall ledd, n>=1
+  if(n===1) return 'søsken';
+  if(n===2) return 'søskenbarn';
+  const ord={3:'tre',4:'fir',5:'fem',6:'seks',7:'sju',8:'åtte',9:'ni',10:'ti'};
+  return (ord[n]||n)+'menning';
+}
+function oldePrefiks(lvl){ // lvl: 0->'', 1->'olde', 2->'tippolde', 3->'tipptippolde', n-> ('tipp' gjentatt (n-1)) + 'olde'
+  if(lvl<=0) return '';
+  if(lvl===1) return 'olde';
+  return 'tipp'.repeat(lvl-1)+'olde';
+}
+
+// ─── Kjønnshjelpere ──────────────────────────────────────────────────────────
+// g: 'm' (mann), 'k' (kvinne), 'u' (ukjent)
+
+function gendered(neutral, male, female, g){
+  if(g==='m') return male;
+  if(g==='k') return female;
+  return neutral;
+}
+
+// Direkte linje: anen er d generasjoner over etterkommeren.
+// Returnerer ordet for ANEN (sett fra etterkommeren), gitt anens kjønn gAne.
+function direkteAne(d, gAne){
+  if(d===1) return gendered('forelder','far','mor', gAne);
+  if(d===2) return gendered('besteforelder','bestefar','bestemor', gAne);
+  if(d===3) return gendered('oldeforelder','oldefar','oldemor', gAne);
+  // d>=4
+  const pre = oldePrefiks(d-2); // d=4 => 'tippolde', d=5 => 'tipptippolde'
+  return pre + gendered('forelder','far','mor', gAne);
+}
+// Returnerer ordet for ETTERKOMMEREN (sett fra anen), gitt etterkommerens kjønn gEtt.
+function direkteEtterkommer(d, gEtt){
+  if(d===1) return gendered('barn','sønn','datter', gEtt);
+  if(d===2) return 'barnebarn';
+  if(d===3) return 'oldebarn';
+  // d>=4
+  const pre = oldePrefiks(d-2); // d=4 => 'tippolde', d=5 => 'tipptippolde'
+  return pre + 'barn';
+}
+
+// Avunkulær: min=1, removed r (=|g1-g2|).
+// Personen på "min=1"-siden er sibling-of-ancestor; den andre er nedstigende.
+// Returnerer ordet for ONKEL/TANTE-rollen, gitt dens kjønn g.
+function avunkulaerEldre(r, g){
+  if(r===1) return gendered('onkel/tante','onkel','tante', g);
+  if(r===2) return gendered('grandonkel/grandtante','grandonkel','grandtante', g);
+  // r>=3 (uformelt)
+  return ('tipp'.repeat(r-2)+'olde') + gendered('onkel/tante','onkel','tante', g);
+}
+// Returnerer ordet for NEVØ/NIESE-rollen, gitt dens kjønn g.
+function avunkulaerYngre(r, g){
+  if(r===1) return gendered('nevø/niese','nevø','niese', g);
+  if(r===2) return gendered('grandnevø/grandniese','grandnevø','grandniese', g);
+  // r>=3
+  return ('tipp'.repeat(r-2)+'olde') + gendered('nevø/niese','nevø','niese', g);
+}
+
+// ─── Hovedfunksjon: beregn relasjon ──────────────────────────────────────────
+// Returnerer { rel21, rel12, explain, grad }
+//   rel21 = hva Person 2 er TIL Person 1
+//   rel12 = hva Person 1 er TIL Person 2
+
+function beregn(g1, g2, s1, s2){
+  const grad = g1 + g2;
+
+  // Begge er den felles anen
+  if(g1===0 && g2===0){
+    return {
+      rel21: 'samme person',
+      rel12: 'samme person',
+      explain: 'Begge står på den felles anen selv — det er samme person (0 ledd fra anen for begge).',
+      grad: 0
+    };
+  }
+
+  // Direkte linje: en av dem ER den felles anen.
+  if(g1===0 || g2===0){
+    const d = Math.max(g1, g2);
+    if(g1===0){
+      // Person 1 er anen, Person 2 er etterkommer d ledd ned.
+      const rel21 = direkteEtterkommer(d, s2); // P2 til P1: P2 er P1 sitt barn/barnebarn …
+      const rel12 = direkteAne(d, s1);         // P1 til P2: P1 er P2 sin forelder/besteforelder …
+      return {
+        rel21, rel12,
+        explain: `Person 1 er den felles anen, og Person 2 stammer rett ned ${d} ledd. Person 2 er da Person 1 sitt ${rel21}, og Person 1 er Person 2 sitt ${rel12}.`,
+        grad
+      };
+    } else {
+      // Person 2 er anen, Person 1 er etterkommer d ledd ned.
+      const rel12 = direkteEtterkommer(d, s1); // P1 til P2: P1 er P2 sitt barn …
+      const rel21 = direkteAne(d, s2);         // P2 til P1: P2 er P1 sin forelder …
+      return {
+        rel21, rel12,
+        explain: `Person 2 er den felles anen, og Person 1 stammer rett ned ${d} ledd. Person 1 er da Person 2 sitt ${rel12}, og Person 2 er Person 1 sitt ${rel21}.`,
+        grad
+      };
+    }
+  }
+
+  // Begge stammer ned fra felles ane (g1>=1 og g2>=1).
+  const mn = Math.min(g1, g2);
+  const r = Math.abs(g1 - g2);
+
+  // Likt antall ledd: ren menning-relasjon.
+  if(r===0){
+    let rel21, rel12;
+    if(mn===1){
+      // søsken
+      rel21 = gendered('søsken','bror','søster', s2);
+      rel12 = gendered('søsken','bror','søster', s1);
+    } else if(mn===2){
+      // søskenbarn → fetter/kusine
+      rel21 = gendered('søskenbarn','fetter','kusine', s2);
+      rel12 = gendered('søskenbarn','fetter','kusine', s1);
+    } else {
+      rel21 = menning(mn);
+      rel12 = menning(mn);
+    }
+    const aneOrd = fellesAneOrd(mn);
+    return {
+      rel21, rel12,
+      explain: `Begge stammer ${mn} ledd ned fra ${aneOrd}. De er ${menning(mn)} (${ordenstall(mn)} leddet fra felles ane for begge).`,
+      grad
+    };
+  }
+
+  // min===1: avunkulær (onkel/tante ↔ nevø/niese), eventuelt grand-/tipp-.
+  if(mn===1){
+    let rel21, rel12;
+    if(g1 < g2){
+      // Person 1 er nærmest anen (onkel/tante-rollen), Person 2 er nedstigende (nevø/niese).
+      rel21 = avunkulaerYngre(r, s2); // P2 til P1: P2 er P1 sin nevø/niese
+      rel12 = avunkulaerEldre(r, s1); // P1 til P2: P1 er P2 sin onkel/tante
+    } else {
+      // Person 2 er nærmest anen, Person 1 er nedstigende.
+      rel21 = avunkulaerEldre(r, s2); // P2 til P1: P2 er P1 sin onkel/tante
+      rel12 = avunkulaerYngre(r, s1); // P1 til P2: P1 er P2 sin nevø/niese
+    }
+    return {
+      rel21, rel12,
+      explain: `Den ene er ${avunkulaerEldre(r,'u')} til den andre, som er ${avunkulaerYngre(r,'u')}. De deler en felles ane som er forelder til den eldste grenen og lengre tilbake for den yngste (forskjøvet ${r} ledd).`,
+      grad
+    };
+  }
+
+  // min>=2 og r>0: søskenbarn ulikt ledd → menning forskjøvet r ledd.
+  const base = menning(mn);
+  const aneOrd = fellesAneOrd(mn);
+  const rel = `${base} forskjøvet ${r} ledd`;
+  return {
+    rel21: rel,
+    rel12: rel,
+    explain: `Den nærmeste av de to er ${base} til en av forfedrene til den andre. Med andre ord: de stammer fra felles ${aneOrd}, men ulikt mange ledd ned — ${mn} ledd for den ene og ${mn+r} ledd for den andre. Relasjonen er da «${rel}».`,
+    grad
+  };
+}
+
+// Navn på den felles anen sett som slektsgruppe (foreldre, besteforeldre …)
+function fellesAneOrd(mn){
+  if(mn===1) return 'foreldre';
+  if(mn===2) return 'besteforeldre';
+  if(mn===3) return 'oldeforeldre';
+  if(mn===4) return 'tippoldeforeldre';
+  const pre = oldePrefiks(mn-2); // mn=5 => tipptippolde
+  return pre + 'foreldre';
+}
+
+// ─── SVG nedstigningsdiagram ─────────────────────────────────────────────────
+
+function tegnDiagram(g1, g2){
+  const svg = document.getElementById('diagram');
+  svg.innerHTML = '';
+  const NS = 'http://www.w3.org/2000/svg';
+  function ns(tag, attrs){
+    const el = document.createElementNS(NS, tag);
+    for(const k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+  function txt(x, y, s, opts){
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', x); t.setAttribute('y', y);
+    t.setAttribute('text-anchor', (opts&&opts.anchor)||'middle');
+    t.setAttribute('font-size', (opts&&opts.size)||'12');
+    t.setAttribute('fill', (opts&&opts.fill)||'#374151');
+    if(opts&&opts.weight) t.setAttribute('font-weight', opts.weight);
+    t.textContent = s;
+    svg.appendChild(t);
+    return t;
+  }
+
+  const W = 560;
+  const maxLed = Math.max(g1, g2, 1);
+  const topY = 40;
+  const rowH = Math.min(58, (300) / (maxLed + 1));
+  const xAne = W/2;
+  const x1 = W*0.27;
+  const x2 = W*0.73;
+  const r = 16;
+
+  // Felles ane node (øverst, midt)
+  svg.appendChild(ns('circle', { cx: xAne, cy: topY, r: r, fill: '#4f46e5' }));
+  txt(xAne, topY+4, '★', { fill:'#fff', size:'14', weight:'700' });
+  txt(xAne, topY-r-6, 'Felles ane', { fill:'#4f46e5', size:'12', weight:'700' });
+
+  // Stige for én person
+  function stige(g, x, color, lightColor, label, labelColor){
+    let prevX = xAne, prevY = topY;
+    if(g===0){
+      // Personen ER anen → marker rundt ane-noden
+      svg.appendChild(ns('circle', { cx: xAne, cy: topY, r: r+6, fill:'none', stroke: color, 'stroke-width': 2.5, 'stroke-dasharray':'4 3' }));
+      txt(x, topY+r+24, label + ' = felles ane', { fill: labelColor, size:'11', weight:'600' });
+      return;
+    }
+    for(let i=1;i<=g;i++){
+      const cy = topY + i*rowH;
+      const cx = x;
+      // linje fra forrige
+      svg.appendChild(ns('line', { x1: prevX, y1: prevY+ (i===1? r : r), x2: cx, y2: cy - r, stroke: lightColor, 'stroke-width': 2 }));
+      // node
+      const isLast = (i===g);
+      svg.appendChild(ns('circle', { cx: cx, cy: cy, r: isLast? r : r-3, fill: isLast? color : '#fff', stroke: color, 'stroke-width': 2 }));
+      txt(cx, cy+4, String(i), { fill: isLast? '#fff' : color, size: isLast?'12':'10', weight: isLast?'700':'400' });
+      prevX = cx; prevY = cy;
+    }
+    // etikett under siste node
+    txt(prevX, prevY + r + 16, label, { fill: labelColor, size:'12', weight:'700' });
+    txt(prevX, prevY + r + 31, g + (g===1?' ledd':' ledd'), { fill:'#9ca3af', size:'10' });
+  }
+
+  stige(g1, x1, '#2563eb', '#93c5fd', 'Person 1', '#2563eb');
+  stige(g2, x2, '#4f46e5', '#a5b4fc', 'Person 2', '#4f46e5');
+
+  // juster viewBox-høyde dynamisk
+  const needed = topY + maxLed*rowH + 50;
+  svg.setAttribute('viewBox', `0 0 ${W} ${Math.max(220, needed)}`);
+}
+
+// ─── DOM / oppdatering ───────────────────────────────────────────────────────
+
+const $ = id => document.getElementById(id);
+
+function clamp(n){
+  if(isNaN(n)) n = 0;
+  return Math.max(0, Math.min(12, Math.round(n)));
+}
+
+function oppdater(){
+  const g1 = clamp(parseInt($('g1').value, 10));
+  const g2 = clamp(parseInt($('g2').value, 10));
+  $('g1').value = g1;
+  $('g2').value = g2;
+  const s1 = $('s1').value;
+  const s2 = $('s2').value;
+
+  const res = beregn(g1, g2, s1, s2);
+
+  $('rel21').textContent = res.rel21;
+  $('rel12').textContent = res.rel12;
+  $('explain').textContent = res.explain;
+  $('grad').textContent = res.grad + '. grad';
+
+  tegnDiagram(g1, g2);
+
+  try {
+    localStorage.setItem('slektskap', JSON.stringify({ g1, g2, s1, s2 }));
+  } catch(e) { /* ignore */ }
+}
+
+// ─── Forhåndsinnstillinger ───────────────────────────────────────────────────
+
+const PRESETS = [
+  { navn: 'Søsken', g1:1, g2:1 },
+  { navn: 'Søskenbarn', g1:2, g2:2 },
+  { navn: 'Tremenning', g1:3, g2:3 },
+  { navn: 'Firmenning', g1:4, g2:4 },
+  { navn: 'Forelder & barn', g1:0, g2:1 },
+  { navn: 'Besteforelder & barnebarn', g1:0, g2:2 },
+  { navn: 'Onkel/tante & nevø/niese', g1:1, g2:2 },
+  { navn: 'Grandonkel', g1:1, g2:3 },
+];
+
+(function buildPresets(){
+  const wrap = $('presets');
+  PRESETS.forEach(p => {
+    const b = document.createElement('button');
+    b.className = 'preset-btn px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 active:scale-95';
+    b.textContent = p.navn;
+    b.addEventListener('click', () => {
+      $('g1').value = p.g1;
+      $('g2').value = p.g2;
+      oppdater();
+    });
+    wrap.appendChild(b);
+  });
+})();
+
+// ─── Steppere (+ / −) ────────────────────────────────────────────────────────
+
+document.querySelectorAll('.stepper').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const id = btn.getAttribute('data-step');
+    const dir = parseInt(btn.getAttribute('data-dir'), 10);
+    $(id).value = clamp(parseInt($(id).value, 10) + dir);
+    oppdater();
+  });
+});
+
+// ─── Event listeners ─────────────────────────────────────────────────────────
+
+['g1','g2','s1','s2'].forEach(id => {
+  $(id).addEventListener('input', oppdater);
+  $(id).addEventListener('change', oppdater);
+});
+
+// ─── Last fra localStorage ───────────────────────────────────────────────────
+
+(function restoreOrInit(){
+  try {
+    const saved = JSON.parse(localStorage.getItem('slektskap'));
+    if(saved){
+      $('g1').value = saved.g1;
+      $('g2').value = saved.g2;
+      $('s1').value = saved.s1 || 'u';
+      $('s2').value = saved.s2 || 'u';
+    }
+  } catch(e) { /* ignore */ }
+  oppdater();
+})();
+
+// ─── Selvtest (logges kun til konsoll, valideringsstøtte) ────────────────────
+
+(function selvtest(){
+  const cases = [
+    [1,1,'søsken'], [2,2,'søskenbarn'], [3,3,'tremenning'],
+    [4,4,'firmenning'], [5,5,'femmenning'],
+  ];
+  cases.forEach(([a,b,exp]) => {
+    const r = beregn(a,b,'u','u');
+    if(r.rel21 !== exp) console.warn('Selvtest avvik', a, b, 'fikk', r.rel21, 'forventet', exp);
+  });
+})();
+</script>
+</body>
+</html>
