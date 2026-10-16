@@ -12,10 +12,10 @@ round, plus an ownership-composition chart.
 A single self-contained HTML page (Tailwind via CDN). Category: **business /
 finance** (founders, investors).
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`cap-table-simulator.appstudio`](./cap-table-simulator.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`cap-table-simulator.html`](./cap-table-simulator.html),
   copy it all, then **New → paste → Run App**.
 

@@ -10,10 +10,10 @@ Interactive geometry tool for Norwegian **matematikk 1P/2P** (LK20). **Norwegian
 A single self-contained HTML page (Tailwind via CDN; hand-rolled SVG). Category:
 **Math · Geometri**.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`formlikhet.appstudio`](./formlikhet.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`formlikhet.html`](./formlikhet.html), copy it all, then
   **New → paste → Run App**.
 

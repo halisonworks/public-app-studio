@@ -9,10 +9,10 @@ Mean, median class and standard deviation for grouped data, with a histogram.
 Interactive learning tool for Norwegian **matematikk** (LK20). **Norwegian UI.**
 A single self-contained HTML page (Tailwind via CDN). Category: **Math · NO-2P**.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`gruppert-materiale.appstudio`](./gruppert-materiale.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`gruppert-materiale.html`](./gruppert-materiale.html), copy it all, then
   **New → paste → Run App**.
 

@@ -1,10 +1,10 @@
 /**
- * Strikkekalkulator — Halison App Studio-eksempel
+ * Strikkekalkulator — Halison KIT Apps-eksempel
  *
  * Tilpass en oppskrift til din egen strikkefasthet og estimer hvor mye garn du trenger.
  *
- * Fra det offentlige Halison App Studio-biblioteket:
- * https://github.com/halisonworks/public-app-studio
+ * Fra det offentlige Halison KIT Apps-biblioteket:
+ * https://github.com/halisonworks/public-kit-app
  *
  * Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk.
  * Du kan endre den, men behold denne headeren og kildelenken, og du kan ikke

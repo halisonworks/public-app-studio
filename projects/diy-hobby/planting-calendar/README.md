@@ -13,14 +13,14 @@ A small, self-contained React component. No external libraries, no build step.
 
 **Available in:** English · [Norsk (Bokmål)](./i18n/nb/)
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 Two ways, pick whichever suits you:
 
 - **Load it straight in** — use `planting-calendar.appstudio` via
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`planting-calendar.jsx`](./planting-calendar.jsx),
-  copy its contents, then in App Studio: **New → paste → Run App**. Then **Save**.
+  copy its contents, then in KIT Apps: **New → paste → Run App**. Then **Save**.
 
 ## Make it yours
 

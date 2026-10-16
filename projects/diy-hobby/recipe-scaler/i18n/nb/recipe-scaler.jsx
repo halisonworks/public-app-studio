@@ -1,10 +1,10 @@
 /**
- * Oppskrift-skalerer — Halison App Studio-eksempel
+ * Oppskrift-skalerer — Halison KIT Apps-eksempel
  *
  * Skaler en oppskrift opp eller ned og regn om mellom vanlige kjøkkenmål.
  *
- * Fra det offentlige Halison App Studio-biblioteket:
- * https://github.com/halisonworks/public-app-studio
+ * Fra det offentlige Halison KIT Apps-biblioteket:
+ * https://github.com/halisonworks/public-kit-app
  *
  * Tillatt bruk: personlig, pedagogisk og annen ikke-kommersiell bruk.
  * Du kan endre den, men behold denne headeren og kildelenken, og du kan ikke

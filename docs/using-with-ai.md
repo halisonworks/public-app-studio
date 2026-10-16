@@ -41,5 +41,5 @@ Claude returns either a React component or a full HTML document. Both work.
 - If nothing renders, ask the AI to *"put everything in one file"* and paste again.
 - If it errors, click **Copy a fix request for your AI** on the error screen and paste that straight back into the chat for a corrected version.
 - Once it runs, click **Save** to keep it in your library, give it a name and a category, and pin it to a quick-launch tile.
-- **Building something that saves data** (a CRM, a tracker)? Tell the AI to *"persist the data with `window.appStudio.storage`"*, or to share it across a team with `window.appStudio.shared`. See [canvas-app-apis.md](./canvas-app-apis.md).
+- **Building something that saves data** (a CRM, a tracker)? Tell the AI to *"persist the data with `window.appStudio.storage`"*, or to share it across a team with `window.appStudio.shared`. See [canvas-app-apis.md](./data-and-team-sharing.md).
 - Everything stays on your computer. KIT Apps has no account and no cloud.

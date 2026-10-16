@@ -10,10 +10,10 @@ drawn as bars on a scaled time grid with a "today" line and a Day / Week view.
 A single self-contained HTML page (Tailwind via CDN). Category: **business**
 (managers, project leads).
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`gantt-chart.appstudio`](./gantt-chart.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`gantt-chart.html`](./gantt-chart.html), copy it all,
   then **New → paste → Run App**.
 

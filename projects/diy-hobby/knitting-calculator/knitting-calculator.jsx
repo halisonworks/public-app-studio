@@ -1,10 +1,10 @@
 /**
- * Knitting Calculator — Halison App Studio example
+ * Knitting Calculator — Halison KIT Apps example
  *
  * Convert a pattern to your own gauge and estimate how much yarn you need.
  *
- * From the Halison App Studio public library:
- * https://github.com/halisonworks/public-app-studio
+ * From the Halison KIT Apps public library:
+ * https://github.com/halisonworks/public-kit-app
  *
  * Permitted use: personal, educational, and other non-commercial use.
  * You may modify it, but keep this header and the source link intact, and do

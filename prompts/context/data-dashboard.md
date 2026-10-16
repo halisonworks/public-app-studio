@@ -11,7 +11,7 @@ This project is a data / dashboard tool. Shape it accordingly:
 
 - Lead with the numbers: a responsive KPI grid at the top, then charts and
   tables below.
-- For charts, use recharts (it auto-loads in App Studio) or hand-rolled inline
+- For charts, use recharts (it auto-loads in KIT Apps) or hand-rolled inline
   SVG. Do not use any other chart library.
 - Provide realistic mock data inline. Optionally let the user paste CSV or JSON
   to replace it, with forgiving parsing and a clear error state on bad input.

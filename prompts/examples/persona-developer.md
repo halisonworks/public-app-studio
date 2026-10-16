@@ -7,8 +7,8 @@ and a clean presentation card.
 This is a **full HTML page** example (English UI); a Norwegian version is in
 [`i18n/nb/persona-developer.md`](./i18n/nb/persona-developer.md).
 
-> **App Studio note.** This prompt loads Tailwind and Google Fonts from CDNs —
-> fine for an App Studio project (static assets); what a project must *not*
+> **KIT Apps note.** This prompt loads Tailwind and Google Fonts from CDNs —
+> fine for an KIT Apps project (static assets); what a project must *not*
 > depend on is a runtime service (backend, API keys, login, or an LLM). See
 > [`../authoring-guide.md`](../authoring-guide.md).
 >

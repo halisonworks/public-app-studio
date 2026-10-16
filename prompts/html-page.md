@@ -25,7 +25,7 @@ Return only the HTML, in one block.
 ## Then
 
 1. Copy the code block.
-2. App Studio: **New → paste → Run App**.
+2. KIT Apps: **New → paste → Run App**.
 3. To change it, reply to the AI with what you want different and paste again.
 
 ## Example fill-in

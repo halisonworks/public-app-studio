@@ -11,13 +11,13 @@ En liten, selvstendig React-komponent. Ingen eksterne biblioteker, ingen byggest
 
 **Tilgjengelig på:** [English](../../) · Norsk (Bokmål)
 
-## Last inn i App Studio
+## Last inn i KIT Apps
 
 To måter, velg den som passer:
 
 - **Kopier/lim inn** — åpne [`recipe-scaler.jsx`](./recipe-scaler.jsx), kopier
-  innholdet, og velg **New → paste → Run App** i App Studio.
-- **Eller åpne filen fra disk** hvis din versjon av App Studio støtter det.
+  innholdet, og velg **New → paste → Run App** i KIT Apps.
+- **Eller åpne filen fra disk** hvis din versjon av KIT Apps støtter det.
 
 Klikk **Save** for å lagre den i biblioteket ditt.
 

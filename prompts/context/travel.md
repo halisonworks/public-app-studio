@@ -37,7 +37,7 @@ FOR BOTH:
   would be "live" (currency rates, flight times, weather) must use editable or
   mock data and teach the concept — never fetch it. Make rates/offsets editable
   so the tool keeps working forever and the user sees how the number is built.
-- Do NOT add print, PDF, or export buttons — App Studio already provides Print
+- Do NOT add print, PDF, or export buttons — KIT Apps already provides Print
   and PNG export.
 ```
 

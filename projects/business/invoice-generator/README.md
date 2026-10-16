@@ -11,17 +11,17 @@ one-page invoice.
 A single self-contained HTML page (Tailwind via CDN). Category: **business /
 finance** — handy for freelancers and small businesses.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`invoice-generator.appstudio`](./invoice-generator.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`invoice-generator.html`](./invoice-generator.html),
   copy it all, then **New → paste → Run App**.
 
 ## Notes
 
 - Everything is saved in `localStorage`; there's **no backend, account, or login**.
-- No print button: it uses `@media print`, so App Studio's built-in **Print**
+- No print button: it uses `@media print`, so KIT Apps's built-in **Print**
   produces a clean invoice (editing controls are hidden on print).
 - Made with the [business](../../../prompts/context/business.md) category add-on.
 - Keep the header comment and the source link at the top of the file. See the

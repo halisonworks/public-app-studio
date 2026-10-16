@@ -1,9 +1,9 @@
 # Prompts
 
-Example prompts for creating your own App Studio projects from scratch with an
+Example prompts for creating your own KIT Apps projects from scratch with an
 AI assistant (Claude, ChatGPT, Gemini, Grok, …).
 
-The point is to get the AI to return something App Studio can run directly: a
+The point is to get the AI to return something KIT Apps can run directly: a
 single default-exported React component, or a self-contained HTML page.
 
 > **One-link shortcut:** hand your AI [`../llms.txt`](../llms.txt) — a single
@@ -44,7 +44,7 @@ app. Upload one alongside `authoring-guide.md`, then write your short prompt:
 - [`context/prototype.md`](./context/prototype.md) — interactive product/feature
   mockups
 
-## The two shapes App Studio runs
+## The two shapes KIT Apps runs
 
 | Shape | Ask the AI for… | Notes |
 |-------|-----------------|-------|
@@ -59,7 +59,7 @@ If nothing renders, the fix is almost always the same: ask the AI to
 1. Open the prompt template that matches what you want to build.
 2. Replace the **`{{placeholders}}`** with your own idea.
 3. Paste it into your AI assistant.
-4. Copy the result into App Studio: **New → paste → Run App**.
+4. Copy the result into KIT Apps: **New → paste → Run App**.
 5. Not quite right? Tell the AI what to change and paste the new version.
 
 ## Templates

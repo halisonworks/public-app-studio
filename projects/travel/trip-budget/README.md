@@ -11,10 +11,10 @@ update live. Everything is saved to your browser.
 
 A single self-contained HTML page (Tailwind via CDN). Category: **Travel** (personal). **English UI.**
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`trip-budget.appstudio`](./trip-budget.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`trip-budget.html`](./trip-budget.html), copy it all,
   then **New → paste → Run App**.
 

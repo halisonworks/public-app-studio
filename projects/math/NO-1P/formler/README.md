@@ -9,10 +9,10 @@ Evaluate common formulas and rearrange them to solve for another variable. Cover
 Interactive learning tool for Norwegian **matematikk 1P** (LK20). **Norwegian UI.**
 A single self-contained HTML page (Tailwind via CDN). Category: **Math · NO-1P**.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`formler.appstudio`](./formler.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`formler.html`](./formler.html), copy it all, then
   **New → paste → Run App**.
 

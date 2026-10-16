@@ -8,16 +8,16 @@ owes.
 
 A small, self-contained React component. No external libraries, no build step.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 Two ways, pick whichever suits you:
 
 - **Load it straight in** — use [`tip-calculator.appstudio`](./tip-calculator.appstudio):
-  in App Studio choose **Share → Import** and select the file, or drop it into
-  your `App Studio Projects` folder. It arrives with its name and packaging
+  in KIT Apps choose **Share → Import** and select the file, or drop it into
+  your `KIT Apps Projects` folder. It arrives with its name and packaging
   metadata already set.
 - **Copy-paste** — open [`tip-calculator.jsx`](./tip-calculator.jsx), copy its
-  contents, then in App Studio: **New → paste → Run App**.
+  contents, then in KIT Apps: **New → paste → Run App**.
 
 Click **Save** to keep it in your library, then package it as a desktop app if
 you like.

@@ -15,10 +15,10 @@ The date arithmetic family historians do constantly, in one place:
 
 A single self-contained HTML page (Tailwind via CDN). Category: **genealogy**.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`ancestor-birth-date.appstudio`](./ancestor-birth-date.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`ancestor-birth-date.html`](./ancestor-birth-date.html),
   copy it all, then **New → paste → Run App**.
 

@@ -11,10 +11,10 @@ so it's there next time.
 A single self-contained HTML page (Tailwind via CDN). Category: **personal /
 productivity** — it demonstrates a localStorage-first private tool.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`habit-tracker.appstudio`](./habit-tracker.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`habit-tracker.html`](./habit-tracker.html), copy it
   all, then **New → paste → Run App**.
 

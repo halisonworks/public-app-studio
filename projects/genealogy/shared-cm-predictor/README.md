@@ -11,10 +11,10 @@ are grouped together — because shared cM alone usually can't tell them apart.
 
 A single self-contained HTML page (Tailwind via CDN). Category: **genealogy**.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`shared-cm-predictor.appstudio`](./shared-cm-predictor.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`shared-cm-predictor.html`](./shared-cm-predictor.html),
   copy it all, then **New → paste → Run App**.
 

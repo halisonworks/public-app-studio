@@ -10,10 +10,10 @@ An 8-question multiple-choice quiz: one question at a time, **instant feedback**
 
 A single self-contained HTML page (Tailwind via CDN). Category: **game / quiz**.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`quiz-game.appstudio`](./quiz-game.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`quiz-game.html`](./quiz-game.html), copy it all, then
   **New → paste → Run App**.
 

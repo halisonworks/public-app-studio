@@ -10,10 +10,10 @@ burn, and an optional fundraise — with a live cash-balance chart and KPI cards
 A single self-contained HTML page (Tailwind via CDN). Category: **business /
 finance** (founders, finance).
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`runway-forecaster.appstudio`](./runway-forecaster.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`runway-forecaster.html`](./runway-forecaster.html),
   copy it all, then **New → paste → Run App**.
 

@@ -6,13 +6,13 @@ A KPI dashboard for a small SaaS: **MRR**, **active users**, **churn**, and
 **NPS** cards, a 12-month MRR line chart, and a top-5 customers table.
 
 A single default-exported **React component** that uses **`recharts`** for the
-chart — App Studio auto-loads React and recharts, no setup. Category: **data /
+chart — KIT Apps auto-loads React and recharts, no setup. Category: **data /
 dashboard**. (This is the library's example of the React + chart-library path.)
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`sales-dashboard.appstudio`](./sales-dashboard.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`sales-dashboard.jsx`](./sales-dashboard.jsx), copy it
   all, then **New → paste → Run App**.
 

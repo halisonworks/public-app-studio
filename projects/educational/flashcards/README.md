@@ -10,10 +10,10 @@ progress. Comes with a sample deck — edit it inline to study any topic.
 A single self-contained HTML page (Tailwind via CDN). Category: **educational**
 (also a good fit for game/quiz).
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`flashcards.appstudio`](./flashcards.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`flashcards.html`](./flashcards.html), copy it all,
   then **New → paste → Run App**.
 

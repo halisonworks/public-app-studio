@@ -23,7 +23,7 @@ presenting to a class. Shape it accordingly:
 - Make every control teach something: changing an input should visibly change
   the outcome in real time.
 - Keep it self-contained — no accounts, grading servers, or logins.
-- Do NOT add print, PDF, or export buttons — App Studio already provides Print
+- Do NOT add print, PDF, or export buttons — KIT Apps already provides Print
   and PNG export.
 ```
 

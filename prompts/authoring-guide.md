@@ -1,7 +1,7 @@
-# App Studio authoring guide (feed this to your AI)
+# KIT Apps authoring guide (feed this to your AI)
 
 This document sets the stage for any AI assistant (Claude, ChatGPT, Google
-Gemini, Grok): what App Studio can run, and the rules and constraints to follow.
+Gemini, Grok): what KIT Apps can run, and the rules and constraints to follow.
 
 > **Want the simplest single-link option?** Hand your assistant
 > [`llms.txt`](../llms.txt) at the repo root — it's a self-contained briefing
@@ -16,7 +16,7 @@ Gemini, Grok): what App Studio can run, and the rules and constraints to follow.
    - **Point your AI at this repository** — if your assistant can browse the web,
      give it the link **https://github.com/halisonworks/public-kit-app** and
      ask it to *read the authoring guide and a couple of examples* so it learns
-     what App Studio runs and how the projects are built. (Claude, ChatGPT, and
+     what KIT Apps runs and how the projects are built. (Claude, ChatGPT, and
      Gemini can read a public repo this way.)
 2. **Then send a short, simple prompt** — a sentence or two describing what you
    want. The AI fills in the rest *within the rules above*. For example:
@@ -32,14 +32,14 @@ how they were made.
 [business](./context/business.md)) — it layers category conventions on top of
 this guide. Then keep your prompt just as short.
 
-Keep it as a reference, too, for what makes a good App Studio project.
+Keep it as a reference, too, for what makes a good KIT Apps project.
 
 ---
 
 ## The document — upload or paste this into your AI
 
 ```
-You are generating a project to run in **App Studio**, a workbench that renders
+You are generating a project to run in **KIT Apps**, a workbench that renders
 a single file with no build step. Follow these rules exactly.
 
 ### Output
@@ -82,13 +82,13 @@ a single file with no build step. Follow these rules exactly.
 - Do not use Next.js, routers, state libraries (Redux/Zustand), UI kits
   (Material UI, Chakra), or CSS-in-JS libraries.
 
-### Do NOT build things App Studio already provides
+### Do NOT build things KIT Apps already provides
 Adding these is wasted effort and clutters the UI — leave them out:
-- **PNG / image export** — App Studio has built-in PNG export.
-- **Print / Save-as-PDF** — App Studio has built-in Print via the OS.
+- **PNG / image export** — KIT Apps has built-in PNG export.
+- **Print / Save-as-PDF** — KIT Apps has built-in Print via the OS.
 - **App packaging**, installer, window title, or app icon — set at packaging
   time, not in the code.
-- **Saving / loading / file management / a project library** — App Studio
+- **Saving / loading / file management / a project library** — KIT Apps
   manages saved canvases.
 - So: no "Download as image", "Export", "Print", "Save file", "Open file"
   buttons, and no fake window chrome or title bar.
@@ -111,7 +111,7 @@ Confirm nothing — just output the single file when I describe what I want next
 - [ ] No external `<script>` / `<link>` / CDN, no `package.json`, no setup steps.
 - [ ] No runtime service dependency: no backend / API keys / login / LLM calls. (Static CDN assets — CSS framework, fonts, images — are fine.)
 - [ ] Data is mocked inline or in `localStorage`; any `esm.sh` lib is version-pinned.
-- [ ] No built-in export / print / save / packaging UI (App Studio provides those).
+- [ ] No built-in export / print / save / packaging UI (KIT Apps provides those).
 - [ ] Fills the window, no dead buttons, has empty/error states, looks finished.
 
 ## See also

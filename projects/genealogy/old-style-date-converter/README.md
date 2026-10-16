@@ -14,10 +14,10 @@ Make sense of pre-modern dates in old records:
 
 A single self-contained HTML page (Tailwind via CDN). Category: **genealogy**.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`old-style-date-converter.appstudio`](./old-style-date-converter.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`old-style-date-converter.html`](./old-style-date-converter.html),
   copy it all, then **New → paste → Run App**.
 

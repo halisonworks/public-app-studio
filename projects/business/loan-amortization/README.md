@@ -11,10 +11,10 @@ and a balance chart.
 A single self-contained HTML page (Tailwind via CDN). Category: **business /
 finance** (finance, personal).
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`loan-amortization.appstudio`](./loan-amortization.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`loan-amortization.html`](./loan-amortization.html),
   copy it all, then **New → paste → Run App**.
 

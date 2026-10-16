@@ -13,10 +13,10 @@ Interactive learning tool for Norwegian **matematikk 2P** (LK20). **Norwegian UI
 A single self-contained HTML page (Tailwind via CDN; hand-rolled SVG figures).
 Category: **Math · NO-2P**.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`geometri.appstudio`](./geometri.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`geometri.html`](./geometri.html), copy it all, then
   **New → paste → Run App**.
 

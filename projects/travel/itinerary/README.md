@@ -10,10 +10,10 @@ to your browser.
 
 A single self-contained HTML page (Tailwind via CDN). Category: **Travel** (personal). **English UI.**
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`itinerary.appstudio`](./itinerary.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`itinerary.html`](./itinerary.html), copy it all, then
   **New → paste → Run App**.
 

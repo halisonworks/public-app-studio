@@ -8,8 +8,8 @@ This is a **full HTML page** example. This version renders an **English UI**; a
 Norwegian version (Norwegian UI strings) is in
 [`i18n/nb/price-calculator.md`](./i18n/nb/price-calculator.md).
 
-> **App Studio note.** This prompt loads Tailwind from a CDN. That's fine for an
-> App Studio project — pulling static front-end assets (a CSS framework, fonts,
+> **KIT Apps note.** This prompt loads Tailwind from a CDN. That's fine for an
+> KIT Apps project — pulling static front-end assets (a CSS framework, fonts,
 > images) is allowed; what a project must *not* depend on is a runtime service
 > (backend, API keys, login, or an LLM). See
 > [`../authoring-guide.md`](../authoring-guide.md).
@@ -23,7 +23,7 @@ Norwegian version (Norwegian UI strings) is in
 
 Upload [`../authoring-guide.md`](../authoring-guide.md) and the
 [`../context/educational.md`](../context/educational.md) add-on to your AI first
-(they carry the App Studio rules and the teaching shape), then a few lines like
+(they carry the KIT Apps rules and the teaching shape), then a few lines like
 this is enough — this is close to how the example was actually made. The AI
 (e.g. Google Gemini) fills in the styling and details. Use the detailed prompt
 below only when you want precise control.

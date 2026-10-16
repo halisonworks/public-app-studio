@@ -11,10 +11,10 @@ interval, and a clear verdict at your chosen threshold (90 / 95 / 99%).
 A single self-contained HTML page (Tailwind via CDN). Category: **business /
 marketing** (data).
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`ab-test-calculator.appstudio`](./ab-test-calculator.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`ab-test-calculator.html`](./ab-test-calculator.html),
   copy it all, then **New → paste → Run App**.
 

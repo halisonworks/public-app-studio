@@ -23,10 +23,10 @@ Features:
 - Live **KPIs**, a **milestone ledger** table, and rule-based **behavioral-health
   diagnostics** that change with your settings.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`ux-retention-simulator.appstudio`](./ux-retention-simulator.appstudio):
-  **Share → Import** in App Studio, or drop it into your `App Studio Projects`
+  **Share → Import** in KIT Apps, or drop it into your `KIT Apps Projects`
   folder.
 - **Copy-paste** — open [`ux-retention-simulator.html`](./ux-retention-simulator.html),
   copy it all, then **New → paste → Run App**.

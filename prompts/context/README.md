@@ -2,7 +2,7 @@
 
 Optional context documents that layer on top of
 [`../authoring-guide.md`](../authoring-guide.md). The base guide sets the
-universal App Studio rules; a category add-on adds the conventions that fit a
+universal KIT Apps rules; a category add-on adds the conventions that fit a
 particular *kind* of app.
 
 ## How to use
@@ -37,7 +37,7 @@ need.
 - [`diy-hobby.md`](./diy-hobby.md) — practical maker's calculators and planners
   *(knitting, cooking, gardening, carpentry, renovation)*
 
-These map to who App Studio is for: founders, investors, managers, sales people,
+These map to who KIT Apps is for: founders, investors, managers, sales people,
 marketers, teachers, presenters, finance people, spreadsheet / Miro / graph /
 infographic makers, influencers, and anyone making a quick app prototype. Pick
 the add-on closest to your use; combine two if a tool genuinely spans both.
@@ -45,6 +45,6 @@ the add-on closest to your use; combine two if a tool genuinely spans both.
 ## Applies to every category
 
 - Don't build **print**, **"Save as PDF"**, or **image / PNG export** buttons —
-  App Studio already provides Print and PNG export.
+  KIT Apps already provides Print and PNG export.
 - One self-contained file; no runtime backend, API keys, login, or LLM calls
   (static CDN assets like a CSS framework or fonts are fine).

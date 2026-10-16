@@ -10,10 +10,10 @@ Practical everyday maths for Norwegian **matematikk 2P** (LK20) — for work and
 home. **Norwegian UI.** A single self-contained HTML page (Tailwind via CDN).
 Category: **Math · 2P praktisk**.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`enhetspris.appstudio`](./enhetspris.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`enhetspris.html`](./enhetspris.html), copy it all, then
   **New → paste → Run App**.
 

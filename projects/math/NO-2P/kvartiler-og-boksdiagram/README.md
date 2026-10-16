@@ -12,10 +12,10 @@ Interactive learning tool for Norwegian **matematikk 2P** (LK20). **Norwegian UI
 A single self-contained HTML page (Tailwind via CDN; hand-rolled SVG). Category:
 **Math · NO-2P**.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`kvartiler-og-boksdiagram.appstudio`](./kvartiler-og-boksdiagram.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`kvartiler-og-boksdiagram.html`](./kvartiler-og-boksdiagram.html),
   copy it all, then **New → paste → Run App**.
 

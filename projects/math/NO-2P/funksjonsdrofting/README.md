@@ -9,10 +9,10 @@ Find zeros, extrema, the y-intercept and increasing/decreasing intervals of a fu
 Interactive learning tool for Norwegian **matematikk** (LK20). **Norwegian UI.**
 A single self-contained HTML page (Tailwind via CDN). Category: **Math · NO-2P**.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`funksjonsdrofting.appstudio`](./funksjonsdrofting.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`funksjonsdrofting.html`](./funksjonsdrofting.html), copy it all, then
   **New → paste → Run App**.
 

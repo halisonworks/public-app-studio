@@ -9,10 +9,10 @@ Practice and exam trainer: random tasks with hints and full solutions, in Del 1 
 Interactive learning tool for Norwegian **matematikk** (LK20). **Norwegian UI.**
 A single self-contained HTML page (Tailwind via CDN). Category: **Math · 2P**.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`eksamenstrening-2p.appstudio`](./eksamenstrening-2p.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`eksamenstrening-2p.html`](./eksamenstrening-2p.html), copy it all, then
   **New → paste → Run App**.
 

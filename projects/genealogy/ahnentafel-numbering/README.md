@@ -15,10 +15,10 @@ the subject is #1, and any person *n* has father *2n* and mother *2n+1*.
 
 A single self-contained HTML page (Tailwind via CDN). Category: **genealogy**.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`ahnentafel-numbering.appstudio`](./ahnentafel-numbering.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`ahnentafel-numbering.html`](./ahnentafel-numbering.html),
   copy it all, then **New → paste → Run App**.
 

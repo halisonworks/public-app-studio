@@ -15,7 +15,7 @@ This project is a creative / generative tool. Shape it accordingly:
 - Give a clear "regenerate / randomize" control, and where it makes sense,
   adjustable parameters (and a seed) so results are tweakable and reproducible.
 - Let the user copy the useful output — hex codes, the SVG markup, the text — but
-  do NOT build image export or print buttons; App Studio already provides PNG
+  do NOT build image export or print buttons; KIT Apps already provides PNG
   export and Print.
 - Make the canvas the hero: one screen, responsive, with controls kept compact
   around it.

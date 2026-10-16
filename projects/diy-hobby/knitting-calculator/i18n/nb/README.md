@@ -13,15 +13,15 @@ En liten, selvstendig React-komponent. Ingen eksterne biblioteker, inget byggest
 
 **Tilgjengelig på:** [English](../../) · Norsk (Bokmål)
 
-## Last inn i App Studio
+## Last inn i KIT Apps
 
 To måter å velge mellom:
 
 - **Last inn direkte** — bruk [`knitting-calculator.appstudio`](./knitting-calculator.appstudio):
-  velg **Del → Importer** i App Studio og velg filen, eller slipp den i
-  mappen `App Studio Projects`. Den åpnes med navn og metadata ferdig satt.
+  velg **Del → Importer** i KIT Apps og velg filen, eller slipp den i
+  mappen `KIT Apps Projects`. Den åpnes med navn og metadata ferdig satt.
 - **Lim inn koden** — åpne [`knitting-calculator.jsx`](./knitting-calculator.jsx),
-  kopier innholdet, og velg **Ny → lim inn → Kjør app** i App Studio.
+  kopier innholdet, og velg **Ny → lim inn → Kjør app** i KIT Apps.
 
 Klikk **Lagre** for å beholde den i biblioteket ditt, og pakk den gjerne som
 en skrivebordsapp etterpå.

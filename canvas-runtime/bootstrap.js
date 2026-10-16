@@ -248,7 +248,7 @@ function extractRequiredModules(transpiledCode) {
 
 // Next.js / React Server Component artifacts (v0, Lovable, Next app-router
 // output) begin with a `"use client"` or `"use server"` directive. It is a
-// no-op in App Studio's client-only runtime, so strip a leading run of those
+// no-op in KIT Apps's client-only runtime, so strip a leading run of those
 // directives before transpile.
 // MIRROR of stripClientDirectives in ../../src/utils/runtimeDependencies.js.
 function stripClientDirectives(code) {

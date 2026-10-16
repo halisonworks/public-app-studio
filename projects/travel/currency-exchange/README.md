@@ -13,10 +13,10 @@ mock data — there is no live feed.
 A single self-contained HTML page (Tailwind via CDN), with **Learn**,
 **Practice**, and a full-screen **Present** mode. Category: **Travel** (teaching · reiseliv). **English UI.**
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`currency-exchange.appstudio`](./currency-exchange.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`currency-exchange.html`](./currency-exchange.html),
   copy it all, then **New → paste → Run App**.
 

@@ -20,10 +20,10 @@ isolerer kun kortet.
 
 **Tilgjengelig på:** [English](../../) · Norsk (Bokmål)
 
-## Last den inn i App Studio
+## Last den inn i KIT Apps
 
 - **Last den rett inn** — bruk [`persona-developer.appstudio`](./persona-developer.appstudio):
-  **Share → Import** i App Studio, eller slipp den i `App Studio Projects`-mappen.
+  **Share → Import** i KIT Apps, eller slipp den i `KIT Apps Projects`-mappen.
 - **Kopier/lim inn** — åpne [`persona-developer.html`](./persona-developer.html),
   kopier alt, og **New → paste → Run App**.
 
@@ -33,6 +33,6 @@ isolerer kun kortet.
   men har **ingen avhengighet til en kjøretidstjeneste** — ingen backend,
   API-nøkler, innlogging eller LLM — så den fungerer på egen hånd.
 - Det finnes ingen utskriftsknapp: Presentasjon-kortet har bare `@media print`-
-  stiler, så App Studios innebygde **Print** gir et rent, isolert kort.
+  stiler, så KIT Apps innebygde **Print** gir et rent, isolert kort.
 - Behold headeren og kildelenken øverst i filen. Se [LICENSE](../../../../../LICENSE)
   i rota for vilkårene.

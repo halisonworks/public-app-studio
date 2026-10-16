@@ -11,10 +11,10 @@ et fødselsårs-vindu som vokser naturlig oppover i generasjonene.
 
 En selvstendig HTML-side (Tailwind via CDN). Kategori: **slektsforskning (norsk)**.
 
-## Last inn i App Studio
+## Last inn i KIT Apps
 
 - **Last rett inn** — bruk [`ane-aldersestimator.appstudio`](./ane-aldersestimator.appstudio):
-  **Share → Import**, eller slipp den i mappa `App Studio Projects`.
+  **Share → Import**, eller slipp den i mappa `KIT Apps Projects`.
 - **Kopier–lim** — åpne [`ane-aldersestimator.html`](./ane-aldersestimator.html),
   kopier alt, og **New → paste → Run App**.
 

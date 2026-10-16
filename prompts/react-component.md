@@ -1,6 +1,6 @@
 # Prompt — single React component
 
-Use this to get a component App Studio can run directly. Fill in the
+Use this to get a component KIT Apps can run directly. Fill in the
 `{{placeholders}}` and paste it into your AI assistant.
 
 ---
@@ -25,7 +25,7 @@ Return only the code, in one block.
 ## Then
 
 1. Copy the code block.
-2. App Studio: **New → paste → Run App**.
+2. KIT Apps: **New → paste → Run App**.
 3. To change it, reply to the AI with what you want different and paste the new
    version.
 

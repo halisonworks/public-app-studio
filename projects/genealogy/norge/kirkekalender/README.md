@@ -10,10 +10,10 @@ etter trinitatis**» til faktiske datoer — med riktig kalender før og etter
 
 En selvstendig HTML-side (Tailwind via CDN). Kategori: **slektsforskning (norsk)**.
 
-## Last inn i App Studio
+## Last inn i KIT Apps
 
 - **Last rett inn** — bruk [`kirkekalender.appstudio`](./kirkekalender.appstudio):
-  **Share → Import**, eller slipp den i mappa `App Studio Projects`.
+  **Share → Import**, eller slipp den i mappa `KIT Apps Projects`.
 - **Kopier–lim** — åpne [`kirkekalender.html`](./kirkekalender.html), kopier alt, og
   **New → paste → Run App**.
 

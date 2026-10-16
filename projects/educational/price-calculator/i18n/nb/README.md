@@ -19,10 +19,10 @@ som et raskt verktøy for småbedrifter.
 
 **Tilgjengelig på:** [English](../../) · Norsk (Bokmål)
 
-## Last den inn i App Studio
+## Last den inn i KIT Apps
 
 - **Last den rett inn** — bruk [`price-calculator.appstudio`](./price-calculator.appstudio):
-  **Share → Import** i App Studio, eller slipp den i `App Studio Projects`-mappen.
+  **Share → Import** i KIT Apps, eller slipp den i `KIT Apps Projects`-mappen.
 - **Kopier/lim inn** — åpne [`price-calculator.html`](./price-calculator.html),
   kopier alt, og **New → paste → Run App**.
 

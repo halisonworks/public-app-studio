@@ -7,8 +7,8 @@ engine, a milestone ledger, and rule-based diagnostics.
 
 This is a **full HTML page** example (English UI).
 
-> **App Studio note.** This prompt loads Tailwind, FontAwesome, and Google Fonts
-> from CDNs. That's fine for an App Studio project — pulling static front-end
+> **KIT Apps note.** This prompt loads Tailwind, FontAwesome, and Google Fonts
+> from CDNs. That's fine for an KIT Apps project — pulling static front-end
 > assets is allowed; what a project must *not* depend on is a runtime service
 > (backend, API keys, login, or an LLM). See
 > [`../authoring-guide.md`](../authoring-guide.md).
@@ -25,7 +25,7 @@ It's also a good illustration of giving the model **explicit formulas** and a
 
 Upload [`../authoring-guide.md`](../authoring-guide.md) and the
 [`../context/business.md`](../context/business.md) add-on to your AI first (they
-carry the App Studio rules and the professional-tool shape), then a few lines
+carry the KIT Apps rules and the professional-tool shape), then a few lines
 like this is enough — this is close to how the example was actually made. The AI
 (e.g. Google Gemini) fills in the styling, formulas, and details. Use the
 detailed prompt below only when you want precise control.

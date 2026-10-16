@@ -12,10 +12,10 @@ risk** drop toward green. Hazards are saved to your browser.
 A single self-contained HTML page (Tailwind via CDN), with **Learn**,
 **Practice**, and a full-screen **Present** mode. Category: **Travel** (teaching · reiseliv). **English UI.**
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`risk-assessment.appstudio`](./risk-assessment.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`risk-assessment.html`](./risk-assessment.html), copy
   it all, then **New → paste → Run App**.
 

@@ -8,9 +8,9 @@ En liten, selvinneholdt React-komponent. Ingen eksterne biblioteker, inget byggt
 
 **Tilgjengelig på:** [English](../../) · Norsk (Bokmål)
 
-## Last inn i App Studio
+## Last inn i KIT Apps
 
-Åpne App Studio, velg **Ny**, lim inn innholdet fra `material-calculator.jsx` i editoren, og klikk **Kjør app**. Velg deretter **Lagre** for å beholde den i biblioteket ditt.
+Åpne KIT Apps, velg **Ny**, lim inn innholdet fra `material-calculator.jsx` i editoren, og klikk **Kjør app**. Velg deretter **Lagre** for å beholde den i biblioteket ditt.
 
 ## Gjør den til din
 

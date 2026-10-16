@@ -24,10 +24,10 @@ card.
 
 **Available in:** English · [Norsk (Bokmål)](./i18n/nb/)
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`persona-developer.appstudio`](./persona-developer.appstudio):
-  **Share → Import** in App Studio, or drop it into your `App Studio Projects`
+  **Share → Import** in KIT Apps, or drop it into your `KIT Apps Projects`
   folder.
 - **Copy-paste** — open [`persona-developer.html`](./persona-developer.html),
   copy it all, then **New → paste → Run App**.
@@ -38,7 +38,7 @@ card.
   but has **no runtime service dependency** — no backend, API keys, login, or
   LLM — so it runs on its own.
 - There's no print button: the Present card just carries `@media print` styles,
-  so App Studio's built-in **Print** produces a clean, isolated card.
+  so KIT Apps's built-in **Print** produces a clean, isolated card.
 - The prompt that generated this is in
   [`prompts/examples/persona-developer.md`](../../../prompts/examples/persona-developer.md).
 - Keep the header comment and the source link at the top of the file. See the

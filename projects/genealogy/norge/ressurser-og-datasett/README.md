@@ -10,10 +10,10 @@ dine (lagres lokalt). Tenk på det som en startside for arkivøkta.
 
 En selvstendig HTML-side (Tailwind via CDN). Kategori: **slektsforskning (norsk)**.
 
-## Last inn i App Studio
+## Last inn i KIT Apps
 
 - **Last rett inn** — bruk [`ressurser-og-datasett.appstudio`](./ressurser-og-datasett.appstudio):
-  **Share → Import**, eller slipp den i mappa `App Studio Projects`.
+  **Share → Import**, eller slipp den i mappa `KIT Apps Projects`.
 - **Kopier–lim** — åpne [`ressurser-og-datasett.html`](./ressurser-og-datasett.html),
   kopier alt, og **New → paste → Run App**.
 

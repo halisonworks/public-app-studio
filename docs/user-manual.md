@@ -6,12 +6,12 @@ KIT Apps is a Windows desktop app that turns any AI-generated React component in
 
 This manual covers:
 
-1. [What KIT Apps is for](#1-what-app-studio-is-for)
+1. [What KIT Apps is for](#1-what-kit-apps-is-for)
 2. [Installing](#2-installing)
 3. [The core workflow at a glance](#3-the-core-workflow-at-a-glance)
 4. [Getting code from ChatGPT Canvas](#4-getting-code-from-chatgpt-canvas)
 5. [Getting code from Gemini Canvas](#5-getting-code-from-gemini-canvas)
-6. [Pasting into KIT Apps](#6-pasting-into-app-studio)
+6. [Pasting into KIT Apps](#6-pasting-into-kit-apps)
 7. [How to prompt AI for KIT Apps-friendly canvases](#7-how-to-prompt-ai-for-kit-apps-friendly-canvases)
 8. [Use cases with example prompts](#8-use-cases-with-example-prompts)
 9. [Saving, renaming, organizing](#9-saving-renaming-organizing)
@@ -120,7 +120,7 @@ Gemini's Canvas works similarly but the layout is different.
 
 **Re-opening:** click the canvas name in the sidebar.
 
-**Editing:** there's no in-place edit yet for saved canvases. To change one, copy its code, click **New**, paste the modified version, save under a new name, and delete the old one. (In-place edit is on the roadmap.)
+**Editing:** click the **Edit** button on a canvas card (or the Edit toolbar action) to reopen it in the editor. Save replaces the source while keeping the canvas's name, category, and packaging. This is non-destructive — the original is overwritten only on save.
 
 **Loading from a `.jsx` file on disk:** click **Load**. The desktop app opens a native file picker. The selected file is added as a new canvas in your library.
 
@@ -226,16 +226,12 @@ This is the killer feature. Pick a canvas, fill in four fields, click Build Inst
    - **Bundle ID**, reverse-DNS, lowercase, no spaces (e.g. `com.acme.salescalculator`)
    - **Icon**, optional; pick a 256×256 PNG. KIT Apps uses a default if you skip this.
 4. Click **Validate** to dry-run the metadata.
-5. Click **Build Installer**. The first build takes 5–10 minutes (Rust toolchain + dependencies). Subsequent builds for the same canvas are faster.
-6. When the build finishes, KIT Apps reports the path to the produced `.msi`. Open Explorer there, double-click to test.
+5. Click **Build Installer**. Packaging takes **seconds** — KIT Apps uses a prebuilt runtime, so no Rust or Node.js compilation happens on your machine.
+6. When the build finishes, KIT Apps reports the path to the produced installer (`.exe`). Open Explorer there, double-click to test.
 
 ### Requirements on the build machine
 
-- Node.js + npm on `PATH`
-- Rust toolchain (`cargo`, `rustc`) on `PATH`, install via [rustup.rs](https://rustup.rs)
-- Visual Studio Build Tools (for the Windows linker)
-
-If any of those are missing, KIT Apps shows a clear error pointing at the install URL.
+None. KIT Apps ships with everything it needs to produce an installer. No Node.js, Rust toolchain, or Visual Studio Build Tools required.
 
 ### What gets bundled
 
@@ -271,16 +267,12 @@ The user code threw at execution or render time. The error message is usually th
 - Common culprits: missing `useState` import, wrong icon name from `lucide-react`, calling `useEffect` outside a function component
 - Ask your AI to debug: paste the error message back into ChatGPT/Gemini and ask for a fix
 
-### Build Installer fails on `npm install`
+### Build Installer fails
 
-- Confirm Node.js + npm are on `PATH` (`node -v` from a fresh terminal should work)
-- The first build downloads ~200 MB of Rust crates and ~100 MB of npm dependencies, slow networks may time out
-
-### Build Installer fails on `tauri build`
-
-- Confirm Rust is installed (`cargo -V`)
-- Confirm Visual Studio Build Tools are installed (the Windows MSVC linker)
-- Restart KIT Apps after installing toolchains so it picks up the updated `PATH`
+- Make sure you are on the desktop app (packaging is not available in the browser)
+- Check `%LOCALAPPDATA%\com.halisonworks.kitapps\build-log.txt` for the full log
+- If the error mentions a missing file, try restarting KIT Apps — it may have been interrupted mid-download on first run
+- [File an issue](https://github.com/halisonworks/public-kit-app/issues) with the contents of `build-log.txt`
 
 ### The canvas works in Studio's preview but breaks in the packaged `.msi`
 

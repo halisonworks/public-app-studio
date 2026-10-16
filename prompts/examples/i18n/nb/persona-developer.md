@@ -6,19 +6,19 @@ localStorage og et rent presentasjonskort.
 
 Dette er et **HTML-side**-eksempel.
 
-> **App Studio-merknad.** Denne prompten laster Tailwind og Google Fonts fra
-> CDN — greit for et App Studio-prosjekt (statiske ressurser); det et prosjekt
+> **KIT Apps-merknad.** Denne prompten laster Tailwind og Google Fonts fra
+> CDN — greit for et KIT Apps-prosjekt (statiske ressurser); det et prosjekt
 > *ikke* skal være avhengig av, er en kjøretidstjeneste (backend, API-nøkler,
 > innlogging eller en LLM). Se
-> [`../../authoring-guide.md`](../../authoring-guide.md).
+> [`../../../authoring-guide.md`](../../../authoring-guide.md).
 >
 > En ferdig build av dette eksempelet ligger i
 > [`projects/educational/persona-developer/`](../../../../projects/educational/persona-developer/).
 
 ## Enkel versjon
 
-Last opp [`../../authoring-guide.md`](../../authoring-guide.md) og tillegget
-[`../../context/educational.md`](../../context/educational.md) først, så holder
+Last opp [`../../../authoring-guide.md`](../../../authoring-guide.md) og tillegget
+[`../../../context/educational.md`](../../../context/educational.md) først, så holder
 noen få linjer som dette — KI-en fyller inn resten:
 
 ```

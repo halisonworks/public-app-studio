@@ -10,10 +10,10 @@ payments** that settles everyone up. Everything is saved to your browser.
 
 A single self-contained HTML page (Tailwind via CDN). Category: **Travel** (personal). **English UI.**
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`trip-split.appstudio`](./trip-split.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`trip-split.html`](./trip-split.html), copy it all,
   then **New → paste → Run App**.
 

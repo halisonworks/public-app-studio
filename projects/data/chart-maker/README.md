@@ -10,10 +10,10 @@ color, and get a clean chart — drawn with hand-rolled SVG, no chart library.
 A single self-contained HTML page (Tailwind via CDN). Category: **data /
 visual** (spreadsheet, infographic, and graph makers).
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`chart-maker.appstudio`](./chart-maker.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`chart-maker.html`](./chart-maker.html), copy it all,
   then **New → paste → Run App**.
 

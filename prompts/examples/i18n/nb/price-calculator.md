@@ -6,11 +6,11 @@ reiseliv) som også fungerer som verktøy for småbedrifter.
 
 Dette er et **HTML-side**-eksempel.
 
-> **App Studio-merknad.** Denne prompten laster Tailwind fra CDN. Det er greit
-> for et App Studio-prosjekt — å hente statiske frontend-ressurser (et
+> **KIT Apps-merknad.** Denne prompten laster Tailwind fra CDN. Det er greit
+> for et KIT Apps-prosjekt — å hente statiske frontend-ressurser (et
 > CSS-rammeverk, skrifter, bilder) er tillatt; det et prosjekt *ikke* skal være
 > avhengig av, er en kjøretidstjeneste (backend, API-nøkler, innlogging eller en
-> LLM). Se [`../../authoring-guide.md`](../../authoring-guide.md).
+> LLM). Se [`../../../authoring-guide.md`](../../../authoring-guide.md).
 >
 > En ferdig build av dette eksempelet ligger i
 > [`projects/educational/price-calculator/`](../../../../projects/educational/price-calculator/).
@@ -19,9 +19,9 @@ Dette er et **HTML-side**-eksempel.
 
 ## Enkel versjon
 
-Last opp [`../../authoring-guide.md`](../../authoring-guide.md) og tillegget
-[`../../context/educational.md`](../../context/educational.md) til KI-en først
-(de bærer App Studio-reglene og lærings-formen), så holder noen få linjer som
+Last opp [`../../../authoring-guide.md`](../../../authoring-guide.md) og tillegget
+[`../../../context/educational.md`](../../../context/educational.md) til KI-en først
+(de bærer KIT Apps-reglene og lærings-formen), så holder noen få linjer som
 dette — dette er nær slik eksempelet faktisk ble laget. KI-en (f.eks. Google
 Gemini) fyller inn stil og detaljer. Bruk den detaljerte prompten under bare når
 du vil ha presis kontroll.

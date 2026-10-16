@@ -10,10 +10,10 @@ dokumenterte faren faktisk er biologisk far. Alle likelihood-forhold kan justere
 
 En selvstendig HTML-side (Tailwind via CDN). Kategori: **slektsforskning (norsk)**.
 
-## Last inn i App Studio
+## Last inn i KIT Apps
 
 - **Last rett inn** — bruk [`biologisk-far-bayes.appstudio`](./biologisk-far-bayes.appstudio):
-  **Share → Import**, eller slipp den i mappa `App Studio Projects`.
+  **Share → Import**, eller slipp den i mappa `KIT Apps Projects`.
 - **Kopier–lim** — åpne [`biologisk-far-bayes.html`](./biologisk-far-bayes.html),
   kopier alt, og **New → paste → Run App**.
 

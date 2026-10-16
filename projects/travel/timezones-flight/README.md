@@ -11,10 +11,10 @@ see exactly when you land in the destination's local time — layovers and the
 
 A single self-contained HTML page (Tailwind via CDN). Category: **Travel** (personal). **English UI.**
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`timezones-flight.appstudio`](./timezones-flight.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`timezones-flight.html`](./timezones-flight.html), copy
   it all, then **New → paste → Run App**.
 

@@ -1,10 +1,10 @@
 /**
- * Material Calculator — Halison App Studio example
+ * Material Calculator — Halison KIT Apps example
  *
  * Estimate paint, flooring, and lumber for a job, with cost.
  *
- * From the Halison App Studio public library:
- * https://github.com/halisonworks/public-app-studio
+ * From the Halison KIT Apps public library:
+ * https://github.com/halisonworks/public-kit-app
  *
  * Permitted use: personal, educational, and other non-commercial use.
  * You may modify it, but keep this header and the source link intact, and do

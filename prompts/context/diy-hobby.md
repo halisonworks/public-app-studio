@@ -28,7 +28,7 @@ renovation, crafts). Shape it accordingly:
 - Be honest: these are estimates. Add a short note that real results vary (with
   tension, waste, offcuts, weather, variety) and to buy a little extra / check
   before relying on it. Never present an estimate as exact.
-- Do NOT build Print, "Save as PDF", or image / PNG export buttons — App Studio
+- Do NOT build Print, "Save as PDF", or image / PNG export buttons — KIT Apps
   already provides Print and PNG export.
 ```
 

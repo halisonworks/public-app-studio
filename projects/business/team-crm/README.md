@@ -18,16 +18,16 @@ What makes it interesting is that it runs two ways from one file:
   live pipeline, with no server and no login. Edits merge per record, so two
   people can work at once.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in:** use [`team-crm.appstudio`](./team-crm.appstudio) via
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste:** open [`team-crm.jsx`](./team-crm.jsx), copy it all, then
   **New → paste → Run App**.
 
 ## Using it as a team
 
-1. **Package** the canvas (App Studio's Package panel) so it becomes a desktop
+1. **Package** the canvas (KIT Apps's Package panel) so it becomes a desktop
    app. The shared-folder features exist only in a packaged app.
 2. The **first** person opens it, picks an **empty** folder inside OneDrive (the
    app asks on first run), and clicks **Load sample data**, or just starts adding

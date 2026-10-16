@@ -10,10 +10,10 @@ gårdsnavn-som-etternavn og navneloven av 1923.
 
 En selvstendig HTML-side (Tailwind via CDN). Kategori: **slektsforskning (norsk)**.
 
-## Last inn i App Studio
+## Last inn i KIT Apps
 
 - **Last rett inn** — bruk [`patronymikon.appstudio`](./patronymikon.appstudio):
-  **Share → Import**, eller slipp den i mappa `App Studio Projects`.
+  **Share → Import**, eller slipp den i mappa `KIT Apps Projects`.
 - **Kopier–lim** — åpne [`patronymikon.html`](./patronymikon.html), kopier alt, og
   **New → paste → Run App**.
 

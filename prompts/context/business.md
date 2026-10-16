@@ -18,7 +18,7 @@ domain. Shape it accordingly:
 - Persist the user's inputs with localStorage where it helps.
 - Optionally include a clean full-screen "Present" view for sharing results in a
   meeting — but no learning or tutorial content.
-- Do NOT add print, PDF, or export buttons — App Studio already provides Print
+- Do NOT add print, PDF, or export buttons — KIT Apps already provides Print
   and PNG export.
 ```
 

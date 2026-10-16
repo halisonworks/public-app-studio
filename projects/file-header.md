@@ -20,11 +20,11 @@ root [LICENSE](../LICENSE) for the full terms.
 
 ```jsx
 /**
- * {{Project Name}} — Halison App Studio example
+ * {{Project Name}} — Halison KIT Apps example
  *
  * {{One-line description of what it does.}}
  *
- * From the Halison App Studio public library:
+ * From the Halison KIT Apps public library:
  * https://github.com/halisonworks/public-kit-app
  *
  * Permitted use: personal, educational, and other non-commercial use.
@@ -38,11 +38,11 @@ root [LICENSE](../LICENSE) for the full terms.
 
 ```html
 <!--
-  {{Project Name}} — Halison App Studio example
+  {{Project Name}} — Halison KIT Apps example
 
   {{One-line description of what it does.}}
 
-  From the Halison App Studio public library:
+  From the Halison KIT Apps public library:
   https://github.com/halisonworks/public-kit-app
 
   Permitted use: personal, educational, and other non-commercial use.

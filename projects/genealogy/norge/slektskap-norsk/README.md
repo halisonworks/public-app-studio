@@ -10,10 +10,10 @@ for å få kjønnede ord (fetter/kusine, onkel/tante, nevø/niese).
 
 En selvstendig HTML-side (Tailwind via CDN). Kategori: **slektsforskning (norsk)**.
 
-## Last inn i App Studio
+## Last inn i KIT Apps
 
 - **Last rett inn** — bruk [`slektskap-norsk.appstudio`](./slektskap-norsk.appstudio):
-  **Share → Import**, eller slipp den i mappa `App Studio Projects`.
+  **Share → Import**, eller slipp den i mappa `KIT Apps Projects`.
 - **Kopier–lim** — åpne [`slektskap-norsk.html`](./slektskap-norsk.html), kopier
   alt, og **New → paste → Run App**.
 

@@ -1,12 +1,12 @@
 /**
- * Team CRM — Halison App Studio example
+ * Team CRM — Halison KIT Apps example
  *
  * A small-team sales CRM: pipeline, contacts, activities, tasks, and a weighted
  * forecast. It runs solo from a Studio preview (saved in your browser) and
  * becomes multi-user over a shared OneDrive / network folder once packaged.
  *
- * From the Halison App Studio public library:
- * https://github.com/halisonworks/public-app-studio
+ * From the Halison KIT Apps public library:
+ * https://github.com/halisonworks/public-kit-app
  *
  * Permitted use: personal, educational, and other non-commercial use.
  * You may modify it, but keep this header and the source link intact, and do
@@ -27,7 +27,7 @@ import {
 } from "recharts";
 
 // =====================================================================
-// Halison CRM — a multi-user sample for App Studio.
+// Halison CRM — a multi-user sample for KIT Apps.
 //
 // Runs two ways from ONE file:
 //  • Packaged app with a shared folder: data lives in OneDrive/Dropbox/an SMB

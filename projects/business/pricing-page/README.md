@@ -10,10 +10,10 @@ toggle, a highlighted "most popular" plan, and a feature-comparison table.
 A single self-contained HTML page (Tailwind via CDN). Category: **business /
 sales & marketing**.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`pricing-page.appstudio`](./pricing-page.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`pricing-page.html`](./pricing-page.html), copy it all,
   then **New → paste → Run App**.
 

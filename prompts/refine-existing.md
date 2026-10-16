@@ -1,6 +1,6 @@
 # Prompt — refine something you already have
 
-Already have a component or page running in App Studio and want to change it?
+Already have a component or page running in KIT Apps and want to change it?
 Paste the current code back to the AI with one of these and copy the result in.
 
 ---
@@ -50,5 +50,5 @@ the cause in one line. Return the full corrected code in one block.
 ## Tip
 
 Always ask for the **full updated code in one block** so you can paste the whole
-thing back into App Studio (**New → paste → Run App**) without stitching
+thing back into KIT Apps (**New → paste → Run App**) without stitching
 fragments together.

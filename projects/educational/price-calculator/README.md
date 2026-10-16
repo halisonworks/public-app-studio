@@ -23,10 +23,10 @@ A single self-contained HTML page (Tailwind via CDN). Features:
 
 **Available in:** English · [Norsk (Bokmål)](./i18n/nb/)
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`price-calculator.appstudio`](./price-calculator.appstudio):
-  **Share → Import** in App Studio, or drop it into your `App Studio Projects`
+  **Share → Import** in KIT Apps, or drop it into your `KIT Apps Projects`
   folder.
 - **Copy-paste** — open [`price-calculator.html`](./price-calculator.html), copy
   it all, then **New → paste → Run App**.

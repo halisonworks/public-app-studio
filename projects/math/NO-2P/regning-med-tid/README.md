@@ -9,10 +9,10 @@ Time arithmetic and unit conversion, plus speed = distance / time.
 Interactive learning tool for Norwegian **matematikk** (LK20). **Norwegian UI.**
 A single self-contained HTML page (Tailwind via CDN). Category: **Math · NO-2P**.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`regning-med-tid.appstudio`](./regning-med-tid.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`regning-med-tid.html`](./regning-med-tid.html), copy it all, then
   **New → paste → Run App**.
 

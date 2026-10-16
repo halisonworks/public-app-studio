@@ -11,10 +11,10 @@ values, labels, and accent color that update live.
 A single self-contained HTML page (Tailwind via CDN). Category: **creative /
 generative** — for marketers, influencers, and anyone making shareable visuals.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`infographic-stats.appstudio`](./infographic-stats.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`infographic-stats.html`](./infographic-stats.html),
   copy it all, then **New → paste → Run App**.
 
@@ -23,7 +23,7 @@ generative** — for marketers, influencers, and anyone making shareable visuals
 - Edit the headline, stats, and accent color in the controls panel; the
   infographic updates live and saves to `localStorage`. **No runtime service
   dependency.**
-- No export button — capture the result with App Studio's built-in **PNG export**.
+- No export button — capture the result with KIT Apps's built-in **PNG export**.
 - Made with the [creative](../../../prompts/context/creative.md) category add-on.
 - Keep the header comment and the source link at the top of the file. See the
   root [LICENSE](../../../LICENSE) for the terms.

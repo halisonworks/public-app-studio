@@ -10,10 +10,10 @@ theme) and a list of **reorderable link buttons**, with an Edit / Preview toggle
 A single self-contained HTML page (Tailwind via CDN). Category: **creative**
 (influencers, creators).
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`link-in-bio.appstudio`](./link-in-bio.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`link-in-bio.html`](./link-in-bio.html), copy it all,
   then **New → paste → Run App**.
 

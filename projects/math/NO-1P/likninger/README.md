@@ -9,10 +9,10 @@ Solve first-degree equations step by step, and power equations (xⁿ = k). Cover
 Interactive learning tool for Norwegian **matematikk 1P** (LK20). **Norwegian UI.**
 A single self-contained HTML page (Tailwind via CDN). Category: **Math · NO-1P**.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`likninger.appstudio`](./likninger.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`likninger.html`](./likninger.html), copy it all, then
   **New → paste → Run App**.
 

@@ -11,10 +11,10 @@ shows in the browser tab title.
 A single self-contained HTML page (Tailwind via CDN). Category: **personal /
 productivity**.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`pomodoro-timer.appstudio`](./pomodoro-timer.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`pomodoro-timer.html`](./pomodoro-timer.html), copy it
   all, then **New → paste → Run App**.
 

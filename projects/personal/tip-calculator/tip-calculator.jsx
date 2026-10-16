@@ -1,14 +1,14 @@
 /**
- * Tip Calculator — Halison App Studio example
+ * Tip Calculator — Halison KIT Apps example
  *
  * Split a bill and add a tip. A small, self-contained React component:
- * no external libraries, no build step. Load it into App Studio with
+ * no external libraries, no build step. Load it into KIT Apps with
  * New → paste → Run App, or open the file from disk.
  *
- * From the Halison App Studio public library:
- * https://github.com/halisonworks/public-app-studio
+ * From the Halison KIT Apps public library:
+ * https://github.com/halisonworks/public-kit-app
  *
- * Halison App Studio Examples License — non-commercial use, keep this header.
+ * Halison KIT Apps Examples License — non-commercial use, keep this header.
  */
 
 import React, { useState, useMemo } from 'react';

@@ -11,14 +11,14 @@ A small, self-contained React component. No external libraries, no build step.
 
 **Available in:** English · [Norsk (Bokmål)](./i18n/nb/)
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 Two ways, pick whichever suits you:
 
 - **Load it straight in** — copy the contents of
-  [`recipe-scaler.jsx`](./recipe-scaler.jsx) and in App Studio choose
+  [`recipe-scaler.jsx`](./recipe-scaler.jsx) and in KIT Apps choose
   **New → paste → Run App**.
-- **Or open the file from disk** if your App Studio version supports it.
+- **Or open the file from disk** if your KIT Apps version supports it.
 
 Click **Save** to keep it in your library.
 

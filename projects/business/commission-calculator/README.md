@@ -11,10 +11,10 @@ mode.
 A single self-contained HTML page (Tailwind via CDN). Category: **business /
 sales**.
 
-## Load it into App Studio
+## Load it into KIT Apps
 
 - **Load it straight in** — use [`commission-calculator.appstudio`](./commission-calculator.appstudio):
-  **Share → Import**, or drop it into your `App Studio Projects` folder.
+  **Share → Import**, or drop it into your `KIT Apps Projects` folder.
 - **Copy-paste** — open [`commission-calculator.html`](./commission-calculator.html),
   copy it all, then **New → paste → Run App**.
 

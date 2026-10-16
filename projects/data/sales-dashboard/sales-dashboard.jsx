@@ -1,16 +1,16 @@
 /**
- * Sales Dashboard — Halison App Studio example
+ * Sales Dashboard — Halison KIT Apps example
  *
  * A small-SaaS KPI dashboard: MRR / active users / churn / NPS cards, a 12-month
  * MRR line chart (recharts), and a top-5 customers table. Mock data, single
  * default-exported React component.
  *
- * From the Halison App Studio public library:
- * https://github.com/halisonworks/public-app-studio
+ * From the Halison KIT Apps public library:
+ * https://github.com/halisonworks/public-kit-app
  *
  * Permitted use: personal, educational, and other non-commercial use. Keep this
  * header and the source link intact; non-commercial only. Released under the
- * Halison App Studio Examples License — see the LICENSE file in the repo above.
+ * Halison KIT Apps Examples License — see the LICENSE file in the repo above.
  */
 import React from 'react';
 import {
@@ -247,7 +247,7 @@ function SalesDashboard() {
 
       {/* Footer */}
       <p className="mt-8 text-center text-xs text-slate-600">
-        Halison App Studio · Mock data for demonstration purposes only
+        Halison KIT Apps · Mock data for demonstration purposes only
       </p>
     </div>
   );
