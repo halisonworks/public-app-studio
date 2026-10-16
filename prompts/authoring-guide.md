@@ -14,7 +14,7 @@ Gemini, Grok): what App Studio can run, and the rules and constraints to follow.
    - **Upload this document** (`authoring-guide.md`), or paste the block below,
      at the start of a new chat; **or**
    - **Point your AI at this repository** — if your assistant can browse the web,
-     give it the link **https://github.com/halisonworks/public-app-studio** and
+     give it the link **https://github.com/halisonworks/public-kit-app** and
      ask it to *read the authoring guide and a couple of examples* so it learns
      what App Studio runs and how the projects are built. (Claude, ChatGPT, and
      Gemini can read a public repo this way.)

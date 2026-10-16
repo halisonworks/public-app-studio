@@ -8,7 +8,7 @@
 //   - the .appstudio "code" matches its sibling raw source file (kept in lockstep)
 //   - every source file carries the attribution header (source link)
 //   - HTML has balanced <html>/<body>/<script> and its inline scripts parse
-//   - JSX/JS has an `export default` (App Studio renders the default export)
+//   - JSX/JS has an `export default` (KIT Apps renders the default export)
 //   - every source file has a matching .appstudio, and vice versa
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -69,7 +69,7 @@ for (const f of appstudioFiles) {
 // 2. Validate each source file
 for (const f of sourceFiles) {
   const src = readFileSync(f, 'utf8');
-  if (!src.includes('github.com/halisonworks/public-app-studio')) {
+  if (!src.includes('github.com/halisonworks/public-kit-app')) {
     fail(f, 'missing attribution header (link back to the library)');
   }
   if (extname(f) === '.html') {
@@ -88,7 +88,7 @@ for (const f of sourceFiles) {
       }
     }
   } else if (!/export\s+default/.test(src)) {
-    fail(f, 'no "export default" — App Studio renders the default export');
+    fail(f, 'no "export default" — KIT Apps renders the default export');
   }
   const stem = basename(f, extname(f));
   const hasAppstudio = appstudioFiles.some(

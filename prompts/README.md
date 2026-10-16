@@ -15,7 +15,7 @@ single default-exported React component, or a self-contained HTML page.
 1. **Give your AI the rules.** Either **upload [`authoring-guide.md`](./authoring-guide.md)**
    (or paste it once) at the start of the chat, **or** — if your assistant can
    browse the web — **point it at this repo**
-   (`https://github.com/halisonworks/public-app-studio`) and ask it to read the
+   (`https://github.com/halisonworks/public-kit-app`) and ask it to read the
    guide and a couple of examples. For a particular *kind* of app, also add a
    category add-on from [`context/`](./context/) (e.g. educational or business).
 2. **Then send a short, simple prompt** — a sentence or two saying what you want.

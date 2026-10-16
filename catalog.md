@@ -1,7 +1,7 @@
 # Catalog
 
 Browse the library by category. Every project ships a native `.appstudio` file
-(load straight into App Studio via **Share → Import**) plus the raw source for
+(load straight into KIT Apps via **Share → Import**) plus the raw source for
 copy-paste and reading.
 
 > ⚠️ **Everything here is an example** — a starting point, not a finished
@@ -27,7 +27,7 @@ and anyone who wants to make a quick prototype of an app idea.
 | [![chart-maker](projects/data/chart-maker/screenshot.png)](projects/data/chart-maker/) **Chart maker** | [![gantt-chart](projects/business/gantt-chart/screenshot.png)](projects/business/gantt-chart/) **Gantt chart** | [![rubric-grader](projects/educational/rubric-grader/screenshot.png)](projects/educational/rubric-grader/) **Rubric grader** |
 | [![link-in-bio](projects/creative/link-in-bio/screenshot.png)](projects/creative/link-in-bio/) **Link in bio** | | |
 
-*(`tip-calculator`, `sales-dashboard`, and `team-crm` are React components — they render inside App Studio.)*
+*(`tip-calculator`, `sales-dashboard`, and `team-crm` are React components — they render inside KIT Apps.)*
 
 ## Projects
 
