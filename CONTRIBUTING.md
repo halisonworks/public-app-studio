@@ -1,13 +1,13 @@
 # Contributing
 
 This is the public library of example **projects** and **prompts** for
-[App Studio](https://github.com/halisonworks/app-studio-app). Everything here is
+[KIT Apps](https://github.com/halisonworks/public-kit-app). Everything here is
 made to be uploaded, copied, and learned from. These are the conventions.
 
 ## What goes where
 
 ```
-projects/    ready-made App Studio projects (download and load)
+projects/    ready-made KIT Apps projects (download and load)
 prompts/     prompts for building your own — guides, templates, context, examples
 docs/        user documentation
 ```
@@ -22,7 +22,7 @@ docs/        user documentation
 3. Put the **attribution header** at the top of the source — see
    [`projects/file-header.md`](projects/file-header.md). Keep the source link and
    license note intact.
-4. Generate the matching **`<name>.appstudio`** — App Studio's native project
+4. Generate the matching **`<name>.appstudio`** — KIT Apps's native project
    file (JSON, `schema: "app-studio/canvas@1"`). Its `code` field must equal the
    raw source byte-for-byte; see the format spec in the app repo's
    `docs/project-file-format.md`. Ship both files.
@@ -43,7 +43,7 @@ They're kept in lockstep: edit the source, then regenerate the `.appstudio`.
 A project must run on its own with **no runtime service dependency** — no
 backend, API keys, login, or LLM calls. Static CDN assets (a CSS framework,
 fonts, icons) are fine. Persist with `localStorage`; mock data inline. Don't
-build print / PDF / image-export UI — App Studio already provides Print and PNG
+build print / PDF / image-export UI — KIT Apps already provides Print and PNG
 export.
 
 ## Adding a translation

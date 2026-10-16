@@ -1,7 +1,7 @@
-# App Studio — single-file briefing for AI assistants
+# KIT Apps — single-file briefing for AI assistants
 
 > This one file is everything an AI assistant needs to help someone build an
-> **App Studio by Halison** project. A user may paste this URL to you (the assistant) and
+> **KIT Apps by Halison** project. A user may paste this URL to you (the assistant) and
 > say little else. Read it fully, then follow "Instructions for the AI assistant"
 > below. If you can browse, you may also read the deeper resources linked at the
 > end — but this file alone is enough.
@@ -10,9 +10,9 @@
 
 ---
 
-## What App Studio by Halison is
+## What KIT Apps by Halison is
 
-App Studio by Halison is a workbench that renders **one self-contained file** as a live app —
+KIT Apps by Halison is a workbench that renders **one self-contained file** as a live app —
 no build step, no install, no servers. The user pastes code into it (**New →
 paste → Run App**), can save it, and can package it into a real desktop app. It
 runs either:
@@ -28,7 +28,7 @@ Your job is to produce exactly one such file that runs as-is.
 
 When a user gives you this file (or its link), do this:
 
-1. **Briefly confirm** you understand they're building for App Studio, in one
+1. **Briefly confirm** you understand they're building for KIT Apps, in one
    sentence — don't dump these rules back at them.
 2. **Ask 2–4 short clarifying questions** before writing code, e.g.:
    - What should it do? (the core task)
@@ -40,9 +40,9 @@ When a user gives you this file (or its link), do this:
    return **only the code in a single block** — no setup notes, no explanation
    inside the block.
 4. **Then tell the user how to run it**, in a line or two:
-   *"In App Studio, click **New**, paste this in, and click **Run App**. Click
+   *"In KIT Apps, click **New**, paste this in, and click **Run App**. Click
    **Save** to keep it; you can package it as a desktop app later."*
-5. If they ask for changes, return the **full updated file** again (App Studio
+5. If they ask for changes, return the **full updated file** again (KIT Apps
    replaces the whole canvas — don't send fragments or diffs).
 
 Do not ask the user to set anything up, install packages, or run commands. They
@@ -58,7 +58,7 @@ reminding the user to check the numbers/facts before relying on them.
 
 ### Output
 - One self-contained file. React component → end with `export default <Name>;`
-  (do not call `ReactDOM.render`; App Studio mounts the default export). HTML →
+  (do not call `ReactDOM.render`; KIT Apps mounts the default export). HTML →
   put all CSS and JavaScript inline in the one file.
 - No `package.json`, no separate local files, no build step, no terminal.
 
@@ -82,13 +82,13 @@ reminding the user to check the numbers/facts before relying on them.
   (e.g. `recharts@2.12.7`). Don't use Next.js, routers, Redux/Zustand, or UI kits
   (Material UI, Chakra).
 
-### Do NOT rebuild what App Studio by Halison already provides
+### Do NOT rebuild what KIT Apps by Halison already provides
 Leave these out — they're wasted effort and clutter the UI:
-- **PNG / image export** and **Print / Save-as-PDF** — App Studio has both built
+- **PNG / image export** and **Print / Save-as-PDF** — KIT Apps has both built
   in. (For print, you may add `@media print` CSS so the printout looks clean, but
   no "Print"/"Export"/"Download" button.)
 - **App packaging**, installer, window title, icon — set at packaging time.
-- **Saving / loading / file management / a project library** — App Studio manages
+- **Saving / loading / file management / a project library** — KIT Apps manages
   saved canvases.
 - So: no "Download as image", "Export", "Print", "Save file", "Open file"
   buttons, and no fake window chrome or title bar.
@@ -130,7 +130,7 @@ If the request fits one of these, adopt its conventions:
 ## For the person using this
 
 Pick whichever assistant you like, give it this file, answer its questions, and
-paste the result into App Studio.
+paste the result into KIT Apps.
 
 - **Claude** (claude.ai) — paste this link or the file; it reads it, asks, and
   returns a React component or an HTML page. Great at following a detailed spec.
@@ -138,13 +138,13 @@ paste the result into App Studio.
   this file's text. Returns a code block; ask for "a single self-contained HTML
   file" or "a single default-exported React component".
 - **Google Gemini** (gemini.google.com) — often returns a complete self-contained
-  HTML page (its build/Canvas view), which App Studio runs as-is. Paste the link
+  HTML page (its build/Canvas view), which KIT Apps runs as-is. Paste the link
   or the text.
 - **Grok** (grok.com / X) — can browse and returns single-file apps; paste the
   link and your idea.
 
 If anything doesn't render, tell the assistant "put everything in one file" and
-paste again. Everything stays on your computer — App Studio has no account and no
+paste again. Everything stays on your computer — KIT Apps has no account and no
 cloud.
 
 These projects are examples and starting points — they can contain errors or

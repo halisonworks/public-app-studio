@@ -2,7 +2,7 @@
 
 Most examples in this library keep their data in your browser. When you want an
 app that **saves real data** (a CRM, a tracker, a log) or **shares it with a
-small team**, App Studio gives your app a tiny `window.appStudio` API. Everything
+small team**, KIT Apps gives your app a tiny `window.appStudio` API. Everything
 is local first: no account, no server, no cloud required.
 
 You can paste this page into an AI assistant ("use `window.appStudio.shared` so
@@ -13,7 +13,7 @@ The [Team CRM](../projects/business/team-crm/) project is a full worked example.
 
 ## 1. `localStorage` just works
 
-You do not need anything special to use `localStorage`. App Studio namespaces it
+You do not need anything special to use `localStorage`. KIT Apps namespaces it
 per app automatically, so your data cannot collide with another app or with App
 Studio itself, and it survives updates. Good for small, simple data.
 
@@ -25,7 +25,7 @@ images), use `appStudio.storage`.
 ## 2. `window.appStudio.storage` (durable key/value)
 
 An async store backed by IndexedDB. Larger quota, stores objects directly (no
-`JSON.stringify`), namespaced per app, survives updates. Available in App Studio
+`JSON.stringify`), namespaced per app, survives updates. Available in KIT Apps
 previews **and** in packaged apps.
 
 ```js
@@ -62,7 +62,7 @@ can edit at once without overwriting each other; edits to the *same* record
 resolve last writer wins.
 
 > Available in **packaged apps only** (it needs filesystem access). In a preview
-> inside App Studio, `appStudio.shared` is not present, so design your app to
+> inside KIT Apps, `appStudio.shared` is not present, so design your app to
 > fall back to `localStorage` when it is missing (the Team CRM does this).
 
 ```js
@@ -181,4 +181,4 @@ team, no server, no login" tier.
 - **Your app's identity is its Bundle ID.** Saved data lives under it, so keep
   the Bundle ID stable across updates (changing it starts a fresh, empty store).
 - Everything here is **local**: your data never leaves your machine, or your
-  team's shared folder. There is no App Studio account or server involved.
+  team's shared folder. There is no KIT Apps account or server involved.

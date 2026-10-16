@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Shared canvas · App Studio</title>
+  <title>Shared canvas · KIT Apps</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <style>
     html, body { margin: 0; height: 100%; background: #f8fafc; }
@@ -20,7 +20,7 @@
 <body>
   <div id="msg">Loading shared canvas…</div>
   <iframe id="frame" title="Shared canvas"></iframe>
-  <a id="footer" href="https://github.com/halisonworks/app-studio-app" target="_blank" rel="noopener">Made with App Studio</a>
+  <a id="footer" href="https://github.com/halisonworks/public-kit-app" target="_blank" rel="noopener">Made with KIT Apps</a>
   <script>
     (function () {
       function fromB64Url(s) {
@@ -55,7 +55,7 @@
         msg.textContent = 'This link does not contain a valid canvas.';
         return;
       }
-      document.title = (data.name ? data.name.replace(/\.[^.]+$/, '') : 'Shared canvas') + ' · App Studio';
+      document.title = (data.name ? data.name.replace(/\.[^.]+$/, '') : 'Shared canvas') + ' · KIT Apps';
 
       window.addEventListener('message', function (ev) {
         if (ev.source !== frame.contentWindow) return;

@@ -1,9 +1,9 @@
-# Halison App Studio
+# Halison KIT Apps
 
 Turn AI chat artifacts into your own app.
 
-This is the public library for App Studio. Here you can download completed
-projects to load straight into App Studio, and browse prompt examples to help
+This is the public library for KIT Apps. Here you can download completed
+projects to load straight into KIT Apps, and browse prompt examples to help
 you build your own.
 
 > ⚠️ **Everything here is an example.** These projects (and anything an AI builds
@@ -29,7 +29,7 @@ https://github.com/halisonworks/public-kit-app/blob/main/llms.txt
 ```
 
 It's a single, self-contained briefing. From it the assistant learns exactly what
-App Studio can run, **asks you a couple of clarifying questions**, returns **one
+KIT Apps can run, **asks you a couple of clarifying questions**, returns **one
 self-contained file**, and **tells you how to load it**. If your assistant can't
 browse the web, paste the contents of the file instead. It includes notes for
 **Claude, ChatGPT, Gemini, and Grok**.
@@ -42,12 +42,12 @@ business, data, creative), then send a short prompt. See
 **3. Copy a prompt.** Start from a [worked example](prompts/examples/) or a
 [template](prompts/) and adapt it.
 
-Either way, the goal is one thing App Studio can run: a single default-exported
+Either way, the goal is one thing KIT Apps can run: a single default-exported
 React component, or a self-contained HTML page.
 
 ## What's inside
 
-- [`llms.txt`](llms.txt) — one file to hand an AI assistant; it learns App Studio
+- [`llms.txt`](llms.txt) — one file to hand an AI assistant; it learns KIT Apps
   and helps you build
 - [`projects/`](projects/) — 20+ ready-made projects you can download and load
 - [`catalog.md`](catalog.md) — browse every project by category, with a
@@ -63,13 +63,13 @@ Each project ships a **`.appstudio`** file (load it straight in) plus the **raw
 source** (copy-paste and read), with a short header crediting and linking back to
 this library.
 
-## Load a project into App Studio
+## Load a project into KIT Apps
 
 1. Open a project in [`projects/`](projects/) (or pick one from the
    [catalog](catalog.md)).
-2. Either **load it straight in** — in App Studio choose **Share → Import** and
+2. Either **load it straight in** — in KIT Apps choose **Share → Import** and
    select the project's `.appstudio` file (or drop it into your
-   `App Studio Projects` folder) — or **copy-paste** the raw `.jsx` / `.html` via
+   `KIT Apps Projects` folder) — or **copy-paste** the raw `.jsx` / `.html` via
    **New → paste → Run App**.
 3. **Save** it, edit it, and package it as a desktop app if you like.
 
@@ -104,7 +104,7 @@ Want to contribute a project, prompt, or category? See [CONTRIBUTING.md](CONTRIB
 
 ## License
 
-These materials are released under the Halison App Studio Examples License.
+These materials are released under the Halison KIT Apps Examples License.
 The short version:
 
 - You may use and modify the materials for personal, educational, and other
@@ -115,7 +115,7 @@ The short version:
 - You may not redistribute or republish the materials, original or modified,
   without written permission from Halison.
 
-App Studio itself, its application and source code, is not part of these
+KIT Apps itself, its application and source code, is not part of these
 materials and is not covered by this license.
 
 Full terms are in the [LICENSE](LICENSE) file. For permissions beyond the
