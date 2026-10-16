@@ -25,7 +25,7 @@ and anyone who wants to make a quick prototype of an app idea — no coding need
 paste this URL into the chat:
 
 ```
-https://github.com/halisonworks/public-app-studio/blob/main/llms.txt
+https://github.com/halisonworks/public-kit-app/blob/main/llms.txt
 ```
 
 It's a single, self-contained briefing. From it the assistant learns exactly what

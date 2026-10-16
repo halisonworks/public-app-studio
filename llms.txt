@@ -6,7 +6,7 @@
 > below. If you can browse, you may also read the deeper resources linked at the
 > end — but this file alone is enough.
 >
-> Public library: https://github.com/halisonworks/public-app-studio
+> Public library: https://github.com/halisonworks/public-kit-app
 
 ---
 
@@ -154,7 +154,7 @@ simplified calculations. Check any numbers or facts before relying on them.
 
 ## Deeper resources (optional, if you can browse)
 
-- Authoring guide: https://github.com/halisonworks/public-app-studio/blob/main/prompts/authoring-guide.md
-- Category add-ons: https://github.com/halisonworks/public-app-studio/tree/main/prompts/context
-- Worked example prompts: https://github.com/halisonworks/public-app-studio/tree/main/prompts/examples
-- Ready-made projects + screenshots: https://github.com/halisonworks/public-app-studio/blob/main/catalog.md
+- Authoring guide: https://github.com/halisonworks/public-kit-app/blob/main/prompts/authoring-guide.md
+- Category add-ons: https://github.com/halisonworks/public-kit-app/tree/main/prompts/context
+- Worked example prompts: https://github.com/halisonworks/public-kit-app/tree/main/prompts/examples
+- Ready-made projects + screenshots: https://github.com/halisonworks/public-kit-app/blob/main/catalog.md

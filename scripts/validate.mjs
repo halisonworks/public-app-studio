@@ -69,7 +69,7 @@ for (const f of appstudioFiles) {
 // 2. Validate each source file
 for (const f of sourceFiles) {
   const src = readFileSync(f, 'utf8');
-  if (!src.includes('github.com/halisonworks/public-app-studio')) {
+  if (!src.includes('github.com/halisonworks/public-kit-app')) {
     fail(f, 'missing attribution header (link back to the library)');
   }
   if (extname(f) === '.html') {

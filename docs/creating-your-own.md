@@ -25,7 +25,7 @@ document, then keep your own prompts short.**
    [`prompts/authoring-guide.md`](../prompts/authoring-guide.md) (or paste it
    once) at the start of the chat, **or** — if your assistant can browse the web
    — **point it at this repository**
-   (`https://github.com/halisonworks/public-app-studio`) and ask it to read the
+   (`https://github.com/halisonworks/public-kit-app`) and ask it to read the
    authoring guide and a couple of examples. Either way it learns what App Studio
    runs and how the projects are built, so you don't have to repeat it.
 2. **Ask, simply.** Send a short prompt — a sentence or two — like "a habit

@@ -25,7 +25,7 @@ root [LICENSE](../LICENSE) for the full terms.
  * {{One-line description of what it does.}}
  *
  * From the Halison App Studio public library:
- * https://github.com/halisonworks/public-app-studio
+ * https://github.com/halisonworks/public-kit-app
  *
  * Permitted use: personal, educational, and other non-commercial use.
  * You may modify it, but keep this header and the source link intact, and do
@@ -43,7 +43,7 @@ root [LICENSE](../LICENSE) for the full terms.
   {{One-line description of what it does.}}
 
   From the Halison App Studio public library:
-  https://github.com/halisonworks/public-app-studio
+  https://github.com/halisonworks/public-kit-app
 
   Permitted use: personal, educational, and other non-commercial use.
   You may modify it, but keep this header and the source link intact, and do
